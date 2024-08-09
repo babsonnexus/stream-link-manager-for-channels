@@ -10,65 +10,70 @@ Enter <b>Stream Link Manager for Channels</b>!
 
 <b>Stream Link Manager for Channels</b> is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order to determine the appropriate link. After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another, <b>Stream Link Manager for Channels</b> will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
 
-[[EMBEDDED VIDEO COMING SOON]]
+| EMBEDDED VIDEO COMING SOON |
 
 # Installation
-[[COMING SOON]]
+| COMING SOON |
 
-<h2>Docker</h2>
-[[COMING SOON]]
+## Docker
+| COMING SOON |
 
-<h2>Windows</h2>
-[[COMING SOON]]
+## Windows
+| COMING SOON |
 
-<h2>Linux</h2>
-[[COMING SOON]]
+## Linux
+| COMING SOON |
 
-<h2>Python</h2>
-[[COMING SOON]]
+## Python
+| COMING SOON |
 
 # Upgrade
-[[COMING SOON]]
+| COMING SOON |
 
-<h2>Docker</h2>
-[[COMING SOON]]
+## Docker
+| COMING SOON |
 
-<h2>Windows</h2>
-[[COMING SOON]]
+## Windows
+| COMING SOON |
 
-<h2>Linux</h2>
-[[COMING SOON]]
+## Linux
+| COMING SOON |
 
-<h2>Python</h2>
-[[COMING SOON]]
+## Python
+| COMING SOON |
 
 # Startup
-[[COMING SOON]]
+| COMING SOON |
 
-<h2>Docker</h2>
-[[COMING SOON]]
+# Installation
+| COMING SOON |
 
-<h2>Windows</h2>
-[[COMING SOON]]
+## Docker
+| COMING SOON |
 
-<h2>Linux</h2>
-[[COMING SOON]]
+## Windows
+| COMING SOON |
 
-<h2>Python</h2>
-[[COMING SOON]]
+## Linux
+| COMING SOON |
+
+## Python
+| COMING SOON |
 
 # Usage
-[[COMING SOON]]
+| COMING SOON |
 
 # Troubleshooting / FAQ
-<h3>My Streaming Service is missing</h3>
-First, make sure you have selected the correct country code and saved. If that is already done, please make a request for the missing service by filling out this form: https://forms.gle/APyd1t8qs3nhpKRy9.
-<br><br>
+### My Streaming Service is missing
+First, make sure you have selected the correct country code and saved. If that is already done, please make a request for the missing service by filling out [this form](https://forms.gle/APyd1t8qs3nhpKRy9).
+
 Note that JustWatch is responsible for the availability of Streaming Services and <b>Stream Link Manager for Channels</b> is just a downstream consumer.
-<br><br>
-<h3>The data or links for my program are wrong</h3>
+
+### The data or links for my program are wrong
 JustWatch is the provider for all of the information. If there are any issues, please let them know at feedback@justwatch.com.
-<br><br>
-[[MORE COMING SOON]]
-<br><br>
-Additional questions or issues? Please ask at the [Channels DVR Community Message Board](https://community.getchannels.com/t/39684).
+
+### | ANOTHER QUESTION |
+| MORE COMING SOON |
+
+### Additional questions or issues
+Please ask at the [Channels DVR Community Message Board](https://community.getchannels.com/t/39684).
