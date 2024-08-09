@@ -74,3 +74,12 @@ JustWatch is the provider for all of the information. If there are any issues, p
 
 ### Additional questions or issues
 Please ask at the [Channels DVR Community Message Board](https://community.getchannels.com/t/39684).
+
+---
+# Support
+
+This project and its upkeep is the work of one person. While it is provided free of charge with no expectations of payment, tips are greatly appreciated!
+
+[![image](https://github.com/user-attachments/assets/c2c76924-d4b6-4928-b93f-da958a0c7143)](https://paypal.me/basiljunction)
+
+https://paypal.me/basiljunction
