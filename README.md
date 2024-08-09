@@ -45,9 +45,6 @@ Enter <b>Stream Link Manager for Channels</b>!
 # Startup
 | COMING SOON |
 
-# Installation
-| COMING SOON |
-
 ## Docker
 | COMING SOON |
 
