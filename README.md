@@ -69,6 +69,11 @@ Note that JustWatch is responsible for the availability of Streaming Services an
 ### The data or links for my program are wrong
 JustWatch is the provider for all of the information. If there are any issues, please let them know at feedback@justwatch.com.
 
+### Why do some things play the correct movie/episode automatically and why do other go to a generic landing page for that movie/show?
+There are two components that relate to this. First is the quality of the links provided by JustWatch. For instance, with Disney+, JustWatch only has links to generic landing pages and does not have individual episode information like it has for Hulu. There is nothing that can be done aside from requesting that JustWatch updates their data.
+
+The second situation is that even though JustWatch provides links to more generic areas, there may be systematic ways to correct them. As an example, JustWatch provides a link to a movie on Netflix that looks like this: ```http://www.netflix.com/title/81078554```. However, if you replace ```title``` with ```watch```, it will play automatically. This being a “systematic way” to do a replace, it was implemented into <b>Stream Link Manager for Channels</b>. If you have more examples that could be accomplished this way, please put in a request and it will be added.
+
 ### | ANOTHER QUESTION |
 | MORE COMING SOON |
 
