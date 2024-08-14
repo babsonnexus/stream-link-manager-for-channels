@@ -6,20 +6,66 @@ In <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to ad
 
 Enter <b>Stream Link Manager for Channels</b>!
 
-![862fba89413cdec9184d6ed89eaa129d47630df0](https://github.com/user-attachments/assets/7a2e0b95-1574-4db5-910f-277a2a4e13f1)
+![image](https://github.com/user-attachments/assets/56f18e08-c1de-4d54-927f-8a5b7afe7e05)
 
 <b>Stream Link Manager for Channels</b> is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order to determine the appropriate link. After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another, <b>Stream Link Manager for Channels</b> will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
 
 | EMBEDDED VIDEO COMING SOON |
 
 # Installation
-| COMING SOON |
+There are several methods to install <b>Stream Link Manager for Channels</b> and only one should be followed. Docker is the preferred route for those who have it as it has the most controlled path. Channels DVR users who have installed [OliveTin for Channels](https://community.getchannels.com/t/37609) and [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process.
+
+As a general note, it does not matter "where" <b>Stream Link Manager for Channels</b> is installed; it could even be placed in the Channels DVR directory. The only requirements are that it must be on a machine and in a location that has directory access to the Channels DVR directory and be able to see the Channels DVR Administrative webpage.
 
 ## Docker
 | COMING SOON |
 
 ## Windows
-| COMING SOON |
+1. Download the ```slm.bat``` file and place it in the final destination folder.
+   
+2. Open a ```Command Prompt```, navigate to that directory, and enter the following command:
+
+```
+slm.bat install
+```
+
+3. You will be given one last chance to decide if you want to do the installation. Note that an installation will remove any previous instance of <b>Stream Link Manager for Channels</b> at that location. This is unlike the "upgrade" below which will maintain all your files and settings.
+
+![image](https://github.com/user-attachments/assets/a93612b4-2159-47ae-8ccb-d959078bea8b)
+
+4. The process will then run normally until complete. You should see something similar to this when done:
+
+![image](https://github.com/user-attachments/assets/fc8cd8bc-8f0a-4670-ae76-2d46b5d88190)
+  
+5. In your folder, you should now have this:
+
+![image](https://github.com/user-attachments/assets/8cbdac78-5dba-469d-ad58-93459bdf6056)
+   
+6. OPTIONAL: By default, <b>Stream Link Manager for Channels</b> runs on port 5000. You can change this to another port by typing in this command:
+
+```
+slm.bat port
+```
+
+7. You will be prompted to enter a port number of your choice:
+
+![image](https://github.com/user-attachments/assets/b36a3b06-7ba9-4008-a5ac-8c86471bc185)
+
+8. You can also see this port as an environment variable (where it can be removed, if necessary).
+
+![image](https://github.com/user-attachments/assets/36a4ba44-c30f-437e-9880-b779751e7a96)
+
+9. Follow the directions on the screen of closing the current ```Command Prompt``` and opening a new one. In the new ```Command Prompt```, you can confirm that that the port variable is being read correctly by typing:
+
+```
+echo %SLM_PORT%
+```
+
+10. You should see something similar to this:
+
+![image](https://github.com/user-attachments/assets/18fdab7d-9f11-4890-ad69-9fbe56424601)
+
+11. With all this in place, you are now safe to start the program!
 
 ## Linux
 | COMING SOON |
@@ -43,19 +89,69 @@ Enter <b>Stream Link Manager for Channels</b>!
 | COMING SOON |
 
 # Startup
-| COMING SOON |
+Since <b>Stream Link Manager for Channels</b> is designed to run as a service that you access through a webpage, it should be set up to run at startup of a system. There may also be reasons to start manually, like after initial installation.
 
 ## Docker
-| COMING SOON |
+1. There is nothing additional to do as Docker will automatically start up.
 
 ## Windows
-| COMING SOON |
+1. In ```Command Prompt```, navigate to your <b>Stream Link Manager for Channels</b> directory and type in the following command:
+
+```
+slm.bat startup
+```
+
+2. You may get a pop-up asking for permissions. Agree and continue until the process completes and you see something like this:
+
+![image](https://github.com/user-attachments/assets/bf1fee02-bdf0-407e-a625-2b771915e3b0)
+
+3. If you open ```Task Scheduler```, you should now see a task called "Stream Link Manager for Channels":
+
+![image](https://github.com/user-attachments/assets/d2642b2d-d476-4678-af83-d7da3df09dbb)
+
+4. The next time you reboot, <b>Stream Link Manager for Channels</b> will automatically start. Similarly, you can manually start it by either...
+   
+* Running the process directly in ```Task Scheduler```
+* Double clicking on the ```slm.bat``` file
+* In ```Command Prompt```, typing in ```slm.bat```
+
+5. No matter the method, it may look like nothing has happened, but if you start ```Task Manager``` you will see a ```slm.exe``` running in the background:
+
+![image](https://github.com/user-attachments/assets/de995caf-d7fc-4d82-b428-a2b1592d0629)
 
 ## Linux
 | COMING SOON |
 
 ## Python
 | COMING SOON |
+
+## All
+
+1. The first time you start <b>Stream Link Manager for Channels</b>, it may take a couple of minutes before it is available. This is due to it running many activities during initial setup that are not repeated. In later startups, it should be around 30 seconds depending upon system performance and internet speeds.
+
+2. With the startup complete, you can navigate to the webpage:
+
+```
+https://localhost:[YOUR_PORT_HERE]
+```
+
+i.e.,
+
+```
+Default...
+https://localhost:5000
+
+Example Mapped...
+https://localhost:7900
+```
+
+If you are on a different machine than where <b>Stream Link Manager for Channels</b> is installed, you will need to use the name or IP Address of that machine and make sure the port is open to be accessed.
+
+3. Once at the location, you should see the homepage:
+
+![image](https://github.com/user-attachments/assets/36c44e2d-0227-4ade-a592-5caf37397f7f)
+  
+4. After this, the program is ready to use!
 
 # Usage
 | COMING SOON |
