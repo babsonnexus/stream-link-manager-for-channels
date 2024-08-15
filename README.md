@@ -107,7 +107,7 @@ During an upgrade, the ```program_files``` directory is protected.
 
 ![image](https://github.com/user-attachments/assets/cda6bc66-4b7e-4819-bc6f-783afcf76ec9)
 
-This is the most important directory as it contains all the settings, bookmarks, logs, backups, and other crutial information. As a best-practice, you may want to make a manual backup of this folder in case anything goes wrong during an upgrade. With this directory, even a fresh install can be restored with your details.
+This is the most important directory as it contains all the settings, bookmarks, logs, backups, and other crucial information. As a best-practice, you may want to make a manual backup of this folder in case anything goes wrong during an upgrade. With this directory, even a fresh install can be restored with your details.
 
 ## Docker
 | COMING SOON |
@@ -151,7 +151,7 @@ slm.bat startup
 
 3. If you open ```Task Scheduler```, you should now see a task called "Stream Link Manager for Channels":
 
-![image](https://github.com/user-attachments/assets/9e4662df-9329-4f5e-a4b8-0dcb73993c69)
+![image](https://github.com/user-attachments/assets/c909fde6-3ca5-4b73-9ff5-09f65c945f32)
 
 4. The next time you reboot, <b>Stream Link Manager for Channels</b> will automatically start. Similarly, you can manually start it by either...
    
@@ -203,7 +203,7 @@ If you are on a different machine than where <b>Stream Link Manager for Channels
 
 ---
 # Usage
-With the program running, there are a number of activites you should do before getting underway. Also, as a personal preference, if you click on the palette button...
+With the program running, there are a number of activities you should do before getting underway. Also, as a personal preference, if you click on the palette button...
 
 ![image](https://github.com/user-attachments/assets/3e6b1823-47cd-4fea-a03f-67523f5c5a11)
 
@@ -217,7 +217,7 @@ Aside from the visuals, everything will function exactly the same.
 
 ![image](https://github.com/user-attachments/assets/e981d21f-36f7-4136-9686-d1166949675c)
    
-2. Before doing anything, you must set your country correctly. This determines what streaming services are available to you:
+2. Before doing anything, you must set your country correctly. This determines which streaming services are available to you:
 
 ![image](https://github.com/user-attachments/assets/61c98f07-8f22-457d-b830-2b80b1c2a5b3)
 
@@ -235,7 +235,7 @@ Click ```Save``` after you have selected your country, preferred language, and d
 
 ![image](https://github.com/user-attachments/assets/c65bdf1b-cd90-4379-b4dd-28412c45f4f9)
 
-Remember to click '''Save``` when complete.
+Remember to click ```Save``` when complete.
 
 ![image](https://github.com/user-attachments/assets/f47f4621-9139-4dc0-9ef8-64a6f082a5a7)
 
@@ -249,7 +249,7 @@ During initialization, the name of the machine was chosen, however that may not 
 
 ![image](https://github.com/user-attachments/assets/2168f959-b1af-4923-a049-9e6b746bf157)
 
-5. Similarly, in order for the program to work correctly, it needs to be pointed to your Channels DVR folder. During initialization, the folder was attempted to be found. If it could not be discovered, the directory you installed the program in was used.
+5. Similarly, in order for the program to work correctly, it needs to be pointed to your Channels DVR folder. During initialization, an attempt was made to find the folder. If it could not be discovered, the directory you installed the program in was used.
 
 ![image](https://github.com/user-attachments/assets/0298be2e-bc82-4d31-9d70-d5fb41aec790)
 
@@ -288,7 +288,7 @@ These tasks are:
 * Check for new episodes of bookmarked shows
 * Import from Channels DVR any Movies and Episodes that have been watched and deleted, marking them as "watched" in <b>Stream Link Manager for Channels</b>
 * Find and assign valid Stream Links to bookmarked Movies and Episodes
-* In Channels DVR, initiate several steps to make new programs appear, deleted ones be removed, and updates ones have the correct links
+* In Channels DVR, initiate several steps to make new programs appear, have deleted ones be removed, and update specific files to use revised links
 
 ![image](https://github.com/user-attachments/assets/89958211-b692-4e94-82c0-b4a89282dfe7)
 
@@ -300,7 +300,7 @@ Note that this can take a significant amount of time, depending upon the number 
 
 ![image](https://github.com/user-attachments/assets/d3dea0dc-edf6-40eb-bd6c-0d573deafd1f)
 
-If you are looking for more detail as to what transpired, the ```Logs``` area contains more information.
+If you are looking for additional detail as to what transpired, the ```Logs``` area contains more information.
 
 ![image](https://github.com/user-attachments/assets/a5467c2e-8a06-4c3b-b9cc-c51250aa7908)
 
@@ -318,7 +318,7 @@ Clicking on a Movie will get you something like this:
 
 ![image](https://github.com/user-attachments/assets/e746b77a-0212-41a6-b4cf-3e029096b0d8)
 
-Notice that the ```Search``` and other line buttons are no longer available. You must finsih this process by selected ```Done``` or ```Generate Stream Links```. If you do not generate Stream Links at the time of creation, they will be created (if valid) during the next run of the process as detailed above. You may also want to put in a link of your own to override whatever may be generated, which you optionally have the ability to do. It is not required, so leave it blank if you do not want to put anything there.
+Notice that the ```Search``` and other line buttons are no longer available. You must finish this process by selecting ```Done``` or ```Generate Stream Links```. If you do not generate Stream Links at the time of creation, they will be created (if valid) during the next run of the process as detailed above. You may also want to put in a link of your own to override whatever may be generated, which you optionally have the ability to do. It is not required, so leave it blank if you do not want to put anything there.
 
 ![image](https://github.com/user-attachments/assets/2205dad1-7010-4e49-bdda-24b0ebb23134)
 
@@ -326,7 +326,7 @@ Once complete, you can search again. If we select a Show this time, it will have
 
 ![image](https://github.com/user-attachments/assets/b90733ae-b34f-436a-9a62-cfba6e46f958)
 
-Per episode, you can uncheck to mark it as watched. Additionally, you have the same Stream Link Override option as a Movie, as well as the ability to put a prefix on the generated file. For instance, by default, a file name will be ```S01E01.strmlnk```. However, you want to designate that this is a subtitled episode and that dubbed episodes might become available in the future. For this, a prefix of ```(SUB)``` will result in a file name of ```(SUB) S01E01.strmlnk```.
+Per episode, you can uncheck to mark it as watched. Additionally, you have the same Stream Link Override option as a Movie, as well as the ability to put a prefix on the generated file. For instance, by default, a file name will be ```S01E01.strmlnk```. However, as an example, you may want to designate that this is a subtitled episode and that dubbed episodes might become available in the future. For this, a prefix of ```(SUB)``` will result in a file name of ```(SUB) S01E01.strmlnk```.
 
 Sometimes when searching, you might not be able to find the Movie or Show you are looking for. While uncommon (see ```Troubleshooting / FAQ```), it may happen, especially for rare or foreign content. In these cases, you can always create a manual bookmark.
 
@@ -362,11 +362,19 @@ This is also a good area just to check on the status of Movies and Shows.
 
 ![image](https://github.com/user-attachments/assets/a0d572d4-3fa9-497d-b72b-ec871eb534ed)
 
-Moview are faily similar to Shows in the options, including updating the Title and Release Year itself if the data is incorrect or not how you want it.
+Movies are fairly similar to Shows in the options, including updating the ```Title``` and ```Release Year``` itself if the data is incorrect or not how you want it.
 
 ![image](https://github.com/user-attachments/assets/5512fe0c-d5ce-44be-ba16-313c31434314)
 
-10. Aside from these functions, there is not much else a user needs to do. [MORE HERE]
+10. Aside from these functions, there is not much else a user needs to do. There is the ```Files``` area for viewing the backend data that fuels all of the above, as well as exporting those files for backup and migration purposes.
+
+![image](https://github.com/user-attachments/assets/7396d0c1-8956-407b-b5a8-928ecc7675e2)
+
+You can also completely replace those files, though it is not recommended to do so unless you are directed to do so.
+
+Lastly, there is the ```About``` area to see the latest version information, credits, and other information.
+
+![image](https://github.com/user-attachments/assets/a9e9e9f8-759f-4598-accc-d5952740fb96)
 
 ---
 # Troubleshooting / FAQ
@@ -376,7 +384,7 @@ First, make sure you have selected the correct country code and saved. If that i
 Note that JustWatch is responsible for the availability of Streaming Services and <b>Stream Link Manager for Channels</b> is just a downstream consumer.
 
 ### The data or links for my program are wrong
-JustWatch is the provider for all of the information. If there are any issues, please let them know at feedback@justwatch.com.
+JustWatch is the provider for all of the information. If there are any issues, please let them know at feedback@justwatch.com. It is unlikely that they will make an update in a timely manner as they are also dependent upon upstream data, so please take advantage of the manual and override capabilities built into the program.
 
 ### Why do some things play the correct movie/episode automatically and why do other go to a generic landing page for that movie/show?
 There are two components that relate to this. First is the quality of the links provided by JustWatch. For instance, with Disney+, JustWatch only has links to generic landing pages and does not have individual episode information like it has for Hulu. There is nothing that can be done aside from requesting that JustWatch updates their data.
