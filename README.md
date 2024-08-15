@@ -12,6 +12,7 @@ Enter <b>Stream Link Manager for Channels</b>!
 
 | EMBEDDED VIDEO COMING SOON |
 
+---
 # Installation
 There are several methods to install <b>Stream Link Manager for Channels</b> and only one should be followed. Docker is the preferred route for those who have it as it has the most controlled path. Channels DVR users who have installed [OliveTin for Channels](https://community.getchannels.com/t/37609) and [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process. If you are unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are a Windows user, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591).
 
@@ -27,18 +28,18 @@ If you are not using <i>OliveTin/Project One-Click</i>, it is recommended to ins
 
 ### Command Line (Most Cases)
 ```
-docker run -d --restart=unless-stopped --name slm -p [YOUR_PORT_HERE]:5000 [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm -p [YOUR_PORT_HERE]:5000 -v slm_data:/[TBD] [COMING SOON]:latest
 ```
 
 ### Command Line (Mostly Linux Cases)
 ```
-docker run -d --restart=unless-stopped --name slm --network=host -e PLEX_PORT=[YOUR_PORT_HERE] [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm --network=host -e PLEX_PORT=[YOUR_PORT_HERE] -v slm_data:/[TBD] [COMING SOON]:latest
 ```
 
-The default port is 5000, so enter that number if you want to go with it, otherwise use your own preferred value like 7900. It will look something like this:
+The default port is 5000, so enter that number if you want to go with that, otherwise use your own preferred value like 7900. It will look something like this:
 ```
-docker run -d --restart=unless-stopped --name slm -p 7900:5000 [COMING SOON]:latest
-docker run -d --restart=unless-stopped --name slm --network=host -e PLEX_PORT=7900 [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm -p 7900:5000 -v slm_data:/[TBD] [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm --network=host -e PLEX_PORT=7900 -v slm_data:/[TBD] [COMING SOON]:latest
 ```
 
 ## Windows
@@ -94,14 +95,35 @@ echo %SLM_PORT%
 ## Python
 | COMING SOON |
 
+---
 # Upgrade
-| COMING SOON |
+As with any program, there may be a need to update the code for stability, bug fixes, or general upgades. When a new version becomes available, you can easily upgrade using the directions below. To know when a new version is released, set up a watch on this Github repo.
+
+![bbae83c81a2ddd80776fe1b443bbf2c8bbc3d412](https://github.com/user-attachments/assets/42411117-e081-402b-9ffe-703c48172158)
+
+This way, you'll get an email whenever a new version is released, plus you can see exactly what has changed.
+
+During an upgrade, the ```program_files``` directory is protected.
+
+![image](https://github.com/user-attachments/assets/cda6bc66-4b7e-4819-bc6f-783afcf76ec9)
+
+This is the most important directory as it contains all the settings, bookmarks, logs, backups, and other crutial information. As a best-practice, you may want to make a manual backup of this folder in case anything goes wrong during an upgrade. With this directory, even a fresh install can be restored with your details.
 
 ## Docker
 | COMING SOON |
 
 ## Windows
-| COMING SOON |
+1. In ```Command Prompt```, navigate to your <b>Stream Link Manager for Channels</b> directory and type in the following command:
+
+```
+slm.bat upgrade
+```
+
+2. You may get a pop-up asking for permissions. Agree and continue until the process completes and you see something like this:
+
+![image](https://github.com/user-attachments/assets/a4196964-74c4-453a-b4e8-ecb54f37ce98)
+
+3. The most important thing is that ```slm.exe``` was terminated or not running, allowing the upgrade to take place. After the upgrade, you will need to restart the program manually or with a reboot. See <b>Startup</b> below.
 
 ## Linux
 | COMING SOON |
@@ -109,8 +131,9 @@ echo %SLM_PORT%
 ## Python
 | COMING SOON |
 
+---
 # Startup
-Since <b>Stream Link Manager for Channels</b> is designed to run as a service that you access through a webpage, it should be set up to run at startup of a system. There may also be reasons to start manually, like after initial installation.
+Since <b>Stream Link Manager for Channels</b> is designed to run as a service that you access through a webpage, it should be set up to launch at system startup. There may also be reasons to start manually, like after initial installation or an upgrade.
 
 ## Docker
 1. There is nothing additional to do as Docker will automatically start up.
@@ -148,7 +171,11 @@ slm.bat startup
 
 ## All
 
-1. The first time you start <b>Stream Link Manager for Channels</b>, it may take a couple of minutes before it is available. This is due to it running many activities during initial setup that are not repeated. In later startups, it should be around 30 seconds depending upon system performance and internet speeds.
+1. The first time you start <b>Stream Link Manager for Channels</b>, it may take a couple of minutes before it is available. This is due to it running many activities during initial setup that are not repeated. In later startups, it should be around 30 seconds depending upon system performance and internet speeds. If you watch the logs or are in an interactive window, you may see something like this:
+
+![image](https://github.com/user-attachments/assets/5568cf07-742e-420e-847d-1bf24eb9d5bf)
+
+Do not worry if you do not respond to any prompt; there are automatic timeouts that will move the process along and you can make adjustments in the ```Settings``` later.
 
 2. With the startup complete, you can navigate to the webpage:
 
@@ -174,9 +201,174 @@ If you are on a different machine than where <b>Stream Link Manager for Channels
   
 4. After this, the program is ready to use!
 
+---
 # Usage
-| COMING SOON |
+With the program running, there are a number of activites you should do before getting underway. Also, as a personal preference, if you click on the palette button...
 
+![image](https://github.com/user-attachments/assets/3e6b1823-47cd-4fea-a03f-67523f5c5a11)
+
+... you can change to "Dark Mode":
+
+![image](https://github.com/user-attachments/assets/505aa89b-b63f-4b5e-b4ec-1b22b5da4c08)
+
+Aside from the visuals, everything will function exactly the same.
+
+1. Navigate to the ```Settings``` area. You should see something like this:
+
+![image](https://github.com/user-attachments/assets/e981d21f-36f7-4136-9686-d1166949675c)
+   
+2. Before doing anything, you must set your country correctly. This determines what streaming services are available to you:
+
+![image](https://github.com/user-attachments/assets/61c98f07-8f22-457d-b830-2b80b1c2a5b3)
+
+Note for instance the difference between a US and GB list:
+
+![image](https://github.com/user-attachments/assets/46a30da8-a02d-4ecd-8777-dc0c056dd7fe) ![image](https://github.com/user-attachments/assets/673f17fc-daa6-457a-b937-620f210eba56)
+
+Click ```Save``` after you have selected your country, preferred language, and default number of programs to come up when you search. Please be advised that only certain country/language combinations are valid.
+
+![image](https://github.com/user-attachments/assets/0e02c967-6a20-4718-a4be-8b0cf0e26338)
+
+3. With that done, you can select your streaming services and prioritize them. You can select multiple at a time for any of the actions.
+
+![image](https://github.com/user-attachments/assets/8ba75968-061b-4267-aa84-633edad18fce)
+
+![image](https://github.com/user-attachments/assets/c65bdf1b-cd90-4379-b4dd-28412c45f4f9)
+
+Remember to click '''Save``` when complete.
+
+![image](https://github.com/user-attachments/assets/f47f4621-9139-4dc0-9ef8-64a6f082a5a7)
+
+Be sure to keep this up-to-date as you subscribe, unsubscribe, and change preferences. This list is what determines which Stream Links you will get.
+
+4. Next, make sure the Channels URL is correct.
+
+![image](https://github.com/user-attachments/assets/92cd55ac-da0d-4c4e-b2ca-38c70ef267c0)
+
+During initialization, the name of the machine was chosen, however that may not be the case for you. Modify if necessary and click the ```Test``` button to confirm that <b>Stream Link Manager for Channels</b> can attach to Channels DVR.
+
+![image](https://github.com/user-attachments/assets/2168f959-b1af-4923-a049-9e6b746bf157)
+
+5. Similarly, in order for the program to work correctly, it needs to be pointed to your Channels DVR folder. During initialization, the folder was attempted to be found. If it could not be discovered, the directory you installed the program in was used.
+
+![image](https://github.com/user-attachments/assets/0298be2e-bc82-4d31-9d70-d5fb41aec790)
+
+You can navigate up the directory structure or manually type in a path to get where you want.
+
+![image](https://github.com/user-attachments/assets/a2375f58-bab8-43e5-b0b9-8229dd5c491e)
+
+When you get to where you want, use the '''Select``` button to set that directory.
+
+![image](https://github.com/user-attachments/assets/a5f97141-0c3f-453e-a6eb-4e269f87a1b9)
+
+Do note that you need to use the parent Channels DVR directory, not the ```Imports``` or anything similar. If you do not set this correctly or do not have access from the machine you installed <b>Stream Link Manager for Channels</b> on, then you will not be able to generate Stream Links that Channels DVR can see, nor be able to get updates from Channels DVR when programs are watched and deleted.
+
+6. Under ```Advanced / Experimental```, you will find some tools to manage the program and your results.
+
+![image](https://github.com/user-attachments/assets/ecffd3c9-5136-4d5d-91bd-22a5a3e2d7f8)
+
+```Convert Hulu to Disney+``` will take Streak Links for Hulu and make them Disney+ links instead. Note that by my own testing, around 85% of Hulu content is on Disney+, so you may end up with an invalid link. There are workarounds to this that will be discussed later.
+
+![image](https://github.com/user-attachments/assets/ee0c303d-d9c5-40b1-8108-bec8296b15c8)
+
+```Run 'Prune' function in Channels``` is on by default, which means that the program will initiate a delete in Channels DVR for any missing personal media, not just Stream Links. You may decide that you do not want this to run automatically.
+
+7. Finally, there is the ```Scheduler```.
+
+![image](https://github.com/user-attachments/assets/524ab628-705d-48af-8cc5-69e47373e166)
+
+In the ```End-to-End Process```, several steps are taken. These can all be seen and initiated manually in the ```Run Processes``` area.
+
+![image](https://github.com/user-attachments/assets/f9c5ecec-0fef-46f1-97f2-e7dc000ec575)
+
+These tasks are:
+
+* Do a backup
+* Update the Streaming Services for any new or removed providers
+* Check for new episodes of bookmarked shows
+* Import from Channels DVR any Movies and Episodes that have been watched and deleted, marking them as "watched" in <b>Stream Link Manager for Channels</b>
+* Find and assign valid Stream Links to bookmarked Movies and Episodes
+* In Channels DVR, initiate several steps to make new programs appear, deleted ones be removed, and updates ones have the correct links
+
+![image](https://github.com/user-attachments/assets/89958211-b692-4e94-82c0-b4a89282dfe7)
+
+While these can all be done manually, it is recommended to set a schedule to run automatically at some point during the day.
+
+![image](https://github.com/user-attachments/assets/698b0151-b64e-413c-89ac-00b2ca70550b)
+
+Note that this can take a significant amount of time, depending upon the number of Movies and Episodes that you have bookmarked. Also, the clock shown should match your system and locale settings. After a process is complete, you can see pertinent notifications in the ```Home``` area (newest on top), such as if there are changes to Streaming Services or new episodes were added.
+
+![image](https://github.com/user-attachments/assets/d3dea0dc-edf6-40eb-bd6c-0d573deafd1f)
+
+If you are looking for more detail as to what transpired, the ```Logs``` area contains more information.
+
+![image](https://github.com/user-attachments/assets/a5467c2e-8a06-4c3b-b9cc-c51250aa7908)
+
+Unlike the notifications and live process trackers, the log is in order of action.
+
+8. With this all in place, you can now navigate to ```Add Programs```.
+
+![image](https://github.com/user-attachments/assets/a17661c4-cb67-4e20-bf37-5401501bff8f)
+
+Here, you can search for a program you want to bookmark.
+
+![image](https://github.com/user-attachments/assets/08f4b452-5b81-45dd-ba8d-b83ffd6e71c8)
+
+Clicking on a Movie will get you something like this:
+
+![image](https://github.com/user-attachments/assets/e746b77a-0212-41a6-b4cf-3e029096b0d8)
+
+Notice that the ```Search``` and other line buttons are no longer available. You must finsih this process by selected ```Done``` or ```Generate Stream Links```. If you do not generate Stream Links at the time of creation, they will be created (if valid) during the next run of the process as detailed above. You may also want to put in a link of your own to override whatever may be generated, which you optionally have the ability to do. It is not required, so leave it blank if you do not want to put anything there.
+
+![image](https://github.com/user-attachments/assets/2205dad1-7010-4e49-bdda-24b0ebb23134)
+
+Once complete, you can search again. If we select a Show this time, it will have slightly different options:
+
+![image](https://github.com/user-attachments/assets/b90733ae-b34f-436a-9a62-cfba6e46f958)
+
+Per episode, you can uncheck to mark it as watched. Additionally, you have the same Stream Link Override option as a Movie, as well as the ability to put a prefix on the generated file. For instance, by default, a file name will be ```S01E01.strmlnk```. However, you want to designate that this is a subtitled episode and that dubbed episodes might become available in the future. For this, a prefix of ```(SUB)``` will result in a file name of ```(SUB) S01E01.strmlnk```.
+
+Sometimes when searching, you might not be able to find the Movie or Show you are looking for. While uncommon (see ```Troubleshooting / FAQ```), it may happen, especially for rare or foreign content. In these cases, you can always create a manual bookmark.
+
+![image](https://github.com/user-attachments/assets/c763e42f-8af8-4e0a-bad7-9e72caff7865)
+
+While Movies are relatively the same as with a search, Shows provide a different setup when clicking ```Add Manual```:
+
+![image](https://github.com/user-attachments/assets/a76be8f9-8ae1-412b-81b2-3414948ec1f5)
+
+![image](https://github.com/user-attachments/assets/ab08b780-1022-46df-83f6-59e5b8c8ba8e)
+
+Note that you will only be allowed to continue once you've correctly put in the number of seasons and episodes per season.
+
+![image](https://github.com/user-attachments/assets/e31c222c-326c-4f9a-9b17-93bd99fe55db)
+
+![image](https://github.com/user-attachments/assets/50bee683-6f8f-46de-8eb4-409d2165385d)
+
+Here you will see the episodes created as designed by the user. It should be highlighted that manual entries require a Stream Link Override to be entered, otherwise they will not generate a Stream Link file.
+
+9. Even if a Movie or Show is added through search or manual selection, that does not mean they are set in stone. You can use the ```Modify Programs``` area to make any update as desired.
+
+![image](https://github.com/user-attachments/assets/a0a4e244-0288-48f8-9a81-26705e034665)
+
+For instance, here is a Show that was created using search, but the search will only link to the subtitled episodes. In order to get dubbed episodes, a number of inputs are needed:
+
+![image](https://github.com/user-attachments/assets/189cc7e6-15f8-4611-907a-e6c42755efe1)
+
+While you can delete an episode, if it is a searched bookmark and not a manual one, the episode will just get re-added as "unwatched". Aside from deleting episodes, there is also the ability to add additional episodes:
+
+![image](https://github.com/user-attachments/assets/3797fb27-4249-42db-b099-78e6332a91e4)
+
+This is also a good area just to check on the status of Movies and Shows.
+
+![image](https://github.com/user-attachments/assets/a0d572d4-3fa9-497d-b72b-ec871eb534ed)
+
+Moview are faily similar to Shows in the options, including updating the Title and Release Year itself if the data is incorrect or not how you want it.
+
+![image](https://github.com/user-attachments/assets/5512fe0c-d5ce-44be-ba16-313c31434314)
+
+10. Aside from these functions, there is not much else a user needs to do. [MORE HERE]
+
+---
 # Troubleshooting / FAQ
 ### My Streaming Service is missing
 First, make sure you have selected the correct country code and saved. If that is already done, please make a request for the missing service by filling out [this form](https://forms.gle/APyd1t8qs3nhpKRy9).
