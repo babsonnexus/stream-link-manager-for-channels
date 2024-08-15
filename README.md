@@ -13,12 +13,33 @@ Enter <b>Stream Link Manager for Channels</b>!
 | EMBEDDED VIDEO COMING SOON |
 
 # Installation
-There are several methods to install <b>Stream Link Manager for Channels</b> and only one should be followed. Docker is the preferred route for those who have it as it has the most controlled path. Channels DVR users who have installed [OliveTin for Channels](https://community.getchannels.com/t/37609) and [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process.
+There are several methods to install <b>Stream Link Manager for Channels</b> and only one should be followed. Docker is the preferred route for those who have it as it has the most controlled path. Channels DVR users who have installed [OliveTin for Channels](https://community.getchannels.com/t/37609) and [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process. If you are unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are a Windows user, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591).
 
 As a general note, it does not matter "where" <b>Stream Link Manager for Channels</b> is installed; it could even be placed in the Channels DVR directory. The only requirements are that it must be on a machine and in a location that has directory access to the Channels DVR directory and be able to see the Channels DVR Administrative webpage.
 
 ## Docker
+If you are not using <i>OliveTin/Project One-Click</i>, it is recommended to install via stack using [Portainer](https://www.portainer.io/) ([Docker Desktop](https://open.docker.com/extensions/marketplace?extensionId=portainer/portainer-docker-extension) | [Docker Standalone](https://docs.portainer.io/start/install-ce/server/docker)). Otherwise, you can use the single command line method as shown below.
+
+### Stack
+```
 | COMING SOON |
+```
+
+### Command Line (Most Cases)
+```
+docker run -d --restart=unless-stopped --name slm -p [YOUR_PORT_HERE]:5000 [COMING SOON]:latest
+```
+
+### Command Line (Mostly Linux Cases)
+```
+docker run -d --restart=unless-stopped --name slm --network=host -e PLEX_PORT=[YOUR_PORT_HERE] [COMING SOON]:latest
+```
+
+The default port is 5000, so enter that number if you want to go with it, otherwise use your own preferred value like 7900. It will look something like this:
+```
+docker run -d --restart=unless-stopped --name slm -p 7900:5000 [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm --network=host -e PLEX_PORT=7900 [COMING SOON]:latest
+```
 
 ## Windows
 1. Download the ```slm.bat``` file and place it in the final destination folder.
