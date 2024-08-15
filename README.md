@@ -124,11 +124,11 @@ slm.bat startup
 
 2. You may get a pop-up asking for permissions. Agree and continue until the process completes and you see something like this:
 
-![image](https://github.com/user-attachments/assets/bf1fee02-bdf0-407e-a625-2b771915e3b0)
+![image](https://github.com/user-attachments/assets/53d24b29-8701-4cb1-96e5-9c7f93c48d73)
 
 3. If you open ```Task Scheduler```, you should now see a task called "Stream Link Manager for Channels":
 
-![image](https://github.com/user-attachments/assets/d2642b2d-d476-4678-af83-d7da3df09dbb)
+![image](https://github.com/user-attachments/assets/9e4662df-9329-4f5e-a4b8-0dcb73993c69)
 
 4. The next time you reboot, <b>Stream Link Manager for Channels</b> will automatically start. Similarly, you can manually start it by either...
    
