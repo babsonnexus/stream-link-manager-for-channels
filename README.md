@@ -95,6 +95,12 @@ If using PowerShell, type in:
 echo %SLM_PORT%
 ```
 
+If using PowerShell, type in:
+
+```
+$env:SLM_PORT
+```
+
 10. You should see something similar to this:
 
 ![image](https://github.com/user-attachments/assets/18fdab7d-9f11-4890-ad69-9fbe56424601)
