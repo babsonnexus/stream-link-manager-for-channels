@@ -51,6 +51,12 @@ docker run -d --restart=unless-stopped --name slm --network=host -e PLEX_PORT=79
 slm.bat install
 ```
 
+If using PowerShell, type in:
+
+```
+.\slm.bat install
+```
+
 3. You will be given one last chance to decide if you want to do the installation. Note that an installation will remove any previous instance of <b>Stream Link Manager for Channels</b> at that location. This is unlike the "upgrade" below which will maintain all your files and settings.
 
 ![image](https://github.com/user-attachments/assets/a93612b4-2159-47ae-8ccb-d959078bea8b)
@@ -67,6 +73,12 @@ slm.bat install
 
 ```
 slm.bat port
+```
+
+If using PowerShell, type in:
+
+```
+.\slm.bat port
 ```
 
 7. You will be prompted to enter a port number of your choice:
@@ -119,6 +131,12 @@ This is the most important directory as it contains all the settings, bookmarks,
 slm.bat upgrade
 ```
 
+If using PowerShell, type in:
+
+```
+.\slm.bat upgrade
+```
+
 2. You may get a pop-up asking for permissions. Agree and continue until the process completes and you see something like this:
 
 ![image](https://github.com/user-attachments/assets/a4196964-74c4-453a-b4e8-ecb54f37ce98)
@@ -143,6 +161,12 @@ Since <b>Stream Link Manager for Channels</b> is designed to run as a service th
 
 ```
 slm.bat startup
+```
+
+If using PowerShell, type in:
+
+```
+.\slm.bat startup
 ```
 
 2. You may get a pop-up asking for permissions. Agree and continue until the process completes and you see something like this:
