@@ -103,7 +103,7 @@ $env:SLM_PORT
 
 10. You should see something similar to this:
 
-![image](https://github.com/user-attachments/assets/18fdab7d-9f11-4890-ad69-9fbe56424601)
+![image](https://github.com/user-attachments/assets/18fdab7d-9f11-4890-ad69-9fbe56424601)   ![image](https://github.com/user-attachments/assets/96c67fdf-4e89-4e55-b0ea-c48ead8bee48)
 
 11. With all this in place, you are now safe to start the program!
 
