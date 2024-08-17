@@ -416,6 +416,9 @@ Note that JustWatch is responsible for the availability of Streaming Services an
 ### The data or links for my program are wrong
 JustWatch is the provider for all of the information. If there are any issues, please let them know at feedback@justwatch.com. It is unlikely that they will make an update in a timely manner as they are also dependent upon upstream data, so please take advantage of the manual and override capabilities built into the program.
 
+### I'm able to bookmark a Movie or Show and I know its on a streaming service I've selected, but a Stream Link still won't generate
+Go to the JustWatch website and search for it on there. A Movie or Show might be available, but still be missing links to the appropriate streaming service. If it is brand new, it might also take a day or two until they update their data, which is what <b>Stream Link Manager for Channels</b> uses. Should the links be missing on JustWatch, submit a request to feedback@justwatch.com. If you can confirm JustWatch has a working link on there and it still won't show up in this program, please submit an issue request with as much detail as possible. There may be an edge case for how that particular Movie or Show is stored on JustWatch that this software has not accounted for.
+
 ### Why do some things play the correct movie/episode automatically and why do other go to a generic landing page for that movie/show?
 There are two components that relate to this. First is the quality of the links provided by JustWatch. For instance, with Disney+, JustWatch only has links to generic landing pages and does not have individual episode information like it has for Hulu. There is nothing that can be done aside from requesting that JustWatch updates their data.
 
