@@ -12,6 +12,8 @@ Enter <b>Stream Link Manager for Channels</b>!
 
 | EMBEDDED VIDEO COMING SOON |
 
+<b>NOTE:</b> Some of the visuals seen in the video and in the screen shots below may be out of date as updates to format and functionality have been applied to the program.
+
 ---
 # Installation
 There are several methods to install <b>Stream Link Manager for Channels</b> and only one should be followed. Docker is the preferred route for those who have it as it has the most controlled path. Channels DVR users who have installed [OliveTin for Channels](https://community.getchannels.com/t/37609) and [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process. If you are unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are a Windows user, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591).
