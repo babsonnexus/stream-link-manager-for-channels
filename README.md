@@ -111,7 +111,35 @@ $env:SLM_PORT
 | COMING SOON |
 
 ## Python
-| COMING SOON |
+Using Python directly is not recommended, however it is available as an option. As this is highly technical, only limited support is provided. It is expected that you are fairly familiar with [Python](https://www.python.org/downloads/) and have [pip](https://pip.pypa.io/en/stable/installation/) installed.
+
+1. Download the ```slm_python.zip``` file and place it in the final destination folder.
+   
+2. Navigate to that directory and extract the contents. Make sure you have not created another subdirectory. When complete, remove the ```slm_python.zip```. It should now look something like this:
+
+![image](https://github.com/user-attachments/assets/8aa83dc3-c7cc-4b0f-b96c-b0046c85748d)
+
+3. Open a command prompt and navigate to the folder that you created. Type in the following command:
+
+```
+pip install -r requirements.txt
+```
+
+4. OPTIONAL: It is possible to generate an executable from the Python file directly. The only caveat is that in order to make one that works for that system type (say MacOS) your actions have to be run on that type of system. That means if you want to create an executable for an unsupported system type, you can do so with the following command:
+
+```
+pyinstaller --noconfirm --onedir --console --add-data "requirements.txt;." --add-data "static;static/" --add-data "templates;templates/"  "slm.py"
+```
+
+5. You will end up with some additional folders and files:
+   
+![image](https://github.com/user-attachments/assets/52f2ada4-a816-4bc8-9820-e0c7451caa80)
+
+* You are free to remove ```build``` and ```slm.spec```.
+* ```dist``` contains the entire executable program. You can leave it in its current location, rename it, and/or move it somewhere else.
+* With that, you no longer need the original content that was unzipped and you can delete it if you want.
+
+6. OPTIONAL: You can change the port for <b>Stream Link Manager for Channels</b> by creating a permanent Environment Variable called ```SLM_PORT``` (case sensitive) and giving it a value of the port you want to use. If you don't, the program will run on port 5000.
 
 ---
 # Upgrade
@@ -153,7 +181,17 @@ If using PowerShell, type in:
 | COMING SOON |
 
 ## Python
-| COMING SOON |
+1. Make sure <b>Stream Link Manager for Channels</b> is closed and is not running in the background.
+
+2. Copy the ```program_files``` directory under ```_internal``` to a safe location.
+
+3. Completely delete <i>all</i> the files and subfolders.
+
+4. Follow the directions for installation and replace the entire file content that were deleted in the prior step. If you have built an executable, you will have to redo those steps, as well.
+   
+5. Move the ```program_files``` directory you saved earlier back under the ```_internal``` directory.
+
+6. Restart the program and everything should work the same as before.
 
 ---
 # Startup
@@ -197,7 +235,31 @@ If using PowerShell, type in:
 | COMING SOON |
 
 ## Python
-| COMING SOON |
+You have the option for how you want to handle this. Since <b>Stream Link Manager for Channels</b> is designed to be a background service, just running the program like this...
+
+```
+python slm.py
+```
+
+... or with the executable you generated will result in a window sitting there like this:
+
+![image](https://github.com/user-attachments/assets/fb277770-52dc-4ddf-b554-48e6e534041d)
+
+If that does not bother you, you should be fine. However, it is recommended to build an automation script that will start the process in the background and make it start upon login/bootup. For instance, if you wanted to do this in MacOS, you would:
+
+1. Make a new file called ```slm.app``` in the directory you created earlier, open it in Script Editor, and enter the following AppleScript code:
+
+```
+do shell script "nohup /usr/local/bin/python3 /[YOUR_SLM_DIRECTORY]/slm.py &> /dev/null &"
+```
+
+Replace ```[YOUR_SLM_DIRECTORY]``` with the path you created earlier and save the file.
+
+2. Set the ```slm.app``` to run at startup:
+
+* Open ```System Preferences``` > ```Users & Groups```.
+* Select your user account and go to the ```Login Items``` tab.
+* Click the ```+``` button and add the ```slm.app``` you created.
 
 ## All
 
