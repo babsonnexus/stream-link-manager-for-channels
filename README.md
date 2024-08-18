@@ -83,13 +83,21 @@ If using PowerShell, type in:
 .\slm.bat port
 ```
 
+Note that this will also open the port in the Windows firewall as a safety measure. Even if you want the default port of 5000, this is recommended to be run if you want to access the program on another machine.
+
 7. You will be prompted to enter a port number of your choice:
 
-![image](https://github.com/user-attachments/assets/b36a3b06-7ba9-4008-a5ac-8c86471bc185)
+![image](https://github.com/user-attachments/assets/03d1deea-5466-487f-ab8e-5e9d10a5b703)
 
-8. You can also see this port as an environment variable (where it can be removed, if necessary).
+During the process, you may receive a popup asking for permission to run. Accept and continue.
+
+8. Once complete, you can see this port as an environment variable (where it can be removed, if necessary).
 
 ![image](https://github.com/user-attachments/assets/36a4ba44-c30f-437e-9880-b779751e7a96)
+
+Additionally, in the Windows Firewall rules:
+
+![image](https://github.com/user-attachments/assets/00175939-5e8b-45c6-b744-431be3f98f4b)
 
 9. Follow the directions on the screen of closing the current ```Command Prompt``` and opening a new one. In the new ```Command Prompt```, you can confirm that that the port variable is being read correctly by typing:
 
@@ -141,7 +149,7 @@ pyinstaller --noconfirm --onedir --console --add-data "requirements.txt;." --add
 * ```dist``` contains the entire executable program. You can leave it in its current location, rename it, and/or move it somewhere else.
 * With that, you no longer need the original content that was unzipped and you can delete it if you want.
 
-6. OPTIONAL: You can change the port for <b>Stream Link Manager for Channels</b> by creating a permanent Environment Variable called ```SLM_PORT``` (case sensitive) and giving it a value of the port you want to use. If you don't, the program will run on port 5000.
+6. OPTIONAL: You can change the port for <b>Stream Link Manager for Channels</b> by creating a permanent Environment Variable called ```SLM_PORT``` (case sensitive) and giving it a value of the port you want to use. If you don't, the program will run on port 5000. You may also need to open the port up to bypass firewalls or other such settings.
 
 ---
 # Upgrade
@@ -287,7 +295,7 @@ Example Mapped...
 https://localhost:7900
 ```
 
-If you are on a different machine than where <b>Stream Link Manager for Channels</b> is installed, you will need to use the name or IP Address of that machine and make sure the port is open to be accessed.
+If you are on a different machine than where <b>Stream Link Manager for Channels</b> is installed, you will need to use the name or IP Address of that machine and make sure the port is open (as discussed in the installation directions) to be accessed.
 
 3. Once at the location, you should see the homepage:
 
