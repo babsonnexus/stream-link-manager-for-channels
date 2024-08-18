@@ -118,7 +118,67 @@ $env:SLM_PORT
 11. With all this in place, you are now safe to start the program!
 
 ## Linux
-| COMING SOON |
+1. Download the ```slm.sh``` file and place it in the final destination folder. You can also do so by opening a ```Command Prompt```, navigating to that directory, and entering the following command:
+
+```
+wget -q -O "slm.sh" 'https://[LINK_COMING_SOON]'
+```
+   
+2. Either way, once there, change the security level on the ```slm.sh``` file:
+
+```
+chmod +x "slm.sh"
+```
+
+3. Execute the installation with this command:
+
+```
+./slm.sh install
+```
+
+4. You will be given one last chance to decide if you want to do the installation. Note that an installation will remove any previous instance of <b>Stream Link Manager for Channels</b> at that location. This is unlike the "upgrade" below which will maintain all your files and settings.
+
+![image](https://github.com/user-attachments/assets/53160f56-0c47-4b07-be7b-dfc9bd4cfd03)
+
+5. The process will then run normally until complete. You should see something similar to this when done:
+
+![image](https://github.com/user-attachments/assets/964fe66b-ff01-485d-8751-5797945082d8)
+
+... a whole lot of lines related to installing requirements and building the executable...
+
+![image](https://github.com/user-attachments/assets/0d3d5f52-cb55-45de-917e-ec0618c81f58)
+
+6. In your folder, you should now have this:
+
+![image](https://github.com/user-attachments/assets/9b3e34e1-7da2-4001-866e-292df7bf52ae)
+
+7. OPTIONAL: By default, <b>Stream Link Manager for Channels</b> runs on port 5000. You can change this to another port by typing in this command:
+
+```
+./slm.sh port
+```
+
+Note that this will also open the port in the firewall as a safety measure. Even if you want the default port of 5000, this is recommended to be run if you want to access the program on another machine.
+
+8. You will be prompted to enter a port number of your choice:
+
+![image](https://github.com/user-attachments/assets/9c5c2fda-45c2-4435-84ec-aa376e46cce3)
+
+9. Once complete, do the requested command to make the port available in the current session:
+
+```
+source ~/.bashrc
+```
+   
+10. You can the see this port as an environment variable (where it can be removed, if necessary):
+
+```
+printenv SLM_PORT
+```
+
+![image](https://github.com/user-attachments/assets/4dc5af1b-44f8-483e-8eb2-75d8272896ef)
+
+11. With all this in place, you are now safe to start the program!
 
 ## Python
 Using Python directly is not recommended, however it is available as an option. As this is highly technical, only limited support is provided. It is expected that you are fairly familiar with [Python](https://www.python.org/downloads/) and have [pip](https://pip.pypa.io/en/stable/installation/) installed.
@@ -139,6 +199,18 @@ pip install -r requirements.txt
 
 ```
 pyinstaller --noconfirm --onedir --console --add-data "requirements.txt;." --add-data "static;static/" --add-data "templates;templates/"  "slm.py"
+```
+
+Or...
+
+```
+pyinstaller --noconfirm --onedir --console --add-data "requirements.txt:." --add-data "static:static/" --add-data "templates:templates/"  "slm.py"
+```
+
+Or...
+
+```
+pyinstaller --noconfirm --onedir --console --add-data="requirements.txt:." --add-data="static:static/" --add-data="templates:templates/"  "slm.py"
 ```
 
 5. You will end up with some additional folders and files:
