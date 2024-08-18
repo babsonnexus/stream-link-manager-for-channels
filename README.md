@@ -87,7 +87,7 @@ Note that this will also open the port in the Windows firewall as a safety measu
 
 7. You will be prompted to enter a port number of your choice:
 
-![image](https://github.com/user-attachments/assets/03d1deea-5466-487f-ab8e-5e9d10a5b703)
+![image](https://github.com/user-attachments/assets/8a5f10dc-4ddb-4eb1-a8c5-20be498dc3a1)
 
 During the process, you may receive a popup asking for permission to run. Accept and continue.
 
