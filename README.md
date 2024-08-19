@@ -29,19 +29,21 @@ version: '3.9'
 
 services:
   web:
-#    image: [COMING SOON]
+    image: [COMING SOON]
     container_name: slm
     build: .
     ports:
       - "${SLM_PORT:-5000}:5000"
-    environment:
-      - SLM_PORT=${SLM_PORT:-5000}
     volumes:
       - slm_files:/app/program_files
 
 volumes:
   slm_files:
 ```
+
+Be sure to create a variable called ```SLM_PORT``` with a value of the port you want if you desire to run this on a port outside the default of 5000:
+
+![image](https://github.com/user-attachments/assets/84e97ab4-2dee-47f9-af79-b43912a7e6a6)
 
 ### Command Line (Most Cases)
 ```
