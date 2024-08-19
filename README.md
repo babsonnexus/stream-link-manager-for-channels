@@ -118,7 +118,7 @@ $env:SLM_PORT
 11. With all this in place, you are now safe to start the program!
 
 ## Linux
-1. Download the ```slm.sh``` file and place it in the final destination folder. You can also do so by opening a ```Command Prompt```, navigating to that directory, and entering the following command:
+1. Download the ```slm.sh``` file and place it in the final destination folder. You can also do so by opening a terminal, navigating to that directory, and entering the following command:
 
 ```
 wget -q -O "slm.sh" 'https://[LINK_COMING_SOON]'
@@ -170,7 +170,7 @@ Note that this will also open the port in the firewall as a safety measure. Even
 source ~/.bashrc
 ```
    
-10. You can the see this port as an environment variable (where it can be removed, if necessary):
+10. You can then see this port as an environment variable (where it can be removed, if necessary):
 
 ```
 printenv SLM_PORT
@@ -260,7 +260,21 @@ If using PowerShell, type in:
 3. The most important thing is that ```slm.exe``` was terminated or not running, allowing the upgrade to take place. After the upgrade, you will need to restart the program manually or with a reboot. See <b>Startup</b> below.
 
 ## Linux
-| COMING SOON |
+1. In a terminal, navigate to your <b>Stream Link Manager for Channels</b> directory and type in the following command:
+
+```
+./slm.sh upgrade
+```
+
+2. As the process runs, you should see something like this:
+
+![image](https://github.com/user-attachments/assets/0338a0be-d516-43df-9132-cbd9047269de)
+
+... a whole lot of lines related to installing requirements and building the executable...
+
+![image](https://github.com/user-attachments/assets/2c036863-41ad-46bb-b236-96d68787a003)
+
+3. The most important thing is that ```/slm.sh``` was terminated or not running, allowing the upgrade to take place. After the upgrade, you will need to restart the program manually or with a reboot. See <b>Startup</b> below.
 
 ## Python
 1. Make sure <b>Stream Link Manager for Channels</b> is closed and is not running in the background.
@@ -314,7 +328,49 @@ If using PowerShell, type in:
 ![image](https://github.com/user-attachments/assets/de995caf-d7fc-4d82-b428-a2b1592d0629)
 
 ## Linux
-| COMING SOON |
+1. In a terminal, navigate to your <b>Stream Link Manager for Channels</b> directory and type in the following command:
+
+```
+./slm.sh startup
+```
+
+2. As the process completes, you will see something like this:
+
+![image](https://github.com/user-attachments/assets/288223eb-1f16-4617-8ca4-e0b73f2e4e42)
+
+3. To check if the task is scheduled to run at startup, enter:
+
+```
+ls /etc/init.d               # For Debian/Ubuntu/Mint
+ls /etc/systemd/system       # For RedHat/CentOS/Fedora/Arch/Manjaro/OpenSUSE
+ls /usr/local/etc/rc.d       # For Synology
+```
+
+You should see a file named ```slm_startup.sh```:
+
+![image](https://github.com/user-attachments/assets/0518f462-d077-427d-94d1-8e94600686c3)
+
+4. The next time you reboot, <b>Stream Link Manager for Channels</b> will automatically start. Similarly, you can manually start it by entering:
+   
+```
+./slm.sh
+```
+
+5. It may look like nothing has happened, but if you type in this command:
+
+```
+ps aux
+```
+
+You should see ```./slm``` running in the background. If you want to only look for that process, type:
+
+```
+ps aux | grep [s]lm
+```
+
+In either case, you should see something similar to this:
+
+![image](https://github.com/user-attachments/assets/3428ac17-5e1e-4ac2-a9d2-6ff82ff601c8)
 
 ## Python
 You have the option for how you want to handle this. Since <b>Stream Link Manager for Channels</b> is designed to be a background service, just running the program like this...
