@@ -93,7 +93,7 @@ During the process, you may receive a popup asking for permission to run. Accept
 
 8. Once complete, you can see this port as an environment variable (where it can be removed, if necessary).
 
-![image](https://github.com/user-attachments/assets/36a4ba44-c30f-437e-9880-b779751e7a96)
+![image](https://github.com/user-attachments/assets/13fb0dc4-a547-4ab9-9c63-83cdb68f6970)
 
 Additionally, in the Windows Firewall rules:
 
