@@ -345,11 +345,11 @@ Replace ```[YOUR_SLM_DIRECTORY]``` with the path you created earlier and save th
 
 ## All
 
-1. The first time you start <b>Stream Link Manager for Channels</b>, it may take a couple of minutes before it is available. This is due to it running many activities during initial setup that are not repeated. In later startups, it should be around 30 seconds depending upon system performance and internet speeds. If you watch the logs or are in an interactive window, you may see something like this:
+1. The first time you start <b>Stream Link Manager for Channels</b>, it may take a couple of minutes before it is available. This is due to it running many activities during initial setup that are not repeated. In later startups, it should be just a few seconds depending upon system performance and internet speeds. If you watch the logs or are in an interactive window, you may see something like this:
 
-![image](https://github.com/user-attachments/assets/5568cf07-742e-420e-847d-1bf24eb9d5bf)
+![image](https://github.com/user-attachments/assets/d0c7222c-f78d-4ae0-b0e9-6afb04831aa3)
 
-Do not worry if you do not respond to any prompt; there are automatic timeouts that will move the process along and you can make adjustments in the ```Settings``` later.
+Do not worry if you do not respond to any prompt or the searches fail; there are automatic timeouts that will move the process along and you can make adjustments in the ```Settings``` later.
 
 2. With the startup complete, you can navigate to the webpage:
 
@@ -367,7 +367,7 @@ Example Mapped...
 https://localhost:7900
 ```
 
-If you are on a different machine than where <b>Stream Link Manager for Channels</b> is installed, you will need to use the name or IP Address of that machine and make sure the port is open (as discussed in the installation directions) to be accessed.
+If you are on a different machine than where <b>Stream Link Manager for Channels</b> is installed, you will need to use the name or IP Address of that machine in place of ```localhost``` and make sure the port is open (as discussed in the installation directions) to be accessed.
 
 3. Once at the location, you should see the homepage:
 
@@ -391,15 +391,17 @@ Aside from the visuals, everything will function exactly the same.
 
 ![image](https://github.com/user-attachments/assets/e981d21f-36f7-4136-9686-d1166949675c)
    
-2. Before doing anything, you must set your country correctly. This determines which streaming services are available to you:
+2. Before doing anything, you must set your country correctly (if it was not found or set incorrectly during initialization). This determines which streaming services are available to you:
 
 ![image](https://github.com/user-attachments/assets/61c98f07-8f22-457d-b830-2b80b1c2a5b3)
 
 Note for instance the difference between a US and GB list:
 
-![image](https://github.com/user-attachments/assets/46a30da8-a02d-4ecd-8777-dc0c056dd7fe) ![image](https://github.com/user-attachments/assets/673f17fc-daa6-457a-b937-620f210eba56)
+![image](https://github.com/user-attachments/assets/46a30da8-a02d-4ecd-8777-dc0c056dd7fe)
 
-Click ```Save``` after you have selected your country, preferred language, and default number of programs to come up when you search. Please be advised that only certain country/language combinations are valid.
+![image](https://github.com/user-attachments/assets/673f17fc-daa6-457a-b937-620f210eba56)
+
+Click ```Save``` after you have selected your country, preferred language, and default number of programs to come up when you search. Please be advised that only certain country/language combinations are valid. A non-exhaustive list is available [here](https://apis.justwatch.com/docs/api/#locales).
 
 ![image](https://github.com/user-attachments/assets/0e02c967-6a20-4718-a4be-8b0cf0e26338)
 
