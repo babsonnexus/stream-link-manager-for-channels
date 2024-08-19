@@ -25,23 +25,38 @@ If you are not using <i>OliveTin/Project One-Click</i>, it is recommended to ins
 
 ### Stack
 ```
-| COMING SOON |
+version: '3.9'
+
+services:
+  web:
+#    image: [COMING SOON]
+    container_name: slm
+    build: .
+    ports:
+      - "${SLM_PORT:-5000}:5000"
+    environment:
+      - SLM_PORT=${SLM_PORT:-5000}
+    volumes:
+      - slm_files:/app/program_files
+
+volumes:
+  slm_files:
 ```
 
 ### Command Line (Most Cases)
 ```
-docker run -d --restart=unless-stopped --name slm -p [YOUR_PORT_HERE]:5000 -v slm_data:/[TBD] [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm -p [YOUR_PORT_HERE]:5000 -v slm_files:/app/program_files [COMING SOON]:latest
 ```
 
 ### Command Line (Mostly Linux Cases)
 ```
-docker run -d --restart=unless-stopped --name slm --network=host -e PLEX_PORT=[YOUR_PORT_HERE] -v slm_data:/[TBD] [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=[YOUR_PORT_HERE] -v slm_files:/app/program_files [COMING SOON]:latest
 ```
 
 The default port is 5000, so enter that number if you want to go with that, otherwise use your own preferred value like 7900. It will look something like this:
 ```
-docker run -d --restart=unless-stopped --name slm -p 7900:5000 -v slm_data:/[TBD] [COMING SOON]:latest
-docker run -d --restart=unless-stopped --name slm --network=host -e PLEX_PORT=7900 -v slm_data:/[TBD] [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm -p 7900:5000 -v slm_files:/app/program_files [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=7900 -v slm_files:/app/program_files [COMING SOON]:latest
 ```
 
 ## Windows
@@ -238,7 +253,17 @@ During an upgrade, the ```program_files``` directory is protected.
 This is the most important directory as it contains all the settings, bookmarks, logs, backups, and other crucial information. As a best-practice, you may want to make a manual backup of this folder in case anything goes wrong during an upgrade. With this directory, even a fresh install can be restored with your details.
 
 ## Docker
-| COMING SOON |
+1. Repull the Image and rebuild the Container. The ```program_files``` will be protected, so there should be no concerns about losing your settings and critical files.
+
+If you are using ```Portainer```, you can use the ```Recreate``` button:
+
+![image](https://github.com/user-attachments/assets/f16eccd8-2539-4678-80c8-22c1e4bbf94e)
+
+When the option comes up, make sure "Re-pull image" is selected.
+
+![1fa26d390178259e861b4788a7b731aab16bd0cc](https://github.com/user-attachments/assets/eb8ae961-3fa0-4902-9031-43b5d44b8077)
+
+It then rebuilds the Image and the Container with all the original command lines. Remember to delete the old, unused Image afterwards.
 
 ## Windows
 1. In ```Command Prompt```, navigate to your <b>Stream Link Manager for Channels</b> directory and type in the following command:
@@ -406,6 +431,8 @@ Replace ```[YOUR_SLM_DIRECTORY]``` with the path you created earlier and save th
 ![image](https://github.com/user-attachments/assets/d0c7222c-f78d-4ae0-b0e9-6afb04831aa3)
 
 Do not worry if you do not respond to any prompt or the searches fail; there are automatic timeouts that will move the process along and you can make adjustments in the ```Settings``` later.
+
+Also, if you are using Docker, you may still see it says it starts on port 5000. Do not worry about this as it is being mapped correctly.
 
 2. With the startup complete, you can navigate to the webpage:
 
