@@ -36,6 +36,10 @@ services:
       - "${SLM_PORT:-5000}:5000"
     volumes:
       - slm_files:/app/program_files
+      - type: bind
+        source: "${CHANNELS_FOLDER}"
+        target: /app/channels_folder
+    restart: unless-stopped
 
 volumes:
   slm_files:
