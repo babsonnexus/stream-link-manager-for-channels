@@ -16,53 +16,60 @@ Enter <b>Stream Link Manager for Channels</b>!
 
 ---
 # Installation
-There are several methods to install <b>Stream Link Manager for Channels</b> and only one should be followed. Docker is the preferred route for those who have it as it has the most controlled path. Channels DVR users who have installed [OliveTin for Channels](https://community.getchannels.com/t/37609) and [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process. If you are unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are a Windows user, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591).
+There are several methods to install <b>Stream Link Manager for Channels</b> and only one should be followed. While Docker is the preferred route for those who have it as it is the most controlled path, if you are not comfortable with Docker or are having issues, you can do a straight self-deployment in Windows or Linux, or use Python in any OS type. For those unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are installing Docker in Windows, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591). Channels DVR users who have deployed [OliveTin for Channels](https://community.getchannels.com/t/37609) and/or [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process.
 
 As a general note, it does not matter "where" <b>Stream Link Manager for Channels</b> is installed; it could even be placed in the Channels DVR directory. The only requirements are that it must be on a machine and in a location that has directory access to the Channels DVR directory and be able to see the Channels DVR Administrative webpage.
 
 ## Docker
-If you are not using <i>OliveTin/Project One-Click</i>, it is recommended to install via stack using [Portainer](https://www.portainer.io/) ([Docker Desktop](https://open.docker.com/extensions/marketplace?extensionId=portainer/portainer-docker-extension) | [Docker Standalone](https://docs.portainer.io/start/install-ce/server/docker)). Otherwise, you can use the single command line method as shown below.
+If you are not using <i>OliveTin/Project One-Click</i>, it is recommended to install via Stack using [Portainer](https://www.portainer.io/) ([Docker Desktop](https://open.docker.com/extensions/marketplace?extensionId=portainer/portainer-docker-extension) | [Docker Standalone](https://docs.portainer.io/start/install-ce/server/docker)). Otherwise, you can use the single command line method as shown below.
 
-### Stack
+### Stack (Docker Compose)
 ```
 version: '3.9'
 
 services:
-  web:
-    image: [COMING SOON]
+  slm:
+    image: COMING_SOON:${TAG:-latest}
     container_name: slm
-    build: .
     ports:
       - "${SLM_PORT:-5000}:5000"
     volumes:
       - slm_files:/app/program_files
-      - type: bind
-        source: "${CHANNELS_FOLDER}"
-        target: /app/channels_folder
+      - ${CHANNELS_FOLDER}:/app/channels_folder
+    environment:
+      - TZ=${TIMEZONE:-UTC}
     restart: unless-stopped
 
 volumes:
   slm_files:
 ```
 
-Be sure to create a variable called ```SLM_PORT``` with a value of the port you want if you desire to run this on a port outside the default of 5000:
+Environment variables are included, some required, some optional.
 
-![image](https://github.com/user-attachments/assets/84e97ab4-2dee-47f9-af79-b43912a7e6a6)
+![image](https://github.com/user-attachments/assets/fafa4c3f-23b8-4830-8830-7b4c08a6f71c)
 
-### Command Line (Most Cases)
+* <b>TAG</b> | OPTIONAL | Which version of the program you want. The default is "latest" if you do not add.
+* <b>SLM_PORT</b> | OPTIONAL | The port you want to access the program from in the web browser. The default is "5000" if you do not add.
+* <b>CHANNELS_FOLDER</b> | REQUIRED | The path to your Channels DVR parent directory (see details in <i>Startup</i> below). Note that spaces are fine and you do not have to enclose the path in quotes. In Windows, your slashes should go the opposite of the normal way, i.e., ```C:/Files/Media/Channels DVR```. You could optionally put in any parent path, so long as the Channels DVR path is accessible somewhere inside.
+* <b>TIMEZONE</b> | OPTIONAL | The timezone you want to use. To know what to input, go [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), find your timezone, make sure it is a "Canonical" Type, and use the "TZ identifier". The default is "UTC" if you do not add. Please keep this in mind when using the scheduler function.
+
+### Command Line
+Follow the directions above for <b>SLM_PORT</b> in place of ```[YOUR_PORT_HERE]``` (except now it is REQUIRED), <b>CHANNELS_FOLDER</b> in place of ```[PATH_TO_CHANNELS_FOLDER]```, and <b>TIMEZONE</b> in place of ```[TIMEZONE]```. Do not leave the ```[``` and ```]``` when putting in your values.
+
+#### Most Cases
 ```
-docker run -d --restart=unless-stopped --name slm -p [YOUR_PORT_HERE]:5000 -v slm_files:/app/program_files [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm -p [YOUR_PORT_HERE]:5000 -v slm_files:/app/program_files -v "[PATH_TO_CHANNELS_FOLDER]":/app/channels_folder -e TZ="[TIMEZONE]" [COMING_SOON]:latest
 ```
 
-### Command Line (Mostly Linux Cases)
+#### Some Linux Cases
 ```
-docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=[YOUR_PORT_HERE] -v slm_files:/app/program_files [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=[YOUR_PORT_HERE] -v slm_files:/app/program_files -v "[PATH_TO_CHANNELS_FOLDER]":/app/channels_folder -e TZ="[TIMEZONE]" [COMING_SOON]:latest
 ```
 
-The default port is 5000, so enter that number if you want to go with that, otherwise use your own preferred value like 7900. It will look something like this:
+#### Examples
 ```
-docker run -d --restart=unless-stopped --name slm -p 7900:5000 -v slm_files:/app/program_files [COMING SOON]:latest
-docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=7900 -v slm_files:/app/program_files [COMING SOON]:latest
+docker run -d --restart=unless-stopped --name slm -p 7900:5000 -v slm_files:/app/program_files -v "C:/Files/Media/Channels DVR":/app/channels_folder -e TZ="America/New_York" [COMING_SOON]:latest
+docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=7900 -v slm_files:/app/program_files -v "/somewhere/channels_dvr":/app/channels_folder -e TZ="America/New_York" [COMING_SOON]:latest
 ```
 
 ## Windows
@@ -438,7 +445,7 @@ Replace ```[YOUR_SLM_DIRECTORY]``` with the path you created earlier and save th
 
 Do not worry if you do not respond to any prompt or the searches fail; there are automatic timeouts that will move the process along and you can make adjustments in the ```Settings``` later.
 
-Also, if you are using Docker, you may still see it says it starts on port 5000. Do not worry about this as it is being mapped correctly.
+Also, if you are using Docker, you may still see it says it starts on port 5000. There are no concerns about this as it is being mapped correctly.
 
 2. With the startup complete, you can navigate to the webpage:
 
@@ -514,6 +521,14 @@ During initialization, the name of the machine was chosen, however that may not 
 
 ![image](https://github.com/user-attachments/assets/2168f959-b1af-4923-a049-9e6b746bf157)
 
+In Docker, you may not be able to see local DNS. If that is the case, you can use this:
+
+```
+http://host.docker.internal:8089
+```
+
+![image](https://github.com/user-attachments/assets/b6129807-849b-48a5-9c53-ec8ee6374f32)
+
 5. Similarly, in order for the program to work correctly, it needs to be pointed to your Channels DVR folder. During initialization, an attempt was made to find the folder. If it could not be discovered, the directory you installed the program in was used.
 
 ![image](https://github.com/user-attachments/assets/0298be2e-bc82-4d31-9d70-d5fb41aec790)
@@ -522,11 +537,19 @@ You can navigate up the directory structure or manually type in a path to get wh
 
 ![image](https://github.com/user-attachments/assets/a2375f58-bab8-43e5-b0b9-8229dd5c491e)
 
-When you get to where you want, use the '''Select``` button to set that directory.
+When you get to where you want, use the ```Select``` button to set that directory.
 
 ![image](https://github.com/user-attachments/assets/a5f97141-0c3f-453e-a6eb-4e269f87a1b9)
 
-Do note that you need to use the parent Channels DVR directory, not the ```Imports``` or anything similar. If you do not set this correctly or do not have access from the machine you installed <b>Stream Link Manager for Channels</b> on, then you will not be able to generate Stream Links that Channels DVR can see, nor be able to get updates from Channels DVR when programs are watched and deleted.
+If you are using Docker, you should literally have a directory named "channels_folder" right underneath ```/app```.
+
+![image](https://github.com/user-attachments/assets/604166a7-eaa9-4e81-a8c4-61b5bf16874d)
+
+This is the folder you set during installation and should be what you are using. It will look something like this:
+
+![image](https://github.com/user-attachments/assets/7e555c41-41e4-40b2-8e0b-2aad7d48a355)
+
+Do note that you <i>must</i> use the parent Channels DVR directory, not the ```Imports``` or anything similar. If you do not set this correctly or do not have access from the machine you installed <b>Stream Link Manager for Channels</b> on, then you will not be able to generate Stream Links that Channels DVR can see, nor be able to get updates from Channels DVR when programs are watched and deleted.
 
 6. Under ```Advanced / Experimental```, you will find some tools to manage the program and your results.
 
@@ -661,6 +684,9 @@ Go to the JustWatch website and search for it on there. A Movie or Show might be
 There are two components that relate to this. First is the quality of the links provided by JustWatch. For instance, with Disney+, JustWatch only has links to generic landing pages and does not have individual episode information like it has for Hulu. There is nothing that can be done aside from requesting that JustWatch updates their data.
 
 The second situation is that even though JustWatch provides links to more generic areas, there may be systematic ways to correct them. As an example, JustWatch provides a link to a movie on Netflix that looks like this: ```http://www.netflix.com/title/81078554```. However, if you replace ```title``` with ```watch```, it will play automatically. This being a “systematic way” to do a replace, it was implemented into <b>Stream Link Manager for Channels</b>. If you have more examples that could be accomplished this way, please put in a request and it will be added.
+
+### I set the scheduler for a certain time and it is running hours earlier/later. | The time showing in the logs is wrong.
+Follow the directions related to "TIMEZONE" in the installation steps above.
 
 ### | ANOTHER QUESTION |
 | MORE COMING SOON |
