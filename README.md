@@ -688,6 +688,17 @@ The second situation is that even though JustWatch provides links to more generi
 ### I set the scheduler for a certain time and it is running hours earlier/later. | The time showing in the logs is wrong.
 Follow the directions related to "TIMEZONE" in the installation steps above.
 
+### I generated my Stream Links when I bookmarked my Movie/Show, but it didn't show up in Channels
+Generating the Stream Link(s) is not enough; you need to update personal media from within Channels so that it appears inside that interface. There are several ways to deal with this. First and foremost, within this software, under ```Run Processes```, is a button that will do all the necessary steps:
+
+![image](https://github.com/user-attachments/assets/7163353d-9e95-42b9-9bf3-2c942f2aa490)
+
+However, it is worth noting that there is a setting in Channels for how often it scans for personal media:
+
+![image](https://github.com/user-attachments/assets/f68c4f56-c124-4f6b-bf5c-99dce7c38d1f)
+
+As such, you could just wait for that to run if you have it set for a particular interval.
+
 ### | ANOTHER QUESTION |
 | MORE COMING SOON |
 
