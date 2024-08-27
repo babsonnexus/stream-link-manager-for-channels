@@ -312,7 +312,7 @@ If using PowerShell, type in:
 
 ![image](https://github.com/user-attachments/assets/2c036863-41ad-46bb-b236-96d68787a003)
 
-3. The most important thing is that ```/slm.sh``` was terminated or not running, allowing the upgrade to take place. After the upgrade, you will need to restart the program manually or with a reboot. See <b>Startup</b> below.
+3. The most important thing is that the ```/slm``` application was terminated or not running, allowing the upgrade to take place. After the upgrade, you will need to restart the program manually or with a reboot. See <b>Startup</b> below.
 
 ## Python
 1. Make sure <b>Stream Link Manager for Channels</b> is closed and is not running in the background.
