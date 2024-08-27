@@ -612,9 +612,9 @@ Notice that the ```Search``` and other line buttons are no longer available. You
 
 Once complete, you can search again. If we select a Show this time, it will have slightly different options:
 
-![image](https://github.com/user-attachments/assets/b90733ae-b34f-436a-9a62-cfba6e46f958)
+![image](https://github.com/user-attachments/assets/4777b509-55ec-400a-8064-0e82f3c37018)
 
-Per episode, you can uncheck to mark it as watched. Additionally, you have the same Stream Link Override option as a Movie, as well as the ability to put a prefix on the generated file. For instance, by default, a file name will be ```S01E01.strmlnk```. However, as an example, you may want to designate that this is a subtitled episode and that dubbed episodes might become available in the future. For this, a prefix of ```(SUB)``` will result in a file name of ```(SUB) S01E01.strmlnk```.
+Per episode, season, or for the entire show, you can uncheck to mark it as watched. Additionally, you have the same Stream Link Override option as a Movie, as well as the ability to put a prefix on the generated file. For instance, by default, a file name will be ```S01E01.strmlnk```. However, as an example, you may want to designate that this is a subtitled episode and that dubbed episodes might become available in the future. For this, a prefix of ```(SUB)``` will result in a file name of ```(SUB) S01E01.strmlnk```.
 
 Sometimes when searching, you might not be able to find the Movie or Show you are looking for. While uncommon (see ```Troubleshooting / FAQ```), it may happen, especially for rare or foreign content. In these cases, you can always create a manual bookmark.
 
