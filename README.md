@@ -658,7 +658,7 @@ Movies are fairly similar to Shows in the options, including updating the ```Tit
 
 ![image](https://github.com/user-attachments/assets/7396d0c1-8956-407b-b5a8-928ecc7675e2)
 
-You can also completely replace those files, though it is not recommended to do so unless you are directed to do so.
+You can also completely replace those files, though it is not recommended to do so unless you are specifically directed.
 
 Lastly, there is the ```About``` area to see the latest version information, credits, and other information.
 
