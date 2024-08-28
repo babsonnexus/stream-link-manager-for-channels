@@ -674,6 +674,9 @@ First, make sure you have selected the correct country code and saved. If that i
 
 Note that JustWatch is responsible for the availability of Streaming Services and <b>Stream Link Manager for Channels</b> is just a downstream consumer.
 
+### My Streaming Service suddenly disappeared and ruined my Stream Links!
+While new Streaming Services are brought online and shut down on a regular basis, they also sometimes just change names. Any name change will result in the "old name" being removed and the "new name" being added. If this happens to you, all you need to do is return to the ```Setttings``` area, add the "new name", and prioritize it. The next time you generate your Stream Links, any missing Movies and Shows that were removed will be recreated. Remember, there is a difference between "bookmarking" a Movie or Show and having Stream Links for it.
+
 ### The data or links for my program are wrong
 JustWatch is the provider for all of the information. If there are any issues, please let them know at feedback@justwatch.com. It is unlikely that they will make an update in a timely manner as they are also dependent upon upstream data, so please take advantage of the manual and override capabilities built into the program.
 
