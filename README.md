@@ -677,16 +677,8 @@ JustWatch is the provider for all of the information. If there are any issues, p
 ### Why can't I find the Movie or Show I'm searching for?
 <b>Stream Link Manager for Channels</b> is completely dependent upon Movie and Show data from the JustWatch website, which in turn is a consumer of other upstream data. There may be a gap in any of those steps along the way, especially for non-domestic content and independent studios. Sometimes, though, you may even be able to see the content on JustWatch but are unable to find it in this program. There appears to be a small gap of time (usually one or two days) for some content to be completely discoverable by the tools that this program uses.
 
-### I'm able to bookmark a Movie or Show and I know its on a streaming service I've selected, but a Stream Link still won't generate
+### I'm able to bookmark a Movie or Show and I know it's on a streaming service I've selected, but a Stream Link still won't generate
 Go to the JustWatch website and search for it on there. A Movie or Show might be available, but still be missing links to the appropriate streaming service. If it is brand new, it might also take a day or two until they update their data, which is what <b>Stream Link Manager for Channels</b> uses. Should the links be missing on JustWatch, submit a request to feedback@justwatch.com. If you can confirm JustWatch has a working link on there and it still won't show up in this program, please submit an issue request with as much detail as possible. There may be an edge case for how that particular Movie or Show is stored on JustWatch that this software has not accounted for.
-
-### Why do some things play the correct movie/episode automatically and why do other go to a generic landing page for that movie/show?
-There are two components that relate to this. First is the quality of the links provided by JustWatch. For instance, with Disney+, JustWatch only has links to generic landing pages and does not have individual episode information like it has for Hulu. There is nothing that can be done aside from requesting that JustWatch updates their data.
-
-The second situation is that even though JustWatch provides links to more generic areas, there may be systematic ways to correct them. As an example, JustWatch provides a link to a movie on Netflix that looks like this: ```http://www.netflix.com/title/81078554```. However, if you replace ```title``` with ```watch```, it will play automatically. This being a “systematic way” to do a replace, it was implemented into <b>Stream Link Manager for Channels</b>. If you have more examples that could be accomplished this way, please put in a request and it will be added.
-
-### I set the scheduler for a certain time and it is running hours earlier/later. | The time showing in the logs is wrong.
-Follow the directions related to "TIMEZONE" in the installation steps above.
 
 ### I generated my Stream Links when I bookmarked my Movie/Show, but it didn't show up in Channels
 Generating the Stream Link(s) is not enough; you need to update personal media from within Channels so that it appears inside that interface. There are several ways to deal with this. First and foremost, within this software, under ```Run Processes```, is a button that will do all the necessary steps:
@@ -699,8 +691,16 @@ However, it is worth noting that there is a setting in Channels for how often it
 
 As such, you could just wait for that to run if you have it set for a particular interval.
 
-### | ANOTHER QUESTION |
-| MORE COMING SOON |
+### A Stream Link generated and the Movie or Show is available in Channels, but when I click to launch it, I get an error. It works in the web, though. | The Stream Link works on one platform like iPad OS but does not work in another like tvOS.
+There are two potential situations. The most likely one is that the Streaming Service's app itself is written incorrectly and cannot accept "deep links". Without this, nothing can be done. You can request the app developers to update their program. In a similar vein, they may have programmed it to accept "deep links", but only in a certain way. If there is a systematic method to do a replacement in the generated link, then it could be added to <b>Stream Link Manager for Channels</b>. For instance, JustWatch provides a link for Amazon content like ```https://watch.amazon.com/detail?``` and this program replaces it with ```https://www.amazon.com/gp/video/detail/```. If this is the case, please put in a request with exact details like this and it will be added.
+
+### Why do some things play the correct movie/episode automatically and why do other go to a generic landing page for that movie/show?
+There are two components that relate to this. First is the quality of the links provided by JustWatch. For instance, with Disney+, JustWatch only has links to generic landing pages and does not have individual episode information like it has for Hulu. There is nothing that can be done aside from requesting that JustWatch updates their data.
+
+The second situation is that even though JustWatch provides links to more generic areas, there may be systematic ways to correct them. As an example, JustWatch provides a link to a movie on Netflix that looks like this: ```http://www.netflix.com/title/81078554```. However, if you replace ```title``` with ```watch```, it will play automatically. This being a “systematic way” to do a replace, it was implemented into <b>Stream Link Manager for Channels</b>. If you have more examples that could be accomplished this way, please put in a request and it will be added.
+
+### I set the scheduler for a certain time and it is running hours earlier/later. | The time showing in the logs is wrong.
+Follow the directions related to "TIMEZONE" in the installation steps above.
 
 ### Additional questions or issues
 Please ask at the [Channels DVR Community Message Board](https://community.getchannels.com/t/39684).
