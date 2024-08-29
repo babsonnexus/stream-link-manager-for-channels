@@ -53,7 +53,7 @@ Environment variables are included, some required, some optional.
 
 * <b>TAG</b> | OPTIONAL | Which version of the program you want. The default is "latest" if you do not add.
 * <b>SLM_PORT</b> | OPTIONAL | The port you want to access the program from in the web browser. The default is "5000" if you do not add.
-* <b>CHANNELS_FOLDER</b> | REQUIRED | The path to your Channels DVR parent directory (see details in <i>Startup</i> below). Note that spaces are fine and you do not have to enclose the path in quotes. In Windows, your slashes should go the opposite of the normal way, i.e., ```C:/Files/Media/Channels DVR```. You could optionally put in any parent path, so long as the Channels DVR path is accessible somewhere inside.
+* <b>CHANNELS_FOLDER</b> | REQUIRED | The path to your Channels DVR parent directory (see details in <i>Startup</i> below). Note that spaces are fine and you do not have to enclose the path in quotes. In Windows, your slashes should go the opposite of the normal way, i.e., ```C:/Files/Media/Channels DVR```. In MacOS, you may need to put in "cancel out" characters if you have spaces, i.e., ```/Volumes/external-hdd/Channels\ DVR```. You could optionally put in any parent path, so long as the Channels DVR path is accessible somewhere inside.
 * <b>TIMEZONE</b> | OPTIONAL | The timezone you want to use. To know what to input, go [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), find your timezone, make sure it is a "Canonical" Type, and use the "TZ identifier". The default is "UTC" if you do not add. Please keep this in mind when using the scheduler function.
 
 ### Command Line
