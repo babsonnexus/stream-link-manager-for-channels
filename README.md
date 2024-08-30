@@ -16,7 +16,7 @@ Enter <b>Stream Link Manager for Channels</b>!
 
 ---
 ![SpaceX_ASDS_in_position_prior_to_Falcon_9_Flight_17_carrying_CRS-6_(17127808431)_EDITED](https://github.com/user-attachments/assets/c45005cf-081f-4eba-bcb4-fcdccd7ca281)
-<i>Image (edited) courtesy of SpaceX, CC0, via Wikimedia Commons</i>
+<i>Image (edited) courtesy of SpaceX, CC0, via Wikimedia Commons.</i>
 
 # Installation
 There are several methods to install <b>Stream Link Manager for Channels</b> and only one should be followed. While Docker is the preferred route for those who have it as it is the most controlled path, if you are not comfortable with Docker or are having issues, you can do a straight self-deployment in Windows or Linux, or use Python in any OS type. For those unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are installing Docker in Windows, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591). Channels DVR users who have deployed [OliveTin for Channels](https://community.getchannels.com/t/37609) and/or [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process.
@@ -712,6 +712,9 @@ Follow the directions related to "TIMEZONE" in the installation steps above.
 
 ### Additional questions or issues
 Please ask at the [Channels DVR Community Message Board](https://community.getchannels.com/t/39684).
+
+![SpaceX_ASDS_moving_into_position_for_CRS-7_launch_(18610429514)_EDITED](https://github.com/user-attachments/assets/ab32ab8c-3acd-4c72-b047-8c2bad7ef7d9)
+<i>Image (edited) courtesy of SpaceX, CC0, via Wikimedia Commons.</i>
 
 ---
 # Support
