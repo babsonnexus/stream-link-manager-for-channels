@@ -52,8 +52,11 @@ Environment variables are included, some required, some optional.
 ![image](https://github.com/user-attachments/assets/fafa4c3f-23b8-4830-8830-7b4c08a6f71c)
 
 * <b>TAG</b> | OPTIONAL | Which version of the program you want. The default is "latest" if you do not add.
+
 * <b>SLM_PORT</b> | OPTIONAL | The port you want to access the program from in the web browser. The default is "5000" if you do not add.
-* <b>CHANNELS_FOLDER</b> | REQUIRED | The path to your Channels DVR parent directory (see details in <i>Startup</i> below). Note that spaces are fine and you do not have to enclose the path in quotes. In Windows, your slashes should go the opposite of the normal way, i.e., ```C:/Files/Media/Channels DVR```. In some situations, you may need to put in "cancel out" characters if you have spaces, i.e., ```/Volumes/external-hdd/Channels\ DVR```. You could optionally put in any parent path, so long as the Channels DVR path is accessible somewhere inside.
+
+* <b>CHANNELS_FOLDER</b> | REQUIRED | The path to your Channels DVR parent directory (see details in <i>Startup</i> below), i.e., ```/usr/lib/channels-dvr```. You could optionally put in any parent path, so long as the Channels DVR path is accessible somewhere inside. Note that spaces are fine and you do not have to enclose the path in quotes. In Windows, your slashes should go the opposite of the normal way, i.e., ```C:/Files/Media/Channels DVR```. In MacOS, be sure to include your ```/Volumes``` first, i.e., ```/Volumes/external-hdd/Channels DVR```. Be careful not to put extra characters as your system may then create that directory anyway. In other words, there will be no error as the directory exists, but it is not set to where you want it to be.
+
 * <b>TIMEZONE</b> | OPTIONAL | The timezone you want to use. To know what to input, go [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), find your timezone, make sure it is a "Canonical" Type, and use the "TZ identifier". The default is "UTC" if you do not add. Please keep this in mind when using the scheduler function.
 
 ### Command Line
@@ -709,6 +712,9 @@ The second situation is that even though JustWatch provides links to more generi
 
 ### I set the scheduler for a certain time and it is running hours earlier/later. | The time showing in the logs is wrong.
 Follow the directions related to "TIMEZONE" in the installation steps above.
+
+### I never see anything in the "Live Process Log (While Running)" block
+This block is just an indicator to let you know nothing is stuck and that things are still running in the background. For actions that last less than a couple of seconds, not enough time will pass to begin to fill it in. For anything longer, you will see information fill up to the top, but it will all clear out when the process finishes running. However, there are some issues with certain browsers like Safari where it seems incapable of displaying what is happening. Rest assured that although the background process is running as expected, you can always verify in the logs if desired.
 
 ### Additional questions or issues
 Please ask at the [Channels DVR Community Message Board](https://community.getchannels.com/t/39684).
