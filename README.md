@@ -673,9 +673,10 @@ Lastly, there is the ```About``` area to see the latest version information, cre
 ---
 # Troubleshooting / FAQ
 ### My Streaming Service is missing
-First, make sure you have selected the correct country code and saved. If that is already done, please make a request for the missing service by filling out [this form](https://forms.gle/APyd1t8qs3nhpKRy9).
+First, make sure you have selected the correct country code and saved. If that is already done, please make a request for the missing service by filling out [this form](https://forms.gle/APyd1t8qs3nhpKRy9). Note that JustWatch is responsible for the availability of Streaming Services and <b>Stream Link Manager for Channels</b> is just a downstream consumer.
 
-Note that JustWatch is responsible for the availability of Streaming Services and <b>Stream Link Manager for Channels</b> is just a downstream consumer.
+### What is the difference between Streaming Services with similar names (i.e., Apple TV vs. Apple TV Plus or Amazon Video vs. Amazon Prime Video)? Should I select both, or is it redundant?
+JustWatch is responsible for the list of Streaming Services and their definitions, as such there is no specific guidance from the perspective of this program. However, it is most likely a question of content. For instance, "Apple TV" is Apple's generic name for all streaming content available for purchase and/or rent, just as "Amazon Video" is for Amazon. Each have exclusive content available for paying subscribers, hence "Apple TV Plus" and "Amazon Prime Video". Notably, in these highlighted examples, if you make your settings to have either the basic tier or the subscription tier as the top priority, the Stream Links that are generated will be exactly the same, therefore they will launch the same apps on your device. Due to this, if you have access to the subscription tier, then it would be redundant to have both. Nevertheless, that might not be the case for other services with multiple tiers and/or separate apps. It is up to you to manage your services and find the best combination that works for your particular use case.
 
 ### My Streaming Service suddenly disappeared and ruined my Stream Links!
 While new Streaming Services are brought online and shut down on a regular basis, they also sometimes just change names. Any name change will result in the "old name" being removed and the "new name" being added. If this happens to you, all you need to do is return to the ```Setttings``` area, add the "new name", and prioritize it. The next time you generate your Stream Links, any missing Movies and Shows that were removed will be recreated. Remember, there is a difference between "bookmarking" a Movie or Show and having Stream Links for it.
@@ -705,7 +706,7 @@ There are two main potential situations. The most likely one is that the Streami
 
 There is also the possibility that the link cleaning and replacement process that this program is doing is overzealous. Please also put in a request for those situations and examples of working Stream Links.
 
-### Why do some things play the correct movie/episode automatically and why do other go to a generic landing page for that movie/show?
+### Why do some things play the correct movie/episode automatically and why do others go to a generic landing page for that movie/show?
 There are two components that relate to this. First is the quality of the links provided by JustWatch. For instance, with Disney+, JustWatch only has links to generic landing pages and does not have individual episode information like it has for Hulu. There is nothing that can be done aside from requesting that JustWatch updates their data.
 
 The second situation is that even though JustWatch provides links to more generic areas, there may be systematic ways to correct them. As an example, JustWatch provides a link to a movie on Netflix that looks like this: ```http://www.netflix.com/title/81078554```. However, if you replace ```title``` with ```watch```, it will play automatically. This being a “systematic way” to do a replace, it was implemented into <b>Stream Link Manager for Channels</b>. If you have more examples that could be accomplished this way, please put in a request and it will be added.
