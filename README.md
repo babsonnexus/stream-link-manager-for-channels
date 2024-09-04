@@ -1,5 +1,7 @@
 <b>NOTE:</b> This is a placeholder for an upcoming deployment.
 
+![slm_logo](https://github.com/user-attachments/assets/cb501b0c-8fd7-4468-a37a-f72e43347609)
+
 ---
 # Stream Link Manager for Channels
 In <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to add "<b>[Stream Links](https://getchannels.com/docs/channels-dvr-server/how-to/stream-links/)</b>" as local content. These <b>Stream Links</b> appear as normal Movies, TV Shows, and Videos next to recorded and other content but do not play in the Channels app or admin web page directly. Instead, clicking on one of these launches the appropriate app or web page and plays the content there. In order to do this, the process consists of creating ```.strmlnk``` files, putting them in the appropriate location, and running updates in the <b>Channels DVR</b> admin interface to get the programs to appear. As can be imagined, the activity around creation and maintenance is incredibly manual and cumbersome.
