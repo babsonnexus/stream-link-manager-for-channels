@@ -678,7 +678,33 @@ Lastly, there is the ```About``` area to see the latest version information, cre
 First, make sure you have selected the correct country code and saved. If that is already done, please make a request for the missing service by filling out [this form](https://forms.gle/APyd1t8qs3nhpKRy9). Note that JustWatch is responsible for the availability of Streaming Services and <b>Stream Link Manager for Channels</b> is just a downstream consumer.
 
 ### What is the difference between Streaming Services with similar names (i.e., Apple TV vs. Apple TV Plus or Amazon Video vs. Amazon Prime Video)? Should I select both, or is it redundant?
-JustWatch is responsible for the list of Streaming Services and their definitions, as such there is no specific guidance from the perspective of this program. However, it is most likely a question of content. For instance, "Apple TV" is Apple's generic name for all streaming content available for purchase and/or rent, just as "Amazon Video" is for Amazon. Each have exclusive content available for paying subscribers, hence "Apple TV Plus" and "Amazon Prime Video". Notably, in these highlighted examples, if you make your settings to have either the basic tier or the subscription tier as the top priority, the Stream Links that are generated will be exactly the same, therefore they will launch the same apps on your device. Due to this, if you have access to the subscription tier, then it would be redundant to have both. Nevertheless, that might not be the case for other services with multiple tiers and/or separate apps. It is up to you to manage your services and find the best combination that works for your particular use case.
+JustWatch is responsible for the list of Streaming Services and their definitions, as such there is no specific guidance from the perspective of this program. However, it is most likely a question of content. For instance, "Apple TV" is Apple's generic name for all streaming content available for purchase and/or rent, just as "Amazon Video" is for Amazon. Each have exclusive content available for paying subscribers, hence "Apple TV Plus" and "Amazon Prime Video". Notably, in these highlighted examples, if you make your settings to have either the basic tier or the subscription tier as the top priority, the Stream Links that are generated will be exactly the same, therefore they will launch the same apps on your device. Due to this, if you have access to the subscription tier, then it may be redundant to have both. Nevertheless, that might not be the case for these or other services with multiple tiers and/or separate apps.
+
+For example, say your Streaming Services were this:
+
+![97d2644b32522dcc850f5a4608838a95bff3796b](https://github.com/user-attachments/assets/4e743963-26f3-4fa5-8c4b-40475a908ffb)
+
+Then, if you add ```About Schmidt```, it will end up with an Amazon link:
+
+![c9eab1a1394f3bcb7d056f3a129b7f3cb343d380](https://github.com/user-attachments/assets/8de2516d-7040-41fd-8324-0b4bfc5ed701)
+
+But if you do this:
+
+![f4d40157aa01c5935903302f7cca492a5e7b4787](https://github.com/user-attachments/assets/29274dff-240d-4598-9e94-7377fd3909e0)
+
+You will end up with Apple links:
+
+![71a9003b70371941fb3bc4c070db70427f05535c](https://github.com/user-attachments/assets/8bb83003-fdf9-4227-b132-39ddb0a514ff)
+
+Yet, if you do this:
+
+![fe08bbfb780da6d40c79e36ecd2bf6321e068cf8](https://github.com/user-attachments/assets/4f956c86-5d97-480e-81f0-675eae5b667f)
+
+You end up with no Stream Link:
+
+![d18818ed755378cf3d0d6d44b06e7179e4ab15c3](https://github.com/user-attachments/assets/48f7318f-7157-41b7-894c-32f98441e2b3)
+
+It is all a function of what services you have selected and the data on JustWatch. As such, it is up to you to manage your services and find the best combination that works for your particular use case.
 
 ### My Streaming Service suddenly disappeared and ruined my Stream Links!
 While new Streaming Services are brought online and shut down on a regular basis, they also sometimes just change names. Any name change will result in the "old name" being removed and the "new name" being added. If this happens to you, all you need to do is return to the ```Setttings``` area, add the "new name", and prioritize it. The next time you generate your Stream Links, any missing Movies and Shows that were removed will be recreated. Remember, there is a difference between "bookmarking" a Movie or Show and having Stream Links for it.
