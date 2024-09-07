@@ -475,7 +475,7 @@ If you are on a different machine than where <b>Stream Link Manager for Channels
 
 3. Once at the location, you should see the homepage:
 
-![image](https://github.com/user-attachments/assets/36c44e2d-0227-4ade-a592-5caf37397f7f)
+![image](https://github.com/user-attachments/assets/fce55e3e-f516-4368-b9cc-feb47a5fce31)
   
 4. After this, the program is ready to use!
 
@@ -614,11 +614,24 @@ Clicking on a Movie will get you something like this:
 
 ![image](https://github.com/user-attachments/assets/e746b77a-0212-41a6-b4cf-3e029096b0d8)
 
-Notice that the ```Search``` and other line buttons are no longer available. You must finish this process by selecting ```Done``` or ```Generate Stream Links```. If you do not generate Stream Links at the time of creation, they will be created (if valid) during the next run of the process as detailed above. You may also want to put in a link of your own to override whatever may be generated, which you optionally have the ability to do. It is not required, so leave it blank if you do not want to put anything there.
+Notice that the ```Search``` and other line buttons are no longer available. You must finish this process by selecting ```Done``` or ```Generate Stream Links```. If you do not generate Stream Links at the time of creation, they will be created (if valid) during the next run of the process as detailed above. Although it is not necessary, if you review the logs, you can generally see a successfully generated Stream Link appear as so:
+
+```
+    10 Buildings That Changed America (2013) assigned Stream Link: https://www.kanopy.com/product/10-buildings-changed-america
+```
+
+On the other hand, if a Stream Link could not be generated, a reason will be given:
+
+```
+    12 Angry Men (1957) assigned Stream Link: None due to 'Watched' status
+    Amélie (2001) assigned Stream Link: None due to not found on your selected streaming services
+```
+
+In order for a Stream Link to be generated, the Movie or Episode must first have an ```Unwatched``` status, and then be available on one of the Streaming Services that were selected during ```Settings```. The ```Watched / Unwatched``` status applies even if you put in a link of your own to override whatever may or may not be generated. This completely optional feature is not required, so leave it blank if you do not want to put anything there.
 
 ![image](https://github.com/user-attachments/assets/2205dad1-7010-4e49-bdda-24b0ebb23134)
 
-Once complete, you can search again. If we select a Show this time, it will have slightly different options:
+Once an add has been complete, you can search again. If we select a Show this time, it will have slightly different options:
 
 ![image](https://github.com/user-attachments/assets/4777b509-55ec-400a-8064-0e82f3c37018)
 
@@ -640,7 +653,7 @@ Note that you will only be allowed to continue once you've correctly put in the 
 
 ![image](https://github.com/user-attachments/assets/a4532884-85c5-4f9a-9be7-39069abde5e1)
 
-Here you will see the episodes created as designed by the user. It should be highlighted that manual entries require a Stream Link Override to be entered, otherwise they will not generate a Stream Link file.
+Here you will see the episodes created as designed by the user. It should be highlighted that manual entries require a ```Stream Link Override``` to be entered, otherwise they will not generate a Stream Link file.
 
 9. Even if a Movie or Show is added through search or manual selection, that does not mean they are set in stone. You can use the ```Modify Programs``` area to make any update as desired.
 
@@ -657,6 +670,12 @@ While you can delete an episode, if it is a searched bookmark and not a manual o
 This is also a good area just to check on the status of Movies and Shows.
 
 ![image](https://github.com/user-attachments/assets/a0d572d4-3fa9-497d-b72b-ec871eb534ed)
+
+Note that the ```Current Stream Link``` field will always be greyed out and unable to be modified. If it is blank, this is an indication that no Stream Link was generated. If you want to change the Stream Link or give it one when none was generated, that is what the ```Stream Link Override``` field is for. After regenerating Stream Links through any method discussed thus far or below, you should see something like this:
+
+![e172001b269677d537a74807fb36538a7d8be685-1](https://github.com/user-attachments/assets/70fa7901-8163-4565-b7b0-f58581dc7b03)
+
+The ```Current Stream Link``` field having the ```skipped_for_override``` value lets you know a Stream Link file was creating using the input ```Stream Link Override``` value that was entered.
 
 Movies are fairly similar to Shows in the options, including updating the ```Title``` and ```Release Year``` itself if the data is incorrect or not how you want it.
 
