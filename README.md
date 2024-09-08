@@ -12,7 +12,7 @@ Enter <b>Stream Link Manager for Channels</b>!
 
 <b>Stream Link Manager for Channels</b> is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order to determine the appropriate link. After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another, <b>Stream Link Manager for Channels</b> will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
 
-[![Stream Link Manager for Channels](https://img.youtube.com/vi/APuUaAvNo-k/0.jpg)](https://www.youtube.com/watch?v=APuUaAvNo-k)
+[![image](https://github.com/user-attachments/assets/89f8ef22-80bd-42a5-a827-24723f1c4515)](https://www.youtube.com/watch?v=APuUaAvNo-k)
 
 <b>NOTE:</b> Some of the visuals seen in the video and in the screen shots below may be out of date as updates to format and functionality have been applied to the program.
 
