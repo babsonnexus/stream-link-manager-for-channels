@@ -521,7 +521,23 @@ Remember to click ```Save``` when complete.
 
 Be sure to keep this up-to-date as you subscribe, unsubscribe, and change preferences. This list is what determines which Stream Links you will get.
 
-4. Next, make sure the Channels URL is correct.
+4. <b>Stream Link Manager for Channels</b> uses JustWatch as the source for the final generated Stream Links. While a process is undertaken to "clean" the links of any tracking information, some may still be imperfect or have ways to work better with a "mapping". You have the ability to activate and/or create/delete those mappings:
+
+![image](https://github.com/user-attachments/assets/78ff1c44-11a6-4023-be21-de7b798cdb22)
+
+Out-of-the-box, several are included that are all functional as well as informative:
+
+* Changing ```hulu.com/watch``` to ```disneyplus.com/play``` allows Hulu content to play within in the Disney+ app. This is off by default, but can be activated by clicking the checkbox and saving. It should be noted that not all Hulu content is available within Disney+. To work around this, ```Stream Link Overrides``` may be used as discussed below.
+  
+* All Netflix Movies and Shows come from JustWatch with a link that contains ```netflix.com/title```, which goes to the landing page of that content. However, if you change ```title``` to ```watch```, it will play automatically. However, that only works for Movies, hence why that is in the dropdown selection ```For Object Type```. This is on be default.
+  
+* While JustWatch does provide Amazon links directly for Movies and Shows, the links that are given do not work in all situations, notably on Apple TV and the web. To get around this, the links can be converted with the string ```watch.amazon.com/detail?gti=``` being replaced with ```www.amazon.com/gp/video/detail/```. This is on by default. 
+
+* At the time of this program's launch, ```Vudu``` had changed its name to ```Fandango at Home``` and created a newly named app, but did not fix the app to accept ```Vudu``` links that it was still using. Since deep linking directly is not possible, this mapping says to replace any link that contains ```vudu.com``` in its entirety with a link that will just launch their app generically. This is off by default.
+
+It is not required to set these immediately; they can be added, deleted, or modified at any time.
+
+5. Next, make sure the Channels URL is correct.
 
 ![image](https://github.com/user-attachments/assets/92cd55ac-da0d-4c4e-b2ca-38c70ef267c0)
 
@@ -537,7 +553,7 @@ http://host.docker.internal:8089
 
 ![image](https://github.com/user-attachments/assets/b6129807-849b-48a5-9c53-ec8ee6374f32)
 
-5. Similarly, in order for the program to work correctly, it needs to be pointed to your Channels DVR folder. During initialization, an attempt was made to find the folder. If it could not be discovered, the directory you installed the program in was used.
+6. Similarly, in order for the program to work correctly, it needs to be pointed to your Channels DVR folder. During initialization, an attempt was made to find the folder. If it could not be discovered, the directory you installed the program in was used.
 
 ![image](https://github.com/user-attachments/assets/0298be2e-bc82-4d31-9d70-d5fb41aec790)
 
@@ -559,17 +575,13 @@ This is the folder you set during installation and should be what you are using.
 
 Do note that you <i>must</i> use the parent Channels DVR directory, not the ```Imports``` or anything similar. If you do not set this correctly or do not have access from the machine you installed <b>Stream Link Manager for Channels</b> on, then you will not be able to generate Stream Links that Channels DVR can see, nor be able to get updates from Channels DVR when programs are watched and deleted.
 
-6. Under ```Advanced / Experimental```, you will find some tools to manage the program and your results.
-
-![image](https://github.com/user-attachments/assets/ecffd3c9-5136-4d5d-91bd-22a5a3e2d7f8)
-
-```Convert Hulu to Disney+``` will take Streak Links for Hulu and make them Disney+ links instead. Note that by my own testing, around 85% of Hulu content is on Disney+, so you may end up with an invalid link. There are workarounds to this that will be discussed later.
+7. Under ```Advanced / Experimental```, you will find some tools to manage the program and your results.
 
 ![image](https://github.com/user-attachments/assets/ee0c303d-d9c5-40b1-8108-bec8296b15c8)
 
 ```Run 'Prune' function in Channels``` is on by default, which means that the program will initiate a delete in Channels DVR for any missing personal media, not just Stream Links. You may decide that you do not want this to run automatically.
 
-7. Finally, there is the ```Scheduler```.
+8. Finally, there is the ```Scheduler```.
 
 ![image](https://github.com/user-attachments/assets/524ab628-705d-48af-8cc5-69e47373e166)
 
@@ -602,7 +614,7 @@ If you are looking for additional detail as to what transpired, the ```Logs``` a
 
 Unlike the notifications and live process trackers, the log is in order of action.
 
-8. With this all in place, you can now navigate to ```Add Programs```.
+9. With this all in place, you can now navigate to ```Add Programs```.
 
 ![image](https://github.com/user-attachments/assets/a17661c4-cb67-4e20-bf37-5401501bff8f)
 
@@ -657,7 +669,7 @@ Note that you will only be allowed to continue once you've correctly put in the 
 
 Here you will see the episodes created as designed by the user. It should be highlighted that manual entries require a ```Stream Link Override``` to be entered, otherwise they will not generate a Stream Link file.
 
-9. Even if a Movie or Show is added through search or manual selection, that does not mean they are set in stone. You can use the ```Modify Programs``` area to make any update as desired.
+10. Even if a Movie or Show is added through search or manual selection, that does not mean they are set in stone. You can use the ```Modify Programs``` area to make any update as desired.
 
 ![image](https://github.com/user-attachments/assets/a0a4e244-0288-48f8-9a81-26705e034665)
 
@@ -683,7 +695,7 @@ Movies are fairly similar to Shows in the options, including updating the ```Tit
 
 ![image](https://github.com/user-attachments/assets/5512fe0c-d5ce-44be-ba16-313c31434314)
 
-10. Aside from these functions, there is not much else a user needs to do. There is the ```Files``` area for viewing the backend data that fuels all of the above, as well as exporting those files for backup and migration purposes.
+11. Aside from these functions, there is not much else a user needs to do. There is the ```Files``` area for viewing the backend data that fuels all of the above, as well as exporting those files for backup and migration purposes.
 
 ![image](https://github.com/user-attachments/assets/7396d0c1-8956-407b-b5a8-928ecc7675e2)
 
@@ -731,7 +743,7 @@ It is all a function of what services you have selected and the data on JustWatc
 While new Streaming Services are brought online and shut down on a regular basis, they also sometimes just change names. Any name change will result in the "old name" being removed and the "new name" being added. If this happens to you, all you need to do is return to the ```Setttings``` area, add the "new name", and prioritize it. The next time you generate your Stream Links, any missing Movies and Shows that were removed will be recreated. Remember, there is a difference between "bookmarking" a Movie or Show and having Stream Links for it.
 
 ### The data or links for my program are wrong
-JustWatch is the provider for all of the information. If there are any issues, please let them know at feedback@justwatch.com. It is unlikely that they will make an update in a timely manner as they are also dependent upon upstream data, so please take advantage of the manual and override capabilities built into the program.
+JustWatch is the provider for all of the information. If there are any issues, please let them know at feedback@justwatch.com. It is unlikely that they will make an update in a timely manner as they are also dependent upon upstream data, so please take advantage of the manual and override capabilities built into the program, or using mapping if possible.
 
 ### Why can't I find the Movie or Show I'm searching for?
 <b>Stream Link Manager for Channels</b> is completely dependent upon Movie and Show data from the JustWatch website, which in turn is a consumer of other upstream data. There may be a gap in any of those steps along the way, especially for non-domestic content and independent studios. Sometimes, though, you may even be able to see the content on JustWatch but are unable to find it in this program. There appears to be a small gap of time (usually one or two days) for some content to be completely discoverable by the tools that this program uses.
@@ -751,14 +763,14 @@ However, it is worth noting that there is a setting in Channels for how often it
 As such, you could just wait for that to run if you have it set for a particular interval.
 
 ### A Stream Link generated and the Movie or Show is available in Channels, but when I click to launch it, I get an error. It works in the web, though. | The Stream Link works on one platform like iPad OS but does not work in another like tvOS.
-There are two main potential situations. The most likely one is that the Streaming Service's app itself is written incorrectly and cannot accept "deep links". Without this, nothing can be done. You can request the app developers to update their program. In a similar vein, they may have programmed it to accept "deep links", but only in a certain way. If there is a systematic method to do a replacement in the generated link, then it could be added to <b>Stream Link Manager for Channels</b>. For instance, JustWatch provides a link for Amazon content like ```watch.amazon.com/detail?gti=``` and this program replaces it with ```www.amazon.com/gp/video/detail/```. If this is the case, please put in a request with exact details like this and it will be added.
+There are two main potential situations. The most likely one is that the Streaming Service's app itself is written incorrectly and cannot accept "deep links". Without this, nothing can be done. You can request the app developers to update their program. In a similar vein, they may have programmed it to accept "deep links", but only in a certain way. If there is a systematic method to do a replacement in the generated link, then it could be added to <b>Stream Link Manager for Channels</b> in the ```Stream Link Mappings``` setting. For instance, JustWatch provides a link for Amazon content like ```watch.amazon.com/detail?gti=``` and, by default, this program replaces it with ```www.amazon.com/gp/video/detail/```. If this is the case, please add a new mapping. Further, do let the community know about your mapping and, if it is useful for many people, it will be added to the default list that comes with a new installation.
 
 There is also the possibility that the link cleaning and replacement process that this program is doing is overzealous. Please also put in a request for those situations and examples of working Stream Links.
 
 ### Why do some things play the correct movie/episode automatically and why do others go to a generic landing page for that movie/show?
 There are two components that relate to this. First is the quality of the links provided by JustWatch. For instance, with Disney+, JustWatch only has links to generic landing pages and does not have individual episode information like it has for Hulu. There is nothing that can be done aside from requesting that JustWatch updates their data.
 
-The second situation is that even though JustWatch provides links to more generic areas, there may be systematic ways to correct them. As an example, JustWatch provides a link to a movie on Netflix that looks like this: ```http://www.netflix.com/title/81078554```. However, if you replace ```title``` with ```watch```, it will play automatically. This being a “systematic way” to do a replace, it was implemented into <b>Stream Link Manager for Channels</b>. If you have more examples that could be accomplished this way, please put in a request and it will be added.
+The second situation is that even though JustWatch provides links to more generic areas, there may be systematic ways to correct them. As an example, JustWatch provides a link to a movie on Netflix that looks like this: ```http://www.netflix.com/title/81078554```. However, if you replace ```title``` with ```watch```, it will play automatically. This being a “systematic way” to do a replace, it was included in the ```Stream Link Mappings``` settings as highlighted above. If you have more examples that could be accomplished this way, please let the community know. If they are deemed benefitial for other users, it will be added to the default list that comes with a new installation.
 
 ### I set the scheduler for a certain time and it is running hours earlier/later. | The time showing in the logs is wrong.
 Follow the directions related to "TIMEZONE" in the installation steps above.
