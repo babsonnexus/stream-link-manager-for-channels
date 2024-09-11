@@ -697,13 +697,13 @@ Movies are fairly similar to Shows in the options, including updating the ```Tit
 
 11. Aside from these functions, there is not much else a user needs to do. There is the ```Files``` area for viewing the backend data that fuels all of the above, as well as exporting those files for backup and migration purposes.
 
-![image](https://github.com/user-attachments/assets/7396d0c1-8956-407b-b5a8-928ecc7675e2)
+![image](https://github.com/user-attachments/assets/05f04319-7aa6-4843-a7ff-c7de1dffaf17)
 
 You can also completely replace those files, though it is not recommended to do so unless you are specifically directed.
 
 Lastly, there is the ```About``` area to see the latest version information, credits, and other information.
 
-![image](https://github.com/user-attachments/assets/a9e9e9f8-759f-4598-accc-d5952740fb96)
+![image](https://github.com/user-attachments/assets/d8f52dcf-5bb5-4639-9688-92bd5d3de2a8)
 
 ---
 # Troubleshooting / FAQ
