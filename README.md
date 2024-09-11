@@ -481,6 +481,9 @@ If you are on a different machine than where <b>Stream Link Manager for Channels
 
 ---
 # Usage
+
+### Basic Usage
+
 With the program running, there are a number of activities you should do before getting underway. Also, as a personal preference, if you click on the palette button...
 
 ![image](https://github.com/user-attachments/assets/3e6b1823-47cd-4fea-a03f-67523f5c5a11)
@@ -491,10 +494,14 @@ With the program running, there are a number of activities you should do before 
 
 Aside from the visuals, everything will function exactly the same.
 
+### Settings: Introduction
+
 1. Navigate to the ```Settings``` area. You should see something like this:
 
 ![image](https://github.com/user-attachments/assets/e981d21f-36f7-4136-9686-d1166949675c)
-   
+
+### Settings: Search Defaults
+
 2. Before doing anything, you must set your country correctly (if it was not found or set incorrectly during initialization). This determines which streaming services are available to you:
 
 ![image](https://github.com/user-attachments/assets/61c98f07-8f22-457d-b830-2b80b1c2a5b3)
@@ -509,6 +516,8 @@ Click ```Save``` after you have selected your country, preferred language, and d
 
 ![image](https://github.com/user-attachments/assets/0e02c967-6a20-4718-a4be-8b0cf0e26338)
 
+### Settings: Streamnig Services
+
 3. With that done, you can select your streaming services and prioritize them. You can select multiple at a time for any of the actions.
 
 ![image](https://github.com/user-attachments/assets/8ba75968-061b-4267-aa84-633edad18fce)
@@ -520,6 +529,8 @@ Remember to click ```Save``` when complete.
 ![image](https://github.com/user-attachments/assets/f47f4621-9139-4dc0-9ef8-64a6f082a5a7)
 
 Be sure to keep this up-to-date as you subscribe, unsubscribe, and change preferences. This list is what determines which Stream Links you will get.
+
+### Settings: Stream Link Mappings
 
 4. <b>Stream Link Manager for Channels</b> uses JustWatch as the source for the final generated Stream Links. While a process is undertaken to "clean" the links of any tracking information, some may still be imperfect or have ways to work better with a "mapping". You have the ability to activate and/or create/delete those mappings:
 
@@ -537,6 +548,8 @@ Out-of-the-box, several are included that are all functional as well as informat
 
 It is not required to set these immediately; they can be added, deleted, or modified at any time.
 
+### Settings: Channels URL
+
 5. Next, make sure the Channels URL is correct.
 
 ![image](https://github.com/user-attachments/assets/92cd55ac-da0d-4c4e-b2ca-38c70ef267c0)
@@ -552,6 +565,8 @@ http://host.docker.internal:8089
 ```
 
 ![image](https://github.com/user-attachments/assets/b6129807-849b-48a5-9c53-ec8ee6374f32)
+
+### Settings: Channels Directory
 
 6. Similarly, in order for the program to work correctly, it needs to be pointed to your Channels DVR folder. During initialization, an attempt was made to find the folder. If it could not be discovered, the directory you installed the program in was used.
 
@@ -575,11 +590,15 @@ This is the folder you set during installation and should be what you are using.
 
 Do note that you <i>must</i> use the parent Channels DVR directory, not the ```Imports``` or anything similar. If you do not set this correctly or do not have access from the machine you installed <b>Stream Link Manager for Channels</b> on, then you will not be able to generate Stream Links that Channels DVR can see, nor be able to get updates from Channels DVR when programs are watched and deleted.
 
+### Settings: Advanced / Experimental
+
 7. Under ```Advanced / Experimental```, you will find some tools to manage the program and your results.
 
 ![image](https://github.com/user-attachments/assets/ee0c303d-d9c5-40b1-8108-bec8296b15c8)
 
 ```Run 'Prune' function in Channels``` is on by default, which means that the program will initiate a delete in Channels DVR for any missing personal media, not just Stream Links. You may decide that you do not want this to run automatically.
+
+### Settings: Scheduler + Run Processes and Logs
 
 8. Finally, there is the ```Scheduler```.
 
@@ -613,6 +632,8 @@ If you are looking for additional detail as to what transpired, the ```Logs``` a
 ![image](https://github.com/user-attachments/assets/a5467c2e-8a06-4c3b-b9cc-c51250aa7908)
 
 Unlike the notifications and live process trackers, the log is in order of action.
+
+### Search and Add Movies and Shows
 
 9. With this all in place, you can now navigate to ```Add Programs```.
 
@@ -669,6 +690,8 @@ Note that you will only be allowed to continue once you've correctly put in the 
 
 Here you will see the episodes created as designed by the user. It should be highlighted that manual entries require a ```Stream Link Override``` to be entered, otherwise they will not generate a Stream Link file.
 
+### Modify Programs
+
 10. Even if a Movie or Show is added through search or manual selection, that does not mean they are set in stone. You can use the ```Modify Programs``` area to make any update as desired.
 
 ![image](https://github.com/user-attachments/assets/a0a4e244-0288-48f8-9a81-26705e034665)
@@ -694,6 +717,8 @@ The ```Current Stream Link``` field having the ```skipped_for_override``` value 
 Movies are fairly similar to Shows in the options, including updating the ```Title``` and ```Release Year``` itself if the data is incorrect or not how you want it.
 
 ![image](https://github.com/user-attachments/assets/5512fe0c-d5ce-44be-ba16-313c31434314)
+
+### Administrative Functions
 
 11. Aside from these functions, there is not much else a user needs to do. There is the ```Files``` area for viewing the backend data that fuels all of the above, as well as exporting those files for backup and migration purposes.
 
