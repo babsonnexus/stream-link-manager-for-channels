@@ -1,0 +1,51 @@
+
+  <div class="fixed-plugin">
+    <a class="fixed-plugin-button text-dark position-fixed px-3 py-2">
+      <i class="material-icons py-2">palette</i>
+    </a>
+    <div class="card shadow-lg">
+      <div class="card-header pb-0 pt-3">
+        <div class="float-start">
+          <h5 class="mt-3 mb-0">User Interface</h5>
+          <p>Select preferred color scheme</p>
+        </div>
+        <div class="float-end mt-4">
+          <button class="btn btn-link text-dark p-0 fixed-plugin-close-button">
+            <i class="material-icons">clear</i>
+          </button>
+        </div>
+        <!-- End Toggle Button -->
+      </div>
+      <hr class="horizontal dark my-1">
+      <div class="card-body pt-sm-3 pt-0">
+        <!-- Light/Dark Mode -->
+        <div class="mt-2 d-flex">
+          <h6 class="mb-0">Light / Dark</h6>
+          <div class="form-check form-switch ps-0 ms-auto my-auto">
+            <input class="form-check-input mt-1 ms-auto" type="checkbox" id="dark-version">
+          </div>
+        </div>
+        <hr class="horizontal dark my-sm-4">
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+      const darkModeToggle = document.getElementById('dark-version');
+
+      // Check local storage for dark mode preference
+      if (localStorage.getItem('darkMode') === 'true') {
+        darkModeToggle.checked = true;
+        darkMode(darkModeToggle);
+      }
+
+      // Add event listener to the checkbox
+      darkModeToggle.addEventListener('change', function() {
+        darkMode(this);
+        // Save the user's choice in local storage
+        localStorage.setItem('darkMode', this.checked);
+      });
+    });
+  </script>
+  
