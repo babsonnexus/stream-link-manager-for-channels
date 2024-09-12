@@ -28,8 +28,6 @@ If you are not using <i>OliveTin/Project One-Click</i>, it is recommended to ins
 
 ### Stack (Docker Compose)
 ```
-version: '3.9'
-
 services:
   slm:
     image: ghcr.io/babsonnexus/stream-link-manager-for-channels:${TAG:-latest}
