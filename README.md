@@ -1,5 +1,3 @@
-<b>NOTE:</b> This is a placeholder for an upcoming deployment.
-
 ![slm_logo](https://github.com/user-attachments/assets/cb501b0c-8fd7-4468-a37a-f72e43347609)
 
 ---
@@ -34,7 +32,7 @@ version: '3.9'
 
 services:
   slm:
-    image: COMING_SOON:${TAG:-latest}
+    image: ghcr.io/babsonnexus/stream-link-manager-for-channels:${TAG:-latest}
     container_name: slm
     ports:
       - "${SLM_PORT:-5000}:5000"
@@ -66,18 +64,18 @@ Follow the directions above for <b>SLM_PORT</b> in place of ```[YOUR_PORT_HERE]`
 
 #### Most Cases
 ```
-docker run -d --restart=unless-stopped --name slm -p [YOUR_PORT_HERE]:5000 -v slm_files:/app/program_files -v "[PATH_TO_CHANNELS_FOLDER]":/app/channels_folder -e TZ="[TIMEZONE]" [COMING_SOON]:latest
+docker run -d --restart=unless-stopped --name slm -p [YOUR_PORT_HERE]:5000 -v slm_files:/app/program_files -v "[PATH_TO_CHANNELS_FOLDER]":/app/channels_folder -e TZ="[TIMEZONE]" ghcr.io/babsonnexus/stream-link-manager-for-channels:latest
 ```
 
 #### Some Linux Cases
 ```
-docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=[YOUR_PORT_HERE] -v slm_files:/app/program_files -v "[PATH_TO_CHANNELS_FOLDER]":/app/channels_folder -e TZ="[TIMEZONE]" [COMING_SOON]:latest
+docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=[YOUR_PORT_HERE] -v slm_files:/app/program_files -v "[PATH_TO_CHANNELS_FOLDER]":/app/channels_folder -e TZ="[TIMEZONE]" ghcr.io/babsonnexus/stream-link-manager-for-channels:latest
 ```
 
 #### Examples
 ```
-docker run -d --restart=unless-stopped --name slm -p 7900:5000 -v slm_files:/app/program_files -v "C:/Files/Media/Channels DVR":/app/channels_folder -e TZ="America/New_York" [COMING_SOON]:latest
-docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=7900 -v slm_files:/app/program_files -v "/somewhere/channels_dvr":/app/channels_folder -e TZ="America/New_York" [COMING_SOON]:latest
+docker run -d --restart=unless-stopped --name slm -p 7900:5000 -v slm_files:/app/program_files -v "C:/Files/Media/Channels DVR":/app/channels_folder -e TZ="America/New_York" ghcr.io/babsonnexus/stream-link-manager-for-channels:latest
+docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=7900 -v slm_files:/app/program_files -v "/somewhere/channels_dvr":/app/channels_folder -e TZ="America/New_York" ghcr.io/babsonnexus/stream-link-manager-for-channels:latest
 ```
 
 ## Windows
