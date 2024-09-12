@@ -26,7 +26,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.09.12.0927"
+slm_version = "v2024.09.12.1808"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
