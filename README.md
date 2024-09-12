@@ -81,8 +81,10 @@ docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=790
 ```
 
 ## Windows
-1. Download the ```slm.bat``` file and place it in the final destination folder.
-   
+1. Download the [slm.bat](https://github.com/babsonnexus/stream-link-manager-for-channels/blob/main/executables/slm.bat) file and place it in the final destination folder.
+
+![image](https://github.com/user-attachments/assets/49a843e6-3819-4a3a-9513-a8c6768d269f)
+
 2. Open a ```Command Prompt```, navigate to that directory, and enter the following command:
 
 ```
@@ -154,7 +156,11 @@ $env:SLM_PORT
 11. With all this in place, you are now safe to start the program!
 
 ## Linux
-1. Download the ```slm.sh``` file and place it in the final destination folder. You can also do so by opening a terminal, navigating to that directory, and entering the following command:
+1. Download the ```slm.sh``` file and place it in the final destination folder.
+
+![image](https://github.com/user-attachments/assets/49a843e6-3819-4a3a-9513-a8c6768d269f)
+
+You can also do so by opening a terminal, navigating to that directory, and entering the following command:
 
 ```
 wget -q -O "slm.sh" 'https://[LINK_COMING_SOON]'
