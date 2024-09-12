@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  slm:
+    image: ghcr.io/babsonnexus/stream-link-manager-for-channels:${TAG:-latest}
+    container_name: slm
+    ports:
+      - "${SLM_PORT:-5000}:5000"
+    volumes:
+      - slm_files:/app/program_files
+      - ${CHANNELS_FOLDER}:/app/channels_folder
+    environment:
+      - TZ=${TIMEZONE:-UTC}
+    restart: unless-stopped
+
+volumes:
+  slm_files:
