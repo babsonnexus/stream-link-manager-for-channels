@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   slm:
     image: ghcr.io/babsonnexus/stream-link-manager-for-channels:${TAG:-latest}
