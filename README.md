@@ -6,7 +6,7 @@ In <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to ad
 
 Enter <b>Stream Link Manager for Channels</b>!
 
-![image](https://github.com/user-attachments/assets/56f18e08-c1de-4d54-927f-8a5b7afe7e05)
+![image](https://github.com/user-attachments/assets/ae97c7d1-c872-4204-bd68-8cb473d1597c)
 
 <b>Stream Link Manager for Channels</b> is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order to determine the appropriate link. After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another, <b>Stream Link Manager for Channels</b> will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
 
