@@ -1,0 +1,204 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Modify Programs {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<style>
+  .grid-container {
+    display: grid;
+    grid-template-columns: 1.5fr 4fr 4fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  .grid-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .form-check {
+    display: flex;
+    align-items: center;
+    gap: 3.5em; /* Adjust the gap as needed */
+  }
+
+  .form-check-label {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .form-check-input {
+    flex-shrink: 0;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .btn {
+    width: 100%;
+    box-sizing: border-box;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+  <div class="container-fluid py-4">
+    <div class="row min-vh-80 h-100">
+      <div class="col-12">
+        <form method="POST" action="/modifyprograms" id="process-form" enctype="multipart/form-data">
+          <!-- Select Program Section -->
+          <h4>Select a Program...</h4>
+          <select name="title" id="title_select" style="width: calc(40%);" onchange="setEntryId()">
+            {% for item in html_sorted_bookmarks %}
+                <option value="{{ item.title }} ({{ item.release_year }}) | {{ item.object_type }}" data-entry-id="{{ item.entry_id }}" 
+                    {% if item.entry_id == html_entry_id_selected %}selected{% endif %}>
+                    {{ item.title }} ({{ item.release_year }}) | {{ item.object_type }}
+                </option>
+            {% endfor %}
+          </select>
+          <input type="hidden" name="entry_id" id="entry_id">
+          <button type="submit" name="action" value="program_modify_edit" class="btn bg-gradient-primary w-15 my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Edit</button>
+          <button type="submit" name="action" value="program_modify_delete" class="btn bg-gradient-primary w-15 my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Delete</button>
+          <button type="submit" name="action" value="program_modify_generate" class="btn bg-gradient-primary w-15 my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Generate Stream Links</button>
+          <p><div id="html_program_modify_message">{{ html_program_modify_message }}</div></p>
+          <hr>
+          <!-- Title & Release Year Section -->
+          {% if html_edit_flag %}
+            <label for="field_title">Title:</label>
+            <input type="text" id="field_title" name="field_title" value="{{ html_title_selected }}" placeholder="A 'Title' is required..." style="width: calc(40%);">
+            <label for="field_release_year">Release Year:</label>
+            <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected}}" placeholder="Enter year (i.e., 2024)" style="width: calc(15%);">
+            <hr>
+          {% endif %}
+          <!-- START: Looping for Bookmarks Statuses Selected -->
+          <div class="container-fluid">
+            <input type="hidden" name="field_object_type" id="field_object_type" value="{{ html_object_type_selected }}">
+            {% if html_object_type_selected == 'MOVIE' %}
+            <div class="grid-container" style="text-align: center;">
+              <div class="grid-item"><h6>Watched / Unwatched</h6></div>
+              <div class="grid-item"><h6>Current Stream Link</h6></div>
+              <div class="grid-item"><h6>Stream Link Override</h6></div>
+            </div>
+            {% endif %}
+            {% if html_object_type_selected == 'SHOW' %}
+            <div class="grid-container" style="text-align: center;">
+              <div class="grid-item"><h6>Watched / Unwatched</h6></div>
+              <div class="grid-item"><h6>Current Stream Link</h6></div>
+              <div class="grid-item"><h6>Stream Link Override</h6></div>
+              <div class="grid-item"><h6>Episode Prefix</h6></div>
+              <div class="grid-item"><h6>Action</h6></div>
+            </div>
+            {% endif %}
+            {% for item in html_bookmarks_statuses_selected %}
+              <!-- MOVIE: Edit Section -->
+              {% if html_object_type_selected == 'MOVIE' %}
+              <div class="grid-container">
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" class="form-check-input" {% if item.status|lower == 'unwatched' %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="grid-item">
+                  <input type="text" value="{{ item.stream_link }}" readonly style="background-color: #d1cdcde5;">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
+                </div>
+              </div>
+              {% endif %}
+              <!-- SHOW: Edit Section -->
+              {% if html_object_type_selected == 'SHOW' %}
+              <input type="hidden" name="field_season_episode_{{ loop.index }}" id="field_season_episode_{{ loop.index }}" value="{{ item.season_episode }}">
+              <div class="grid-container">
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <label class="form-check-label text-body text-truncate w-80 mb-0" for="field_status_{{ loop.index }}">{{ item.season_episode }}</label>
+                    <input type="checkbox" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" class="form-check-input" {% if item.status|lower == 'unwatched' %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="grid-item">
+                  <input type="text" value="{{ item.stream_link }}" readonly style="background-color: #d1cdcde5;">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="field_episode_prefix_{{ loop.index }}" name="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}" placeholder="i.e., (SUB), (DUB)">
+                </div>
+                <div class="grid-item">
+                  <button type="submit" name="action" value="program_modify_delete_episode_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2" onclick="allowNavigation_save_cancel()">Delete</button>
+                </div>
+              </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <!-- END: Looping for Bookmarks Statuses Selected -->
+          <!-- SHOWS: Add Episodes -->
+          {% if html_object_type_selected == 'SHOW' %}
+            <hr>
+            <h6>Add Episode</h6>
+            <label for="program_modify_add_episode_season">Season Number:</label>
+            <input type="text" id="program_modify_add_episode_season" name="program_modify_add_episode_season" placeholder="i.e., 1, 2, 3..." style="width: calc(5%);">
+            <label for="program_modify_add_episode_episode">Episode Number:</label>
+            <input type="text" id="program_modify_add_episode_episode" name="program_modify_add_episode_episode" placeholder="i.e., 1, 2, 3..." style="width: calc(5%);">
+            <label for="program_modify_add_episode_episode_prefix">Episode Prefix:</label>
+            <input type="text" id="program_modify_add_episode_episode_prefix" name="program_modify_add_episode_episode_prefix" placeholder="i.e., (SUB), (DUB)" style="width: calc(10%);">
+            <label for="program_modify_add_episode_stream_link_override">Stream Link Override:</label>
+            <input type="text" id="program_modify_add_episode_stream_link_override" name="program_modify_add_episode_stream_link_override" placeholder="i.e., https://link_to_website.com/path_to_streamlink" style="width: calc(25%);">
+            <button type="submit" name="action" value="program_modify_add_episode" class="btn bg-gradient-primary w-20 my-2 mb-2" onclick="allowNavigation_save_cancel()">Add Episode</button>
+          {% endif %}
+          <!-- Save / Cancel Section -->
+          {% if html_edit_flag %}
+            <hr>
+            <button type="submit" name="action" value="program_modify_save" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_save_cancel()">Save</button>
+            <button type="submit" name="action" value="program_modify_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_save_cancel()">Finish / Cancel</button>
+            <script>
+              let allowNavigate_save_cancel = false;
+        
+              function allowNavigation_save_cancel() {
+                allowNavigate_save_cancel = true;
+              }
+        
+              window.onbeforeunload = function() {
+                if (!allowNavigate_save_cancel) {
+                  return "WARNING: Do not navigate away before selecting 'Save' or 'Cancel' as your program may not be recorded correctly.";
+                }
+              };
+            </script>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+
+    {% include 'includes/footer.html' %}
+
+  </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<script>
+  function setEntryId() {
+      var select = document.getElementById('title_select');
+      var selectedOption = select.options[select.selectedIndex];
+      var entryId = selectedOption.getAttribute('data-entry-id');
+      document.getElementById('entry_id').value = entryId;
+  }
+
+  // Ensure the hidden input is set correctly on page load
+  document.addEventListener('DOMContentLoaded', function() {
+      setEntryId(); // Call setEntryId to set the entry_id value on page load
+  });
+
+  // Add an event listener to update the entry_id whenever the selection changes
+  document.getElementById('title_select').addEventListener('change', setEntryId);
+</script>
+{% endblock javascripts %}

@@ -1,0 +1,234 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Files {% endblock %} 
+
+{% block stylesheets %}
+<style>
+  .file-input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 2px solid #4c2588;
+    border-radius: 0.25em;
+    padding: 0.5em;
+    background: linear-gradient(195deg, #6a4ca8 0%, #6a4eaa 100%);
+  }
+
+  .file-input-wrapper input[type="file"] {
+    display: none;
+  }
+
+  .file-input-wrapper label {
+    background: linear-gradient(195deg, #4c2588 0%, #4c278a 100%);
+    color: white;
+    border: none;
+    padding: 0.5em 1em;
+    border-radius: 0.25em;
+    cursor: pointer;
+    margin-right: 1em;
+    box-shadow: 0 3px 3px 0 rgba(76, 37, 136, 0.15), 0 3px 1px -2px rgba(76, 37, 136, 0.2), 0 1px 5px 0 rgba(76, 37, 136, 0.15);
+  }
+
+  .file-input-wrapper label:hover {
+    background-color: #4c2588;
+    border-color: #4c2588;
+    box-shadow: 0 14px 26px -12px rgba(76, 37, 136, 0.4), 0 4px 23px 0 rgba(76, 37, 136, 0.15), 0 8px 10px -5px rgba(76, 37, 136, 0.2);
+  }
+
+  .file-input-wrapper label:focus {
+    color: #fff;
+  }
+
+  .file-input-wrapper .file-name {
+    flex-grow: 1;
+    padding: 0.5em;
+    background: #dcc4ff;
+    border: 2px solid #4c2588;
+    border-radius: 0.25em;
+    color: #4c2588;
+    width: calc(100% - 1em - 2px);
+  }
+  
+  .table-wrapper {
+      overflow-y: auto;
+      max-height: 400px; /* Adjust as needed */
+      border: 2px solid #4c2588;
+      border-radius: 0.25em;
+      background: linear-gradient(195deg, #6a4ca8 0%, #6a4eaa 100%);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid #4c2588;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background: linear-gradient(195deg, #4c2588 0%, #4c278a 100%);
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr {
+      border: 1px solid #4c2588;
+    }
+
+    tr:nth-child(even) {
+      background-color: #dcc4ff;
+    }
+
+    tr:nth-child(odd) {
+      background-color: #f3e6ff;
+    }
+
+    .dark-version .file-input-wrapper {
+      background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+      border-color: #2c1a4a;
+    }
+  
+    .dark-version .file-input-wrapper label {
+      background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+      color: #ccc;
+      box-shadow: 0 3px 3px 0 rgba(44, 26, 74, 0.15), 0 3px 1px -2px rgba(44, 26, 74, 0.2), 0 1px 5px 0 rgba(44, 26, 74, 0.15);
+    }
+  
+    .dark-version .file-input-wrapper label:hover {
+      background-color: #2c1a4a;
+      border-color: #2c1a4a;
+      box-shadow: 0 14px 26px -12px rgba(44, 26, 74, 0.4), 0 4px 23px 0 rgba(44, 26, 74, 0.15), 0 8px 10px -5px rgba(44, 26, 74, 0.2);
+    }
+  
+    .dark-version .file-input-wrapper .file-name {
+      background: #3c2a6a;
+      border-color: #2c1a4a;
+      color: #ccc;
+    }
+  
+    .dark-version .table-wrapper {
+      background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+      border-color: #2c1a4a;
+    }
+  
+    .dark-version th {
+      background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+      color: #ccc;
+    }
+  
+    .dark-version tr:nth-child(even) {
+      background-color: #2c1a4a;
+    }
+  
+    .dark-version tr:nth-child(odd) {
+      background-color: #3c2a6a;
+    }
+  
+    .dark-version td {
+      color: #ccc;
+    }
+
+  .file_header {
+    height: 3em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin: 0;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="row min-vh-80 h-100 justify-content-center">
+      <form method="POST" action="/files" id="process-form" enctype="multipart/form-data">
+        <div class="row min-vh-25 h-100 justify-content-center">
+          <div style="width: 20%">
+            <h4 class="file_header">Settings</h4>
+            <button type="submit" name="action" value="view_settings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">View</button>
+            <button type="submit" name="action" value="export_settings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Export</button>
+            <button type="submit" name="action" value="replace_settings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Replace</button>
+            <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+              <label for="file_settings">Browse...</label>
+              <input type="file" id="file_settings" name="file_settings" class="form-control" onchange="document.getElementById('file_file_settings').textContent = this.files[0].name">
+              <div id="file_file_settings" class="file-name">No file chosen</div>
+            </div>
+          </div>
+          <div style="width: 20%">
+            <h4 class="file_header">Streaming Services</h4>
+            <button type="submit" name="action" value="view_streaming_services" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">View</button>
+            <button type="submit" name="action" value="export_streaming_services" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Export</button>
+            <button type="submit" name="action" value="replace_streaming_services" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Replace</button>
+            <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+              <label for="file_streaming_services">Browse...</label>
+              <input type="file" id="file_streaming_services" name="file_streaming_services" class="form-control" onchange="document.getElementById('file_file_streaming_services').textContent = this.files[0].name">
+              <div id="file_file_streaming_services" class="file-name">No file chosen</div>
+            </div>
+          </div>
+          <div style="width: 20%">
+            <h4 class="file_header">Stream Link Mappings</h4>
+            <button type="submit" name="action" value="view_slmappings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">View</button>
+            <button type="submit" name="action" value="export_slmappings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Export</button>
+            <button type="submit" name="action" value="replace_slmappings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Replace</button>
+            <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+              <label for="file_slmappings">Browse...</label>
+              <input type="file" id="file_slmappings" name="file_slmappings" class="form-control" onchange="document.getElementById('file_file_slmappings').textContent = this.files[0].name">
+              <div id="file_file_slmappings" class="file-name">No file chosen</div>
+            </div>
+          </div>
+          <div style="width: 20%">
+            <h4 class="file_header">Bookmarks</h4>
+            <button type="submit" name="action" value="view_bookmarks" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">View</button>
+            <button type="submit" name="action" value="export_bookmarks" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Export</button>
+            <button type="submit" name="action" value="replace_bookmarks" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Replace</button>
+            <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+              <label for="file_bookmarks">Browse...</label>
+              <input type="file" id="file_bookmarks" name="file_bookmarks" class="form-control" onchange="document.getElementById('file_file_bookmarks').textContent = this.files[0].name">
+              <div id="file_file_bookmarks" class="file-name">No file chosen</div>
+            </div>
+          </div>
+          <div style="width: 20%">
+            <h4 class="file_header">Bookmarks Statuses</h4>
+            <button type="submit" name="action" value="view_bookmarks_statuses" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">View</button>
+            <button type="submit" name="action" value="export_bookmarks_statuses" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Export</button>
+            <button type="submit" name="action" value="replace_bookmarks_statuses" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Replace</button>
+            <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+              <label for="file_bookmarks_statuses">Browse...</label>
+              <input type="file" id="file_bookmarks_statuses" name="file_bookmarks_statuses" class="form-control" onchange="document.getElementById('file_file_bookmarks_statuses').textContent = this.files[0].name">
+              <div id="file_file_bookmarks_statuses" class="file-name">No file chosen</div>
+            </div>
+          </div>
+        </div>
+      </form>
+      <div id="table-container">
+        {% if table_html %}
+          <div class="table-wrapper">
+            <table id="myTable">
+              {{ table_html|safe }}
+            </table>
+          </div>
+        {% endif %}
+        {% if replace_message %}
+          <p>{{ replace_message }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% include 'includes/footer.html' %}
+
+  </div>
+{% endblock content %}
+
+{% block javascripts %}
+  <!-- Table Filter/Sort -->
+  <script>
+    $(document).ready(function() {
+      $('#myTable').DataTable();
+    });
+  </script>
+{% endblock javascripts %}

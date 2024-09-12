@@ -1,0 +1,40 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Logs {% endblock %}
+
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row min-vh-80 h-100">
+        <div class="col-12">
+            <pre style="white-space: pre; overflow-x: auto; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll;" id="scrollable">
+                {%- for line in html_page_lines %}
+{{ line }}
+                {%- endfor %}
+            </pre>      
+            <div class="text-center">
+                <form method="post" action="{{ url_for('webpage_logs', page=html_page) }}">
+                    <input type="hidden" name="page" value="{{ html_page }}">
+                    <button type="submit" name="action" value="first" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if not html_has_previous %}disabled{% endif %}>First</button>
+                    <button type="submit" name="action" value="previous" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if not html_has_previous %}disabled{% endif %}>Previous</button>
+                    <input type="number" name="go_page" value="{{ html_page }}" min="1" max="{{ total_pages }}" class="form-control d-inline-block w-5 mx-2">
+                    <button type="submit" name="action" value="go" class="btn bg-gradient-primary w-5 my-2 mb-2">Go</button>
+                    <button type="submit" name="action" value="next" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if not html_has_next %}disabled{% endif %}>Next</button>
+                    <button type="submit" name="action" value="last" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if not html_has_next %}disabled{% endif %}>Last</button>
+                </form>                
+            </div>
+        </div>
+    </div>
+    {% include 'includes/footer.html' %}
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var pre = document.getElementById('scrollable');
+        pre.scrollTop = pre.scrollHeight;
+    });
+</script>
+{% endblock javascripts %}

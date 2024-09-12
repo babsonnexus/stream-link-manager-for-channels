@@ -1,0 +1,39 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Home {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+  <div class="container-fluid py-4">
+    <div class="row min-vh-80 h-100">
+      <div class="col-12">
+        <form method="POST" action="/home" id="process-form" enctype="multipart/form-data">
+          <!-- Logo -->
+          <img src="/static/assets/img/slm_logo.png" alt="SLM Logo" style="width: 65%; height: auto;">
+          <!-- Welcome -->
+          <h4>Welcome</h4>
+          <p>Effortlessly manage all your streaming content in one place! Below you will see pertinent notifications like new episodes of a show becoming available, streaming services coming online and being removed, and more. To your left you can bookmark Movies and TV Shows (both through search and manual additions), modify existing programs, and various other management activities. Stream Link Manager for Channels is designed to run with minimal intervention, so you can decide how involved or not you want to be.</p>
+          <hr>
+          <!-- Notifications -->
+          <h4>Notifications</h4>
+          <pre style="white-space: pre; overflow-x: auto; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll;">
+            {%- for line in html_notifications %}
+  {{ line }}
+            {%- endfor %}
+          </pre>
+          <hr>
+        </form>
+      </div>
+    </div>
+
+    {% include 'includes/footer.html' %}
+
+  </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}{% endblock javascripts %}

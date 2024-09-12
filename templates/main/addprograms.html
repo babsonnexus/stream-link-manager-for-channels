@@ -1,0 +1,382 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Add Programs {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<style>
+  .grid-container {
+    display: grid;
+    grid-template-columns: 1.5fr 4fr 1fr;
+    gap: 10px;
+  }
+
+  .grid-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .form-check {
+    display: flex;
+    align-items: center;
+    gap: 3.5em; /* Adjust the gap as needed */
+  }
+
+  .form-check-label {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .form-check-input {
+    flex-shrink: 0;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .btn {
+    width: 100%;
+    box-sizing: border-box;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+  <div class="container-fluid py-4">
+    <div class="row min-vh-80 h-100">
+      <div class="col-12">
+        <form method="POST" action="/addprograms" id="process-form" enctype="multipart/form-data">
+          <!-- Search / Manual Options -->
+          <div class="settings-box" style="width: calc(55%); display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
+            <h6 style="text-align: center;">Search Options</h6>
+            <label for="country_code">Country Code:</label>
+            <select name="country_code" id="country_code"  style="width: calc(13%);">
+                {% for country_code_item in html_valid_country_codes %}
+                    <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %}>{{ country_code_item }}</option>
+                {% endfor %}
+            </select>
+            <label for="language_code">Language Code:</label>
+            <select name="language_code" id="language_code"  style="width: calc(13%);">
+                {% for language_code_item in html_valid_language_codes %}
+                    <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %}>{{ language_code_item }}</option>
+                {% endfor %}
+            </select>
+            <label for="num_results">Number of Results:</label>
+            <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(13%);">
+          </div>
+          <div class="settings-box" style="width: calc(40%); display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
+            <h6 style="text-align: center;">Manual Options</h6>
+            <label for="release_year">Release Year:</label>
+            <input type="text" id="release_year" name="release_year" placeholder="Enter year (i.e., 2024)" style="width: calc(30%);">
+            <label for="program_type">Program Type:</label>
+            <select name="program_type" id="program_type"  style="width: calc(25%);">
+                {% for program_type_item in html_program_types %}
+                    <option value="{{ program_type_item }}" {% if program_type_item == html_program_type_default %}selected{% endif %}>{{ program_type_item }}</option>
+                {% endfor %}
+            </select>
+          </div>
+          <!-- Spacer row -->
+          <div class="row">
+            <div class="col-12 my-2"></div>
+          </div>
+          <!-- Search / Add Manual -->
+          <input type="text" id="program_add" name="program_add" placeholder="Enter the name of a program to search for or add manually..." style="width: calc(65%);">
+          <button type="submit" name="action" value="program_add_search" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Search</button>
+          <button type="submit" name="action" value="program_add_manual" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Add Manual</button>
+          <button type="submit" name="action" value="program_add_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Cancel</button>
+          <p><div id="html_program_add_message">{{ html_program_add_message }}</div></p>
+          <hr>
+          <!-- Display search results -->
+          <div class="text-center">
+            {% if html_program_search_results %}
+              {% for program in html_program_search_results %}
+                <button type="submit" name="action" class="btn bg-gradient-primary w-75 my-2 mb-2" value="program_search_result_{{ loop.index }}">
+                  <div style="font-size: 2em;">{{ program.title }} ({{ program.release_year }}) | {{ program.object_type }}</div>
+                  <hr>
+                  <div style="text-align: left; text-transform: none; font-weight: normal; font-size: 1.25em;">{{ program.short_description }}</div>
+                </button>
+                <!-- Spacer row -->
+                <div class="row">
+                  <div class="col-12 my-2"></div>
+                </div>
+              {% endfor %}
+              <hr>
+            {% endif %}
+          </div>
+          <!-- Get manual episodes -->
+          <div>
+            {% if html_season_episode_manual_flag %}
+              <label for="last_season_number">Last Season Number:</label>
+              <input type="number" id="last_season_number" name="last_season_number" placeholder="i.e., 1, 2, 3, etc..." style="width: calc(30%);" oninput="generateEpisodeInputs()" min="1">
+              <div id="episode_inputs"></div>
+              <hr>
+              <button type="submit" name="action" value="season_episode_manual_next" class="btn bg-gradient-primary w-25 my-2 mb-2" id="season_episode_manual_next" disabled onclick="allowNavigation_season_episode_manual()">Next...</button>
+              <hr>
+              <script>
+                let allowNavigate_season_episode_manual = false;
+
+                function allowNavigation_season_episode_manual() {
+                  allowNavigate_season_episode_manual = true;
+                }
+
+                window.onbeforeunload = function() {
+                  if (!allowNavigate_season_episode_manual) {
+                    return "WARNING: No episodes will be created if you navigate away now. Please finish filling out the fields!";
+                  }
+                };
+
+                function generateEpisodeInputs() {
+                  const lastSeasonNumber = document.getElementById('last_season_number').value;
+                  const episodeInputsDiv = document.getElementById('episode_inputs');
+                  episodeInputsDiv.innerHTML = ''; // Clear previous inputs
+
+                  for (let i = 1; i <= lastSeasonNumber; i++) {
+                    const label = document.createElement('label');
+                    label.setAttribute('for', `season_episode_number_${i}`);
+                    label.textContent = `Number of Episodes for Season ${i}:`;
+
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `season_episode_number_${i}`;
+                    input.name = `season_episode_number_${i}`;
+                    input.placeholder = 'i.e., 1, 2, 3, etc...';
+                    input.style.width = 'calc(30%)';
+                    input.min = '1';
+                    input.oninput = checkAllInputsFilled;
+
+                    episodeInputsDiv.appendChild(label);
+                    episodeInputsDiv.appendChild(input);
+                    episodeInputsDiv.appendChild(document.createElement('br'));
+                  }
+
+                  checkAllInputsFilled(); // Re-check all inputs after generating new ones
+                }
+
+                function checkAllInputsFilled() {
+                  const lastSeasonNumber = document.getElementById('last_season_number').value;
+                  let allFilled = true;
+
+                  for (let i = 1; i <= lastSeasonNumber; i++) {
+                    const input = document.getElementById(`season_episode_number_${i}`);
+                    if (!input.value || input.value <= 0) {
+                      allFilled = false;
+                      break;
+                    }
+                  }
+
+                  document.getElementById('season_episode_manual_next').disabled = !allFilled;
+                }
+              </script>
+            {% endif %}
+          </div>
+          <!-- Manual stream link: movie -->
+          <div>
+            {% if html_stream_link_override_movie_flag %}
+            <h4>OPTIONAL: Stream Link Override</h4>
+            <p>To override any potentially generated stream link, enter an address here. NOTE: This is required for manual programs.</p>
+            <div class="row">
+              <div class="col-12 my-2"></div>
+            </div>
+            <input type="text" id="stream_link_override_movie" name="stream_link_override_movie" placeholder="i.e., https://link_to_website.com/path_to_streamlink" style="width: calc(65%);">
+            <hr>
+            {% endif %}
+          </div>
+          <!-- Display episodes -->
+          <div>
+            {% if html_season_episodes %}
+              <h4 for="select_episodes">OPTIONAL: Episode Settings</h4>
+              <ul>
+                <li>Mark episodes as 'watched' by unchecking.</li>
+                <li>Override any potentially generated stream link by entering an address. NOTE: This is required for manual programs.</li>
+                <li>Add a prefix to stream link file names for tracking purposes (i.e., [DUB] vs. [SUB]) by entering a value.</li>
+              </ul>
+              <div class="grid-container" style="text-align: center;">
+                <div class="grid-item"><h6>Watched / Unwatched</h6></div>
+                <div class="grid-item"><h6>Stream Link Override</h6></div>
+                <div class="grid-item"><h6>Episode Prefix</h6></div>
+              </div>
+              <div class="grid-container" style="text-align: center;">
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <label class="form-check-label text-body text-truncate w-80 mb-0" for="check_all_global" style="font-weight: bold; font-size: 1.2em;">All Episodes</label>
+                    <input type="checkbox" class="form-check-input" id="check_all_global" onclick="toggleAllCheckboxes(this)" checked>
+                  </div>
+                </div>
+              </div>
+              {% set processed_seasons = {} %}
+              {% for item in html_season_episodes %}
+                {% set season = item.season_episode.split('E')[0] %}
+                {% if season not in processed_seasons %}
+                  {% set processed_seasons = processed_seasons.update({season: True}) %}
+                  <div class="grid-container" style="text-align: center;">
+                    <div class="grid-item">
+                      <div class="form-check form-switch ps-0 is-filled">
+                        <label class="form-check-label text-body text-truncate w-80 mb-0" for="check_all_{{ season }}" style="font-weight: bold; font-size: 1.1em;">All {{ season }}</label>
+                        <input type="checkbox" class="form-check-input" id="check_all_{{ season }}" onclick="toggleSeasonCheckboxes('{{ season }}', this)" checked>
+                      </div>
+                    </div>
+                  </div>
+                {% endif %}
+                <input type="hidden" name="field_season_episode_{{ loop.index }}" id="field_season_episode_{{ loop.index }}" value="{{ item.season_episode }}">
+                <div class="grid-container">
+                  <div class="grid-item">
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <label class="form-check-label text-body text-truncate w-80 mb-0" for="field_status_{{ loop.index }}">{{ item.season_episode }}</label>
+                      <input type="checkbox" class="form-check-input episode-checkbox {{ season }}" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" checked>
+                    </div>
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="field_episode_prefix_{{ loop.index }}" name="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}" placeholder="i.e., (SUB), (DUB)">
+                  </div>
+                </div>
+              {% endfor %}
+              <hr>
+            {% endif %}
+          </div>
+          <!-- Display Done / Generate Stream Link Buttons -->
+          <div>
+            {% if html_done_generate_flag %}
+              <button type="submit" name="action" value="program_add_done" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Done</button>
+              <button type="submit" name="action" value="program_add_generate" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Generate Stream Links</button>
+              <hr>
+              <h4 style="text-align: center;" for="log-output">Live Process Log (While Running)</h4>
+              <pre style="white-space: pre; overflow-x: auto; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll;">
+                <div id="log-output" style="text-align: left; white-space: pre-wrap;"></div>
+              </pre>
+              <hr>
+              <script>
+                let allowNavigate_done_generate = false;
+          
+                function allowNavigation_done_generate() {
+                  allowNavigate_done_generate = true;
+                }
+          
+                window.onbeforeunload = function() {
+                  if (!allowNavigate_done_generate) {
+                    return "WARNING: Do not navigate away before selecting 'Done' or 'Generate Stream Links' as your program may not be saved correctly.";
+                  }
+                };
+              </script>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="modal" id="loadingModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Process Running</h5>
+          </div>
+          <div class="modal-body">
+            <p>Please wait while the process is running. Do not navigate away from this page.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% include 'includes/footer.html' %}
+
+  </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<script>
+  document.getElementById('process-form').addEventListener('submit', function(event) {
+    const logOutput = document.getElementById("log-output");
+    logOutput.innerHTML = ""; // Clear previous log content
+
+    // Show the modal
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'), {
+      backdrop: 'static',
+      keyboard: false
+    });
+    loadingModal.show();
+
+    // Disable all navigation links
+    document.querySelectorAll('a').forEach(element => {
+      element.setAttribute('disabled', 'true');
+      element.addEventListener('click', function(event) {
+        event.preventDefault();
+      });
+    });
+
+    setTimeout(() => {
+      const eventSource = new EventSource("/stream_log");
+      eventSource.onmessage = function(event) {
+        logOutput.innerHTML = event.data + "<br>" + logOutput.innerHTML;
+      };
+      eventSource.onerror = function() {
+        eventSource.close();
+      };
+    }, 0); // Delay to ensure the process starts before streaming logs
+  });
+</script>
+
+<script>
+  function toggleAllCheckboxes(source) {
+    const checkboxes = document.querySelectorAll('.episode-checkbox');
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = source.checked;
+    });
+    updateSeasonCheckboxes();
+    updateAllCheckbox();
+  }
+
+  function toggleSeasonCheckboxes(season, source) {
+    const checkboxes = document.querySelectorAll('.' + season);
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = source.checked;
+    });
+    updateSeasonCheckboxes();
+    updateAllCheckbox();
+  }
+
+  function updateSeasonCheckboxes() {
+    const seasons = document.querySelectorAll('[id^="check_all_"]');
+    seasons.forEach(seasonCheckbox => {
+      const season = seasonCheckbox.id.replace('check_all_', '');
+      const checkboxes = document.querySelectorAll('.' + season);
+      const anyChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+      seasonCheckbox.checked = anyChecked;
+    });
+  }
+
+  function updateAllCheckbox() {
+    const allCheckbox = document.getElementById('check_all_global');
+    const seasonCheckboxes = document.querySelectorAll('[id^="check_all_"]');
+    const anySeasonChecked = Array.from(seasonCheckboxes).some(checkbox => checkbox.checked);
+    allCheckbox.checked = anySeasonChecked;
+  }
+
+  document.querySelectorAll('.episode-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      updateSeasonCheckboxes();
+      updateAllCheckbox();
+    });
+  });
+
+  document.querySelectorAll('[id^="check_all_"]').forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      const season = checkbox.id.replace('check_all_', '');
+      toggleSeasonCheckboxes(season, checkbox);
+    });
+  });
+
+  document.getElementById('check_all_global').addEventListener('change', (event) => {
+    toggleAllCheckboxes(event.target);
+  });
+</script>
+{% endblock javascripts %}

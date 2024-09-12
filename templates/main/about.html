@@ -1,0 +1,404 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} About {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+  <div class="container-fluid py-4">
+    <div class="row min-vh-80 h-100">
+      <div class="col-12">
+        <!-- Version History -->
+        <h4>Version History</h4>
+        <div style="overflow-x: auto; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll;">
+          <h6>v2024.09.12.0927</h6>
+          <p>
+            <ul>
+              <li>RELEASE: Production go-live version</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.09.11.1338 (BETA)</h6>
+          <p>
+            <ul>
+              <li>ADDED: Stream Link Mappings an option in Files areas</li>
+              <li>MODIFIED: Headers and other layout controls for Files area</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.09.09.1711 (BETA)</h6>
+          <p>
+            <ul>
+              <li>ADDED: New method for user-controlled mapping of Stream Links</li>
+              <li>ADDED: Base examples for mapping Stream Links</li>
+              <li>DEPRECATED: Hardcoded Stream Link mappings</li>
+              <li>DEPRECATED: Experimental setting for Hulu to Disney+ (now user controlled)</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.09.06.1459 (BETA)</h6>
+          <p>
+            <ul>
+              <li>MODIFIED: Log area now loads scrolled down to the bottom</li>
+              <li>FIXED: Formatting issue introduced to About | Versions area</li>
+              <li>MODIFIED: Programs that do not generate a Stream Link now give a reason</li>
+              <li>MODIFIED: Any time a path is referenced, it is normalized in all systems</li>
+              <li>FIXED: When deleting a program, the file(s) was/were not removed at that time</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.09.05.0824 (BETA)</h6>
+          <p>
+            <ul>
+              <li>MODIFIED: New method for handling special characters like 'é' in file names of certain systems.</li>
+              <li>MODIFIED: Error handling for file creation and deletion to not cause crashes.</li>
+              <li>MODIFIED: New flavicon and navigation icon. Also fixed alignment of the word "Navigation" with icon.</li>
+              <li>ADDED: New SLM logo to home page.</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.09.04.1122 (BETA)</h6>
+          <p>
+            <ul>
+              <li>MODIFIED: Added additional encoding when handling files (reading, writing, creating, and removing)</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.09.02.1617 (BETA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: If a user navigates away from the Modify Programs area with an active edit and ignores all warnings, the edit will remain open upon return to that area</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.09.02.0919 (BETA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: Rare situation where a TV Show has no episodes, triggering Movie override options</li>
+              <li>MODIFIED: Limited backups to 3 instead of 10 due to growing log file size from always-on SLM</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.08.28.1554 (BETA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: Importing updates from Channels in Linux, Docker, and similar situations</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.08.28.0926 (BETA)</h6>
+          <p>
+            <ul>
+              <li>ADDED: Cleaning of Amazon Prime Stream Links</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.08.27.0928 (BETA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: With a new show, watched episodes were being marked as blank instead of "watched"</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.08.27.0846 (BETA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: Adding shows with a lot of episodes would fail</li>
+              <li>FIXED: Existing shows with a lot of episodes would fail on modification</li>
+              <li>ADDED: Fixed limit control to data elements submitted from webpage at a time (100,000)</li>
+              <li>MODIFIED: Optimized process for adding a new show so that it is almost instant</li>
+              <li>DEPRECATED: Old Watched/Unwatched methodology</li>
+              <li>ADDED: When adding a new show, more granular controls for all episodes and seasons</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.08.22.1439 (BETA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: Previously bookmarked Shows and Movies were bringing up Movie override and finishing menu</li>
+              <li>MODIFIED: SLM now uses its own flavicon and icon in general</li>
+              <li>MODIFIED: Sidebar no longer disappears in small windows / portrait screens</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.08.19.1117 (BETA)</h6>
+          <p>
+            <ul>
+              <li>NEW: During first time initialization, will search for country code</li>
+              <li>REMOVED: Asking for country code during first time initialization</li>
+              <li>MODIFIED: First time initialization no longer contains interactive elements</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.08.18.1413 (BETA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: SLM was not binding to server, making is inaccessable on other machines</li>
+              <li>MODIFIED: slm.bat now automatically adds the port to bypass the firewall as a safety measure</li>
+              <li>MODIFIED: GitHub Repo directions around ports</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.08.18.1105 (BETA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: For some shows, some seasons were stored in a different manner, resulting in errors during new episode checks</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.08.17.1606 (BETA)</h6>
+          <p>
+            <ul>
+              <li>UPDATED: Additional error handling for new episode lists (attempting to track source of issues)</li>
+              <li>MODIFIED: Log Webpage uses 10,000 lines instead of 1,000</li>
+              <li>ADDED: New Log Webpage functionality for First, Last, and select page (Go)</li>
+              <li>REMOVED: Redundant "Refresh" functionality on Log Webpage</li>
+              <li>ADDED: More GitHub FAQ for search and new programs</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.08.16.0735 (BETA)</h6>
+          <p>
+            <ul>
+              <li>UPDATED: Error handling for new episode lists</li>
+              <li>UPDATED: slm.bat install directions in file</li>
+              <li>ADDED: Github Windows directions for PowerShell</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.08.15.1533 (BETA)</h6>
+          <p>
+            <ul>
+              <li>NEW: Beta Launch</li>
+              <li>NEW: Migration to Graphical User Interface</li>
+              <li>UPDATED: Backend rewrite for GUI</li>
+              <li>UPDATED: slm.bat functions</li>
+              <li>NEW: GitHub page</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.07.17.0726 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: New episodes were not generating Stream Links</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.07.13.1437 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>MODIFIED: New method for retrieving Streaming Services. This results in a net gain of mostly sports and live streaming services that were unavailable before. No Streaming Services should be removed.</li>
+              <li>DEPRECATED: The use of BeautifulSoup in the code base. From a practical perspective, this means it no longer has to be installed. Installation instructions updated. NOTE: The slm.sh script has been updated, as well, to remove this. Please download and replace with the newer version, though there is no danger if you continue to use the old one.</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.07.11.1139 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: Shows without their own webpages now work the same as any show and can get all episodes. NOTE: If a show is already bookmarked, just check for new episodes and they will be found and get added.</li>
+              <li>MODIFIED: Added an option after search to add a manual program</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.07.10.1221 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>MODIFIED: Additional error handling when certain URLs and data are not available so that the process will continue and not exit out.</li>
+              <li>MODIFIED: Channels URL now uses headers, too.</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.07.10.1117 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>TEMP FIX: Some shows without a URL page would fail getting episodes. Can now bookmark, but will not get any episodes. Will be fixed in a later version.</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.07.03.1114 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>MODIFIED: Error handling for new episodes</li>
+              <li>PREP: Testing for batch-based self-deployment/upgrade method</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.07.01.1019 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: Could no longer get episode list</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.06.27.0918 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: Error finding files during reprocessing</li>
+              <li>MODIFIED: Backups set to 10 instead of 3</li>
+              <li>MODIFIED: Added limits to country and language code inputs</li>
+              <li>ADDED: Ability to test Channels URL in Settings menu</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.06.26.1627 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>MODIFIED: Reprocess logic now takes into account Channels and SLM being on different machines using relative paths.</li>
+              <li>ADDED: All created files (CSV, LOG, etc...) now reside under the _interal\program_files directory. This will allow for persistent data in situations where this would be required (like Docker).</li>
+              <li>ADDED: During start-up, if the created files are in the main directory, they will move to the program_files directory. This makes a seamless upgrade with no user intervention.</li>
+              <li>ADDED: Backup process maintains the 3 last set of user files. A new set is created each time SLM is run. :arrow_left: This will be expanded to 10 in the next update. Accidentally left behind from an earlier test.</li>
+              <li>ADDED: Various checks to make sure the Channels URL is correct and to warn when it is not. Program will not crash if Channels URL is not found, but will move on to other steps (if possible)</li>
+              <li>MODIFIED: Can now break out of "Searching for Channels DVR folder..." instead of waiting for process to complete.</li>
+              <li>GENERAL: Small code improvements and clean-ups</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.06.24.1434 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>RESOLVED: Can now reconnect to JustWatch after website updates</li>
+              <li>ADDED: Check for JustWatch availability during initialization, forcing exit from SLM if cannot be found (NOTE: Added pytimedinput as requirement for running Python directly)</li>
+              <li>ADDED: Error handing for when Channels directory and Steam Link paths cannot be found in settings, file creation, file checks, etc...</li>
+              <li>MODIFIED: Error handling for not able to connect to JustWatch during generation now maintains prior Stream Link after 3 attempts</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.06.22.1709 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>NOTE: Major backend updates!</li>
+              <li>DEPRECATED: simple-justwatch-python-api replaced with internal GraphQL logic</li>
+              <li>UPDATED: New limited version of Reprocessing logic for Stream Links that change but do not impact file size. Also adds back functionality that was removed in v2024.06.16.0806.</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.06.19.0804 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>MODIFIED: Delete/Remove program now instantly gets rid of files</li>
+              <li>MODIFIED: Stand-alone Movies/TV Path variables</li>
+              <li>CONFIRMED: Removing empty directories for dealing with Windows folders being read-only</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.06.17.1156 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>ADDED: Generate Stream Links for single program manually and during program creation</li>
+              <li>FIXED: Remove programs was not working with characters</li>
+              <li>MODIFIED: Scheduling logic for non-executable (run Python directly)</li>
+              <li>MODIFIED: Removing empty directories for dealing with Windows folders being read-only (Potential solution, monitoring)</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.06.16.0806 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>MODIFIED: Error handing for creating/deleting Steam Link files and folders</li>
+              <li>REMOVED: Temporarily disabled "Reprocess" to address incorrect coding and performance issues</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.06.14.1854 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>ADDED: Search for Channels DVR folder during first-time setup</li>
+              <li>MODIFIED: Initialization process</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.06.14.1454 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>FIXED: Stream Link Generation in incorrect priority order (using alpha instead of numeric for Streaming Services)</li>
+              <li>FIXED: // and \ now appear in select directory directions instead of being missing</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.06.14.0835 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>Added the ability to go to any path, drive, or network path</li>
+              <li>Fixed all instances of "steam" as "stream"</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.06.13.1437 (ALPHA)</h6>
+          <p>
+            <ul>
+              <li>Initial Release for invite Alpha test</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.05.31.0000 (PROTOTYPE)</h6>
+          <p>
+            <ul>
+              <li>UPDATED: Prototye Stream Link Manager for Channels 100% functionality</li>
+              <li>BEGIN: Unit Testing and rapid updates</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.05.17.0000 (PROTOTYPE)</h6>
+          <p>
+            <ul>
+              <li>NEW: Prototype Stream Link for Channels 90% functionality</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.04.30.0000 (PROTOTYPE)</h6>
+          <p>
+            <ul>
+              <li>UPDATED: ProtoType_Stream_Link_Maker.py to prompt for asking to search again</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.04.29.0000 (PROTOTYPE)</h6>
+          <p>
+            <ul>
+              <li>RELEASED: ProtoType_Stream_Link_Maker.py</li>
+            </ul>
+          </p>
+          <hr>
+          <h6>v2024.04.01.0000 (PROTOTYPE)</h6>
+          <p>
+            <ul>
+              <li>RELEASED: ProtoType_Stream_Link_File_Creator.py</li>
+            </ul>
+          </p>
+        </div>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
+        <!-- Credits and Resources -->
+        <hr>
+        <h4>Credits and Resources</h4>
+        <a href="https://getchannels.com" target="_blank"><img src="https://m.media-amazon.com/images/I/81ur8yvE11L.png" loading="lazy" style="width: 30%;" class="mb-2"></a><br>
+        <a href="https://www.justwatch.com" target="_blank"><img src="https://m.media-amazon.com/images/I/91Jf7CamLbL.png" loading="lazy" style="width: 30%;" class="mb-2"></a><br>
+        <a href="https://appseed.us" target="_blank"><img src="https://docs.appseed.us/assets/logo2-light.svg" loading="lazy" style="width: 30%;" class="mb-2"></a><br>
+        <a href="https://flask.palletsprojects.com/en/3.0.x" target="_blank"><img src="https://flask.palletsprojects.com/en/3.0.x/_images/flask-horizontal.png" loading="lazy" style="width: 30%;" class="mb-2"></a><br>
+        <a href="https://graphql.org" target="_blank"><img src="https://i0.wp.com/blog.knoldus.com/wp-content/uploads/2020/08/graphQl.png" loading="lazy" style="width: 30%;" class="mb-2"></a><br>
+        <a href="https://www.python.org" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/f/f8/Python_logo_and_wordmark.svg" loading="lazy" style="width: 30%;" class="mb-2"></a><br>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
+        <!-- Support -->
+        <hr>
+        <h4>Support</h4>
+        <p>This project and its upkeep is the work of one person. While it is provided free of charge with no expectations of payment, tips are greatly appreciated!</p>
+        <a href="https://paypal.me/basiljunction" target="_blank"><img src="https://github.com/user-attachments/assets/c2c76924-d4b6-4928-b93f-da958a0c7143" loading="lazy" style="width: 30%;" class="mb-2"></a><br>
+        <a class="btn bg-gradient-primary w-25 my-2 mb-2" target="_blank" href="https://paypal.me/basiljunction" type="button">Tip on PayPal</a>
+      </div>
+    </div>
+
+    {% include 'includes/footer.html' %}
+
+  </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}{% endblock javascripts %}
