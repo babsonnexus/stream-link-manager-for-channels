@@ -156,14 +156,14 @@ $env:SLM_PORT
 11. With all this in place, you are now safe to start the program!
 
 ## Linux
-1. Download the ```slm.sh``` file and place it in the final destination folder.
+1. Download the [slm.sh](https://github.com/babsonnexus/stream-link-manager-for-channels/blob/main/executables/slm.sh) file and place it in the final destination folder.
 
 ![image](https://github.com/user-attachments/assets/49a843e6-3819-4a3a-9513-a8c6768d269f)
 
 You can also do so by opening a terminal, navigating to that directory, and entering the following command:
 
 ```
-wget -q -O "slm.sh" 'https://[LINK_COMING_SOON]'
+wget -q -O "slm.sh" 'https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/main/executables/slm.sh'
 ```
    
 2. Either way, once there, change the security level on the ```slm.sh``` file:
@@ -225,7 +225,7 @@ printenv SLM_PORT
 ## Python
 Using Python directly is not recommended, however it is available as an option. As this is highly technical, only limited support is provided. It is expected that you are fairly familiar with [Python](https://www.python.org/downloads/) and have [pip](https://pip.pypa.io/en/stable/installation/) installed.
 
-1. Download the ```slm_python.zip``` file and place it in the final destination folder.
+1. Download the [slm_python.zip](https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/main/executables/slm_python.zip) file and place it in the final destination folder.
    
 2. Navigate to that directory and extract the contents. Make sure you have not created another subdirectory. When complete, remove the ```slm_python.zip```. It should now look something like this:
 
