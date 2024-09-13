@@ -453,7 +453,11 @@ Replace ```[YOUR_SLM_DIRECTORY]``` with the path you created earlier and save th
 
 ![image](https://github.com/user-attachments/assets/d0c7222c-f78d-4ae0-b0e9-6afb04831aa3)
 
-Do not worry if you do not respond to any prompt or the searches fail; there are automatic timeouts that will move the process along and you can make adjustments in the ```Settings``` later.
+In particular, for Docker, you may see this:
+
+![JP_ScreenShot_2024_09_13_08_31_47](https://github.com/user-attachments/assets/fc2cf06d-7dd1-4496-ac8b-504621206580)
+
+Do not worry if you do not respond to any prompt or the searches faulter; there are automatic timeouts that will move the process along and you can make adjustments in the ```Settings``` later. To be clear, these are not failures and are expected behavior. Everything directly related to <b>Stream Link Manager for Channels</b> is managed from the ```Settings``` area as discussed below.
 
 Also, if you are using Docker, you may still see it says it starts on port 5000. There are no concerns about this as it is being mapped correctly.
 
