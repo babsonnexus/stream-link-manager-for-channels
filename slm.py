@@ -26,7 +26,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.09.13.0834"
+slm_version = "v2024.09.13.1050"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -540,7 +540,7 @@ def find_channels_dvr_path():
             if timeout_occurred:
                 raise TimeoutError # Timeout if serach going for too long
             if search_directory in dirs or search_directory.lower() in dirs:
-                if os.path.abspath(os.path.join(root)).lower().endswith("dvr"):
+                if os.path.abspath(os.path.join(root)).lower().endswith("dvr") or os.path.abspath(os.path.join(root)).lower().endswith("channels_folder"):
                     channels_dvr_path_search = os.path.abspath(os.path.join(root))
                     break  # Stop searching once found
     except TimeoutError:
@@ -2226,7 +2226,7 @@ def webpage_logs():
     lines_per_page = 10000
 
     # Read the file and get the total number of lines
-    with open(log_filename_fullpath, 'r', encoding="utf-8") as file:
+    with open(log_filename_fullpath, 'r', encoding="utf-8", errors='ignore') as file:
         lines = [line.rstrip('\n') for line in file]
     total_lines = len(lines)
     total_pages = (total_lines - 1) // lines_per_page + 1
