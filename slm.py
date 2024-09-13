@@ -26,7 +26,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.09.12.1808"
+slm_version = "v2024.09.13.0834"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -40,6 +40,7 @@ app.request_class = CustomRequest
 script_dir = os.path.dirname(os.path.abspath(__file__))
 script_filename = os.path.basename(__file__)
 log_filename = os.path.splitext(script_filename)[0] + '.log'
+docker_channels_dir = os.path.join(script_dir, "channels_folder")
 program_files_dir = os.path.join(script_dir, "program_files")
 backup_dir = os.path.join(program_files_dir, "backups")
 max_backups = 3
@@ -553,7 +554,11 @@ def find_channels_dvr_path():
         print(f"{current_time()} INFO: Channels DVR folder found!\n")
         channels_dvr_path = channels_dvr_path_search
     else:
-        print(f"{current_time()} INFO: Channels DVR folder not found, defaulting to current directory. Please set your Channels DVR folder in 'Settings'.\n")
+        if os.path.exists(docker_channels_dir):
+            print(f"{current_time()} INFO: Channels DVR folder not found, setting to Docker default: '{docker_channels_dir}'.\n")
+            channels_dvr_path = docker_channels_dir
+        else:
+            print(f"{current_time()} INFO: Channels DVR folder not found, defaulting to current directory. Please set your Channels DVR folder in 'Settings'.\n")
 
     return channels_dvr_path
 
