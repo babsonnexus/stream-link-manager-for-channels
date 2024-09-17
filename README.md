@@ -11,6 +11,29 @@ Enter <b>Stream Link Manager for Channels</b>!
 <b>Stream Link Manager for Channels</b> is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order to determine the appropriate link. After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another, <b>Stream Link Manager for Channels</b> will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
 
 [![image](https://github.com/user-attachments/assets/89f8ef22-80bd-42a5-a827-24723f1c4515)](https://www.youtube.com/watch?v=APuUaAvNo-k)
+* [00:00:00](https://www.youtube.com/watch?v=APuUaAvNo-k&t=0s) Introduction
+* [00:02:14](https://www.youtube.com/watch?v=APuUaAvNo-k&t=134s) Docker Info
+* [00:03:19](https://www.youtube.com/watch?v=APuUaAvNo-k&t=199s) Portainer Info
+* [00:04:53](https://www.youtube.com/watch?v=APuUaAvNo-k&t=293s) Installation
+* [00:10:16](https://www.youtube.com/watch?v=APuUaAvNo-k&t=616s) Installation Verification
+* [00:12:36](https://www.youtube.com/watch?v=APuUaAvNo-k&t=756s) First Time Launch
+* [00:15:02](https://www.youtube.com/watch?v=APuUaAvNo-k&t=902s) Settings - Channels URL
+* [00:16:43](https://www.youtube.com/watch?v=APuUaAvNo-k&t=1003s) Settings - Channels Folder
+* [00:18:35](https://www.youtube.com/watch?v=APuUaAvNo-k&t=1115s) Settings - Search Defaults and Streaming Services
+* [00:20:50](https://www.youtube.com/watch?v=APuUaAvNo-k&t=1250s) Manage Streaming Services
+* [00:27:07](https://www.youtube.com/watch?v=APuUaAvNo-k&t=1627s) Settings - Prune
+* [00:28:34](https://www.youtube.com/watch?v=APuUaAvNo-k&t=1714s) Settings - More for Later
+* [00:28:51](https://www.youtube.com/watch?v=APuUaAvNo-k&t=1731s) Streaming Services, Files, Notifications, and Logs
+* [00:35:40](https://www.youtube.com/watch?v=APuUaAvNo-k&t=2140s) Add Program - Search
+* [00:43:27](https://www.youtube.com/watch?v=APuUaAvNo-k&t=2607s) Add Program - Manual
+* [00:48:22](https://www.youtube.com/watch?v=APuUaAvNo-k&t=2902s) Modify Programs
+* [00:53:07](https://www.youtube.com/watch?v=APuUaAvNo-k&t=3187s) Run Process - Overview and Generate Stream Links
+* [00:55:35](https://www.youtube.com/watch?v=APuUaAvNo-k&t=3335s) Stream Link Files
+* [00:59:14](https://www.youtube.com/watch?v=APuUaAvNo-k&t=3554s) Run Process - Import Updates from Channels and Modify Episodes
+* [01:02:11](https://www.youtube.com/watch?v=APuUaAvNo-k&t=3731s) Delete Episodes and Run Process - Get New Episodes
+* [01:04:47](https://www.youtube.com/watch?v=APuUaAvNo-k&t=3887s) Update Media in Channels
+* [01:06:08](https://www.youtube.com/watch?v=APuUaAvNo-k&t=3968s) Settings - Scheduler
+* [01:08:56](https://www.youtube.com/watch?v=APuUaAvNo-k&t=4136s) Final Thoughts
 
 <b>NOTE:</b> Some of the visuals seen in the video and in the screen shots below may be out of date as updates to format and functionality have been applied to the program.
 
