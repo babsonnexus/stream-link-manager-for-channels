@@ -26,7 +26,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.09.13.1050"
+slm_version = "v2024.09.18.1513"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -228,6 +228,9 @@ object_type_selected_prior = None
 season_episodes_prior = []
 bookmarks_statuses_selected_prior = []
 edit_flag = None
+channels_url_prior = None
+date_new_default_prior = None
+program_add_prior = ''
 
 # Adds a notification
 def notification_add(notification):
@@ -375,9 +378,10 @@ def check_and_create_csv(csv_file):
             print(f"\n*** First Time Setup ***")
             settings = read_data(csv_settings)
 
+            settings[0]['settings'], channels_url_message = get_channels_url()
+
             settings[1]['settings'] = find_channels_dvr_path()
             
-            print(f"\nSet country code for Streaming Services...")
             settings[2]['settings'] = get_country_code()
             
             write_data(csv_settings, settings)
@@ -551,14 +555,16 @@ def find_channels_dvr_path():
         timer.cancel()  # Disable the timer
 
     if channels_dvr_path_search:
-        print(f"{current_time()} INFO: Channels DVR folder found!\n")
+        print(f"{current_time()} INFO: Channels DVR folder found!")
         channels_dvr_path = channels_dvr_path_search
     else:
         if os.path.exists(docker_channels_dir):
-            print(f"{current_time()} INFO: Channels DVR folder not found, setting to Docker default: '{docker_channels_dir}'.\n")
+            print(f"{current_time()} INFO: Channels DVR folder not found, setting to Docker default...")
             channels_dvr_path = docker_channels_dir
         else:
-            print(f"{current_time()} INFO: Channels DVR folder not found, defaulting to current directory. Please set your Channels DVR folder in 'Settings'.\n")
+            print(f"{current_time()} INFO: Channels DVR folder not found, defaulting to current directory. Please set your Channels DVR folder in 'Settings'.")
+
+    print(f"{current_time()} INFO: Channels DVR folder set to '{channels_dvr_path}'\n")
 
     return channels_dvr_path
 
@@ -711,7 +717,7 @@ def get_country_code():
 
     global timeout_occurred
     timeout_occurred = False
-    print(f"\n{current_time()} Searching for country...")
+    print(f"\n{current_time()} Searching for country code for Streaming Services...")
     print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
 
     # Search times out after 30 seconds
@@ -735,16 +741,15 @@ def get_country_code():
         timer.cancel()  # Disable the timer
 
     if country_code_input:
-        print(f"{current_time()} INFO: Country found! Setting to '{country_code_input.upper()}'.\n")
+        print(f"{current_time()} INFO: Country found!")
         country_code_new = country_code_input.upper()
     else:
-        print(f"{current_time()} INFO: Country not found, using default value. Please set your Country in 'Settings'.\n")
+        print(f"{current_time()} INFO: Country not found, using default value. Please set your Country in 'Settings'.")
         country_code_new = country_code
 
-    return country_code_new
+    print(f"{current_time()} INFO: Country Code set to '{country_code_new}'\n")
 
-for csv_file in csv_files:
-    check_and_create_csv(csv_file)
+    return country_code_new
 
 # Check if Channels URL is correct
 def check_channels_url(channels_url_input):
@@ -766,6 +771,103 @@ def check_channels_url(channels_url_input):
 
     return channels_url_okay
 
+# Searches for an IP Address on the LAN that responds to Port 8089
+def get_channels_url():
+    local_ip = socket.gethostbyname(socket.gethostname())
+    ip_parts = local_ip.split('.')
+    base_ip = '.'.join(ip_parts[:-1]) + '.'
+    start_ip = int(ip_parts[-1])
+    port = 8089
+    machine_name = None
+    machine_name_flag = None
+    docker_test = None
+    docker_test_url = f"http://host.docker.internal:8089"
+    channels_url = None
+    channels_url_message = None
+    bad_urls = [
+        "docker",
+        "tailscale"
+    ]
+
+    print(f"\n{current_time()} Searching for Channels URL...")
+    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
+
+    # Search times out after 60 seconds
+    timer = threading.Timer(60, timeout_handler)
+    timer.start()
+
+    try:
+        machine_name = check_ip_range(start_ip, start_ip + 1, base_ip, port)
+        if machine_name:
+            machine_name = socket.gethostname().lower()
+
+        if machine_name is None or machine_name == '':
+            machine_name = check_ip_range(start_ip + 1, 256, base_ip, port)
+
+        if machine_name is None or machine_name == '':
+            machine_name = check_ip_range(1, start_ip, base_ip, port)
+
+        if machine_name:
+            for bad_url in bad_urls:
+                if machine_name.__contains__(bad_url):
+                    machine_name = "[ERROR_READ_WRONG_NAME_UPDATE_SETTINGS]"
+                    machine_name_flag = True
+                    break
+
+        if machine_name is None or machine_name == '':
+            docker_test = check_channels_url(docker_test_url)
+
+        if docker_test:
+            channels_url_message = f"{current_time()} INFO: External Channels URL not found, but was discovered with the Docker link! Please verify in Settings and change there, if desired."
+            channels_url = docker_test_url
+        elif machine_name:
+            if machine_name_flag:
+                channels_url_message = f"{current_time()} INFO: Error in discovering Channels URL. Please manually update in Settings."
+            else:
+                channels_url_message = f"{current_time()} INFO: Potential Channels URL found! Please verify in Settings."
+            channels_url = f"http://dvr-{machine_name}.local:8089"
+        else:
+            channels_url_message = f"{current_time()} INFO: Channels URL not found. Please manually update in Settings."
+            channels_url = f"http://[CHANNELS_URL_NOT_FOUND_UPDATE_SETTINGS]:8089"
+    except TimeoutError:
+        channels_url_message = f"{current_time()} INFO: Search timed out. Continuing to next step..."
+    except KeyboardInterrupt:
+        channels_url_message = f"{current_time()} INFO: Search interrupted by user. Continuing to next step..."
+    finally:
+        timer.cancel()  # Disable the timer
+
+    if channels_url:
+        pass
+    else:
+        channels_url_message = f"{current_time()} INFO: Channels URL not found. Please manually update in Settings."
+        channels_url = f"http://[CHANNELS_URL_NOT_FOUND_UPDATE_SETTINGS]:8089"
+
+    print(f"\n{channels_url_message}")
+    print(f"{current_time()} INFO: Channels URL set to '{channels_url}'\n")
+
+    return channels_url, channels_url_message
+
+# Loops through the IP Addresses as part of the check for the open Port 8089
+def check_ip_range(start, end, base_ip, port):
+    machine_name = None
+    port_test = None
+
+    for i in range(start, end):
+        ip = base_ip + str(i)
+        print(f"    Checking IP: {ip}")
+        try:
+            port_test = socket.create_connection((ip, port), timeout=0.1)
+        except (socket.timeout, ConnectionRefusedError, OSError):
+            pass
+        if port_test:
+            machine_name = socket.gethostbyaddr(ip)[0].lower()
+            break
+
+    return machine_name
+
+for csv_file in csv_files:
+    check_and_create_csv(csv_file)
+
 check_channels_url(None)
 
 notification_add(f"\n{current_time()} Initialization Complete. Starting Stream Link Manager for Channels...\n")
@@ -784,9 +886,14 @@ def main_menu():
 # Settings webpage and actions
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
+    global channels_url_prior
+    settings_anchor_id = None
+
     settings = read_data(csv_settings)
     channels_url = settings[0]["settings"]
     channels_directory = settings[1]["settings"]
+    if channels_url_prior is None or channels_url_prior == '':
+        channels_url_prior = channels_url
     country_code = settings[2]["settings"]
     language_code = settings[3]["settings"]
     num_results = settings[4]["settings"]
@@ -810,10 +917,19 @@ def settings():
         "Replace entire Stream Link with..."
     ]
 
-    redirect_error_handler = None
     channels_url_message = ""
     channels_directory_message = ""
     search_defaults_message = ""
+
+    action_to_anchor = {
+        'streaming_services': 'streaming_services_anchor',
+        'search_defaults': 'search_defaults_anchor',
+        'slmapping': 'slmapping_anchor',
+        'end_to_end_process': 'scheduler_anchor',
+        'channels_url': 'channels_url_anchor',
+        'channels_directory': 'channels_directory_anchor',
+        'channels_prune': 'advanced_experimental_anchor'
+    }
 
     if not os.path.exists(channels_directory):
         channels_directory_message = f"{current_time()} WARNING: '{channels_directory}' does not exist. Please select a new directory!"
@@ -835,6 +951,11 @@ def settings():
         auto_update_schedule_input = request.form.get('auto_update_schedule')
         auto_update_schedule_time_input = request.form.get('auto_update_schedule_time')
 
+        for prefix, anchor_id in action_to_anchor.items():
+            if settings_action.startswith(prefix):
+                settings_anchor_id = anchor_id
+                break
+
         if settings_action.startswith('slmapping_') or settings_action in ['channels_url_cancel',
                                                                            'channels_directory_cancel',
                                                                            'channels_prune_cancel',
@@ -847,7 +968,9 @@ def settings():
                                                                            'search_defaults_save',
                                                                            'streaming_services_save',
                                                                            'end_to_end_process_save',
-                                                                           'streaming_services_update'
+                                                                           'streaming_services_update',
+                                                                           'channels_url_test',
+                                                                           'channels_url_scan'
                                                                         ]:
 
             if settings_action.startswith('slmapping_action_') or settings_action in ['channels_url_save',
@@ -855,21 +978,29 @@ def settings():
                                                                                       'channels_prune_save',
                                                                                       'search_defaults_save',
                                                                                       'streaming_services_save',
-                                                                                      'end_to_end_process_save'
+                                                                                      'end_to_end_process_save',
+                                                                                      'channels_url_scan'
                                                                                     ]:
 
                 if settings_action in ['channels_url_save',
                                     'channels_directory_save',
                                     'channels_prune_save',
                                     'search_defaults_save',
-                                    'end_to_end_process_save'
+                                    'end_to_end_process_save',
+                                    'channels_url_scan'
                                     ]:
 
                     if settings_action == 'channels_url_save':
                         settings[0]["settings"] = channels_url_input
+                        channels_url_prior = channels_url_input
+
+                    elif settings_action == 'channels_url_scan':
+                        settings[0]["settings"], channels_url_message = get_channels_url()
+                        channels_url_prior = settings[0]["settings"]
 
                     elif settings_action == 'channels_directory_save':
                         settings[1]["settings"] = channels_directory_input
+                        current_directory = channels_directory_input
 
                     elif settings_action == 'search_defaults_save':
                             settings[2]["settings"] = country_code_input
@@ -877,13 +1008,10 @@ def settings():
                             try:
                                 if int(num_results_input) > 0:
                                     settings[4]["settings"] = int(num_results_input)
-                                    redirect_error_handler = None
                                 else:
                                     search_defaults_message = f"{current_time()} ERROR: For 'Number of Results', please enter a positive integer."
-                                    redirect_error_handler = "skip"
                             except ValueError:
                                 search_defaults_message = f"{current_time()} ERROR: 'Number of Results' must be a number."
-                                redirect_error_handler = "skip"
                     
                     elif settings_action == 'end_to_end_process_save':
                         try:
@@ -988,15 +1116,16 @@ def settings():
                 update_streaming_services()
                 time.sleep(5)
 
-            if not redirect_error_handler:
-                return redirect(url_for('settings'))
+            elif settings_action == 'channels_url_cancel':
+                channels_url_prior = channels_url
 
-        elif settings_action == 'channels_url_test':
-            channels_url_okay = check_channels_url(channels_url_input)
-            if channels_url_okay:
-                channels_url_message = f"{current_time()} INFO: '{channels_url_input}' responded as expected!"
-            else:
-                channels_url_message = f"{current_time()} WARNING: Channels URL not found at '{channels_url_input}'. Please update!"
+            elif settings_action == 'channels_url_test':
+                channels_url_prior = channels_url_input
+                channels_url_okay = check_channels_url(channels_url_input)
+                if channels_url_okay:
+                    channels_url_message = f"{current_time()} INFO: '{channels_url_input}' responded as expected!"
+                else:
+                    channels_url_message = f"{current_time()} WARNING: Channels URL not found at '{channels_url_input}'. Please update!"
 
         elif settings_action == 'channels_directory_nav_up':
             current_directory = os.path.dirname(channels_directory_input)
@@ -1019,33 +1148,58 @@ def settings():
             except ValueError:
                 channels_directory_message = f"{current_time()} ERROR: Invalid input. Try again."
 
+        settings = read_data(csv_settings)
+        channels_url = settings[0]["settings"]
+        channels_directory = settings[1]["settings"]
+        if channels_url_prior is None or channels_url_prior == '':
+            channels_url_prior = channels_url
+        country_code = settings[2]["settings"]
+        language_code = settings[3]["settings"]
+        num_results = settings[4]["settings"]
+        try:
+            auto_update_schedule = settings[8]["settings"]
+        except (IndexError, KeyError):
+            auto_update_schedule = 'Off'
+        auto_update_schedule_time = settings[6]["settings"]
+        channels_prune = settings[7]["settings"]
+
+        streaming_services = read_data(csv_streaming_services)
+
+        slmappings = read_data(csv_slmappings)
+
     response = make_response(render_template(
         'main/settings.html',
         segment='settings',
         html_slm_version=slm_version,
         html_channels_url=channels_url,
-        html_channels_directory=channels_directory,
-        html_valid_country_codes=valid_country_codes,
-        html_country_code=country_code,
-        html_valid_language_codes=valid_language_codes,
-        html_language_code=language_code,
-        html_num_results=num_results,
-        html_auto_update_schedule=auto_update_schedule,
-        html_auto_update_schedule_time=auto_update_schedule_time,
-        html_channels_prune=channels_prune,
-        html_streaming_services=streaming_services,
-        html_channels_url_message=channels_url_message,
-        html_current_directory=current_directory,
-        html_subdirectories=get_subdirectories(current_directory),
-        html_channels_directory_message=channels_directory_message,
-        html_search_defaults_message=search_defaults_message,
-        html_slmappings=slmappings,
-        html_slmappings_object_type=slmappings_object_type,
-        html_slmappings_replace_type=slmappings_replace_type
+        html_channels_url_prior = channels_url_prior,
+        html_channels_directory = channels_directory,
+        html_valid_country_codes = valid_country_codes,
+        html_country_code = country_code,
+        html_valid_language_codes = valid_language_codes,
+        html_language_code = language_code,
+        html_num_results = num_results,
+        html_auto_update_schedule = auto_update_schedule,
+        html_auto_update_schedule_time = auto_update_schedule_time,
+        html_channels_prune = channels_prune,
+        html_streaming_services = streaming_services,
+        html_channels_url_message = channels_url_message,
+        html_current_directory = current_directory,
+        html_subdirectories = get_subdirectories(current_directory),
+        html_channels_directory_message = channels_directory_message,
+        html_search_defaults_message = search_defaults_message,
+        html_slmappings = slmappings,
+        html_slmappings_object_type = slmappings_object_type,
+        html_slmappings_replace_type = slmappings_replace_type,
+        html_settings_anchor_id = settings_anchor_id
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '-1'
+
+    if settings_anchor_id:
+        response.headers['Location'] = f'/settings#{settings_anchor_id}'
+
     return response
 
 # Displays the list of subdirectories in the given directory.
@@ -1060,6 +1214,8 @@ def add_programs():
     global language_code_input_prior
     global entry_id_prior
     global season_episodes_prior
+    global date_new_default_prior
+    global program_add_prior
 
     settings = read_data(csv_settings)
     country_code = settings[2]["settings"]
@@ -1079,30 +1235,59 @@ def add_programs():
     season_episodes_manual = {}
     stream_link_override_movie_flag = None
     done_generate_flag = None
+    num_results_test = None
+
+    date_new_default = datetime.datetime.now().strftime('%Y-%m-%d')
+    if date_new_default_prior is None or date_new_default_prior == '':
+        date_new_default_prior = date_new_default
 
     if request.method == 'POST':
         add_programs_action = request.form['action']
         program_add_input = request.form.get('program_add')
+        program_add_prior = program_add_input
 
         # Cancel and restart the page
         if add_programs_action == 'program_add_cancel':
+            program_add_prior = ''
             return redirect(url_for('add_programs'))
         
         # Search for a program
-        elif add_programs_action == 'program_add_search':
+        elif add_programs_action in ['program_add_search', 'program_new_search', 'program_new_today']:
             country_code_input = request.form.get('country_code')
             language_code_input = request.form.get('language_code')
-            num_results_input = request.form.get('num_results')
-            num_results_test = get_num_results(num_results_input)
 
-            if num_results_test == "pass":
-                program_search_results = search_bookmark(country_code_input, language_code_input, num_results_input, program_add_input)
+            if add_programs_action == 'program_add_search':
+                num_results_input = request.form.get('num_results')
+                num_results_test = get_num_results(num_results_input)
+
+                if num_results_test == "pass":
+                    program_search_results = search_bookmark(country_code_input, language_code_input, num_results_input, program_add_input)
+                    program_search_results_prior = program_search_results
+                    country_code_input_prior = country_code_input
+                    language_code_input_prior = language_code_input
+
+                else:
+                    program_add_message = num_results_test
+
+            elif add_programs_action in ['program_new_search', 'program_new_today']:
+                if add_programs_action == 'program_new_search':
+                    date_new_input = request.form.get('date_new')
+                elif add_programs_action == 'program_new_today':
+                    date_new_input = date_new_default
+
+                date_new_default_prior = date_new_input
+                num_results_input = 100 # Maximum number of new programs
+
+                program_search_results = get_program_new(date_new_input, country_code_input, language_code_input, num_results_input)
+                program_search_results = sorted(program_search_results, key=lambda x: sort_key(x["title"].casefold()))
                 program_search_results_prior = program_search_results
                 country_code_input_prior = country_code_input
                 language_code_input_prior = language_code_input
 
-            else:
-                program_add_message = num_results_test
+        # Resort search results
+        elif add_programs_action == 'program_add_resort_alpha':
+            program_search_results = sorted(program_search_results_prior, key=lambda x: sort_key(x["title"].casefold()))
+            program_search_results_prior = program_search_results
 
         # Select a program from the search
         elif add_programs_action.startswith('program_search_result_'):
@@ -1235,6 +1420,8 @@ def add_programs():
             language_code_input_prior = None
             entry_id_prior = None
             season_episodes_prior = []
+            date_new_default_prior = date_new_default
+            program_add_prior = ''
 
     return render_template(
         'main/addprograms.html',
@@ -1252,7 +1439,10 @@ def add_programs():
         html_season_episodes = season_episodes,
         html_season_episode_manual_flag = season_episode_manual_flag,
         html_stream_link_override_movie_flag = stream_link_override_movie_flag,
-        html_done_generate_flag = done_generate_flag
+        html_done_generate_flag = done_generate_flag,
+        html_date_new_default = date_new_default_prior,
+        html_program_add_prior = program_add_prior,
+        html_num_results_test = num_results_test
     )
 
 # Input the number of search results to return
@@ -1629,6 +1819,544 @@ def extract_program_search(program_search_json):
         })
     
     return extracted_data
+
+# Find new programs on selected Streaming Services
+def get_program_new(date_new, country_code, language_code, num_results):
+    services = read_data(csv_streaming_services)
+    check_services = [service for service in services if service["streaming_service_subscribe"] == "True"]
+    check_services.sort(key=lambda x: int(x.get("streaming_service_priority", float("inf"))))
+    streaming_services_map = []
+    check_services_codes = []
+
+    streaming_services_map = get_streaming_services_map()
+
+    for check_service in check_services:
+        for streaming_service in streaming_services_map:
+            if check_service['streaming_service_name'] == streaming_service['streaming_service_name']: 
+                check_services_codes.append(streaming_service['streaming_service_code'])
+
+    program_new_results = []
+    program_new_results_json = []
+    program_new_results_json_array = []
+    program_new_results_json_array_extracted = []
+    program_new_results_json_array_extracted_unique = []
+
+    _GRAPHQL_GetNewTitles = """
+    query GetNewTitles($country: Country!, $date: Date!, $language: Language!, $filter: TitleFilter, $after: String, $first: Int! = 10, $profile: PosterProfile, $format: ImageFormat, $backdropProfile: BackdropProfile, $priceDrops: Boolean!, $platform: Platform!, $bucketType: NewDateRangeBucket, $pageType: NewPageType! = NEW, $showDateBadge: Boolean!, $availableToPackages: [String!], $allowSponsoredRecommendations: SponsoredRecommendationsInput) {
+    newTitles(
+        country: $country
+        date: $date
+        filter: $filter
+        after: $after
+        first: $first
+        priceDrops: $priceDrops
+        bucketType: $bucketType
+        pageType: $pageType
+        allowSponsoredRecommendations: $allowSponsoredRecommendations
+    ) {
+        totalCount
+        edges {
+        ...NewTitleGraphql
+        __typename
+        }
+        sponsoredAd {
+        ...SponsoredAd
+        __typename
+        }
+        pageInfo {
+        endCursor
+        hasPreviousPage
+        hasNextPage
+        __typename
+        }
+        __typename
+    }
+    }
+
+    fragment NewTitleGraphql on NewTitlesEdge {
+    cursor
+    newOffer(platform: $platform) {
+        id
+        standardWebURL
+        package {
+        id
+        packageId
+        clearName
+        shortName
+        __typename
+        }
+        retailPrice(language: $language)
+        retailPriceValue
+        lastChangeRetailPrice(language: $language)
+        lastChangeRetailPriceValue
+        lastChangePercent
+        currency
+        presentationType
+        monetizationType
+        newElementCount
+        __typename
+    }
+    node {
+        id
+        objectId
+        objectType
+        content(country: $country, language: $language) {
+        title
+        originalReleaseYear
+        shortDescription
+        fullPath
+        scoring {
+            imdbVotes
+            imdbScore
+            tmdbPopularity
+            tmdbScore
+            tomatoMeter
+            certifiedFresh
+            __typename
+        }
+        posterUrl(profile: $profile, format: $format)
+        runtime
+        genres {
+            translation(language: $language)
+            __typename
+        }
+        ... on SeasonContent {
+            seasonNumber
+            __typename
+        }
+        upcomingReleases @include(if: $showDateBadge) {
+            releaseDate
+            package {
+            id
+            shortName
+            __typename
+            }
+            releaseCountDown(country: $country)
+            __typename
+        }
+        isReleased
+        __typename
+        }
+        availableTo(
+        country: $country
+        platform: $platform
+        packages: $availableToPackages
+        ) @include(if: $showDateBadge) {
+        availableCountDown(country: $country)
+        package {
+            id
+            shortName
+            __typename
+        }
+        availableToDate
+        __typename
+        }
+        ... on Movie {
+        likelistEntry {
+            createdAt
+            __typename
+        }
+        dislikelistEntry {
+            createdAt
+            __typename
+        }
+        seenlistEntry {
+            createdAt
+            __typename
+        }
+        watchlistEntryV2 {
+            createdAt
+            __typename
+        }
+        __typename
+        }
+        ... on Season {
+        show {
+            id
+            objectId
+            objectType
+            content(country: $country, language: $language) {
+            title
+            originalReleaseYear
+            shortDescription
+            fullPath
+            scoring {
+                imdbVotes
+                imdbScore
+                tmdbPopularity
+                tmdbScore
+                __typename
+            }
+            posterUrl(profile: $profile, format: $format)
+            runtime
+            genres {
+                translation(language: $language)
+                __typename
+            }
+            __typename
+            }
+            likelistEntry {
+            createdAt
+            __typename
+            }
+            dislikelistEntry {
+            createdAt
+            __typename
+            }
+            watchlistEntryV2 {
+            createdAt
+            __typename
+            }
+            seenState(country: $country) {
+            progress
+            __typename
+            }
+            __typename
+        }
+        __typename
+        }
+        __typename
+    }
+    __typename
+    }
+
+    fragment SponsoredAd on SponsoredRecommendationAd {
+    bidId
+    holdoutGroup
+    campaign {
+        name
+        externalTrackers {
+        type
+        data
+        __typename
+        }
+        hideRatings
+        hideDetailPageButton
+        promotionalImageUrl
+        promotionalVideo {
+        url
+        __typename
+        }
+        promotionalTitle
+        promotionalText
+        promotionalProviderLogo
+        watchNowLabel
+        watchNowOffer {
+        standardWebURL
+        presentationType
+        monetizationType
+        package {
+            id
+            packageId
+            shortName
+            clearName
+            icon
+            __typename
+        }
+        __typename
+        }
+        nodeOverrides {
+        nodeId
+        promotionalImageUrl
+        watchNowOffer {
+            standardWebURL
+            __typename
+        }
+        __typename
+        }
+        node {
+        nodeId: id
+        __typename
+        ... on MovieOrShowOrSeason {
+            content(country: $country, language: $language) {
+            fullPath
+            posterUrl
+            title
+            originalReleaseYear
+            scoring {
+                imdbScore
+                __typename
+            }
+            externalIds {
+                imdbId
+                __typename
+            }
+            backdrops(format: $format, profile: $backdropProfile) {
+                backdropUrl
+                __typename
+            }
+            isReleased
+            __typename
+            }
+            objectId
+            objectType
+            offers(country: $country, platform: $platform) {
+            monetizationType
+            presentationType
+            package {
+                id
+                packageId
+                __typename
+            }
+            id
+            __typename
+            }
+            __typename
+        }
+        ... on MovieOrShow {
+            watchlistEntryV2 {
+            createdAt
+            __typename
+            }
+            __typename
+        }
+        ... on Show {
+            seenState(country: $country) {
+            seenEpisodeCount
+            __typename
+            }
+            __typename
+        }
+        ... on Season {
+            content(country: $country, language: $language) {
+            seasonNumber
+            __typename
+            }
+            show {
+            __typename
+            id
+            content(country: $country, language: $language) {
+                originalTitle
+                __typename
+            }
+            watchlistEntryV2 {
+                createdAt
+                __typename
+            }
+            }
+            __typename
+        }
+        ... on GenericTitleList {
+            followedlistEntry {
+            createdAt
+            name
+            __typename
+            }
+            id
+            type
+            content(country: $country, language: $language) {
+            name
+            visibility
+            __typename
+            }
+            titles(country: $country, first: 40) {
+            totalCount
+            edges {
+                cursor
+                node: nodeV2 {
+                content(country: $country, language: $language) {
+                    fullPath
+                    posterUrl
+                    title
+                    originalReleaseYear
+                    scoring {
+                    imdbScore
+                    __typename
+                    }
+                    isReleased
+                    __typename
+                }
+                id
+                objectId
+                objectType
+                __typename
+                }
+                __typename
+            }
+            __typename
+            }
+            __typename
+        }
+        }
+        __typename
+    }
+    __typename
+    }
+    """
+
+    json_data = {
+        'query': _GRAPHQL_GetNewTitles,
+        'variables': {
+            "first": num_results,
+            "pageType": "NEW",
+            "date": date_new,
+            "filter": {
+                "ageCertifications": [],
+                "excludeGenres": [],
+                "excludeProductionCountries": [],
+                "objectTypes": [],
+                "productionCountries": [],
+                "subgenres": [],
+                "genres": [],
+                "packages": check_services_codes,
+                "excludeIrrelevantTitles": False,
+                "presentationTypes": [],
+                "monetizationTypes": []
+            },
+            "language": language_code,
+            "country": country_code,
+            "priceDrops": False,
+            "platform": "WEB",
+            "showDateBadge": False,
+            "availableToPackages": check_services_codes,
+            "backdropProfile": "S1440",
+            "allowSponsoredRecommendations": {
+                "pageType": "NEW",
+                "placement": "NEW_TIMELINE",
+                "language": language_code,
+                "country": country_code,
+                "applicationContext": {
+                "appID": "3.8.2-webapp#a85a1b3",
+                "platform": "webapp",
+                "version": "3.8.2",
+                "build": "a85a1b3",
+                "isTestBuild": False
+                },
+                "appId": "3.8.2-webapp#a85a1b3",
+                "platform": "WEB",
+                "supportedFormats": [
+                "IMAGE",
+                "VIDEO"
+                ],
+                "supportedObjectTypes": [
+                "MOVIE",
+                "SHOW",
+                "GENERIC_TITLE_LIST",
+                "SHOW_SEASON"
+                ],
+                "testingModeForceHoldoutGroup": False,
+                "testingMode": False
+            }
+        },
+        'operationName': 'GetNewTitles',
+    }
+
+    try:
+        program_new_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+        program_new_results_json = program_new_results.json()
+    except requests.RequestException as e:
+        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
+
+    if program_new_results_json:
+        program_new_results_json_array = program_new_results_json["data"]["newTitles"]["edges"]
+
+    if program_new_results_json_array:
+        for record in program_new_results_json_array:
+            node = None
+            show = None
+            node = record["node"]
+            show = node.get("show")
+
+            if show:
+                entry_id = show["id"]
+                title = show["content"]["title"]
+                release_year = show["content"]["originalReleaseYear"]
+                object_type = show["objectType"]
+                href = show["content"]["fullPath"]
+                short_description = show["content"]["shortDescription"]
+            else:
+                entry_id = node["id"]
+                title = node["content"]["title"]
+                release_year = node["content"]["originalReleaseYear"]
+                object_type = node["objectType"]
+                href = node["content"]["fullPath"]
+                short_description = node["content"]["shortDescription"]
+                    
+            if href is not None and href != '':
+                url = f"{engine_url}{href}"  # Concatenate with the prefix
+            else:
+                url = None
+
+            program_new_results_json_array_extracted.append({
+                "entry_id": entry_id,
+                "title": title,
+                "release_year": release_year,
+                "object_type": object_type,
+                "url": url,
+                "short_description": short_description
+            })
+
+    if program_new_results_json_array_extracted:
+        seen = set()
+        for record in program_new_results_json_array_extracted:
+            record_tuple = tuple(record.items())
+            if record_tuple not in seen:
+                seen.add(record_tuple)
+                program_new_results_json_array_extracted_unique.append(record)
+
+    return program_new_results_json_array_extracted_unique
+
+# Get a map for Streaming Services from "Clear Name" to "Short Name"
+def get_streaming_services_map():
+    settings = read_data(csv_settings)
+    country_code = settings[2]['settings']
+    
+    provider_results = []
+    provider_results_json = []
+    provider_results_json_array = []
+    provider_results_json_array_results = []
+
+    _GRAPHQL_GetProviders = """
+    query GetProviders($country: Country!, $platform: Platform!) {
+      packages(country: $country, platform: $platform) {
+        clearName
+        shortName
+        addons(country: $country, platform: $platform) {
+          clearName
+          shortName
+        }
+      }
+    }
+    """
+
+    json_data = {
+        'query': _GRAPHQL_GetProviders,
+        'variables': {
+            "country": country_code,
+            "platform": "WEB"
+        },
+        'operationName': 'GetProviders',
+    }
+
+    try:
+        provider_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+    except requests.RequestException as e:
+        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
+
+    if provider_results:
+        provider_results_json = provider_results.json()
+        provider_results_json_array = provider_results_json["data"]["packages"]
+
+        for provider in provider_results_json_array :
+            provider_addons = []
+
+            entry = {
+                "streaming_service_name": provider["clearName"],
+                "streaming_service_code": provider["shortName"]
+            }
+            provider_results_json_array_results.append(entry)
+
+            provider_addons = provider["addons"]
+
+            if provider_addons:
+                for provider_addon in provider_addons:
+                    entry = {
+                        "streaming_service_name": provider_addon["clearName"],
+                        "streaming_service_code": provider_addon["shortName"]
+                    }
+                    provider_results_json_array_results.append(entry)
+
+    return provider_results_json_array_results
 
 # Select a program to bookmark
 def search_bookmark_select(program_search_results, program_search_index, country_code, language_code):
