@@ -6,7 +6,7 @@ In <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to ad
 
 Enter <b>Stream Link Manager for Channels</b>!
 
-![image](https://github.com/user-attachments/assets/ae97c7d1-c872-4204-bd68-8cb473d1597c)
+![image](https://github.com/user-attachments/assets/289fd397-4a02-4647-a756-17002ae34f0b)
 
 <b>Stream Link Manager for Channels</b> is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order to determine the appropriate link. After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another, <b>Stream Link Manager for Channels</b> will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
 
@@ -476,15 +476,11 @@ Replace ```[YOUR_SLM_DIRECTORY]``` with the path you created earlier and save th
 
 1. The first time you start <b>Stream Link Manager for Channels</b>, it may take a couple of minutes before it is available. This is due to it running many activities during initial setup that are not repeated. In later startups, it should be just a few seconds depending upon system performance and internet speeds. If you watch the logs or are in an interactive window, you may see something like this:
 
-![image](https://github.com/user-attachments/assets/d0c7222c-f78d-4ae0-b0e9-6afb04831aa3)
+![image](https://github.com/user-attachments/assets/c94b5031-94af-4741-9d0c-3a7e1ee38fc2)
 
-In particular, for Docker, you may see this:
+While the Initialization process attempts to find all the necessary values—even noting when it has to use a substitute value—do not worry if any of the searches faulter. There are various levels of safety checks and automatic timeouts that will move the process along. More so, you can always make adjustments in the ```Settings``` later. To be clear, any "error" or the like shown are not failures and are expected behavior. Everything directly related to <b>Stream Link Manager for Channels</b> is managed from the ```Settings``` area as discussed below.
 
-![JP_ScreenShot_2024_09_13_08_31_47](https://github.com/user-attachments/assets/fc2cf06d-7dd1-4496-ac8b-504621206580)
-
-Do not worry if you do not respond to any prompt or the searches faulter; there are automatic timeouts that will move the process along and you can make adjustments in the ```Settings``` later. To be clear, these are not failures and are expected behavior. Everything directly related to <b>Stream Link Manager for Channels</b> is managed from the ```Settings``` area as discussed below.
-
-Also, if you are using Docker, you may still see it says it starts on port 5000. There are no concerns about this as it is being mapped correctly.
+Also worth highlighting: if you are using Docker, you may still see it says it starts on port 5000. There are no concerns about this as it is being mapped correctly so long as you gave a port value.
 
 2. With the startup complete, you can navigate to the webpage:
 
@@ -583,11 +579,15 @@ It is not required to set these immediately; they can be added, deleted, or modi
 
 5. Next, make sure the Channels URL is correct.
 
-![image](https://github.com/user-attachments/assets/92cd55ac-da0d-4c4e-b2ca-38c70ef267c0)
+![image](https://github.com/user-attachments/assets/b24ac2e4-2dd3-4319-acb0-35763f18582e)
 
-During initialization, the name of the machine was chosen, however that may not be the case for you. Modify if necessary and click the ```Test``` button to confirm that <b>Stream Link Manager for Channels</b> can attach to Channels DVR.
+During Initialization, an attempt was made at determining the correct link. However, that may not have succeeded or the selection may not be the case for you. Modify if necessary and click the ```Test``` button to confirm that <b>Stream Link Manager for Channels</b> can attach to Channels DVR.
 
-![image](https://github.com/user-attachments/assets/2168f959-b1af-4923-a049-9e6b746bf157)
+![image](https://github.com/user-attachments/assets/2b1c427e-f6f0-4b4d-9d0c-3a2c1139281f)
+
+You also have the option to let <b>Stream Link Manager for Channels</b> attempt to determine the link again by clicking the ```Scan``` button:
+
+![image](https://github.com/user-attachments/assets/1a945756-a29d-478d-a6fa-711823f8ab48)
 
 In Docker, you may not be able to see local DNS. If that is the case, you can use this:
 
@@ -668,15 +668,29 @@ Unlike the notifications and live process trackers, the log is in order of actio
 
 9. With this all in place, you can now navigate to ```Add Programs```.
 
-![image](https://github.com/user-attachments/assets/a17661c4-cb67-4e20-bf37-5401501bff8f)
+![image](https://github.com/user-attachments/assets/7ac9c760-3b69-446c-b953-8ae694fe3f6d)
 
 Here, you can search for a program you want to bookmark.
 
-![image](https://github.com/user-attachments/assets/08f4b452-5b81-45dd-ba8d-b83ffd6e71c8)
+![image](https://github.com/user-attachments/assets/d8136314-5aa6-4c5d-b2a5-155e0b7948f7)
 
-Clicking on a Movie will get you something like this:
+The default order is by best-match / popularity, but you can also choose to have the results re-display in alphabetical order.
 
-![image](https://github.com/user-attachments/assets/e746b77a-0212-41a6-b4cf-3e029096b0d8)
+![image](https://github.com/user-attachments/assets/cb365158-822d-4270-84e7-9a0d34f5a5b2)
+
+Another option for searching is to see what has been ```New & Updated``` on the Streaming Services you selected in the ```Settings``` above. This will give you a list of Movies and Shows that have been added or updated on those services.
+
+![image](https://github.com/user-attachments/assets/16607486-c028-47ee-adab-50c220022e29)
+
+The list is limited to a single day and 100 entries, displayed alphabetically. Clicking ```Today``` will give you that list for this day. On the other hand, you can select any date and click ```New & Updated``` to get the Movies and Shows from that day.
+
+![image](https://github.com/user-attachments/assets/00bd77ad-edc1-43de-90c7-962f040d8df8)
+
+![image](https://github.com/user-attachments/assets/9eead5ea-7c88-4dad-a831-640179bcb165)
+
+No matter the search method, clicking on a Movie will get you something like this:
+
+![image](https://github.com/user-attachments/assets/f07668e9-0ceb-4b10-b432-a4a0c633fef9)
 
 Notice that the ```Search``` and other line buttons are no longer available. You must finish this process by selecting ```Done``` or ```Generate Stream Links```. If you do not generate Stream Links at the time of creation, they will be created (if valid) during the next run of the process as detailed above. Although it is not necessary, if you review the logs, you can generally see a successfully generated Stream Link appear as so:
 
