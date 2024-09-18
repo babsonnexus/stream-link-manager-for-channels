@@ -54,7 +54,7 @@
       <div class="col-12">
         <form method="POST" action="/settings">
           <!-- Streaming Services -->
-          <h4 for="streaming_services">Streaming Services</h4>
+          <h4 id="streaming_services_anchor">Streaming Services</h4>
           <div class="container">
             <style>
               .listbox {
@@ -142,7 +142,7 @@
           <input type="hidden" id="streaming_services" name="streaming_services">
           <hr>
           <!-- Search Defaults -->
-          <h4 for="search_defaults">Search Defaults</h4>
+          <h4 id="search_defaults_anchor">Search Defaults</h4>
           <label for="country_code">Country Code:</label>
           <select name="country_code" id="country_code"  style="width: calc(13%);">
               {% for country_code_item in html_valid_country_codes %}
@@ -162,7 +162,7 @@
           <p><div id="search_defaults_message">{{ html_search_defaults_message }}</div></p>
           <hr>
           <!-- Stream Link Mappings -->
-          <h4 for="search_defaults">Stream Link Mappings</h4>
+          <h4 id="slmapping_anchor">Stream Link Mappings</h4>
           <div class="stream-link-mappings container-fluid">
             <div class="grid-container" style="text-align: center;">
               <div class="grid-item"><h6>Active</h6></div>
@@ -244,7 +244,7 @@
           </div>
           <hr>
           <!-- Scheduler -->
-          <h4 for="scheduler">Scheduler</h4>
+          <h4 id="scheduler_anchor">Scheduler</h4>
           <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
             <div class="form-check form-switch ps-0 is-filled">
               <input type="checkbox" class="form-check-input ms-auto" id="auto_update_schedule" name="auto_update_schedule" {% if html_auto_update_schedule == "On" %}checked{% endif %}>
@@ -261,17 +261,19 @@
           </div>
           <hr>
           <!-- Channels URL -->
-          <h4 for="channels_url">Channels URL</h4>
-          <p><em>WARNING: Do not use 'https' as it may cause Channels functions to fail.</em></p>
-          <input type="text" id="channels_url" name="channels_url" value="{{ html_channels_url }}" style="width: calc(65%);">
+          <h4 id="channels_url_anchor">Channels URL</h4>
+          <p>Channel URL currently set to <b>{{ html_channels_url }}</b></p>
+          <input type="text" id="channels_url" name="channels_url" value="{{ html_channels_url_prior }}" style="width: calc(55%);">
           <button type="submit" name="action" value="channels_url_test" class="btn bg-gradient-primary w-10 my-2 mb-2">Test</button>
+          <button type="submit" name="action" value="channels_url_scan" class="btn bg-gradient-primary w-10 my-2 mb-2">Scan</button>
           <button type="submit" name="action" value="channels_url_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
           <button type="submit" name="action" value="channels_url_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
+          <p><em>WARNING: Do not use 'https' as it may cause Channels functions to fail.</em></p>
           <p><div id="html_channels_url_message">{{ html_channels_url_message }}</div></p>
           <hr>
           <!-- Channels Directory -->
-          <h4 for="channels_directory">Channels Directory</h4>
-          <p>The Channels Directory is currently set to: <span id="channels_directory">{{ html_channels_directory }}</span></p>
+          <h4 id="channels_directory_anchor">Channels Directory</h4>
+          <p>The Channels Directory is currently set to: <b><span id="channels_directory">{{ html_channels_directory }}</span></b></p>
           <p><div id="html_channels_directory_message">{{ html_channels_directory_message }}</div></p>
           <input type="text" id="current_directory" name="current_directory" value="{{ html_current_directory }}" readonly style="width: calc(65%); background-color: #d1cdcde5;">
           <button type="submit" name="action" value="channels_directory_nav_up" class="btn bg-gradient-primary w-10 my-2 mb-2">Nav Up</button>
@@ -288,7 +290,7 @@
           <button type="submit" name="action" value="channels_directory_manual_go" class="btn bg-gradient-primary w-10 my-2 mb-2">Navigate</button>
           <hr>
           <!-- Advanced / Experimental -->
-          <h4 for="advanced_experimental">Advanced / Experimental</h4>
+          <h4 id="advanced_experimental_anchor">Advanced / Experimental</h4>
           <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
             <div class="form-check form-switch ps-0 is-filled">
               <input type="checkbox" class="form-check-input ms-auto" id="channels_prune" name="channels_prune" {% if html_channels_prune == "On" %}checked{% endif %}>
@@ -440,5 +442,13 @@
 
   populateLists();
   streaming_services_updateHiddenInput();
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const anchorId = "{{ html_settings_anchor_id }}";
+      if (anchorId) {
+          window.location.hash = anchorId;
+      }
+  });
 </script>
 {% endblock javascripts %}

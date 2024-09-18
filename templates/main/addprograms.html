@@ -87,15 +87,28 @@
             <div class="col-12 my-2"></div>
           </div>
           <!-- Search / Add Manual -->
-          <input type="text" id="program_add" name="program_add" placeholder="Enter the name of a program to search for or add manually..." style="width: calc(65%);">
-          <button type="submit" name="action" value="program_add_search" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Search</button>
-          <button type="submit" name="action" value="program_add_manual" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Add Manual</button>
-          <button type="submit" name="action" value="program_add_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Cancel</button>
+          <div>
+            <input type="text" id="program_add" name="program_add" placeholder="Enter the name of a program to search for or add manually..." value="{{ html_program_add_prior }}" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %} style="width: calc(65%);">
+            <button type="submit" name="action" value="program_add_search" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Search</button>
+            <button type="submit" name="action" value="program_add_manual" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Add Manual</button>
+            <button type="submit" name="action" value="program_add_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Cancel / Clear</button>
+          </div>
+          <div>
+            <p>Or see
+            <button type="submit" name="action" value="program_new_search" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>New & Updated</button>
+            programs from your Streaming Services on
+            <input type="date" id="date_new" name="date_new" value="{{ html_date_new_default }}" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}> or 
+            <button type="submit" name="action" value="program_new_today" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Today</button>
+            </p>
+          </div>
           <p><div id="html_program_add_message">{{ html_program_add_message }}</div></p>
           <hr>
           <!-- Display search results -->
           <div class="text-center">
             {% if html_program_search_results %}
+              {% if html_num_results_test == 'pass' %}
+                <button type="submit" name="action" value="program_add_resort_alpha" class="btn bg-gradient-primary w-25 my-2 mb-2">Resort Results Alphabetically</button>
+              {% endif %}
               {% for program in html_program_search_results %}
                 <button type="submit" name="action" class="btn bg-gradient-primary w-75 my-2 mb-2" value="program_search_result_{{ loop.index }}">
                   <div style="font-size: 2em;">{{ program.title }} ({{ program.release_year }}) | {{ program.object_type }}</div>
