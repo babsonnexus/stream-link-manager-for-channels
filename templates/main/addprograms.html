@@ -7,7 +7,7 @@
 <style>
   .grid-container {
     display: grid;
-    grid-template-columns: 1.5fr 4fr 1fr;
+    grid-template-columns: 1.5fr 3fr 2fr 1fr;
     gap: 10px;
   }
 
@@ -43,6 +43,19 @@
   .btn {
     width: 100%;
     box-sizing: border-box;
+  }
+
+  .program-poster {
+    width: 15%;
+    float: left;
+    margin-right: 20px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border: 1px solid white;
+  }
+
+  .program-content {
+    overflow: hidden;
   }
 </style>
 {% endblock stylesheets %}
@@ -107,13 +120,19 @@
           <div class="text-center">
             {% if html_program_search_results %}
               {% if html_num_results_test == 'pass' %}
-                <button type="submit" name="action" value="program_add_resort_alpha" class="btn bg-gradient-primary w-25 my-2 mb-2">Resort Results Alphabetically</button>
+                <div>
+                  <button type="submit" name="action" value="program_add_resort_alpha" class="btn bg-gradient-primary w-25 my-2 mb-2">Resort Results Alphabetically</button>
+                </div>
               {% endif %}
               {% for program in html_program_search_results %}
-                <button type="submit" name="action" class="btn bg-gradient-primary w-75 my-2 mb-2" value="program_search_result_{{ loop.index }}">
-                  <div style="font-size: 2em;">{{ program.title }} ({{ program.release_year }}) | {{ program.object_type }}</div>
-                  <hr>
-                  <div style="text-align: left; text-transform: none; font-weight: normal; font-size: 1.25em;">{{ program.short_description }}</div>
+                <button type="submit" name="action" class="btn bg-gradient-primary w-60 my-2 mb-2" value="program_search_result_{{ loop.index }}">
+                  <img src="{{ program.poster }}" class="program-poster" alt="Poster">
+                  <div class="program-content">
+                    <div style="font-size: 2em;">{{ program.title }} ({{ program.release_year }}) | {{ program.object_type }}</div>
+                    <hr>
+                    <div style="text-align: left; text-transform: none; font-weight: normal; font-size: 1.25em;">{{ program.short_description }}</div>
+                    <div style="text-align: left; text-transform: none; font-weight: normal; font-size: 0.9em;">IMDB: {{ program.score }} / 10.0</div>
+                  </div>
                 </button>
                 <!-- Spacer row -->
                 <div class="row">
@@ -189,30 +208,54 @@
               </script>
             {% endif %}
           </div>
-          <!-- Manual stream link: movie -->
+          <!-- Selected Movie Options -->
           <div>
             {% if html_stream_link_override_movie_flag %}
-            <h4>OPTIONAL: Stream Link Override</h4>
-            <p>To override any potentially generated stream link, enter an address here. NOTE: This is required for manual programs.</p>
-            <div class="row">
-              <div class="col-12 my-2"></div>
+            <h4>OPTIONAL: Movie Settings</h4>
+            <ul>
+              <li>Mark the movie as 'watched' by unchecking.</li>
+              <li>Override any potentially generated Stream Link by entering an address. NOTE: This is required for manual programs and STRM links.</li>
+              <li>If desired, select a 'Special Action' such as making the selection a STRM link or picking a preferred Streaming Service</li>
+            </ul>
+            <div class="grid-container" style="text-align: center;">
+              <div class="grid-item"><h6>Watched / Unwatched</h6></div>
+              <div class="grid-item"><h6>Stream Link Override</h6></div>
+              <div class="grid-item"><h6>Special Action</h6></div>
             </div>
-            <input type="text" id="stream_link_override_movie" name="stream_link_override_movie" placeholder="i.e., https://link_to_website.com/path_to_streamlink" style="width: calc(65%);">
+            <div class="grid-container" style="text-align: center;">
+              <div class="grid-item">
+                <div class="form-check form-switch ps-0 is-filled">
+                  <input type="checkbox" class="form-check-input" id="status_movie" name="status_movie" checked>
+                </div>
+              </div>
+              <div class="grid-item">
+                <input type="text" id="stream_link_override_movie" name="stream_link_override_movie" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
+              </div>
+              <div class="grid-item">
+                <select name="special_action_movie" id="special_action_movie">
+                  {% for html_special_action in html_special_actions %}
+                    <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
             <hr>
             {% endif %}
           </div>
-          <!-- Display episodes -->
+          <!-- Selected Show Options -->
           <div>
             {% if html_season_episodes %}
               <h4 for="select_episodes">OPTIONAL: Episode Settings</h4>
               <ul>
                 <li>Mark episodes as 'watched' by unchecking.</li>
-                <li>Override any potentially generated stream link by entering an address. NOTE: This is required for manual programs.</li>
+                <li>Override any potentially generated Stream Link by entering an address. NOTE: This is required for manual programs and STRM links.</li>
+                <li>If desired, select a 'Special Action' such as making the selection a STRM link or picking a preferred Streaming Service</li>
                 <li>Add a prefix to stream link file names for tracking purposes (i.e., [DUB] vs. [SUB]) by entering a value.</li>
               </ul>
               <div class="grid-container" style="text-align: center;">
                 <div class="grid-item"><h6>Watched / Unwatched</h6></div>
                 <div class="grid-item"><h6>Stream Link Override</h6></div>
+                <div class="grid-item"><h6>Special Action</h6></div>
                 <div class="grid-item"><h6>Episode Prefix</h6></div>
               </div>
               <div class="grid-container" style="text-align: center;">
@@ -221,6 +264,19 @@
                     <label class="form-check-label text-body text-truncate w-80 mb-0" for="check_all_global" style="font-weight: bold; font-size: 1.2em;">All Episodes</label>
                     <input type="checkbox" class="form-check-input" id="check_all_global" onclick="toggleAllCheckboxes(this)" checked>
                   </div>
+                </div>
+                <div class="grid-item">
+                  <hr style="border: 3px solid; width: 100%;">
+                </div>
+                <div class="grid-item">
+                  <select name="global_special_action" id="global_special_action" onchange="toggleAllDropdowns(this)">
+                    {% for html_special_action in html_special_actions %}
+                      <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="grid-item">
+                  <hr style="border: 3px solid; width: 100%;">
                 </div>
               </div>
               {% set processed_seasons = {} %}
@@ -235,6 +291,19 @@
                         <input type="checkbox" class="form-check-input" id="check_all_{{ season }}" onclick="toggleSeasonCheckboxes('{{ season }}', this)" checked>
                       </div>
                     </div>
+                    <div class="grid-item">
+                      <hr style="border: 3px solid; width: 100%;">
+                    </div>
+                    <div class="grid-item">
+                      <select name="season_special_action_{{ season }}" id="season_special_action_{{ season }}" class="{{ season }}" onchange="toggleSeasonDropdowns('{{ season }}', this)">
+                        {% for html_special_action in html_special_actions %}
+                          <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="grid-item">
+                      <hr style="border: 3px solid; width: 100%;">
+                    </div>
                   </div>
                 {% endif %}
                 <input type="hidden" name="field_season_episode_{{ loop.index }}" id="field_season_episode_{{ loop.index }}" value="{{ item.season_episode }}">
@@ -247,6 +316,13 @@
                   </div>
                   <div class="grid-item">
                     <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
+                  </div>
+                  <div class="grid-item">
+                    <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" class="{{ season }}">
+                      {% for html_special_action in html_special_actions %}
+                        <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                      {% endfor %}
+                    </select>
                   </div>
                   <div class="grid-item">
                     <input type="text" id="field_episode_prefix_{{ loop.index }}" name="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}" placeholder="i.e., (SUB), (DUB)">
@@ -306,6 +382,7 @@
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
+<!-- Live Log -->
 <script>
   document.getElementById('process-form').addEventListener('submit', function(event) {
     const logOutput = document.getElementById("log-output");
@@ -337,59 +414,66 @@
     }, 0); // Delay to ensure the process starts before streaming logs
   });
 </script>
-
+<!-- "All" and "Season" Controls for "Watched/Unwatched Status" and "Special Actions" -->
 <script>
-  function toggleAllCheckboxes(source) {
-    const checkboxes = document.querySelectorAll('.episode-checkbox');
-    checkboxes.forEach(checkbox => {
-      checkbox.checked = source.checked;
-    });
-    updateSeasonCheckboxes();
-    updateAllCheckbox();
-  }
-
-  function toggleSeasonCheckboxes(season, source) {
-    const checkboxes = document.querySelectorAll('.' + season);
-    checkboxes.forEach(checkbox => {
-      checkbox.checked = source.checked;
-    });
-    updateSeasonCheckboxes();
-    updateAllCheckbox();
-  }
-
-  function updateSeasonCheckboxes() {
-    const seasons = document.querySelectorAll('[id^="check_all_"]');
-    seasons.forEach(seasonCheckbox => {
-      const season = seasonCheckbox.id.replace('check_all_', '');
-      const checkboxes = document.querySelectorAll('.' + season);
-      const anyChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
-      seasonCheckbox.checked = anyChecked;
-    });
-  }
-
-  function updateAllCheckbox() {
+  document.addEventListener('DOMContentLoaded', () => {
     const allCheckbox = document.getElementById('check_all_global');
     const seasonCheckboxes = document.querySelectorAll('[id^="check_all_"]');
-    const anySeasonChecked = Array.from(seasonCheckboxes).some(checkbox => checkbox.checked);
-    allCheckbox.checked = anySeasonChecked;
-  }
+    const episodeCheckboxes = document.querySelectorAll('.episode-checkbox');
+    const allDropdown = document.getElementById('global_special_action');
+    const seasonDropdowns = document.querySelectorAll('select[id^="season_special_action_"]');
+    const episodeDropdowns = document.querySelectorAll('select[id^="field_special_action_"]');
 
-  document.querySelectorAll('.episode-checkbox').forEach(checkbox => {
-    checkbox.addEventListener('change', () => {
+    // Initialize dropdowns to null
+    allDropdown.value = '';
+    seasonDropdowns.forEach(dropdown => dropdown.value = '');
+
+    allCheckbox.addEventListener('change', (event) => toggleAllCheckboxes(event.target));
+    seasonCheckboxes.forEach(checkbox => checkbox.addEventListener('change', (event) => toggleSeasonCheckboxes(event.target.id.replace('check_all_', ''), event.target)));
+    episodeCheckboxes.forEach(checkbox => checkbox.addEventListener('change', () => {
       updateSeasonCheckboxes();
       updateAllCheckbox();
+    }));
+    allDropdown.addEventListener('change', (event) => {
+      toggleAllDropdowns(event.target);
+      allDropdown.value = ''; // Reset to null after propagating
     });
-  });
+    seasonDropdowns.forEach(dropdown => dropdown.addEventListener('change', (event) => {
+      toggleSeasonDropdowns(event.target.className, event.target);
+      event.target.value = ''; // Reset to null after propagating
+    }));
 
-  document.querySelectorAll('[id^="check_all_"]').forEach(checkbox => {
-    checkbox.addEventListener('change', () => {
-      const season = checkbox.id.replace('check_all_', '');
-      toggleSeasonCheckboxes(season, checkbox);
-    });
-  });
+    function toggleAllCheckboxes(source) {
+      episodeCheckboxes.forEach(checkbox => checkbox.checked = source.checked);
+      updateSeasonCheckboxes();
+      updateAllCheckbox();
+    }
 
-  document.getElementById('check_all_global').addEventListener('change', (event) => {
-    toggleAllCheckboxes(event.target);
+    function toggleSeasonCheckboxes(season, source) {
+      document.querySelectorAll('.' + season).forEach(checkbox => checkbox.checked = source.checked);
+      updateSeasonCheckboxes();
+      updateAllCheckbox();
+    }
+
+    function updateSeasonCheckboxes() {
+      seasonCheckboxes.forEach(seasonCheckbox => {
+        const season = seasonCheckbox.id.replace('check_all_', '');
+        const checkboxes = document.querySelectorAll('.' + season);
+        seasonCheckbox.checked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+      });
+    }
+
+    function updateAllCheckbox() {
+      allCheckbox.checked = Array.from(seasonCheckboxes).some(checkbox => checkbox.checked);
+    }
+
+    function toggleAllDropdowns(source) {
+      episodeDropdowns.forEach(dropdown => dropdown.value = source.value);
+    }
+
+    function toggleSeasonDropdowns(season, source) {
+      document.querySelectorAll('select.' + season).forEach(dropdown => dropdown.value = source.value);
+    }
   });
 </script>
 {% endblock javascripts %}
