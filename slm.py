@@ -15,7 +15,6 @@ import aiohttp
 import asyncio
 import stat
 import unicodedata
-from pytimedinput import timedInput
 from flask import Flask, render_template, render_template_string, request, redirect, url_for, Response, send_file, Request, make_response
 from jinja2 import TemplateNotFound
 
@@ -26,7 +25,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.09.18.1513"
+slm_version = "v2024.09.25.1105"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -61,6 +60,9 @@ program_files = csv_files + [log_filename]
 engine_url = "https://www.justwatch.com"
 url_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36'}
 _GRAPHQL_API_URL = "https://apis.justwatch.com/graphql"
+engine_image_url = "https://images.justwatch.com"
+engine_image_profile_poster = "s718"
+engine_image_profile_backdrop = "s1920"
 valid_country_codes = [
     "AD",
     "AE",
@@ -216,6 +218,10 @@ valid_language_codes = [
     "ur",
     "zh" #, Add more as needed
 ]
+special_actions_default = [
+    "None",
+    "Make STRM" #, Add more as needed
+]
 notifications = []
 stream_link_ids_changed = []
 program_search_results_prior = []
@@ -349,16 +355,19 @@ notification_add(f"\n{current_time()} Beginning Initialization Process (see log 
 
 # Start-up process and safety checks
 def check_website(url):
-    try:
-        response = requests.get(url, headers=url_headers)
-        if response.status_code != 200:
-            print(f"\n{current_time()} ERROR: {url} reports {response.status_code}")
-            timedInput(f"\nPress enter to exit (or timeout in 30 seconds)...", timeout=30)
-            exit()
-    except requests.RequestException as e:
-        print(f"\n{current_time()} ERROR: {url} reports {e}")
-        timedInput(f"\nPress enter to exit (or timeout in 30 seconds)...", timeout=30)
-        exit(1)
+    while True:
+        try:
+            response = requests.get(url, headers=url_headers)
+            if response.status_code == 200:
+                print(f"\n{current_time()} SUCCESS: {url} is accessible. Continuing...")
+                break
+            else:
+                print(f"\n{current_time()} ERROR: {url} reports {response.status_code}")
+        except requests.RequestException as e:
+            print(f"\n{current_time()} ERROR: {url} reports {e}")
+        
+        print(f"\n{current_time()} INFO: Retrying in 1 minute...")
+        time.sleep(60)
 
 check_website(engine_url)
 
@@ -390,6 +399,10 @@ def check_and_create_csv(csv_file):
     if csv_file == csv_streaming_services:
         id_field = "streaming_service_name"
         update_rows(csv_file, data, id_field)
+
+    # Add columns for new functionality
+    if csv_file == csv_bookmarks_status:
+        check_and_add_column(csv_file, 'special_action', 'None')
 
 # Clean up empty data files
 def remove_empty_row(csv_file):
@@ -482,6 +495,28 @@ def extract_old_rows(csv_file, data, id_field):
     
     return old_rows
 
+# Add new columns during upgrades
+def check_and_add_column(csv_file, column_name, default_value):
+    full_path_file = full_path(csv_file)
+    
+    # Read the CSV file
+    with open(full_path_file, mode='r', newline='') as infile:
+        reader = csv.DictReader(infile)
+        fieldnames = reader.fieldnames
+        rows = list(reader)
+    
+    # Check if the column exists
+    if column_name not in fieldnames:
+        fieldnames.append(column_name)
+        for row in rows:
+            row[column_name] = default_value
+    
+    # Write the updated data back to the CSV file
+    with open(full_path_file, mode='w', newline='') as outfile:
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
 # Data records for initialization files
 def initial_data(csv_file):
     if csv_file == csv_settings:
@@ -505,7 +540,7 @@ def initial_data(csv_file):
         ]
     elif csv_file == csv_bookmarks_status:
         data = [
-            {"entry_id": None, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": None, "stream_link": None, "stream_link_override": None, "stream_link_file": None}
+            {"entry_id": None, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": None, "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None}
         ]
     elif csv_file == csv_slmappings:
         data = [
@@ -1221,6 +1256,10 @@ def add_programs():
     country_code = settings[2]["settings"]
     language_code = settings[3]["settings"]
     num_results = settings[4]["settings"]
+
+    special_actions = []
+    special_actions = get_special_actions()
+
     program_types = [
                         "MOVIE",
                         "SHOW"
@@ -1356,6 +1395,7 @@ def add_programs():
                 field_season_episode_inputs = {}
                 field_stream_link_override_inputs = {}
                 field_season_episode_prefix_inputs = {}
+                field_special_action_inputs = {}
 
                 for key in request.form.keys():
                     if key.startswith('field_status_'):
@@ -1374,6 +1414,10 @@ def add_programs():
                         index = key.split('_')[-1]
                         field_season_episode_prefix_inputs[index] = request.form.get(key)
 
+                    if key.startswith('field_special_action_'):
+                        index = key.split('_')[-1]
+                        field_special_action_inputs[index] = request.form.get(key)
+
                 for index in field_season_episode_inputs.keys():
                     season_episode_id = None
                     season_episode_prefix = field_season_episode_prefix_inputs.get(index)
@@ -1383,6 +1427,7 @@ def add_programs():
                     else:
                         status = "watched"
                     stream_link_override = field_stream_link_override_inputs.get(index)
+                    special_action = field_special_action_inputs.get(index)
 
                     for item in season_episodes_prior:
                         if item["season_episode"] == season_episode:
@@ -1397,16 +1442,29 @@ def add_programs():
                         "status": status,
                         "stream_link": None,
                         "stream_link_override": stream_link_override,
-                        "stream_link_file": None
+                        "stream_link_file": None,
+                        "special_action": special_action
                     })
 
-            # Get Stream Link Override for a Movie and write back
+            # Get settings for a Movie and write back
             else:
+                status_movie_input = None
+                stream_link_override_movie_input = None
+                special_action_movie_input = None
+
+                status_movie_input = 'unwatched' if request.form.get('status_movie') == 'on' else 'watched'
+                if status_movie_input == "unwatched":
+                    pass
+                else:
+                    status_movie_input = "watched"
                 stream_link_override_movie_input = request.form.get('stream_link_override_movie')
+                special_action_movie_input = request.form.get('special_action_movie')
 
                 for bookmark_status in bookmarks_statuses:
                     if bookmark_status['entry_id'] == entry_id_prior:
+                        bookmark_status['status'] = status_movie_input
                         bookmark_status['stream_link_override'] = stream_link_override_movie_input
+                        bookmark_status['special_action'] = special_action_movie_input
 
             write_data(csv_bookmarks_status, bookmarks_statuses)
 
@@ -1442,8 +1500,28 @@ def add_programs():
         html_done_generate_flag = done_generate_flag,
         html_date_new_default = date_new_default_prior,
         html_program_add_prior = program_add_prior,
-        html_num_results_test = num_results_test
+        html_num_results_test = num_results_test,
+        html_special_actions = special_actions
     )
+
+# Creates the dropdown list of 'Special Actions'
+def get_special_actions():
+    services = []
+    check_services = []
+    
+    services = read_data(csv_streaming_services)
+    check_services = [service for service in services if service["streaming_service_subscribe"] == "True"]
+    check_services.sort(key=lambda x: int(x.get("streaming_service_priority", float("inf"))))
+    
+    # Initialize special_actions with a copy of the default list
+    special_actions = special_actions_default.copy()
+    
+    for check_service in check_services:
+        prefer = f"Prefer: {check_service['streaming_service_name']}"
+        special_actions.append(prefer)
+    
+    return special_actions
+
 
 # Input the number of search results to return
 def get_num_results(num_results_input):
@@ -1808,14 +1886,28 @@ def extract_program_search(program_search_json):
         else:
             url = None
         short_description = node.get("content", {}).get("shortDescription")
-        
+        poster_raw = node.get("content", {}).get("posterUrl")
+        if poster_raw is not None and poster_raw != '':
+            poster = f"{engine_image_url}{poster_raw}"
+            poster = poster.replace('{profile}', engine_image_profile_poster)
+            poster = poster.replace('{format}', 'jpg')
+        else:
+            poster = None
+        score_raw = node.get("content", {}).get("scoring", {}).get("imdbScore")
+        try:
+            score = f"{float(score_raw):.1f}"
+        except (ValueError, TypeError):
+            score = "N/A"  # Handle the case where the score is not a valid number
+
         extracted_data.append({
             "entry_id": entry_id,
             "title": title,
             "release_year": release_year,
             "object_type": object_type,
             "url": url,
-            "short_description": short_description
+            "short_description": short_description,
+            "poster": poster,
+            "score": score
         })
     
     return extracted_data
@@ -2256,7 +2348,7 @@ def get_program_new(date_new, country_code, language_code, num_results):
             show = None
             node = record["node"]
             show = node.get("show")
-
+       
             if show:
                 entry_id = show["id"]
                 title = show["content"]["title"]
@@ -2264,6 +2356,8 @@ def get_program_new(date_new, country_code, language_code, num_results):
                 object_type = show["objectType"]
                 href = show["content"]["fullPath"]
                 short_description = show["content"]["shortDescription"]
+                poster_raw = show["content"]["posterUrl"]
+                score_raw = show["content"]["scoring"]["imdbScore"]
             else:
                 entry_id = node["id"]
                 title = node["content"]["title"]
@@ -2271,11 +2365,25 @@ def get_program_new(date_new, country_code, language_code, num_results):
                 object_type = node["objectType"]
                 href = node["content"]["fullPath"]
                 short_description = node["content"]["shortDescription"]
+                poster_raw = node["content"]["posterUrl"]
+                score_raw = node["content"]["scoring"]["imdbScore"]
                     
             if href is not None and href != '':
                 url = f"{engine_url}{href}"  # Concatenate with the prefix
             else:
                 url = None
+
+            if poster_raw is not None and poster_raw != '':
+                poster = f"{engine_image_url}{poster_raw}"
+                poster = poster.replace('{profile}', engine_image_profile_poster)
+                poster = poster.replace('{format}', 'jpg')
+            else:
+                poster = None
+
+            try:
+                score = f"{float(score_raw):.1f}"
+            except (ValueError, TypeError):
+                score = "N/A"  # Handle the case where the score is not a valid number`
 
             program_new_results_json_array_extracted.append({
                 "entry_id": entry_id,
@@ -2283,7 +2391,9 @@ def get_program_new(date_new, country_code, language_code, num_results):
                 "release_year": release_year,
                 "object_type": object_type,
                 "url": url,
-                "short_description": short_description
+                "short_description": short_description,
+                "poster": poster,
+                "score": score
             })
 
     if program_new_results_json_array_extracted:
@@ -2457,7 +2567,7 @@ def set_bookmarks(entry_id, title, release_year, object_type, url, country_code,
     append_data(csv_bookmarks, new_row)
 
     if object_type == "MOVIE":
-        new_row = {"entry_id": entry_id, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": "unwatched", "stream_link": None, "stream_link_override": None, "stream_link_file": None}
+        new_row = {"entry_id": entry_id, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": "unwatched", "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None}
         append_data(csv_bookmarks_status, new_row)
     elif object_type == "SHOW":
         if type == "search":
@@ -2506,6 +2616,9 @@ def modify_programs():
     sorted_bookmarks = sorted(bookmarks, key=lambda x: sort_key(x["title"]))
     program_modify_message = ''
     bookmarks_statuses_selected = []
+
+    special_actions = []
+    special_actions = get_special_actions()
 
     if request.method == 'POST':
         modify_programs_action = request.form['action']
@@ -2587,6 +2700,7 @@ def modify_programs():
                 program_modify_add_episode_episode_input = request.form.get('program_modify_add_episode_episode')
                 program_modify_add_episode_episode_prefix_input = request.form.get('program_modify_add_episode_episode_prefix')
                 program_modify_add_episode_stream_link_override_input = request.form.get('program_modify_add_episode_stream_link_override')
+                program_modify_add_episode_special_action_input = request.form.get('program_modify_add_episode_special_action')
 
                 new_season_episode_test = 0
 
@@ -2636,7 +2750,12 @@ def modify_programs():
                         else:
                             new_stream_link = program_modify_add_episode_stream_link_override_input
 
-                        new_row = {"entry_id": entry_id_prior, "season_episode_id": None, "season_episode_prefix": new_episode_prefix, "season_episode": new_season_episode, "status": "unwatched", "stream_link": None, "stream_link_override": new_stream_link, "stream_link_file": None}
+                        if program_modify_add_episode_special_action_input == '':
+                            new_special_action = None
+                        else:
+                            new_special_action = program_modify_add_episode_special_action_input
+
+                        new_row = {"entry_id": entry_id_prior, "season_episode_id": None, "season_episode_prefix": new_episode_prefix, "season_episode": new_season_episode, "status": "unwatched", "stream_link": None, "stream_link_override": new_stream_link, "stream_link_file": None, "special_action": new_special_action}
                         append_data(csv_bookmarks_status, new_row)
 
             elif modify_programs_action.startswith('program_modify_delete_episode_') or modify_programs_action == 'program_modify_save':
@@ -2708,6 +2827,7 @@ def modify_programs():
                     field_stream_link_override_inputs = {}
                     field_season_episode_inputs = {}
                     field_season_episode_prefix_inputs = {}
+                    field_special_action_inputs = {}
 
                     status_missing = True
 
@@ -2722,6 +2842,10 @@ def modify_programs():
                             if status_missing:
                                 field_status_inputs[index] = 'watched'
                             field_stream_link_override_inputs[index] = request.form.get(key)
+
+                        if key.startswith('field_special_action_'):
+                            index = key.split('_')[-1]
+                            field_special_action_inputs[index] = request.form.get(key)
 
                         if field_object_type_input == 'SHOW':
                             if key.startswith('field_season_episode_'):
@@ -2738,22 +2862,26 @@ def modify_programs():
                             field_stream_link_override_input = field_stream_link_override_inputs.get(index)
                             field_season_episode_input = field_season_episode_inputs.get(index)
                             field_season_episode_prefix_input = field_season_episode_prefix_inputs.get(index)
+                            field_special_action_input = field_special_action_inputs.get(index)
 
                             for bookmarks_status in bookmarks_statuses:
                                 if bookmarks_status['entry_id'] == entry_id_prior and bookmarks_status['season_episode'] == field_season_episode_input:
                                     bookmarks_status['status'] = field_status_input
                                     bookmarks_status['stream_link_override'] = field_stream_link_override_input
                                     bookmarks_status['season_episode_prefix'] = field_season_episode_prefix_input
+                                    bookmarks_status['special_action'] = field_special_action_input
 
                     elif field_object_type_input == 'MOVIE':
                         for index in field_status_inputs.keys():
                             field_status_input = field_status_inputs.get(index)
                             field_stream_link_override_input = field_stream_link_override_inputs.get(index)
+                            field_special_action_input = field_special_action_inputs.get(index)
 
                             for bookmarks_status in bookmarks_statuses:
                                 if bookmarks_status['entry_id'] == entry_id_prior:
                                     bookmarks_status['status'] = field_status_input
                                     bookmarks_status['stream_link_override'] = field_stream_link_override_input
+                                    bookmarks_status['special_action'] = field_special_action_input
 
                 write_data(csv_bookmarks_status, bookmarks_statuses)
 
@@ -2769,7 +2897,6 @@ def modify_programs():
         # Cancel changes or finish
         elif modify_programs_action == 'program_modify_cancel':
             edit_flag = None
-            entry_id_prior = None
             title_selected_prior = None
             release_year_selected_prior = None
             object_type_selected_prior = None
@@ -2786,7 +2913,8 @@ def modify_programs():
         html_title_selected = title_selected_prior,
         html_release_year_selected = release_year_selected_prior,
         html_object_type_selected = object_type_selected_prior,
-        html_bookmarks_statuses_selected = bookmarks_statuses_selected_prior
+        html_bookmarks_statuses_selected = bookmarks_statuses_selected_prior,
+        html_special_actions = special_actions
     )
 
 # Alphabetic sort ignoring common articles in various Latin script languages
@@ -3070,7 +3198,7 @@ def get_new_episodes():
         if season_episodes:
             for season_episode in season_episodes:
                 if season_episode['season_episode'] not in [existing_episode['season_episode'] for existing_episode in existing_episodes]:
-                    new_row = {"entry_id": show_bookmark['entry_id'], "season_episode_id": season_episode['season_episode_id'], "season_episode_prefix": None, "season_episode": season_episode['season_episode'], "status": "unwatched", "stream_link": None, "stream_link_override": None, "stream_link_file": None}
+                    new_row = {"entry_id": show_bookmark['entry_id'], "season_episode_id": season_episode['season_episode_id'], "season_episode_prefix": None, "season_episode": season_episode['season_episode'], "status": "unwatched", "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": "None"}
                     append_data(csv_bookmarks_status, new_row)
                     notification_add(f"    For {show_bookmark['title']} ({show_bookmark['release_year']}), added {season_episode['season_episode']}")
         else:
@@ -4827,7 +4955,13 @@ def find_stream_links(auto_bookmarks):
         
                 if bookmarks_status['status'].lower() == "unwatched":
 
-                    if bookmarks_status['stream_link_override'] != "":
+                    special_action = bookmarks_status['special_action']
+
+                    if special_action == "Make STRM":
+
+                        stream_link_dirty = "https://strm_must_use_override"
+
+                    elif bookmarks_status['stream_link_override'] != "":
 
                         stream_link_dirty = "https://skipped_for_override"
 
@@ -4845,7 +4979,7 @@ def find_stream_links(auto_bookmarks):
 
                                 stream_link_details = get_offers(node_id, auto_bookmark['country_code'], auto_bookmark['language_code'])
                                 stream_link_offers = extract_offer_info(stream_link_details)
-                                stream_link_dirty = get_stream_link(stream_link_offers)
+                                stream_link_dirty = get_stream_link(stream_link_offers, special_action)
 
                                 if stream_link_dirty is None or stream_link_dirty == '':
                                     stream_link_reason = "None due to not found on your selected streaming services"
@@ -5056,19 +5190,29 @@ def extract_offer_info(offers_json):
     return result
 
 # Parse through all Offers and find Stream Links based upon priority of Streaming Services
-def get_stream_link(offers):
+def get_stream_link(offers, special_action):
+    check_services_final = []
+    special_action_extract = None
+
+    if special_action.startswith('Prefer: '):
+        special_action_extract = special_action.split('Prefer: ')[1]
+        check_services_final.append(special_action_extract)
+
     services = read_data(csv_streaming_services)
     check_services = [service for service in services if service["streaming_service_subscribe"] == "True"]
     check_services.sort(key=lambda x: int(x.get("streaming_service_priority", float("inf"))))
+
+    for check_service in check_services:
+        check_services_final.append(check_service['streaming_service_name'])
 
     # Initialize Stream Link as None
     stream_link = None
     
     # If offers is not empty, iterate through check_services
     if offers:
-        for check_service in check_services:
+        for check_service in check_services_final:
             for offer in offers:
-                if check_service['streaming_service_name'] == offer['name']:
+                if check_service == offer['name']:
                     stream_link = offer['url']
                     break  # Stop checking once a match is found
             else:
@@ -5127,7 +5271,12 @@ def get_stream_link_ids():
 
     settings = read_data(csv_settings)
     channels_url = settings[0]["settings"]
-    api_url = f"{channels_url}/api/v1/all?source=stream-links"
+    api_url_stream_link = f"{channels_url}/api/v1/all?source=stream-links"
+    api_url_stream_file = f"{channels_url}/api/v1/all?source=stream-files"
+    api_urls = [
+        api_url_stream_link,
+        api_url_stream_file
+    ]
     bookmarks_statuses = read_data(csv_bookmarks_status)
     filtered_bookmarks_statuses = [bookmarks_status for bookmarks_status in bookmarks_statuses if bookmarks_status['stream_link'] != ""]
     slm_stream_links = []
@@ -5152,33 +5301,34 @@ def get_stream_link_ids():
                 "stream_link_current": stream_link_current
             })
 
-        try:
-            response = requests.get(api_url, headers=url_headers)
-            response.raise_for_status()  # Raise an exception if the response status code is not 200 (OK)
-            data = response.json()
-            data_filtered = [item for item in data if "\\slm\\" in item["path"]] # Filter the items where the "path" contains "\slm\"
+        for api_url in api_urls:
+            try:
+                response = requests.get(api_url, headers=url_headers)
+                response.raise_for_status()  # Raise an exception if the response status code is not 200 (OK)
+                data = response.json()
+                data_filtered = [item for item in data if "\\slm\\" in item["path"]] # Filter the items where the "path" contains "\slm\"
 
-            for item in data_filtered:
-                if os.path.exists(item["path"]):
-                    original_path = item["path"].lower()
-                    imports_index = original_path.find("imports")
-                    path = original_path[imports_index:]
-                    id = item["id"]
-                    if os.path.exists(original_path):
-                        with open(original_path, 'r', encoding="utf-8") as file:
-                            stream_link_prior = file.read().rstrip().lower()
-                    else:
-                        stream_link_prior = None
-                        print(f"\n{current_time()} WARNING: Could not find {original_path}. Skipping check.")
+                for item in data_filtered:
+                    if os.path.exists(item["path"]):
+                        original_path = item["path"].lower()
+                        imports_index = original_path.find("imports")
+                        path = original_path[imports_index:]
+                        id = item["id"]
+                        if os.path.exists(original_path):
+                            with open(original_path, 'r', encoding="utf-8") as file:
+                                stream_link_prior = file.read().rstrip().lower()
+                        else:
+                            stream_link_prior = None
+                            print(f"\n{current_time()} WARNING: Could not find {original_path}. Skipping check.")
 
-                    stream_link_ids.append({
-                        "path": path,
-                        "id": id,
-                        "stream_link_prior": stream_link_prior
-                    })
+                        stream_link_ids.append({
+                            "path": path,
+                            "id": id,
+                            "stream_link_prior": stream_link_prior
+                        })
 
-        except requests.RequestException as e:
-            print(f"\n{current_time()} ERROR: From Channels API... {e}")
+            except requests.RequestException as e:
+                print(f"\n{current_time()} ERROR: From Channels API... {e}")
 
         for slm_stream_link in slm_stream_links:
             for stream_link_id in stream_link_ids:
@@ -5221,23 +5371,31 @@ def create_stream_link_files(bookmarks, remove_choice):
                     season_folder_name = f"Season {season_number}"
                     stream_link_path = os.path.join(tv_path, title_full, season_folder_name)
 
+                special_action = bookmark_status['special_action']
+
                 if bookmark_status['stream_link_override'] != "":
                     stream_link_url = bookmark_status['stream_link_override']
                 elif bookmark_status['stream_link'] != "":
-                    stream_link_url = bookmark_status['stream_link']
+                    if special_action == "Make STRM":
+                        pass
+                    else:
+                        stream_link_url = bookmark_status['stream_link']
 
                 if bookmark_status['status'].lower() == "unwatched" and stream_link_url:
+
                     if bookmark['object_type'] == "SHOW":
                         create_directory(os.path.join(tv_path, title_full))
                         create_directory(stream_link_path)
 
-                    file_path_return = create_file(stream_link_path, stream_link_file_name, stream_link_url)
+                    file_path_return = create_file(stream_link_path, stream_link_file_name, stream_link_url, special_action)
                     file_path_return = normalize_path(file_path_return)
                     bookmark_status['stream_link_file'] = file_path_return
 
-                elif bookmark_status['status'].lower() == "watched" or bookmark_status['stream_link'] == "":
+                elif bookmark_status['status'].lower() == "watched" or bookmark_status['stream_link'] == "" or ( special_action == "Make STRM" and bookmark_status['stream_link_override'] == "" ):
 
-                    file_delete(stream_link_path, stream_link_file_name)
+                    for condition in special_actions_default:
+                        file_delete(stream_link_path, stream_link_file_name, condition)
+
                     bookmark_status['stream_link_file'] = None
 
     if remove_choice:
@@ -5285,8 +5443,8 @@ def sanitize_name(name):
     return sanitized
 
 # Create Stream Link file
-def create_file(path, name, url):
-    file_path = get_file_path(path, name)
+def create_file(path, name, url, special_action):
+    file_path = get_file_path(path, name, special_action)
     file_path = normalize_path(file_path)
     file_path_return = None
 
@@ -5305,13 +5463,13 @@ def create_file(path, name, url):
     return file_path_return
 
 # Delete Stream Link file if it exists
-def file_delete(path, name):
-    file_path = get_file_path(path, name)
+def file_delete(path, name, special_action):
+    file_path = get_file_path(path, name, special_action)
     file_path = normalize_path(file_path)
 
     try:
         try:
-            if  os.path.exists(file_path):
+            if os.path.exists(file_path):
                 os.remove(file_path)
                 notification_add(f"    Deleted: {file_path}")
         except OSError as e:
@@ -5320,9 +5478,15 @@ def file_delete(path, name):
         print(f"    Error removing file: {fnf_error}")
 
 # Get complete file path and name
-def get_file_path(path, name):
-    file_name = f"{name}"
-    file_name += ".strmlnk"
+def get_file_path(path, name, special_action):
+    file_name_base = f"{name}"
+
+    if special_action == "Make STRM":
+        file_name_extension = "strm"
+    else:
+        file_name_extension = "strmlnk"
+
+    file_name = f"{file_name_base}.{file_name_extension}"
     file_path = os.path.join(path, file_name)
     file_path = normalize_path(file_path)
     return file_path

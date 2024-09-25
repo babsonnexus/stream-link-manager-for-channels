@@ -1,5 +1,4 @@
 requests
 aiohttp
-pytimedinput
 pyinstaller
 flask
