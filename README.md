@@ -2,13 +2,13 @@
 
 ---
 # Stream Link Manager for Channels
-In <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to add "<b>[Stream Links](https://getchannels.com/docs/channels-dvr-server/how-to/stream-links/)</b>" as local content. These <b>Stream Links</b> appear as normal Movies, TV Shows, and Videos next to recorded and other content but do not play in the Channels app or admin web page directly. Instead, clicking on one of these launches the appropriate app or web page and plays the content there. In order to do this, the process consists of creating ```.strmlnk``` files, putting them in the appropriate location, and running updates in the <b>Channels DVR</b> admin interface to get the programs to appear. As can be imagined, the activity around creation and maintenance is incredibly manual and cumbersome.
+In <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to add "<b>[Stream Links](https://getchannels.com/docs/channels-dvr-server/how-to/stream-links/)</b>" and "<b>[Stream Files](https://getchannels.com/docs/channels-dvr-server/how-to/stream-files/)</b>" as local content. These <b>Stream Links/Files</b> appear as normal Movies, TV Shows, and Videos next to recorded and other content. While <b>Stream Files</b> act like regular local media and directly play in the Channels app or admin web page, <b>Stream Links</b> do not. Instead, clicking on one of these launches the appropriate app or web page and plays the content there. In order to do either, the process consists of creating ```.strmlnk``` or ```.strm``` files, putting them in the appropriate location, and running updates in the <b>Channels DVR</b> admin interface to get the content to appear. As can be imagined, the activity around creation and maintenance is incredibly manual and cumbersome.
 
 Enter <b>Stream Link Manager for Channels</b>!
 
-![image](https://github.com/user-attachments/assets/289fd397-4a02-4647-a756-17002ae34f0b)
+![image](https://github.com/user-attachments/assets/5d7fd754-6e96-4101-b810-b761937d44e7)
 
-<b>Stream Link Manager for Channels</b> is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order to determine the appropriate link. After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another, <b>Stream Link Manager for Channels</b> will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
+<b>Stream Link Manager for Channels</b> is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, for "Stream Links", the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order—including setting a preferred service for a particular Movie or Episode as an overarching setting—in order to determine the appropriate link. There is also the ability to input user-derived links, especially when dealing with "Stream Files". After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another or the user does a manual adjustment, <b>Stream Link Manager for Channels</b> will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
 
 [![image](https://github.com/user-attachments/assets/89f8ef22-80bd-42a5-a827-24723f1c4515)](https://www.youtube.com/watch?v=APuUaAvNo-k)
 * [00:00:00](https://www.youtube.com/watch?v=APuUaAvNo-k&t=0s) Introduction
@@ -517,7 +517,7 @@ With the program running, there are a number of activities you should do before 
 
 ... you can change to "Dark Mode":
 
-![image](https://github.com/user-attachments/assets/505aa89b-b63f-4b5e-b4ec-1b22b5da4c08)
+![image](https://github.com/user-attachments/assets/8ef5d208-c671-4bc0-85c7-b57a42505eeb)
 
 Aside from the visuals, everything will function exactly the same.
 
@@ -672,25 +672,25 @@ Unlike the notifications and live process trackers, the log is in order of actio
 
 Here, you can search for a program you want to bookmark.
 
-![image](https://github.com/user-attachments/assets/d8136314-5aa6-4c5d-b2a5-155e0b7948f7)
+![image](https://github.com/user-attachments/assets/d99dfabc-cf26-436b-9b4b-60c7d26d174b)
 
 The default order is by best-match / popularity, but you can also choose to have the results re-display in alphabetical order.
 
-![image](https://github.com/user-attachments/assets/cb365158-822d-4270-84e7-9a0d34f5a5b2)
+![image](https://github.com/user-attachments/assets/7afd9261-e13e-4aad-9e3c-7d4aecca4eb1)
 
 Another option for searching is to see what has been ```New & Updated``` on the Streaming Services you selected in the ```Settings``` above. This will give you a list of Movies and Shows that have been added or updated on those services.
 
-![image](https://github.com/user-attachments/assets/16607486-c028-47ee-adab-50c220022e29)
+![image](https://github.com/user-attachments/assets/e81b87c3-ff04-4754-9bbe-e134dbde0cf2)
 
 The list is limited to a single day and 100 entries, displayed alphabetically. Clicking ```Today``` will give you that list for this day. On the other hand, you can select any date and click ```New & Updated``` to get the Movies and Shows from that day.
 
 ![image](https://github.com/user-attachments/assets/00bd77ad-edc1-43de-90c7-962f040d8df8)
 
-![image](https://github.com/user-attachments/assets/9eead5ea-7c88-4dad-a831-640179bcb165)
+![image](https://github.com/user-attachments/assets/cc458317-eb4a-464a-bd6b-3069164887a7)
 
 No matter the search method, clicking on a Movie will get you something like this:
 
-![image](https://github.com/user-attachments/assets/f07668e9-0ceb-4b10-b432-a4a0c633fef9)
+![image](https://github.com/user-attachments/assets/86499e3f-2e3a-44be-97d3-a7d0dc2e05ec)
 
 Notice that the ```Search``` and other line buttons are no longer available. You must finish this process by selecting ```Done``` or ```Generate Stream Links```. If you do not generate Stream Links at the time of creation, they will be created (if valid) during the next run of the process as detailed above. Although it is not necessary, if you review the logs, you can generally see a successfully generated Stream Link appear as so:
 
@@ -711,11 +711,15 @@ In order for a Stream Link to be generated, the Movie or Episode must first have
 
 Once an add has been complete, you can search again. If we select a Show this time, it will have slightly different options:
 
-![image](https://github.com/user-attachments/assets/4777b509-55ec-400a-8064-0e82f3c37018)
+![image](https://github.com/user-attachments/assets/534fa1d0-bf7d-48a0-b880-a68b52826cba)
 
-Per episode, season, or for the entire show, you can uncheck to mark it as ```Watched```. It is important to note that in <b>Stream Link Manager for Channels</b>, the term ```Watched``` does not mean that you have ever seen the Episode or Movie. Marking something as ```Watched``` means that you are finished with it and do not want to generate a Stream Link for it. It is the equivalent of deleting an Episode or Movie from within Channels DVR. As discussed above, during the ```Import Updates from Channels``` process, this program checks to see if a generated Stream Link file has been deleted. If it has been, it will be marked as ```Watched``` and will no longer generate a Stream Link in the future. This is why it is equally important for users to not modify or delete the files that are generated by this program. Doing so could make Movies and Shows become erroneously marked as ```Watched```. Only this program should modify anything in the created ```slm``` directories.
+Per episode, season, or for the entire show (or a Movie if bookmarking that), you can uncheck to mark it as ```Watched```. It is important to note that in <b>Stream Link Manager for Channels</b>, the term ```Watched``` does not mean that you have ever seen the Episode or Movie. Marking something as ```Watched``` means that you are finished with it and do not want to generate a Stream Link/File for it. It is the equivalent of deleting an Episode or Movie from within Channels DVR. As discussed above, during the ```Import Updates from Channels``` process, this program checks to see if a generated Stream Link/File file has been deleted. If it has been, it will be marked as ```Watched``` and will no longer generate a Stream Link/File in the future. This is why it is equally important for users to not modify or delete the files that are generated by this program. Doing so could make Movies and Shows become erroneously marked as ```Watched```. Only this program should modify anything in the created ```slm``` directories.
 
-Aside from these considerations, per episode, you have the same ```Stream Link Override``` option as a Movie, as well as the ability to put a prefix on the generated file. For instance, by default, a file name will be ```S01E01.strmlnk```. However, as an example, you may want to designate that this is a subtitled episode and that dubbed episodes might become available in the future. For this, a prefix of ```(SUB)``` will result in a file name of ```(SUB) S01E01.strmlnk```.
+Aside from these considerations, per episode, you have the same ```Stream Link Override``` option as a Movie, as well as the ability to put a prefix on the generated file. For instance, by default, a file name will be ```S01E01.strmlnk```. However, as an example, you may want to designate that this is a subtitled episode and that dubbed episodes might become available in the future. For this, a prefix of ```(SUB)``` will result in a file name of ```(SUB) S01E01.strmlnk```. More so, there is a selection called ```Special Action``` that can also be propagated down to the individual episodes from the entire show or per season perspective:
+
+![image](https://github.com/user-attachments/assets/db039128-8fd1-4a2c-aa3b-1d7c8d8cb4c8)
+
+In most cases, users will leave this as ```None```, but there are situations when it will necessary to take advantage of these functions. For instance, if your Movie or Show is available on multiple Streaming Services but you prefer it to be on one with a lower priority, you can make that assignment. Another situation might be that you have a link to the media directly and, thus, would want to create a "Stream File" instead of "Stream Link". In this case, you would select ```Make STRM```.
 
 Sometimes when searching, you might not be able to find the Movie or Show you are looking for. While uncommon (see ```Troubleshooting / FAQ```), it may happen, especially for rare or foreign content. In these cases, you can always create a manual bookmark.
 
@@ -753,11 +757,13 @@ This is also a good area just to check on the status of Movies and Shows.
 
 ![image](https://github.com/user-attachments/assets/a0d572d4-3fa9-497d-b72b-ec871eb534ed)
 
-Note that the ```Current Stream Link``` field will always be greyed out and unable to be modified. If it is blank, this is an indication that no Stream Link was generated. If you want to change the Stream Link or give it one when none was generated, that is what the ```Stream Link Override``` field is for. After regenerating Stream Links through any method discussed thus far or below, you should see something like this:
+Note that the ```Current Stream Link``` field will always be greyed out and unable to be modified. If it is blank, this is an indication that no Stream Link was generated. If you want to change the Stream Link, give it one when none was generated, or input something for a Stream File, that is what the ```Stream Link Override``` field is for. After regenerating Stream Links/Files through any method discussed thus far or below, you should see something like this:
 
 ![e172001b269677d537a74807fb36538a7d8be685-1](https://github.com/user-attachments/assets/70fa7901-8163-4565-b7b0-f58581dc7b03)
 
-The ```Current Stream Link``` field having the ```skipped_for_override``` value lets you know a Stream Link file was creating using the input ```Stream Link Override``` value that was entered.
+![image](https://github.com/user-attachments/assets/8fa9c358-e442-4de3-b266-f53dd95fc5ba)
+
+The ```Current Stream Link``` field having the ```skipped_for_override``` or ```strm_must_use_override``` value lets you know a Stream Link/File file was creating using the ```Stream Link Override``` value that was input.
 
 Movies are fairly similar to Shows in the options, including updating the ```Title``` and ```Release Year``` itself if the data is incorrect or not how you want it.
 
