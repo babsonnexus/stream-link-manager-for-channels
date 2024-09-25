@@ -25,7 +25,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.09.25.1105"
+slm_version = "v2024.09.25.1141"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -500,7 +500,7 @@ def check_and_add_column(csv_file, column_name, default_value):
     full_path_file = full_path(csv_file)
     
     # Read the CSV file
-    with open(full_path_file, mode='r', newline='') as infile:
+    with open(full_path_file, mode='r', newline='', encoding="utf-8") as infile:
         reader = csv.DictReader(infile)
         fieldnames = reader.fieldnames
         rows = list(reader)
@@ -512,7 +512,7 @@ def check_and_add_column(csv_file, column_name, default_value):
             row[column_name] = default_value
     
     # Write the updated data back to the CSV file
-    with open(full_path_file, mode='w', newline='') as outfile:
+    with open(full_path_file, mode='w', newline='', encoding="utf-8") as outfile:
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
