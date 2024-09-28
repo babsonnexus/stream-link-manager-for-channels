@@ -10,6 +10,21 @@ Enter <b>Stream Link Manager for Channels</b>!
 
 <b>Stream Link Manager for Channels</b> is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, for "Stream Links", the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order—including setting a preferred service for a particular Movie or Episode as an overarching setting—in order to determine the appropriate link. There is also the ability to input user-derived links, especially when dealing with "Stream Files". After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another or the user does a manual adjustment, <b>Stream Link Manager for Channels</b> will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
 
+[![image](https://github.com/user-attachments/assets/0100b998-f9ea-46f8-8baa-59213d398cd3)](https://www.youtube.com/watch?v=5qm_2pU1h1c)
+
+<b>NOTE:</b> Some of the visuals seen in the videos and in the screen shots above and below may be out of date as updates to format and functionality have been applied to the program.
+
+---
+![SpaceX_ASDS_in_position_prior_to_Falcon_9_Flight_17_carrying_CRS-6_(17127808431)_EDITED](https://github.com/user-attachments/assets/c45005cf-081f-4eba-bcb4-fcdccd7ca281)
+<i>Image (edited) courtesy of SpaceX, CC0, via Wikimedia Commons.</i>
+
+# Installation
+There are several methods to install <b>Stream Link Manager for Channels</b> and only one should be followed. While Docker is the preferred route for those who have it as it is the most controlled path, if you are not comfortable with Docker or are having issues, you can do a straight self-deployment in Windows or Linux, or use Python in any OS type. For those unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are installing Docker in Windows, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591). Channels DVR users who have deployed [OliveTin for Channels](https://community.getchannels.com/t/37609) and/or [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process. Just follow one of these paths throughout the entire installation, doing the step-by-step actions exactly as described.
+
+![SLM Installation Decision Tree](https://github.com/user-attachments/assets/041b08e4-5992-4589-bf9e-eeddb6a1dfc6)
+
+You can also follow along in the video here:
+
 [![image](https://github.com/user-attachments/assets/89f8ef22-80bd-42a5-a827-24723f1c4515)](https://www.youtube.com/watch?v=APuUaAvNo-k)
 * [00:00:00](https://www.youtube.com/watch?v=APuUaAvNo-k&t=0s) Introduction
 * [00:02:14](https://www.youtube.com/watch?v=APuUaAvNo-k&t=134s) Docker Info
@@ -34,17 +49,6 @@ Enter <b>Stream Link Manager for Channels</b>!
 * [01:04:47](https://www.youtube.com/watch?v=APuUaAvNo-k&t=3887s) Update Media in Channels
 * [01:06:08](https://www.youtube.com/watch?v=APuUaAvNo-k&t=3968s) Settings - Scheduler
 * [01:08:56](https://www.youtube.com/watch?v=APuUaAvNo-k&t=4136s) Final Thoughts
-
-<b>NOTE:</b> Some of the visuals seen in the video and in the screen shots below may be out of date as updates to format and functionality have been applied to the program.
-
----
-![SpaceX_ASDS_in_position_prior_to_Falcon_9_Flight_17_carrying_CRS-6_(17127808431)_EDITED](https://github.com/user-attachments/assets/c45005cf-081f-4eba-bcb4-fcdccd7ca281)
-<i>Image (edited) courtesy of SpaceX, CC0, via Wikimedia Commons.</i>
-
-# Installation
-There are several methods to install <b>Stream Link Manager for Channels</b> and only one should be followed. While Docker is the preferred route for those who have it as it is the most controlled path, if you are not comfortable with Docker or are having issues, you can do a straight self-deployment in Windows or Linux, or use Python in any OS type. For those unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are installing Docker in Windows, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591). Channels DVR users who have deployed [OliveTin for Channels](https://community.getchannels.com/t/37609) and/or [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process. Just follow one of these paths throughout the entire installation, doing the step-by-step actions exactly as described.
-
-![SLM Installation Decision Tree](https://github.com/user-attachments/assets/041b08e4-5992-4589-bf9e-eeddb6a1dfc6)
 
 As a general note, it does not matter "where" <b>Stream Link Manager for Channels</b> is installed; it could even be placed in the Channels DVR directory. The only requirements are that it must be on a machine and in a location that has directory access to the Channels DVR directory and be able to see the Channels DVR Administrative webpage.
 
