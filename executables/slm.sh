@@ -13,7 +13,7 @@ file_spec="$dir_download/$executable.spec"
 dir_existing="$dir_current/_internal"
 dir_existing_upgrade="$dir_existing/program_files"
 dir_download_upgrade="$dir_download/_internal"
-link="https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/main/executables/slm_python.zip"
+link="https://www.dropbox.com/scl/fi/b5loo1yndyfasqgek1vv3/slm_python.zip?rlkey=g1wcyl22kewg05cu55nqssbt7&dl=1"
 outfile="slm.zip"
 
 continue_install="false"
