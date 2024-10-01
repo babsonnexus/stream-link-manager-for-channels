@@ -6,7 +6,7 @@ In <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to ad
 
 Enter <b>Stream Link Manager for Channels</b>!
 
-![image](https://github.com/user-attachments/assets/5d7fd754-6e96-4101-b810-b761937d44e7)
+![image](https://github.com/user-attachments/assets/cff99ebf-a946-42cc-81f0-6ccad2c022f5)
 
 <b>Stream Link Manager for Channels</b> is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, for "Stream Links", the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order—including setting a preferred service for a particular Movie or Episode as an overarching setting—in order to determine the appropriate link. There is also the ability to input user-derived links, especially when dealing with "Stream Files". After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another or the user does a manual adjustment, <b>Stream Link Manager for Channels</b> will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
 
@@ -676,21 +676,21 @@ Unlike the notifications and live process trackers, the log is in order of actio
 
 Here, you can search for a program you want to bookmark.
 
-![image](https://github.com/user-attachments/assets/d99dfabc-cf26-436b-9b4b-60c7d26d174b)
+![image](https://github.com/user-attachments/assets/e6e42d72-4d9c-46e9-95d8-6ef645e7bdbf)
 
-The default order is by best-match / popularity, but you can also choose to have the results re-display in alphabetical order.
+The default order is by best-match / popularity, but you can also choose to have the results re-display in alphabetical order and/or filter only for Movies or Shows.
 
-![image](https://github.com/user-attachments/assets/7afd9261-e13e-4aad-9e3c-7d4aecca4eb1)
+![image](https://github.com/user-attachments/assets/b9b5ed84-4430-4eb4-af6a-631880a28909)
 
 Another option for searching is to see what has been ```New & Updated``` on the Streaming Services you selected in the ```Settings``` above. This will give you a list of Movies and Shows that have been added or updated on those services.
 
-![image](https://github.com/user-attachments/assets/e81b87c3-ff04-4754-9bbe-e134dbde0cf2)
+![image](https://github.com/user-attachments/assets/6c188e4e-ee57-4e14-b109-01b57e389f17)
 
 The list is limited to a single day and 100 entries, displayed alphabetically. Clicking ```Today``` will give you that list for this day. On the other hand, you can select any date and click ```New & Updated``` to get the Movies and Shows from that day.
 
 ![image](https://github.com/user-attachments/assets/00bd77ad-edc1-43de-90c7-962f040d8df8)
 
-![image](https://github.com/user-attachments/assets/cc458317-eb4a-464a-bd6b-3069164887a7)
+![image](https://github.com/user-attachments/assets/811af5d8-3221-4d59-8f96-3f8a0bedda80)
 
 No matter the search method, clicking on a Movie will get you something like this:
 
@@ -773,11 +773,37 @@ Movies are fairly similar to Shows in the options, including updating the ```Tit
 
 ![image](https://github.com/user-attachments/assets/5512fe0c-d5ce-44be-ba16-313c31434314)
 
+### Reports & Queries
+
+11. In order to streamline some questions you may have about your bookmarked Movies and Shows, certain reports and queries have been made available in the same named area:
+
+![image](https://github.com/user-attachments/assets/bbe0be58-9c25-4536-aa00-1528b8d73e31)
+
+To navigate the data, there are several functions such as number of results per page...
+
+![image](https://github.com/user-attachments/assets/3a735041-a960-4f67-bdec-291f5bb93c59)
+
+... number of entries being show out of how many...
+
+![image](https://github.com/user-attachments/assets/8a989fc0-e3c0-42a7-94cd-dad556a01fb3)
+
+... page navigation between those entries...
+
+![image](https://github.com/user-attachments/assets/dcfd5a71-bdbf-4b67-87ba-42e7931c4cd8)
+
+... and the ability to filter both by a general search...
+
+![image](https://github.com/user-attachments/assets/2ca0a342-75d4-4b7e-84a1-ad800c44cc83)
+
+... and on individual columns:
+
+![image](https://github.com/user-attachments/assets/5ff9add2-2837-4e3f-ba20-aaf41a603b62)
+
 ### Administrative Functions
 
-11. Aside from these functions, there is not much else a user needs to do. There is the ```Files``` area for viewing the backend data that fuels all of the above, as well as exporting those files for backup and migration purposes.
+12. Aside from these functions, there is not much else a user needs to do. There is the ```Files``` area for viewing the backend data that fuels all of the above, as well as exporting those files for backup and migration purposes.
 
-![image](https://github.com/user-attachments/assets/05f04319-7aa6-4843-a7ff-c7de1dffaf17)
+![image](https://github.com/user-attachments/assets/bdc49fa5-aaf0-42de-89e2-c4cbbe3165a8)
 
 You can also completely replace those files, though it is not recommended to do so unless you are specifically directed.
 
