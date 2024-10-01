@@ -1,4 +1,6 @@
 requests
 aiohttp
+pandas
+pandasql
 pyinstaller
 flask

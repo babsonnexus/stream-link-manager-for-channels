@@ -3,6 +3,8 @@ import sys
 import shutil
 import socket
 import csv
+import pandas as pd
+import pandasql as psql
 import json
 import re
 import urllib.parse
@@ -25,7 +27,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.09.25.1141"
+slm_version = "v2024.10.01.1633"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -63,6 +65,7 @@ _GRAPHQL_API_URL = "https://apis.justwatch.com/graphql"
 engine_image_url = "https://images.justwatch.com"
 engine_image_profile_poster = "s718"
 engine_image_profile_backdrop = "s1920"
+engine_image_profile_icon = "s100"
 valid_country_codes = [
     "AD",
     "AE",
@@ -237,6 +240,12 @@ edit_flag = None
 channels_url_prior = None
 date_new_default_prior = None
 program_add_prior = ''
+program_add_resort_panel = ''
+program_add_filter_panel = ''
+slm_query = None
+slm_query_name = None
+offer_icons = []
+offer_icons_flag = None
 
 # Adds a notification
 def notification_add(notification):
@@ -1251,6 +1260,8 @@ def add_programs():
     global season_episodes_prior
     global date_new_default_prior
     global program_add_prior
+    global program_add_resort_panel
+    global program_add_filter_panel
 
     settings = read_data(csv_settings)
     country_code = settings[2]["settings"]
@@ -1288,6 +1299,8 @@ def add_programs():
         # Cancel and restart the page
         if add_programs_action == 'program_add_cancel':
             program_add_prior = ''
+            program_add_resort_panel = ''
+            program_add_filter_panel = ''
             return redirect(url_for('add_programs'))
         
         # Search for a program
@@ -1304,6 +1317,8 @@ def add_programs():
                     program_search_results_prior = program_search_results
                     country_code_input_prior = country_code_input
                     language_code_input_prior = language_code_input
+                    program_add_resort_panel = 'on'
+                    program_add_filter_panel = 'on'
 
                 else:
                     program_add_message = num_results_test
@@ -1322,16 +1337,31 @@ def add_programs():
                 program_search_results_prior = program_search_results
                 country_code_input_prior = country_code_input
                 language_code_input_prior = language_code_input
+                program_add_resort_panel = ''
+                program_add_filter_panel = 'on'
 
-        # Resort search results
-        elif add_programs_action == 'program_add_resort_alpha':
-            program_search_results = sorted(program_search_results_prior, key=lambda x: sort_key(x["title"].casefold()))
+        # Filter and resort search results
+        elif add_programs_action.startswith('program_add_resort_'):
+
+            if add_programs_action == 'program_add_resort_alpha':
+                program_search_results = sorted(program_search_results_prior, key=lambda x: sort_key(x["title"].casefold()))
+                program_add_resort_panel = ''
+            elif add_programs_action.startswith('program_add_resort_filter_'):
+                if add_programs_action == 'program_add_resort_filter_movie':
+                    program_search_results = [item for item in program_search_results_prior if item['object_type'] == 'MOVIE']
+                elif add_programs_action == 'program_add_resort_filter_show':
+                    program_search_results = [item for item in program_search_results_prior if item['object_type'] == 'SHOW']
+                program_add_filter_panel = ''
+
             program_search_results_prior = program_search_results
 
         # Select a program from the search
         elif add_programs_action.startswith('program_search_result_'):
             program_search_index = int(add_programs_action.split('_')[-1]) - 1
             program_add_message, entry_id, season_episodes, object_type = search_bookmark_select(program_search_results_prior, program_search_index, country_code_input_prior, language_code_input_prior)
+
+            program_add_resort_panel = ''
+            program_add_filter_panel = ''
 
             test_terms = ("WARNING: ", "ERROR: ")
             if any(term in program_add_message for term in test_terms):
@@ -1501,7 +1531,9 @@ def add_programs():
         html_date_new_default = date_new_default_prior,
         html_program_add_prior = program_add_prior,
         html_num_results_test = num_results_test,
-        html_special_actions = special_actions
+        html_special_actions = special_actions,
+        html_program_add_resort_panel = program_add_resort_panel,
+        html_program_add_filter_panel = program_add_filter_panel
     )
 
 # Creates the dropdown list of 'Special Actions'
@@ -1647,6 +1679,8 @@ def get_program_search(program_search, country_code, language_code, num_results)
         package {
             id
             packageId
+            icon
+            clearName
             __typename
         }
         id
@@ -1733,6 +1767,8 @@ def get_program_search(program_search, country_code, language_code, num_results)
             package {
                 id
                 packageId
+                icon
+                clearName
                 __typename
             }
             id
@@ -1898,6 +1934,22 @@ def extract_program_search(program_search_json):
             score = f"{float(score_raw):.1f}"
         except (ValueError, TypeError):
             score = "N/A"  # Handle the case where the score is not a valid number
+        
+        offers_raw = node.get("offers")
+        offers_raw_list = []
+        for offer_raw in offers_raw:
+            offer_raw_icon = offer_raw["package"]["icon"]
+            offer_raw_icon = f"{engine_image_url}{offer_raw_icon}"
+            offer_raw_icon = offer_raw_icon.replace('{profile}', engine_image_profile_icon)
+            offer_raw_icon = offer_raw_icon.replace('{format}', 'png')
+            offer_raw_clearname = offer_raw["package"]["clearName"]
+            offers_raw_list.append({"icon": offer_raw_icon, "sort": offer_raw_clearname})
+
+        offers_raw_list_sorted = sorted(offers_raw_list, key=lambda x: sort_key(x["sort"]))
+        icons_list = []
+        icons_list = [offer["icon"] for offer in offers_raw_list_sorted]
+
+        offers_list = list(dict.fromkeys(icons_list))
 
         extracted_data.append({
             "entry_id": entry_id,
@@ -1907,9 +1959,10 @@ def extract_program_search(program_search_json):
             "url": url,
             "short_description": short_description,
             "poster": poster,
-            "score": score
+            "score": score,
+            "offers_list": offers_list
         })
-    
+
     return extracted_data
 
 # Find new programs on selected Streaming Services
@@ -1975,6 +2028,7 @@ def get_program_new(date_new, country_code, language_code, num_results):
         packageId
         clearName
         shortName
+        icon
         __typename
         }
         retailPrice(language: $language)
@@ -2021,6 +2075,8 @@ def get_program_new(date_new, country_code, language_code, num_results):
             package {
             id
             shortName
+            icon
+            clearName
             __typename
             }
             releaseCountDown(country: $country)
@@ -2038,6 +2094,8 @@ def get_program_new(date_new, country_code, language_code, num_results):
         package {
             id
             shortName
+            icon
+            clearName
             __typename
         }
         availableToDate
@@ -2188,6 +2246,8 @@ def get_program_new(date_new, country_code, language_code, num_results):
             package {
                 id
                 packageId
+                icon
+                clearName
                 __typename
             }
             id
@@ -2385,6 +2445,20 @@ def get_program_new(date_new, country_code, language_code, num_results):
             except (ValueError, TypeError):
                 score = "N/A"  # Handle the case where the score is not a valid number`
 
+            offers_raw_list = []
+            offer_raw_icon = record["newOffer"]["package"]["icon"]
+            offer_raw_icon = f"{engine_image_url}{offer_raw_icon}"
+            offer_raw_icon = offer_raw_icon.replace('{profile}', engine_image_profile_icon)
+            offer_raw_icon = offer_raw_icon.replace('{format}', 'png')
+            offer_raw_clearname = record["newOffer"]["package"]["clearName"]
+            offers_raw_list.append({"icon": offer_raw_icon, "sort": offer_raw_clearname})
+
+            offers_raw_list_sorted = sorted(offers_raw_list, key=lambda x: sort_key(x["sort"]))
+            icons_list = []
+            icons_list = [offer["icon"] for offer in offers_raw_list_sorted]
+
+            offers_list = list(dict.fromkeys(icons_list))
+
             program_new_results_json_array_extracted.append({
                 "entry_id": entry_id,
                 "title": title,
@@ -2393,15 +2467,19 @@ def get_program_new(date_new, country_code, language_code, num_results):
                 "url": url,
                 "short_description": short_description,
                 "poster": poster,
-                "score": score
+                "score": score,
+                "offers_list": offers_list
             })
 
     if program_new_results_json_array_extracted:
-        seen = set()
+        program_new_results_json_array_extracted_unique = []
+        seen_entries = set()
+
         for record in program_new_results_json_array_extracted:
-            record_tuple = tuple(record.items())
-            if record_tuple not in seen:
-                seen.add(record_tuple)
+            identifier = (record['entry_id'], record['title'], record['release_year'], record['object_type'], record['url'])
+    
+            if identifier not in seen_entries:
+                seen_entries.add(identifier)
                 program_new_results_json_array_extracted_unique.append(record)
 
     return program_new_results_json_array_extracted_unique
@@ -2609,6 +2687,8 @@ def modify_programs():
     global object_type_selected_prior
     global bookmarks_statuses_selected_prior
     global edit_flag
+    global offer_icons
+    global offer_icons_flag
 
     bookmarks = read_data(csv_bookmarks)
     bookmarks_statuses = read_data(csv_bookmarks_status)
@@ -2629,10 +2709,13 @@ def modify_programs():
         if modify_programs_action in [
                                         'program_modify_edit',
                                         'program_modify_delete',
-                                        'program_modify_generate'
+                                        'program_modify_generate',
+                                        'program_modify_available'
                                      ]:
             
             entry_id_prior = entry_id_input
+            offer_icons = []
+            offer_icons_flag = None
 
             if modify_programs_action in [
                                             'program_modify_edit',
@@ -2687,6 +2770,31 @@ def modify_programs():
             # Generates Stream Links for the program
             elif modify_programs_action == 'program_modify_generate':
                 program_modify_message = generate_stream_links_single(entry_id_prior)
+
+            # Checks the availability of a program
+            elif modify_programs_action == 'program_modify_available':
+                if not entry_id_prior.startswith('slm'):
+
+                    bookmarks = read_data(csv_bookmarks)
+                    modify_bookmarks = [bookmark for bookmark in bookmarks if bookmark['entry_id'] == entry_id_prior]
+
+                    for modify_bookmark in modify_bookmarks:
+                        node_id = modify_bookmark['entry_id']
+                        country_code = modify_bookmark['country_code']
+                        language_code = modify_bookmark['language_code']
+
+                    stream_link_details = get_offers(node_id, country_code, language_code)
+                    stream_link_offers = extract_offer_info(stream_link_details)
+                    stream_link_offers_sorted = sorted(stream_link_offers, key=lambda x: sort_key(x["name"]))
+
+                    for offer in stream_link_offers_sorted:
+                        offer_icons.append(offer['icon'])
+
+                    offer_icons = list(dict.fromkeys(offer_icons))
+                    offer_icons_flag = True
+
+                else:
+                    program_modify_message = f"{current_time()} ERROR: Manual programs cannot be checked for availability."
 
         elif modify_programs_action.startswith('program_modify_delete_episode_') or modify_programs_action in [
                                                                                                                 'program_modify_add_episode',
@@ -2914,7 +3022,9 @@ def modify_programs():
         html_release_year_selected = release_year_selected_prior,
         html_object_type_selected = object_type_selected_prior,
         html_bookmarks_statuses_selected = bookmarks_statuses_selected_prior,
-        html_special_actions = special_actions
+        html_special_actions = special_actions,
+        html_offer_icons = offer_icons,
+        html_offer_icons_flag = offer_icons_flag
     )
 
 # Alphabetic sort ignoring common articles in various Latin script languages
@@ -2976,6 +3086,141 @@ def remove_row_csv(csv_file, field_value):
     except Exception as e:
         print(f"Error: {e}")
 
+# Reports / Queries webpage
+@app.route('/reports_queries', methods=['GET', 'POST'])
+def webpage_reports_queries():
+    global slm_query
+    global slm_query_name
+    slm_query_raw = []
+
+    if request.method == 'POST':
+        action = request.form['action']
+
+        if action == "reports_queries_cancel":
+            slm_query_raw = []
+            slm_query = None
+            slm_query_name = None
+
+        else:
+            slm_query_raw = run_query(action)
+
+            if action in [
+                            "query_currently_unavailable",
+                            "query_previously_watched"
+                         ]:
+                slm_query_raw = sorted(slm_query_raw, key=lambda x: (x["Type"], sort_key(x["Name"].casefold())))
+
+                if action == "query_currently_unavailable":
+                    slm_query_name = "Currently Unavailable"
+                elif action == "query_previously_watched":
+                    slm_query_name = "Previously Watched"
+
+            slm_query = view_csv(slm_query_raw, "library")
+
+    return render_template(
+        'main/reports_queries.html',
+        segment='reports_queries',
+        html_slm_version=slm_version,
+        html_slm_query = slm_query,
+        html_slm_query_name = slm_query_name
+    )
+
+# Run a SQL-like Query
+def run_query(query_name):
+    run_query = None
+
+    bookmarks_data = read_data(csv_bookmarks)
+    bookmarks_status_data = read_data(csv_bookmarks_status)
+    settings_data = read_data(csv_settings)
+    slmappings_data = read_data(csv_slmappings)
+    streaming_services_data = read_data(csv_streaming_services)
+
+    # Convert the data into pandas DataFrames
+    bookmarks = pd.DataFrame(bookmarks_data)
+    bookmarks_status = pd.DataFrame(bookmarks_status_data)
+    settings = pd.DataFrame(settings_data)
+    slmappings = pd.DataFrame(slmappings_data)
+    streaming_services = pd.DataFrame(streaming_services_data)
+
+    if query_name in [
+                        'query_currently_unavailable',
+                        'query_previously_watched'
+                     ]:
+
+        if bookmarks.empty or bookmarks_status.empty:
+            results = []
+
+        else:
+
+            run_query = True
+
+            if query_name == 'query_currently_unavailable':
+                # Add a new column for the season using string slicing
+                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
+
+                query = """
+                SELECT 
+                    bookmarks.object_type AS "Type", 
+                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
+                    bookmarks_status.Season, 
+                    CASE 
+                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                        ELSE ''
+                    END AS "# Episodes"
+                FROM 
+                    bookmarks 
+                INNER JOIN 
+                    bookmarks_status 
+                ON 
+                    bookmarks.entry_id = bookmarks_status.entry_id
+                WHERE 
+                    bookmarks_status.status = 'unwatched' 
+                    AND bookmarks_status.stream_link_file = ''
+                GROUP BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")", 
+                    bookmarks_status.Season
+                ORDER BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")"
+                """
+
+            elif query_name == 'query_previously_watched':
+                # Add a new column for the season using string slicing
+                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
+
+                query = """
+                SELECT 
+                    bookmarks.object_type AS "Type", 
+                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
+                    bookmarks_status.Season, 
+                    CASE 
+                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                        ELSE ''
+                    END AS "# Episodes"
+                FROM 
+                    bookmarks 
+                INNER JOIN 
+                    bookmarks_status 
+                ON 
+                    bookmarks.entry_id = bookmarks_status.entry_id
+                WHERE 
+                    bookmarks_status.status = 'watched'
+                GROUP BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")", 
+                    bookmarks_status.Season
+                ORDER BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")"
+                """
+
+    # Execute the query
+    if run_query:
+        results = psql.sqldf(query, locals()).to_dict(orient='records')
+
+    return results
+
 # Files webpage
 @app.route('/files', methods=['GET', 'POST'])
 def webpage_files():
@@ -2985,31 +3230,31 @@ def webpage_files():
     if request.method == 'POST':
         action = request.form['action']
         if action == 'view_settings':
-            table_html = view_csv(csv_settings)
+            table_html = view_csv(csv_settings, "csv")
         elif action == 'export_settings':
             return export_csv(csv_settings)
         elif action == 'replace_settings':
             replace_message = replace_csv(csv_settings, 'file_settings')
         elif action == 'view_streaming_services':
-            table_html = view_csv(csv_streaming_services)
+            table_html = view_csv(csv_streaming_services, "csv")
         elif action == 'export_streaming_services':
             return export_csv(csv_streaming_services)
         elif action == 'replace_streaming_services':
             replace_message = replace_csv(csv_streaming_services, 'file_streaming_services')
         elif action == 'view_slmappings':
-            table_html = view_csv(csv_slmappings)
+            table_html = view_csv(csv_slmappings, "csv")
         elif action == 'export_slmappings':
             return export_csv(csv_slmappings)
         elif action == 'replace_slmappings':
             replace_message = replace_csv(csv_slmappings, 'file_slmappings')
         elif action == 'view_bookmarks':
-            table_html = view_csv(csv_bookmarks)
+            table_html = view_csv(csv_bookmarks, "csv")
         elif action == 'export_bookmarks':
             return export_csv(csv_bookmarks)
         elif action == 'replace_bookmarks':
             replace_message = replace_csv(csv_bookmarks, 'file_bookmarks')
         elif action == 'view_bookmarks_statuses':
-            table_html = view_csv(csv_bookmarks_status)
+            table_html = view_csv(csv_bookmarks_status, "csv")
         elif action == 'export_bookmarks_statuses':
             return export_csv(csv_bookmarks_status)
         elif action == 'replace_bookmarks_statuses':
@@ -3024,8 +3269,12 @@ def webpage_files():
     )
 
 # Makes CSV file able to be viewable in HTML
-def view_csv(csv_file):
-    data = read_data(csv_file)
+def view_csv(csv_file, type):
+    if type == "csv":
+        data = read_data(csv_file)
+    elif type == "library":
+        data = csv_file
+
     if data is None:
         return "Error reading data"
     
@@ -3033,21 +3282,18 @@ def view_csv(csv_file):
         return "No Data"
     
     headers = data[0].keys()
-    table_html = '<table class="table table-striped"><thead><tr>'
+    table_html = '<thead><tr>'
     for header in headers:
-        table_html += f'<th>{header}</th>'
+        table_html += f'<th>{header}<br><input type="text" class="filter-input" placeholder="Filter {header}"></th>'
     table_html += '</tr></thead><tbody>'
     
-    if len(data) == 1 and all(not row for row in data):
-        table_html += '<tr>' + ''.join(f'<td></td>' for _ in headers) + '</tr>'
-    else:
-        for row in data:
-            table_html += '<tr>'
-            for header in headers:
-                table_html += f'<td>{row[header]}</td>'
-            table_html += '</tr>'
+    for row in data:
+        table_html += '<tr>'
+        for header in headers:
+            table_html += f'<td>{row[header]}</td>'
+        table_html += '</tr>'
     
-    table_html += '</tbody></table>'
+    table_html += '</tbody>'
     
     return render_template_string(table_html)
 
@@ -3257,6 +3503,7 @@ def get_episode_list(entry_id, url, country_code, language_code):
             clearName
             technicalName
             shortName
+            icon
             __typename
         }
         __typename
@@ -3290,6 +3537,7 @@ def get_episode_list(entry_id, url, country_code, language_code):
             id
             packageId
             clearName
+            icon
             __typename
         }
         __typename
@@ -3309,6 +3557,8 @@ def get_episode_list(entry_id, url, country_code, language_code):
         package {
             id
             shortName
+            clearName
+            icon
             __typename
         }
         __typename
@@ -3379,6 +3629,7 @@ def get_episode_list(entry_id, url, country_code, language_code):
             packageId
             shortName
             clearName
+            icon
             __typename
             }
             __typename
@@ -3504,6 +3755,8 @@ def get_episode_list(entry_id, url, country_code, language_code):
             package {
             id
             shortName
+            clearName
+            icon
             __typename
             }
             __typename
@@ -3519,6 +3772,8 @@ def get_episode_list(entry_id, url, country_code, language_code):
             package {
                 id
                 shortName
+                clearName
+                icon
                 __typename
             }
             __typename
@@ -3775,6 +4030,8 @@ def get_episode_list(entry_id, url, country_code, language_code):
             package {
                 id
                 packageId
+                icon
+                clearName
                 __typename
             }
             id
@@ -3881,6 +4138,8 @@ def get_episode_list(entry_id, url, country_code, language_code):
         package {
             id
             packageId
+            icon
+            clearName
             __typename
         }
         __typename
@@ -3926,6 +4185,7 @@ def get_episode_list(entry_id, url, country_code, language_code):
             clearName
             technicalName
             shortName
+            icon
             __typename
         }
         __typename
@@ -3964,6 +4224,7 @@ def get_episode_list(entry_id, url, country_code, language_code):
             id
             packageId
             clearName
+            icon
             __typename
         }
         __typename
@@ -3983,6 +4244,8 @@ def get_episode_list(entry_id, url, country_code, language_code):
         package {
             id
             shortName
+            clearName
+            icon
             __typename
         }
         __typename
@@ -4228,6 +4491,8 @@ def get_episode_list(entry_id, url, country_code, language_code):
             package {
             id
             shortName
+            clearName
+            icon
             __typename
             }
             __typename
@@ -4243,6 +4508,8 @@ def get_episode_list(entry_id, url, country_code, language_code):
             package {
                 id
                 shortName
+                clearName
+                icon
                 __typename
             }
             __typename
@@ -4518,6 +4785,8 @@ def get_episode_list(entry_id, url, country_code, language_code):
             package {
                 id
                 packageId
+                icon
+                clearName
                 __typename
             }
             id
@@ -4625,6 +4894,8 @@ def get_episode_list(entry_id, url, country_code, language_code):
         package {
             id
             packageId
+            icon
+            clearName
             __typename
         }
         __typename
@@ -5185,7 +5456,11 @@ def extract_offer_info(offers_json):
             for offer in offers:
                 name = offer.get('package', {}).get('clearName')
                 url = urllib.parse.unquote(offer.get('standardWebURL'))  # Decode the URL
-                result.append({"name": name, "url": url})
+                offer_raw_icon = offer.get('package', {}).get('icon')
+                offer_raw_icon = f"{engine_image_url}{offer_raw_icon}"
+                offer_raw_icon = offer_raw_icon.replace('{profile}', engine_image_profile_icon)
+                offer_raw_icon = offer_raw_icon.replace('{format}', 'png')
+                result.append({"name": name, "url": url, "icon": offer_raw_icon})
 
     return result
 
