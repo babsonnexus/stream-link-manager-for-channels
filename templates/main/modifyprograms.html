@@ -64,11 +64,25 @@
             {% endfor %}
           </select>
           <input type="hidden" name="entry_id" id="entry_id">
-          <button type="submit" name="action" value="program_modify_edit" class="btn bg-gradient-primary w-15 my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Edit</button>
-          <button type="submit" name="action" value="program_modify_delete" class="btn bg-gradient-primary w-15 my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Delete</button>
-          <button type="submit" name="action" value="program_modify_generate" class="btn bg-gradient-primary w-15 my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Generate Stream Links</button>
+          <button type="submit" name="action" value="program_modify_edit" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Edit</button>
+          <button type="submit" name="action" value="program_modify_delete" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Delete</button>
+          <button type="submit" name="action" value="program_modify_available" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Check Availability</button>
+          <button type="submit" name="action" value="program_modify_generate" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Generate Stream Links</button>
           <p><div id="html_program_modify_message">{{ html_program_modify_message }}</div></p>
           <hr>
+          <!-- Check Availability Section -->
+          {% if html_offer_icons_flag %}
+            <div style="text-align: center; text-transform: none; font-weight: normal; font-size: 1.3em;">
+              <hr style="display: inline-block; width: calc(50% - 90px); margin: 0 10px; vertical-align: middle;">
+              <b>Available On</b>
+              <hr style="display: inline-block; width: calc(50% - 90px); margin: 0 10px; vertical-align: middle;">
+            </div>                    
+            <div style="display: flex; flex-wrap: wrap; align-items: center;">
+              {% for icon in html_offer_icons %}
+                <img src="{{ icon }}" style="width: 55px; height: 55px; margin-right: 5px; margin-top: 5px; object-fit: contain;">
+              {% endfor %}
+            </div>
+          {% endif %}
           <!-- Title & Release Year Section -->
           {% if html_edit_flag %}
             <label for="field_title">Title:</label>
@@ -97,7 +111,35 @@
               <div class="grid-item"><h6>Episode Prefix</h6></div>
               <div class="grid-item"><h6>Action</h6></div>
             </div>
+            <div class="grid-container" style="text-align: center;">
+              <div class="grid-item">
+                <div class="form-check form-switch ps-0 is-filled">
+                  <label class="form-check-label text-body text-truncate w-80 mb-0" for="check_all_global" style="font-weight: bold; font-size: 1.2em;">All Episodes</label>
+                  <input type="checkbox" class="form-check-input" id="check_all_global" onclick="toggleAllCheckboxes(this)" checked>
+                </div>
+              </div>
+              <div class="grid-item">
+                <hr style="border: 3px solid; width: 100%;">
+              </div>
+              <div class="grid-item">
+                <hr style="border: 3px solid; width: 100%;">
+              </div>
+              <div class="grid-item">
+                <select name="global_special_action" id="global_special_action" onchange="toggleAllDropdowns(this)">
+                  {% for html_special_action in html_special_actions %}
+                    <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="grid-item">
+                <input type="text" id="global_episode_prefix" name="global_episode_prefix" placeholder="i.e., (SUB), (DUB)" oninput="toggleAllTextBoxes(this)">
+              </div>
+              <div class="grid-item">
+                <hr style="border: 3px solid; width: 100%;">
+              </div>
+            </div>
             {% endif %}
+            {% set processed_seasons = {} %}
             {% for item in html_bookmarks_statuses_selected %}
               <!-- MOVIE: Edit Section -->
               {% if html_object_type_selected == 'MOVIE' %}
@@ -124,12 +166,43 @@
               {% endif %}
               <!-- SHOW: Edit Section -->
               {% if html_object_type_selected == 'SHOW' %}
+              {% set season = item.season_episode.split('E')[0] %}
+              {% if season not in processed_seasons %}
+                {% set processed_seasons = processed_seasons.update({season: True}) %}
+                <div class="grid-container" style="text-align: center;">
+                  <div class="grid-item">
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <label class="form-check-label text-body text-truncate w-80 mb-0" for="check_all_{{ season }}" style="font-weight: bold; font-size: 1.1em;">All {{ season }}</label>
+                      <input type="checkbox" class="form-check-input" id="check_all_{{ season }}" onclick="toggleSeasonCheckboxes('{{ season }}', this)" checked>
+                    </div>
+                  </div>
+                  <div class="grid-item">
+                    <hr style="border: 3px solid; width: 100%;">
+                  </div>
+                  <div class="grid-item">
+                    <hr style="border: 3px solid; width: 100%;">
+                  </div>
+                  <div class="grid-item">
+                    <select name="season_special_action_{{ season }}" id="season_special_action_{{ season }}" class="{{ season }}" onchange="toggleSeasonDropdowns('{{ season }}', this)">
+                      {% for html_special_action in html_special_actions %}
+                        <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="season_episode_prefix_{{ season }}" name="season_episode_prefix_{{ season }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}" oninput="toggleSeasonTextBoxes('{{ season }}', this)">
+                  </div>
+                  <div class="grid-item">
+                    <hr style="border: 3px solid; width: 100%;">
+                  </div>
+                </div>
+              {% endif %}
               <input type="hidden" name="field_season_episode_{{ loop.index }}" id="field_season_episode_{{ loop.index }}" value="{{ item.season_episode }}">
               <div class="grid-container">
                 <div class="grid-item">
                   <div class="form-check form-switch ps-0 is-filled">
                     <label class="form-check-label text-body text-truncate w-80 mb-0" for="field_status_{{ loop.index }}">{{ item.season_episode }}</label>
-                    <input type="checkbox" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" class="form-check-input" {% if item.status|lower == 'unwatched' %}checked{% endif %}>
+                    <input type="checkbox" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" class="form-check-input episode-checkbox {{ season }}" {% if item.status|lower == 'unwatched' %}checked{% endif %}>
                   </div>
                 </div>
                 <div class="grid-item">
@@ -139,14 +212,14 @@
                   <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
                 </div>
                 <div class="grid-item">
-                  <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}">
+                  <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" class="{{ season }}">
                     {% for html_special_action in html_special_actions %}
                       <option {% if html_special_action == item.special_action %}selected{% endif %}>{{ html_special_action }}</option>
                     {% endfor %}
                   </select>
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="field_episode_prefix_{{ loop.index }}" name="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}" placeholder="i.e., (SUB), (DUB)">
+                  <input type="text" id="field_episode_prefix_{{ loop.index }}" name="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}">
                 </div>
                 <div class="grid-item">
                   <button type="submit" name="action" value="program_modify_delete_episode_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2" onclick="allowNavigation_save_cancel()">Delete</button>
@@ -222,5 +295,84 @@
 
   // Add an event listener to update the entry_id whenever the selection changes
   document.getElementById('title_select').addEventListener('change', setEntryId);
+</script>
+<!-- "All" and "Season" Controls for "Watched/Unwatched Status" and "Special Actions" -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const allCheckbox = document.getElementById('check_all_global');
+    const seasonCheckboxes = document.querySelectorAll('[id^="check_all_"]');
+    const episodeCheckboxes = document.querySelectorAll('.episode-checkbox');
+    const allDropdown = document.getElementById('global_special_action');
+    const seasonDropdowns = document.querySelectorAll('select[id^="season_special_action_"]');
+    const episodeDropdowns = document.querySelectorAll('select[id^="field_special_action_"]');
+    const allTextBox = document.getElementById('global_episode_prefix');
+    const seasonTextBoxes = document.querySelectorAll('input[id^="season_episode_prefix_"]');
+    const episodeTextBoxes = document.querySelectorAll('input[id^="field_episode_prefix_"]');
+
+    // Initialize dropdowns to null
+    allDropdown.value = '';
+    seasonDropdowns.forEach(dropdown => dropdown.value = '');
+
+    allCheckbox.addEventListener('change', (event) => toggleAllCheckboxes(event.target));
+    seasonCheckboxes.forEach(checkbox => checkbox.addEventListener('change', (event) => toggleSeasonCheckboxes(event.target.id.replace('check_all_', ''), event.target)));
+    episodeCheckboxes.forEach(checkbox => checkbox.addEventListener('change', () => {
+      updateSeasonCheckboxes();
+      updateAllCheckbox();
+    }));
+    allDropdown.addEventListener('change', (event) => {
+      toggleAllDropdowns(event.target);
+      allDropdown.value = ''; // Reset to null after propagating
+    });
+    seasonDropdowns.forEach(dropdown => dropdown.addEventListener('change', (event) => {
+      toggleSeasonDropdowns(event.target.className, event.target);
+      event.target.value = ''; // Reset to null after propagating
+    }));
+    allTextBox.addEventListener('input', (event) => {
+      toggleAllTextBoxes(event.target);
+    });
+    seasonTextBoxes.forEach(textbox => textbox.addEventListener('input', (event) => {
+      toggleSeasonTextBoxes(event.target.id.replace('season_episode_prefix_', ''), event.target);
+    }));
+
+    function toggleAllCheckboxes(source) {
+      episodeCheckboxes.forEach(checkbox => checkbox.checked = source.checked);
+      updateSeasonCheckboxes();
+      updateAllCheckbox();
+    }
+
+    function toggleSeasonCheckboxes(season, source) {
+      document.querySelectorAll('.' + season).forEach(checkbox => checkbox.checked = source.checked);
+      updateSeasonCheckboxes();
+      updateAllCheckbox();
+    }
+
+    function updateSeasonCheckboxes() {
+      seasonCheckboxes.forEach(seasonCheckbox => {
+        const season = seasonCheckbox.id.replace('check_all_', '');
+        const checkboxes = document.querySelectorAll('.' + season);
+        seasonCheckbox.checked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+      });
+    }
+
+    function updateAllCheckbox() {
+      allCheckbox.checked = Array.from(seasonCheckboxes).some(checkbox => checkbox.checked);
+    }
+
+    function toggleAllDropdowns(source) {
+      episodeDropdowns.forEach(dropdown => dropdown.value = source.value);
+    }
+
+    function toggleSeasonDropdowns(season, source) {
+      document.querySelectorAll('select.' + season).forEach(dropdown => dropdown.value = source.value);
+    }
+
+    function toggleAllTextBoxes(source) {
+      episodeTextBoxes.forEach(textbox => textbox.value = source.value);
+    }
+
+    function toggleSeasonTextBoxes(season, source) {
+      document.querySelectorAll('input.' + season).forEach(textbox => textbox.value = source.value);
+    }
+  });
 </script>
 {% endblock javascripts %}
