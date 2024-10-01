@@ -250,7 +250,7 @@ printenv SLM_PORT
 ## Python
 Using Python directly is not recommended, however it is available as an option. As this is highly technical, only limited support is provided. It is expected that you are fairly familiar with [Python](https://www.python.org/downloads/) and have [pip](https://pip.pypa.io/en/stable/installation/) installed.
 
-1. Download the [slm_python.zip](https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/main/executables/slm_python.zip) file and place it in the final destination folder.
+1. Download the [slm_python.zip](https://www.dropbox.com/scl/fi/b5loo1yndyfasqgek1vv3/slm_python.zip?rlkey=g1wcyl22kewg05cu55nqssbt7&dl=1) file and place it in the final destination folder.
    
 2. Navigate to that directory and extract the contents. Make sure you have not created another subdirectory. When complete, remove the ```slm_python.zip```. It should now look something like this:
 
