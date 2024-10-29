@@ -17,6 +17,8 @@ import aiohttp
 import asyncio
 import stat
 import unicodedata
+import gzip
+import io
 from flask import Flask, render_template, render_template_string, request, redirect, url_for, Response, send_file, Request, make_response
 from jinja2 import TemplateNotFound
 
@@ -27,7 +29,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.10.01.1633"
+slm_version = "v2024.10.29.1540"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -44,12 +46,19 @@ log_filename = os.path.splitext(script_filename)[0] + '.log'
 docker_channels_dir = os.path.join(script_dir, "channels_folder")
 program_files_dir = os.path.join(script_dir, "program_files")
 backup_dir = os.path.join(program_files_dir, "backups")
+playlists_uploads_dir_name = "playlists_uploads"
+playlists_uploads_dir = os.path.join(program_files_dir, playlists_uploads_dir_name)
 max_backups = 3
 csv_settings = "StreamLinkManager_Settings.csv"
 csv_streaming_services = "StreamLinkManager_StreamingServices.csv"
 csv_bookmarks = "StreamLinkManager_Bookmarks.csv"
 csv_bookmarks_status = "StreamLinkManager_BookmarksStatus.csv"
 csv_slmappings = "StreamLinkManager_SLMappings.csv"
+# Playlist Manager files only get created when turned on in Settings
+csv_playlistmanager_playlists = "PlaylistManager_Playlists.csv"
+csv_playlistmanager_combined_m3us = "PlaylistManager_Combinedm3us.csv"
+csv_playlistmanager_parents = "PlaylistManager_Parents.csv"
+csv_playlistmanager_child_to_parent = "PlaylistManager_ChildToParent.csv"
 csv_files = [
     csv_settings,
     csv_streaming_services,
@@ -234,6 +243,7 @@ entry_id_prior = None
 title_selected_prior = None
 release_year_selected_prior = None
 object_type_selected_prior = None
+bookmark_action_prior = None
 season_episodes_prior = []
 bookmarks_statuses_selected_prior = []
 edit_flag = None
@@ -246,6 +256,25 @@ slm_query = None
 slm_query_name = None
 offer_icons = []
 offer_icons_flag = None
+select_file_prior = None
+bookmark_actions_default = [
+    "None",
+    "Hide" #, Add more as needed
+]
+bookmark_actions_default_show_only = [
+    "Disable Get New Episodes" #, Add more as needed
+]
+plm_m3us_epgs_schedule_frequencies = [
+    "Every 1 hour",
+    "Every 3 hours",
+    "Every 6 hours",
+    "Every 12 hours",
+    "Every 24 hours"
+]
+stream_formats = [
+    "HLS",
+    "MPEG-TS"
+]
 
 # Adds a notification
 def notification_add(notification):
@@ -407,11 +436,26 @@ def check_and_create_csv(csv_file):
     # Append/Remove rows to data that may update
     if csv_file == csv_streaming_services:
         id_field = "streaming_service_name"
-        update_rows(csv_file, data, id_field)
+        update_rows(csv_file, data, id_field, None)
 
     # Add columns for new functionality
     if csv_file == csv_bookmarks_status:
         check_and_add_column(csv_file, 'special_action', 'None')
+
+    if csv_file == csv_bookmarks:
+        check_and_add_column(csv_file, 'bookmark_action', 'None')
+
+    # Add rows for new functionality
+    if csv_file == csv_settings:
+        check_and_append(csv_file, {"settings": "Off"}, 11, "Search Defaults: Filter out already bookmarked")
+        check_and_append(csv_file, {"settings": "Off"}, 12, "Playlist Manager: On/Off")
+        check_and_append(csv_file, {"settings": 10000}, 13, "Playlist Manager: Starting station number")
+        check_and_append(csv_file, {"settings": 750}, 14, "Playlist Manager: Max number of stations per m3u")
+        check_and_append(csv_file, {"settings": "Off"}, 15, "Playlist Manager: Update Stations Process Schedule On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 16, "Playlist Manager: Update Stations Process Schedule Time")
+        check_and_append(csv_file, {"settings": "Off"}, 17, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 18, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 19, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency")
 
 # Clean up empty data files
 def remove_empty_row(csv_file):
@@ -436,34 +480,43 @@ def remove_empty_row(csv_file):
     # Replace the original file with the temporary file
     os.replace(temp_file, full_path_file)
 
-# Appends new rows and removes old rows from initialization data to be writen to data files
-def update_rows(csv_file, data, id_field):
+# Appends new rows. removes old rows, and updates modified rows from initialization data to be written to data files
+def update_rows(csv_file, data, id_field, modify_flag):
     if data:
-        new_rows = []
         new_rows = extract_new_rows(csv_file, data, id_field)
         if new_rows:
             print(f"\n{current_time()} INFO: Adding new rows to {csv_file}...\n")
             for new_row in new_rows:
                 append_data(csv_file, new_row)
-                notification_add(f"    ADDED: {new_row['streaming_service_name']}")
+                notification_add(f"    ADDED: {new_row[id_field]}")
             print(f"\n{current_time()} INFO: Finished adding new rows.\n")
- 
-        old_rows = []
+
         old_rows = extract_old_rows(csv_file, data, id_field)
         if old_rows:
             print(f"\n{current_time()} INFO: Removing old rows from {csv_file}...\n")
             for old_row in old_rows:
-                notification_add(f"    REMOVED: {old_row['streaming_service_name']}")
+                notification_add(f"    REMOVED: {old_row[id_field]}")
             remove_data(csv_file, old_rows, id_field)
             print(f"\n{current_time()} INFO: Finished removing old rows.\n")
 
+        if modify_flag:
+            modified_rows = extract_modified_rows(csv_file, data, id_field)
+            if modified_rows:
+                print(f"\n{current_time()} INFO: Updating modified rows in {csv_file}...\n")
+                for modified_row in modified_rows:
+                    notification_add(f"    MODIFIED: {modified_row[id_field]}")
+                update_data(csv_file, modified_rows, id_field)
+                print(f"\n{current_time()} INFO: Finished updating modified rows.\n")
+
+            remove_duplicate_rows(csv_file)
+            
     else:
         print(f"\n{current_time()} WARNING: No data to compare, skipping adding and removing rows in {csv_file}.\n")
 
-# Extracts new rows from the library data that are not already present in the CSV file.
+# Extracts new rows from the library data that are not already present in the CSV file
 def extract_new_rows(csv_file, data, id_field):
     full_path_file = full_path(csv_file)
-    
+
     # Read existing data (if any)
     existing_data = []
     if os.path.exists(full_path_file):
@@ -473,7 +526,7 @@ def extract_new_rows(csv_file, data, id_field):
     
     # Check for duplicate IDs
     existing_ids = {row[id_field] for row in existing_data}
-    
+
     # Extract new rows
     new_rows = []
     for row in data:
@@ -482,10 +535,10 @@ def extract_new_rows(csv_file, data, id_field):
     
     return new_rows
 
-# Extracts old rows from the CSV File that are no longer present in the library data.
+# Extracts old rows from the CSV File that are no longer present in the library data
 def extract_old_rows(csv_file, data, id_field):
     full_path_file = full_path(csv_file)
-    
+
     # Read existing data (if any)
     existing_data = []
     if os.path.exists(full_path_file):
@@ -495,14 +548,89 @@ def extract_old_rows(csv_file, data, id_field):
     
     # Check for duplicate IDs
     existing_ids = {row[id_field] for row in data}
-    
-    # Extract new rows
+
+    # Extract old rows
     old_rows = []
     for row in existing_data:
         if row[id_field] not in existing_ids:
             old_rows.append(row)
     
     return old_rows
+
+# Extracts modified rows from the library data that are present in the CSV file but have different content
+def extract_modified_rows(csv_file, data, id_field):
+    full_path_file = full_path(csv_file)
+
+    # Read existing data (if any)
+    existing_data = []
+    if os.path.exists(full_path_file):
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            existing_data = [row for row in reader]
+    
+    # Create a dictionary for quick lookup of existing rows by id_field
+    existing_data_dict = {row[id_field]: row for row in existing_data}
+
+    # Extract modified rows
+    modified_rows = []
+    for row in data:
+        if row[id_field] in existing_data_dict:
+            existing_row = existing_data_dict[row[id_field]]
+            if any(row[key] != existing_row[key] for key in row.keys() if key != id_field):
+                modified_rows.append(row)
+    
+    return modified_rows
+
+# Updates rows in the CSV file with modified content
+def update_data(csv_file, modified_rows, id_field):
+    full_path_file = full_path(csv_file)
+
+    # Read existing data (if any)
+    existing_data = []
+    if os.path.exists(full_path_file):
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            existing_data = [row for row in reader]
+
+    # Create a dictionary for quick lookup of modified rows by id_field
+    modified_data_dict = {row[id_field]: row for row in modified_rows}
+
+    # Update the existing data with modified rows
+    updated_data = [
+        modified_data_dict[row[id_field]] if row[id_field] in modified_data_dict else row
+        for row in existing_data
+    ]
+
+    # Write the updated data back to the CSV file
+    fieldnames = updated_data[0].keys() if updated_data else []
+    with open(full_path_file, "w", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(updated_data)
+
+    for modified_row in modified_rows:
+        notification_add(f"    MODIFIED: {modified_row[id_field]}")
+
+# Removes duplicate rows from the CSV file
+def remove_duplicate_rows(csv_file):
+    full_path_file = full_path(csv_file)
+    
+    if os.path.exists(full_path_file):
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            existing_data = [row for row in reader]
+
+        # Remove duplicates
+        unique_data = {tuple(row.items()): row for row in existing_data}.values()
+
+        # Write the deduplicated data back to the CSV file
+        fieldnames = existing_data[0].keys() if existing_data else []
+        with open(full_path_file, "w", newline="", encoding="utf-8") as file:
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(unique_data)
+        
+        print(f"\n{current_time()} INFO: Removed duplicate rows from {csv_file}.\n")
 
 # Add new columns during upgrades
 def check_and_add_column(csv_file, column_name, default_value):
@@ -530,22 +658,31 @@ def check_and_add_column(csv_file, column_name, default_value):
 def initial_data(csv_file):
     if csv_file == csv_settings:
         data = [
-                    {"settings": f"http://dvr-{socket.gethostname().lower()}.local:8089"},     # [0] Channels URL
-                    {"settings": script_dir},                                                  # [1] Channels Folder
-                    {"settings": "US"},                                                        # [2] Search Defaults: Country Code
-                    {"settings": "en"},                                                        # [3] Search Defaults: Language Code
-                    {"settings": "9"},                                                         # [4] Search Defaults: Number of Results
+                    {"settings": f"http://dvr-{socket.gethostname().lower()}.local:8089"},     # [0]  Channels URL
+                    {"settings": script_dir},                                                  # [1]  Channels Folder
+                    {"settings": "US"},                                                        # [2]  Search Defaults: Country Code
+                    {"settings": "en"},                                                        # [3]  Search Defaults: Language Code
+                    {"settings": "9"},                                                         # [4]  Search Defaults: Number of Results
                     {"settings": "Off"},                                                       # DEPRECATED: [5] Hulu to Disney+ Automatic Conversion
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [6] End-to-End Process Schedule Time
-                    {"settings": "On"},                                                        # [7] Channels Prune
-                    {"settings": "Off"} #,                                                     # [8] End-to-End Process Schedule On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [6]  End-to-End Process Schedule Time
+                    {"settings": "On"},                                                        # [7]  Channels Prune
+                    {"settings": "Off"},                                                       # [8]  End-to-End Process Schedule On/Off
+                    {"settings": "Off"},                                                       # [9]  Search Defaults: Filter out already bookmarked
+                    {"settings": "Off"},                                                       # [10] Playlist Manager: On/Off
+                    {"settings": 10000},                                                       # [11] Playlist Manager: Starting station number
+                    {"settings": 750},                                                         # [12] Playlist Manager: Max number of stations per m3u
+                    {"settings": "Off"},                                                       # [13] Playlist Manager: Update Stations Process Schedule On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [14] Playlist Manager: Update Stations Process Schedule Time
+                    {"settings": "Off"},                                                       # [15] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [16] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time
+                    {"settings": "Every 24 hours"} #,                                          # [17] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency
                     # Add more rows as needed
         ]        
     elif csv_file == csv_streaming_services:
         data = get_streaming_services()
     elif csv_file == csv_bookmarks:
         data = [
-            {"entry_id": None,"title": None, "release_year": None, "object_type": None, "url": None, "country_code": None, "language_code": None}
+            {"entry_id": None,"title": None, "release_year": None, "object_type": None, "url": None, "country_code": None, "language_code": None, "bookmark_action": None}
         ]
     elif csv_file == csv_bookmarks_status:
         data = [
@@ -558,6 +695,23 @@ def initial_data(csv_file):
             {"active": "On", "contains_string": "watch.amazon.com/detail?gti=", "object_type": "MOVIE or SHOW", "replace_type": "Replace string with...", "replace_string": "www.amazon.com/gp/video/detail/"},
             {"active": "Off", "contains_string": "vudu.com", "object_type": "MOVIE or SHOW", "replace_type": "Replace entire Stream Link with...", "replace_string": "fandangonow://"} #,
             # Add more rows as needed
+        ]
+    # Playlist Manager
+    elif csv_file == csv_playlistmanager_playlists:
+        data = [
+            {"m3u_id": None, "m3u_name": None, "m3u_url": None, "epg_xml": None, "stream_format": None, "m3u_priority": None}
+        ]
+    elif csv_file == csv_playlistmanager_parents:
+        data = [
+            {"parent_channel_id": None, "parent_title": None, "parent_tvg_id_override": None, "parent_tvg_logo_override": None, "parent_channel_number_override": None, "parent_tvc_guide_stationid_override": None, "parent_tvc_guide_art_override": None, "parent_tvc_guide_tags_override": None, "parent_tvc_guide_genres_override": None, "parent_tvc_guide_categories_override": None, "parent_tvc_guide_placeholders_override": None, "parent_tvc_stream_vcodec_override": None, "parent_tvc_stream_acodec_override": None, "parent_preferred_playlist": None}
+        ]
+    elif csv_file == csv_playlistmanager_child_to_parent:
+        data = [
+            {"child_m3u_id_channel_id": None, "parent_channel_id": None}
+        ]    
+    elif csv_file == csv_playlistmanager_combined_m3us:
+        data = [
+            {"station_playlist": None, "m3u_id": None, "title": None, "tvc_guide_title": None, "channel_id": None, "tvg_id": None, "tvg_name": None, "tvg_logo": None, "tvg_chno": None, "channel_number": None, "tvg_description": None, "tvc_guide_description": None, "group_title": None, "tvc_guide_stationid": None, "tvc_guide_art": None, "tvc_guide_tags": None, "tvc_guide_genres": None, "tvc_guide_categories": None, "tvc_guide_placeholders": None, "tvc_stream_vcodec": None, "tvc_stream_acodec": None, "url": None}
         ]
 
     return data
@@ -677,7 +831,7 @@ def get_streaming_services():
 # Update Streaming Services
 def update_streaming_services():
     data = get_streaming_services()
-    update_rows(csv_streaming_services, data, "streaming_service_name")
+    update_rows(csv_streaming_services, data, "streaming_service_name", None)
 
 # Read data from a CSV file.
 def read_data(csv_file):
@@ -730,6 +884,21 @@ def append_data(csv_file, new_row):
     except Exception as e:
         print(f"\n{current_time()} ERROR: Appending data... {e}\n")
 
+# Function to count rows in the CSV file
+def count_rows(csv_file):
+    full_path_file = full_path(csv_file)
+    with open(full_path_file, "r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        return sum(1 for row in reader)
+
+# Function to add a new row if the row count is less than a certain number
+def check_and_append(csv_file, new_row, threshold, purpose):
+    row_count = count_rows(csv_file)
+    
+    if row_count < threshold:
+        append_data(csv_file, new_row)
+        notification_add(f"\n{current_time()} INFO: New row added to {csv_file}... it was for '{purpose}'.")
+
 # Removes rows from the CSV file
 def remove_data(csv_file, old_rows, id_field):
     full_path_file = full_path(csv_file)
@@ -769,7 +938,7 @@ def get_country_code():
     timer.start()
 
     try:
-        response = requests.get('https://ipinfo.io')
+        response = requests.get('https://ipinfo.io', headers=url_headers)
         data = response.json()
         user_country_code = data.get('country').upper()
         
@@ -912,6 +1081,11 @@ def check_ip_range(start, end, base_ip, port):
 for csv_file in csv_files:
     check_and_create_csv(csv_file)
 
+global_settings = read_data(csv_settings)
+slm_playlist_manager = None
+if global_settings[10]['settings'] == "On":
+    slm_playlist_manager = True
+
 check_channels_url(None)
 
 notification_add(f"\n{current_time()} Initialization Complete. Starting Stream Link Manager for Channels...\n")
@@ -924,6 +1098,7 @@ def main_menu():
         'main/index.html',
         segment = 'index',
         html_slm_version = slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
         html_notifications = notifications
     )
 
@@ -931,7 +1106,9 @@ def main_menu():
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
     global channels_url_prior
+    global slm_playlist_manager
     settings_anchor_id = None
+    run_empty_row = None
 
     settings = read_data(csv_settings)
     channels_url = settings[0]["settings"]
@@ -941,12 +1118,20 @@ def settings():
     country_code = settings[2]["settings"]
     language_code = settings[3]["settings"]
     num_results = settings[4]["settings"]
+    hide_bookmarked = settings[9]["settings"]
     try:
         auto_update_schedule = settings[8]["settings"]
     except (IndexError, KeyError):
         auto_update_schedule = 'Off'
     auto_update_schedule_time = settings[6]["settings"]
+    plm_update_stations_schedule = settings[13]["settings"]
+    plm_update_stations_schedule_time = settings[14]["settings"]
+    plm_update_m3us_epgs_schedule = settings[15]["settings"]
+    plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
+    plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
     channels_prune = settings[7]["settings"]
+    station_start_number = settings[11]['settings']
+    max_stations = settings[12]['settings']
 
     streaming_services = read_data(csv_streaming_services)
 
@@ -964,15 +1149,19 @@ def settings():
     channels_url_message = ""
     channels_directory_message = ""
     search_defaults_message = ""
+    advanced_experimental_message = ""
 
     action_to_anchor = {
         'streaming_services': 'streaming_services_anchor',
         'search_defaults': 'search_defaults_anchor',
         'slmapping': 'slmapping_anchor',
         'end_to_end_process': 'scheduler_anchor',
+        'plm_update_stations_process': 'scheduler_anchor',
+        'plm_update_m3us_epgs_process': 'scheduler_anchor',
         'channels_url': 'channels_url_anchor',
         'channels_directory': 'channels_directory_anchor',
-        'channels_prune': 'advanced_experimental_anchor'
+        'channels_prune': 'advanced_experimental_anchor',
+        'playlist_manager': 'advanced_experimental_anchor'
     }
 
     if not os.path.exists(channels_directory):
@@ -988,12 +1177,21 @@ def settings():
         channels_directory_input = request.form.get('current_directory')
         channels_directory_manual_path = request.form.get('channels_directory_manual_path')
         channels_prune_input = request.form.get('channels_prune')
+        playlist_manager_input = request.form.get('playlist_manager')
+        station_start_number_input = request.form.get('station_start_number')
+        max_stations_input = request.form.get('max_stations')
         country_code_input = request.form.get('country_code')
         language_code_input = request.form.get('language_code')
         num_results_input = request.form.get('num_results')
+        hide_bookmarked_input = request.form.get('hide_bookmarked')
         streaming_services_input = request.form.get('streaming_services')
         auto_update_schedule_input = request.form.get('auto_update_schedule')
         auto_update_schedule_time_input = request.form.get('auto_update_schedule_time')
+        plm_update_stations_schedule_input = request.form.get('plm_update_stations_schedule')
+        plm_update_stations_schedule_time_input = request.form.get('plm_update_stations_schedule_time')
+        plm_update_m3us_epgs_schedule_input = request.form.get('plm_update_m3us_epgs_schedule')
+        plm_update_m3us_epgs_schedule_time_input = request.form.get('plm_update_m3us_epgs_schedule_time')
+        plm_update_m3us_epgs_schedule_frequency_input = request.form.get('plm_update_m3us_epgs_schedule_frequency')
 
         for prefix, anchor_id in action_to_anchor.items():
             if settings_action.startswith(prefix):
@@ -1003,15 +1201,21 @@ def settings():
         if settings_action.startswith('slmapping_') or settings_action in ['channels_url_cancel',
                                                                            'channels_directory_cancel',
                                                                            'channels_prune_cancel',
+                                                                           'playlist_manager_cancel',
                                                                            'search_defaults_cancel',
                                                                            'streaming_services_cancel',
                                                                            'end_to_end_process_cancel',
+                                                                           'plm_update_stations_process_cancel',
+                                                                           'plm_update_m3us_epgs_process_cancel',
                                                                            'channels_url_save',
                                                                            'channels_directory_save',
                                                                            'channels_prune_save',
+                                                                           'playlist_manager_save',
                                                                            'search_defaults_save',
                                                                            'streaming_services_save',
                                                                            'end_to_end_process_save',
+                                                                           'plm_update_stations_process_save',
+                                                                           'plm_update_m3us_epgs_process_save',
                                                                            'streaming_services_update',
                                                                            'channels_url_test',
                                                                            'channels_url_scan'
@@ -1020,17 +1224,23 @@ def settings():
             if settings_action.startswith('slmapping_action_') or settings_action in ['channels_url_save',
                                                                                       'channels_directory_save',
                                                                                       'channels_prune_save',
+                                                                                      'playlist_manager_save',
                                                                                       'search_defaults_save',
                                                                                       'streaming_services_save',
                                                                                       'end_to_end_process_save',
+                                                                                      'plm_update_stations_process_save',
+                                                                                      'plm_update_m3us_epgs_process_save',
                                                                                       'channels_url_scan'
                                                                                     ]:
 
                 if settings_action in ['channels_url_save',
                                     'channels_directory_save',
                                     'channels_prune_save',
+                                    'playlist_manager_save',
                                     'search_defaults_save',
                                     'end_to_end_process_save',
+                                    'plm_update_stations_process_save',
+                                    'plm_update_m3us_epgs_process_save',
                                     'channels_url_scan'
                                     ]:
 
@@ -1056,7 +1266,8 @@ def settings():
                                     search_defaults_message = f"{current_time()} ERROR: For 'Number of Results', please enter a positive integer."
                             except ValueError:
                                 search_defaults_message = f"{current_time()} ERROR: 'Number of Results' must be a number."
-                    
+                            settings[9]["settings"] = "On" if hide_bookmarked_input == 'on' else "Off"
+
                     elif settings_action == 'end_to_end_process_save':
                         try:
                             settings[8]["settings"] = "On" if auto_update_schedule_input == 'on' else "Off"
@@ -1064,8 +1275,46 @@ def settings():
                             settings.append({"settings": "On" if auto_update_schedule_input == 'on' else "Off"})
                         settings[6]["settings"] = auto_update_schedule_time_input
 
+                    elif settings_action == 'plm_update_stations_process_save':
+                        settings[13]["settings"] = "On" if plm_update_stations_schedule_input == 'on' else "Off"
+                        settings[14]["settings"] = plm_update_stations_schedule_time_input
+
+                    elif settings_action == 'plm_update_m3us_epgs_process_save':
+                        settings[15]["settings"] = "On" if plm_update_m3us_epgs_schedule_input == 'on' else "Off"
+                        settings[16]["settings"] = plm_update_m3us_epgs_schedule_time_input
+                        settings[17]["settings"] = plm_update_m3us_epgs_schedule_frequency_input
+
                     elif settings_action == 'channels_prune_save':
                         settings[7]["settings"] = "On" if channels_prune_input == 'on' else "Off"
+
+                    elif settings_action == 'playlist_manager_save':
+                        try:
+                            if int(station_start_number_input) > 0 and int(max_stations_input) > 0:
+                                settings[10]["settings"] = "On" if playlist_manager_input == 'on' else "Off"
+                                settings[11]['settings'] = int(station_start_number_input)
+                                settings[12]['settings'] = int(max_stations_input)
+
+                                if playlist_manager_input == 'on':
+                                    slm_playlist_manager = True
+                                    plm_csv_files = [
+                                        csv_playlistmanager_playlists,
+                                        csv_playlistmanager_parents,
+                                        csv_playlistmanager_child_to_parent,
+                                        csv_playlistmanager_combined_m3us
+                                    ]
+
+                                    for plm_csv_file in plm_csv_files:
+                                        check_and_create_csv(plm_csv_file)
+                                    
+                                    create_directory(playlists_uploads_dir)
+                                
+                                else:
+                                    slm_playlist_manager = None
+
+                            else:
+                                advanced_experimental_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
+                        except ValueError:
+                            advanced_experimental_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be numbers."
 
                     csv_to_write = csv_settings
                     data_to_write = settings
@@ -1097,8 +1346,16 @@ def settings():
                     elif settings_action.startswith('slmapping_action_delete_'):
                         slmapping_action_delete_index = int(settings_action.split('_')[-1]) - 1
 
+                        # Create a temporary record with fields set to None
+                        temp_record = create_temp_record(slmappings[0].keys())
+
                         if 0 <= slmapping_action_delete_index < len(slmappings):
                             slmappings.pop(slmapping_action_delete_index)
+
+                            # If the list is now empty, add the temp record to keep headers
+                            if not slmappings:
+                                slmappings.append(temp_record)
+                                run_empty_row = True
 
                     # Save map modifications
                     elif settings_action == 'slmapping_action_save':
@@ -1151,6 +1408,8 @@ def settings():
                     data_to_write = slmappings
 
                 write_data(csv_to_write, data_to_write)
+                if run_empty_row:
+                    remove_empty_row(csv_to_write)
 
                 if settings_action == 'search_defaults_save':
                     update_streaming_services()
@@ -1200,12 +1459,20 @@ def settings():
         country_code = settings[2]["settings"]
         language_code = settings[3]["settings"]
         num_results = settings[4]["settings"]
+        hide_bookmarked = settings[9]["settings"]
         try:
             auto_update_schedule = settings[8]["settings"]
         except (IndexError, KeyError):
             auto_update_schedule = 'Off'
         auto_update_schedule_time = settings[6]["settings"]
+        plm_update_stations_schedule = settings[13]["settings"]
+        plm_update_stations_schedule_time = settings[14]["settings"]
+        plm_update_m3us_epgs_schedule = settings[15]["settings"]
+        plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
+        plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
         channels_prune = settings[7]["settings"]
+        station_start_number = settings[11]['settings']
+        max_stations = settings[12]['settings']
 
         streaming_services = read_data(csv_streaming_services)
 
@@ -1215,6 +1482,8 @@ def settings():
         'main/settings.html',
         segment='settings',
         html_slm_version=slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_settings_anchor_id = settings_anchor_id,
         html_channels_url=channels_url,
         html_channels_url_prior = channels_url_prior,
         html_channels_directory = channels_directory,
@@ -1225,6 +1494,12 @@ def settings():
         html_num_results = num_results,
         html_auto_update_schedule = auto_update_schedule,
         html_auto_update_schedule_time = auto_update_schedule_time,
+        html_plm_update_stations_schedule = plm_update_stations_schedule,
+        html_plm_update_stations_schedule_time = plm_update_stations_schedule_time,
+        html_plm_update_m3us_epgs_schedule = plm_update_m3us_epgs_schedule,
+        html_plm_update_m3us_epgs_schedule_time = plm_update_m3us_epgs_schedule_time,
+        html_plm_m3us_epgs_schedule_frequencies = plm_m3us_epgs_schedule_frequencies,
+        html_plm_update_m3us_epgs_schedule_frequency = plm_update_m3us_epgs_schedule_frequency,
         html_channels_prune = channels_prune,
         html_streaming_services = streaming_services,
         html_channels_url_message = channels_url_message,
@@ -1235,7 +1510,10 @@ def settings():
         html_slmappings = slmappings,
         html_slmappings_object_type = slmappings_object_type,
         html_slmappings_replace_type = slmappings_replace_type,
-        html_settings_anchor_id = settings_anchor_id
+        html_hide_bookmarked = hide_bookmarked,
+        html_station_start_number = station_start_number,
+        html_max_stations = max_stations,
+        html_advanced_experimental_message = advanced_experimental_message
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -1262,11 +1540,15 @@ def add_programs():
     global program_add_prior
     global program_add_resort_panel
     global program_add_filter_panel
+    global title_selected_prior
+    global release_year_selected_prior
+    global bookmark_action_prior
 
     settings = read_data(csv_settings)
     country_code = settings[2]["settings"]
     language_code = settings[3]["settings"]
     num_results = settings[4]["settings"]
+    hide_bookmarked = settings[9]["settings"]
 
     special_actions = []
     special_actions = get_special_actions()
@@ -1286,6 +1568,7 @@ def add_programs():
     stream_link_override_movie_flag = None
     done_generate_flag = None
     num_results_test = None
+    bookmark_actions = []
 
     date_new_default = datetime.datetime.now().strftime('%Y-%m-%d')
     if date_new_default_prior is None or date_new_default_prior == '':
@@ -1307,6 +1590,8 @@ def add_programs():
         elif add_programs_action in ['program_add_search', 'program_new_search', 'program_new_today']:
             country_code_input = request.form.get('country_code')
             language_code_input = request.form.get('language_code')
+            hide_bookmarked_input = request.form.get('hide_bookmarked')
+            hide_bookmarked_input = "On" if hide_bookmarked_input == 'on' else "Off"
 
             if add_programs_action == 'program_add_search':
                 num_results_input = request.form.get('num_results')
@@ -1314,7 +1599,6 @@ def add_programs():
 
                 if num_results_test == "pass":
                     program_search_results = search_bookmark(country_code_input, language_code_input, num_results_input, program_add_input)
-                    program_search_results_prior = program_search_results
                     country_code_input_prior = country_code_input
                     language_code_input_prior = language_code_input
                     program_add_resort_panel = 'on'
@@ -1334,24 +1618,43 @@ def add_programs():
 
                 program_search_results = get_program_new(date_new_input, country_code_input, language_code_input, num_results_input)
                 program_search_results = sorted(program_search_results, key=lambda x: sort_key(x["title"].casefold()))
-                program_search_results_prior = program_search_results
                 country_code_input_prior = country_code_input
                 language_code_input_prior = language_code_input
                 program_add_resort_panel = ''
                 program_add_filter_panel = 'on'
 
+            if program_search_results:
+                bookmarks = read_data(csv_bookmarks)
+
+                if hide_bookmarked_input == "On":
+                    bookmarked_entry_ids = {bookmark['entry_id'] for bookmark in bookmarks}
+                    program_search_results = [entry for entry in program_search_results if entry['entry_id'] not in bookmarked_entry_ids]
+
+                hidden_bookmarks = {bookmark['entry_id'] for bookmark in bookmarks if bookmark['bookmark_action'] == "Hide"}
+                program_search_results = [entry for entry in program_search_results if entry['entry_id'] not in hidden_bookmarks]
+
+                program_search_results_prior = program_search_results
+
         # Filter and resort search results
-        elif add_programs_action.startswith('program_add_resort_'):
+        elif add_programs_action.startswith('program_add_resort_') or add_programs_action.startswith('hide_program_search_result_'):
 
             if add_programs_action == 'program_add_resort_alpha':
                 program_search_results = sorted(program_search_results_prior, key=lambda x: sort_key(x["title"].casefold()))
                 program_add_resort_panel = ''
+
             elif add_programs_action.startswith('program_add_resort_filter_'):
+
                 if add_programs_action == 'program_add_resort_filter_movie':
                     program_search_results = [item for item in program_search_results_prior if item['object_type'] == 'MOVIE']
+
                 elif add_programs_action == 'program_add_resort_filter_show':
                     program_search_results = [item for item in program_search_results_prior if item['object_type'] == 'SHOW']
+
                 program_add_filter_panel = ''
+
+            elif add_programs_action.startswith('hide_program_search_result_'):
+                program_search_index = int(add_programs_action.split('_')[-1]) - 1
+                program_search_results, program_add_message = hide_bookmark_select(program_search_results_prior, program_search_index, country_code_input_prior, language_code_input_prior)
 
             program_search_results_prior = program_search_results
 
@@ -1366,15 +1669,26 @@ def add_programs():
             test_terms = ("WARNING: ", "ERROR: ")
             if any(term in program_add_message for term in test_terms):
                 pass
+
             else:
                 entry_id_prior = entry_id
                 season_episodes_prior = season_episodes
+
                 if not season_episodes:
                     if object_type == "MOVIE":
                         stream_link_override_movie_flag = True
                     elif object_type == "SHOW":
                         program_add_message = f"{current_time()} WARNING: Selected show has no episodes, but is bookmarked in case episodes are added later."
+                
                 done_generate_flag = True
+                bookmark_actions = get_bookmark_actions(object_type)
+
+                bookmarks = read_data(csv_bookmarks)
+                for bookmark in bookmarks:
+                    if bookmark['entry_id'] == entry_id_prior:
+                        title_selected_prior = bookmark['title']
+                        release_year_selected_prior = bookmark['release_year']
+                        bookmark_action_prior = bookmark['bookmark_action']
 
         # Add a manual program
         elif add_programs_action == 'program_add_manual':
@@ -1390,14 +1704,25 @@ def add_programs():
                 if release_year_test == "pass":
                     entry_id = get_manual_entry_id()
                     entry_id_prior = entry_id
-                    set_bookmarks(entry_id, program_add_input, release_year_input, program_type_input, "N/A", "N/A", "N/A", "manual")
+                    set_bookmarks(entry_id, program_add_input, release_year_input, program_type_input, "N/A", "N/A", "N/A", "manual", "None")
+                    
                     program_add_message = f"{current_time()} You manually added: {program_add_input} ({release_year_input}) | {program_type_input} (ID: {entry_id})"
+                    
+                    bookmarks = read_data(csv_bookmarks)
+                    for bookmark in bookmarks:
+                        if bookmark['entry_id'] == entry_id_prior:
+                            title_selected_prior = bookmark['title']
+                            release_year_selected_prior = bookmark['release_year']
+                            bookmark_action_prior = bookmark['bookmark_action']
+                    
                     if program_type_input == "SHOW":
                         season_episode_manual_flag = True
                     else:
                         stream_link_override_movie_flag = True
                         done_generate_flag = True
                 
+                    bookmark_actions = get_bookmark_actions(program_type_input)
+
                 else:
                     program_add_message = release_year_test
 
@@ -1410,6 +1735,7 @@ def add_programs():
             season_episodes = get_episode_list_manual(end_season, season_episodes_manual)
             season_episodes_prior = season_episodes
             done_generate_flag = True
+            bookmark_actions = get_bookmark_actions("SHOW")
 
         # Finish or Generate Stream Links. Also save Season/Episode statuses.
         elif add_programs_action in [
@@ -1503,6 +1829,44 @@ def add_programs():
             else:
                 program_add_message = f"{current_time()} INFO: Finished adding! Please remember to generate stream links and update in Channels to see this program."
 
+            # Get Bookmark Updates
+            field_title_input = request.form.get('field_title')
+            field_release_year_input = request.form.get('field_release_year')
+            field_bookmark_action_input = request.form.get('field_bookmark_action')
+
+            save_error_bookmarks = 0
+
+            release_year_test = get_release_year(field_release_year_input)
+            if release_year_test == "pass":
+                new_release_year = field_release_year_input
+            else:
+                program_add_message = release_year_test
+                program_add_message = f"{program_add_message} Saved with original 'Release Year'."
+                save_error_bookmarks = save_error_bookmarks + 1
+
+            if field_title_input != "":
+                new_title = field_title_input
+            else:
+                program_add_message = f"{current_time()} ERROR: 'Title' cannot be empty. Saved with original 'Title'."
+                save_error_bookmarks = save_error_bookmarks + 1
+
+            new_bookmark_action = field_bookmark_action_input
+
+            if save_error_bookmarks == 0:
+
+                bookmarks = read_data(csv_bookmarks)
+
+                for bookmark in bookmarks:
+                    if bookmark["entry_id"] == entry_id_prior:
+                        bookmark['title'] = new_title
+                        bookmark['release_year'] = new_release_year
+                        bookmark['bookmark_action'] = new_bookmark_action
+
+                write_data(csv_bookmarks, bookmarks)
+
+                if new_bookmark_action == "Hide":
+                    remove_row_csv(csv_bookmarks_status, entry_id_prior)
+
             program_search_results_prior = []
             country_code_input_prior = None
             language_code_input_prior = None
@@ -1510,16 +1874,21 @@ def add_programs():
             season_episodes_prior = []
             date_new_default_prior = date_new_default
             program_add_prior = ''
+            title_selected_prior = None
+            release_year_selected_prior = None
+            bookmark_action_prior = None
 
     return render_template(
         'main/addprograms.html',
         segment='addprograms',
         html_slm_version = slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
         html_valid_country_codes = valid_country_codes,
         html_country_code = country_code,
         html_valid_language_codes = valid_language_codes,
         html_language_code = language_code,
         html_num_results = num_results,
+        html_hide_bookmarked = hide_bookmarked,
         html_program_types = program_types,
         html_program_type_default = program_type_default,
         html_program_add_message = program_add_message,
@@ -1533,7 +1902,11 @@ def add_programs():
         html_num_results_test = num_results_test,
         html_special_actions = special_actions,
         html_program_add_resort_panel = program_add_resort_panel,
-        html_program_add_filter_panel = program_add_filter_panel
+        html_program_add_filter_panel = program_add_filter_panel,
+        html_bookmark_actions = bookmark_actions,
+        html_title_selected = title_selected_prior,
+        html_release_year_selected = release_year_selected_prior,
+        html_bookmark_action_selected = bookmark_action_prior
     )
 
 # Creates the dropdown list of 'Special Actions'
@@ -1554,6 +1927,16 @@ def get_special_actions():
     
     return special_actions
 
+# Creates the dropdown list of 'Bookmark Actions'
+def get_bookmark_actions(object_type):
+    bookmark_actions = bookmark_actions_default.copy()
+
+    if object_type == "SHOW":
+        for action in bookmark_actions_default_show_only:
+            action
+            bookmark_actions.append(action)
+
+    return bookmark_actions
 
 # Input the number of search results to return
 def get_num_results(num_results_input):
@@ -2446,12 +2829,15 @@ def get_program_new(date_new, country_code, language_code, num_results):
                 score = "N/A"  # Handle the case where the score is not a valid number`
 
             offers_raw_list = []
-            offer_raw_icon = record["newOffer"]["package"]["icon"]
-            offer_raw_icon = f"{engine_image_url}{offer_raw_icon}"
-            offer_raw_icon = offer_raw_icon.replace('{profile}', engine_image_profile_icon)
-            offer_raw_icon = offer_raw_icon.replace('{format}', 'png')
-            offer_raw_clearname = record["newOffer"]["package"]["clearName"]
-            offers_raw_list.append({"icon": offer_raw_icon, "sort": offer_raw_clearname})
+            try:
+                offer_raw_icon = record["newOffer"]["package"]["icon"]
+                offer_raw_icon = f"{engine_image_url}{offer_raw_icon}"
+                offer_raw_icon = offer_raw_icon.replace('{profile}', engine_image_profile_icon)
+                offer_raw_icon = offer_raw_icon.replace('{format}', 'png')
+                offer_raw_clearname = record["newOffer"]["package"]["clearName"]
+                offers_raw_list.append({"icon": offer_raw_icon, "sort": offer_raw_clearname})
+            except:
+                print(f"\n{current_time()} WARNING: Unable to find offer icon for {record}. Skipping...")
 
             offers_raw_list_sorted = sorted(offers_raw_list, key=lambda x: sort_key(x["sort"]))
             icons_list = []
@@ -2578,7 +2964,7 @@ def search_bookmark_select(program_search_results, program_search_index, country
 
             # Write new rows to the bookmark tables
             if bookmarks_append:
-                season_episodes = set_bookmarks(program_search_selected_entry_id, program_search_selected_title, program_search_selected_release_year, program_search_selected_object_type, program_search_selected_url, country_code, language_code, "search")
+                season_episodes = set_bookmarks(program_search_selected_entry_id, program_search_selected_title, program_search_selected_release_year, program_search_selected_object_type, program_search_selected_url, country_code, language_code, "search", "None")
 
         else:
             program_search_selected_message = f"{current_time()} ERROR: Invalid selection. Please choose a valid option."
@@ -2587,6 +2973,48 @@ def search_bookmark_select(program_search_results, program_search_index, country
        program_search_selected_message = f"{current_time()} ERROR: Invalid input. Please enter a valid option."
 
     return program_search_selected_message, program_search_selected_entry_id, season_episodes, program_search_selected_object_type
+
+# Hides the selected program
+def hide_bookmark_select(program_search_results, program_search_index, country_code, language_code):
+    program_search_selected_message = ''
+    program_search_selected_entry_id = None
+    program_search_selected_title = None
+    program_search_selected_release_year = None
+    program_search_selected_object_type = None
+    program_search_selected_url = None
+
+    try:
+        if 0 <= int(program_search_index) < len(program_search_results):
+            program_search_selected_entry_id = program_search_results[program_search_index]['entry_id']
+            program_search_selected_title = program_search_results[program_search_index]['title']
+            program_search_selected_release_year = program_search_results[program_search_index]['release_year']
+            program_search_selected_object_type = program_search_results[program_search_index]['object_type']
+            program_search_selected_url = program_search_results[program_search_index]['url']
+
+            # Check versus already bookmarked
+            bookmarks = read_data(csv_bookmarks)
+            bookmarks_append = True
+            
+            # Reject existing bookmark
+            for bookmark in bookmarks:
+                if bookmark["entry_id"] == program_search_selected_entry_id:
+                    program_search_selected_message = f"{current_time()} WARNING: {program_search_selected_title} ({program_search_selected_release_year}) | {program_search_selected_object_type} (ID: {program_search_selected_entry_id}) already bookmarked!"
+                    bookmarks_append = False
+
+            # Write new rows to the bookmark tables and remove from list
+            if bookmarks_append:
+                new_row = {'entry_id': program_search_selected_entry_id, 'title': program_search_selected_title, 'release_year': program_search_selected_release_year, 'object_type': program_search_selected_object_type, 'url': program_search_selected_url, "country_code": country_code, "language_code": language_code, "bookmark_action": "Hide"}
+                append_data(csv_bookmarks, new_row)
+
+                program_search_results.pop(program_search_index)
+
+        else:
+            program_search_selected_message = f"{current_time()} ERROR: Invalid selection. Please choose a valid option."
+
+    except ValueError:
+       program_search_selected_message = f"{current_time()} ERROR: Invalid input. Please enter a valid option."
+
+    return program_search_results, program_search_selected_message
 
 # Create a new entry_id for manual programs
 def get_manual_entry_id():
@@ -2638,10 +3066,10 @@ def get_episode_list_manual(end_season, season_episodes_manual):
     return season_episodes_sorted
 
 # Create the bookmark and status for the selected program
-def set_bookmarks(entry_id, title, release_year, object_type, url, country_code, language_code, type):
+def set_bookmarks(entry_id, title, release_year, object_type, url, country_code, language_code, type, bookmark_action):
     season_episodes = []
 
-    new_row = {'entry_id': entry_id, 'title': title, 'release_year': release_year, 'object_type': object_type, 'url': url, "country_code": country_code, "language_code": language_code}
+    new_row = {'entry_id': entry_id, 'title': title, 'release_year': release_year, 'object_type': object_type, 'url': url, "country_code": country_code, "language_code": language_code, "bookmark_action": bookmark_action}
     append_data(csv_bookmarks, new_row)
 
     if object_type == "MOVIE":
@@ -2684,6 +3112,7 @@ def modify_programs():
     global entry_id_prior
     global title_selected_prior
     global release_year_selected_prior
+    global bookmark_action_prior
     global object_type_selected_prior
     global bookmarks_statuses_selected_prior
     global edit_flag
@@ -2693,18 +3122,22 @@ def modify_programs():
     bookmarks = read_data(csv_bookmarks)
     bookmarks_statuses = read_data(csv_bookmarks_status)
 
-    sorted_bookmarks = sorted(bookmarks, key=lambda x: sort_key(x["title"]))
+    sorted_bookmarks = sorted((bookmark for bookmark in bookmarks if bookmark['bookmark_action'] != 'Hide'), key=lambda x: sort_key(x["title"]))
     program_modify_message = ''
     bookmarks_statuses_selected = []
 
     special_actions = []
     special_actions = get_special_actions()
 
+    bookmark_actions = []
+    new_bookmark_action = None
+
     if request.method == 'POST':
         modify_programs_action = request.form['action']
         entry_id_input = request.form.get('entry_id')
         field_title_input = request.form.get('field_title')
         field_release_year_input = request.form.get('field_release_year')
+        field_bookmark_action_input = request.form.get('field_bookmark_action')
 
         if modify_programs_action in [
                                         'program_modify_edit',
@@ -2727,10 +3160,12 @@ def modify_programs():
                         title_selected_prior = bookmark['title']
                         release_year_selected_prior = bookmark['release_year']
                         object_type_selected_prior = bookmark['object_type']
+                        bookmark_action_prior = bookmark['bookmark_action']
 
                 # Opens the edit frame
                 if modify_programs_action == 'program_modify_edit':
                     edit_flag = True
+                    bookmark_actions = get_bookmark_actions(object_type_selected_prior)
 
                     for bookmark_status in bookmarks_statuses:
                         if bookmark_status['entry_id'] == entry_id_prior:
@@ -2745,7 +3180,7 @@ def modify_programs():
                     remove_row_csv(csv_bookmarks_status, entry_id_prior)
 
                     bookmarks = read_data(csv_bookmarks)
-                    sorted_bookmarks = sorted(bookmarks, key=lambda x: sort_key(x["title"]))
+                    sorted_bookmarks = sorted((bookmark for bookmark in bookmarks if bookmark['bookmark_action'] != 'Hide'), key=lambda x: sort_key(x["title"]))
                     bookmarks_statuses = read_data(csv_bookmarks_status)
 
                     movie_path, tv_path = get_movie_tv_path()
@@ -2766,6 +3201,7 @@ def modify_programs():
                     title_selected_prior = None
                     release_year_selected_prior = None
                     object_type_selected_prior = None
+                    bookmark_action_prior = None
 
             # Generates Stream Links for the program
             elif modify_programs_action == 'program_modify_generate':
@@ -2913,10 +3349,17 @@ def modify_programs():
                         program_modify_message = f"{current_time()} ERROR: 'Title' cannot be empty."
                         save_error_bookmarks = save_error_bookmarks + 1
 
+                    new_bookmark_action = field_bookmark_action_input
+
                     if save_error_bookmarks == 0:
+
+                        rebuild_bookmark_status_trigger = None
+                        if bookmark_action_prior == "Hide" and new_bookmark_action != "Hide":
+                            rebuild_bookmark_status_trigger = True
 
                         title_selected_prior = new_title
                         release_year_selected_prior = new_release_year
+                        bookmark_action_prior = new_bookmark_action
 
                         program_modify_message = f"{current_time()} INFO: Save successful!"
 
@@ -2924,10 +3367,11 @@ def modify_programs():
                             if bookmark["entry_id"] == entry_id_prior:
                                 bookmark['title'] = new_title
                                 bookmark['release_year'] = new_release_year
+                                bookmark['bookmark_action'] = new_bookmark_action
 
                         write_data(csv_bookmarks, bookmarks)
                         bookmarks = read_data(csv_bookmarks)
-                        sorted_bookmarks = sorted(bookmarks, key=lambda x: sort_key(x["title"]))
+                        sorted_bookmarks = sorted((bookmark for bookmark in bookmarks if bookmark['bookmark_action'] != 'Hide'), key=lambda x: sort_key(x["title"]))
 
                     # Modify Bookmarks Statuses
                     field_object_type_input = request.form.get('field_object_type')
@@ -2993,6 +3437,16 @@ def modify_programs():
 
                 write_data(csv_bookmarks_status, bookmarks_statuses)
 
+                if new_bookmark_action == "Hide":
+                    remove_row_csv(csv_bookmarks_status, entry_id_prior)
+
+                if rebuild_bookmark_status_trigger:
+                    if object_type_selected_prior == "MOVIE":
+                        new_row = {"entry_id": entry_id_prior, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": "unwatched", "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None}
+                        append_data(csv_bookmarks_status, new_row)
+                    elif object_type_selected_prior == "SHOW":
+                        get_new_episodes(entry_id_prior)
+
             bookmarks_statuses = read_data(csv_bookmarks_status)
 
             for bookmark_status in bookmarks_statuses:
@@ -3002,18 +3456,38 @@ def modify_programs():
             bookmarks_statuses_selected_sorted = sorted(bookmarks_statuses_selected, key=lambda x: x["season_episode"].casefold())
             bookmarks_statuses_selected_prior = bookmarks_statuses_selected_sorted
 
+            bookmark_actions = get_bookmark_actions(object_type_selected_prior)
+
         # Cancel changes or finish
         elif modify_programs_action == 'program_modify_cancel':
             edit_flag = None
             title_selected_prior = None
             release_year_selected_prior = None
             object_type_selected_prior = None
+            bookmark_action_prior = None
             bookmarks_statuses_selected_prior = []
+            bookmark_actions = []
+            new_bookmark_action = None
+
+        elif modify_programs_action == 'program_modify_show_hidden':
+            bookmarks = read_data(csv_bookmarks)
+            bookmarks_statuses = read_data(csv_bookmarks_status)
+
+            sorted_bookmarks = sorted(bookmarks, key=lambda x: sort_key(x["title"]))
+            program_modify_message = ''
+            bookmarks_statuses_selected = []
+
+            special_actions = []
+            special_actions = get_special_actions()
+
+            bookmark_actions = []
+            new_bookmark_action = None
 
     return render_template(
         'main/modifyprograms.html',
         segment = 'modifyprograms',
         html_slm_version = slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
         html_sorted_bookmarks = sorted_bookmarks,
         html_entry_id_selected = entry_id_prior,
         html_program_modify_message = program_modify_message,
@@ -3024,7 +3498,9 @@ def modify_programs():
         html_bookmarks_statuses_selected = bookmarks_statuses_selected_prior,
         html_special_actions = special_actions,
         html_offer_icons = offer_icons,
-        html_offer_icons_flag = offer_icons_flag
+        html_offer_icons_flag = offer_icons_flag,
+        html_bookmark_actions = bookmark_actions,
+        html_bookmark_action_selected = bookmark_action_prior
     )
 
 # Alphabetic sort ignoring common articles in various Latin script languages
@@ -3086,6 +3562,1378 @@ def remove_row_csv(csv_file, field_value):
     except Exception as e:
         print(f"Error: {e}")
 
+# Playlists webpage and actions
+@app.route('/playlists', defaults={'sub_page': 'main'}, methods=['GET', 'POST'])
+@app.route('/playlists/<sub_page>', methods=['GET', 'POST'])
+def playlists_webpage(sub_page):
+
+    templates = {
+        'main': 'main/playlists.html',
+        'modify_assigned_stations': 'main/playlists_modify_assigned_stations.html',
+        'parent_stations': 'main/playlists_parent_stations.html',
+        'manage': 'main/playlists_manage.html'
+    }
+
+    template = templates.get(sub_page, 'main/playlists.html')
+
+    playlists_anchor_id = None
+    run_empty_row = None
+
+    playlists = read_data(csv_playlistmanager_playlists)
+    parents = read_data(csv_playlistmanager_parents)
+    child_to_parents = read_data(csv_playlistmanager_child_to_parent)
+
+    action_to_anchor = {
+        'playlists': 'playlists_anchor',
+        'priority_playlists': 'priority_playlists_anchor',
+        'parents': 'parents_anchor',
+        'unassigned_child_to_parents': 'unassigned_child_to_parents_anchor',
+        'assigned_child_to_parents': 'assigned_child_to_parents_anchor',
+        'final_playlists': 'final_playlists_anchor',
+        'uploaded_playlists': 'uploaded_playlists_anchor'
+    }
+
+    preferred_playlists = []
+    preferred_playlists_default = [{
+        'm3u_id': 'None',
+        'prefer_name': 'None'
+    }]
+    preferred_playlists = get_preferred_playlists(preferred_playlists_default)
+
+    child_to_parent_mappings = []
+    child_to_parent_mappings_default = [
+        { 'parent_channel_id': 'Unassigned', 'parent_title': 'Unassigned' },
+        { 'parent_channel_id': 'Ignore', 'parent_title': 'Ignore' },
+        { 'parent_channel_id': 'Make Parent', 'parent_title': 'Make Parent' }
+    ]
+    child_to_parent_mappings = get_child_to_parent_mappings(child_to_parent_mappings_default)
+
+    unassigned_child_to_parents = []
+    assigned_child_to_parents = []
+    all_child_to_parents_stats = {}
+    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
+
+    playlist_files = []
+    playlist_files = get_playlist_files()
+    uploaded_playlist_files = []
+    uploaded_playlist_files = get_uploaded_playlist_files()
+    uploaded_playlists_message = ''
+    current_path = request.path.rstrip('/')
+    
+    if request.method == 'POST':
+        playlists_action = request.form['action']
+
+        for prefix, anchor_id in action_to_anchor.items():
+            if playlists_action.startswith(prefix):
+                playlists_anchor_id = anchor_id
+                break
+
+        posts = ['_cancel', '_save', 'save_all', '_new']
+        inposts = ['_delete_', '_update_','_make_parent_', '_set_parent_']
+        if any(playlists_action.endswith(post) for post in posts) or any(inpost in playlists_action for inpost in inposts):
+
+            this_posts = ['_save', '_new']
+            this_inposts = ['_delete_', '_upload_', '_make_parent_']
+            if any(playlists_action.endswith(this_post) for this_post in this_posts) or any(this_inpost in playlists_action for this_inpost in this_inposts):
+
+                if playlists_action.startswith('playlists_action_') or playlists_action.startswith('priority_playlists_action_'):
+
+                    if playlists_action == "playlists_action_save":
+                        playlists_m3u_id_inputs = {}
+                        playlists_m3u_name_inputs = {}
+                        playlists_m3u_url_inputs = {}
+                        playlists_epg_xml_inputs = {}
+                        playlists_stream_format_inputs = {}
+                        playlists_m3u_active_inputs = {}
+                        playlists_m3u_priority_inputs = {}
+
+                        for key in request.form.keys():
+                            if key.startswith('playlists_m3u_id_'):
+                                index = key.split('_')[-1]
+                                playlists_m3u_id_inputs[index] = request.form.get(key)
+
+                            if key.startswith('playlists_m3u_name_'):
+                                index = key.split('_')[-1]
+                                playlists_m3u_name_inputs[index] = request.form.get(key)
+
+                            if key.startswith('playlists_m3u_url_'):
+                                index = key.split('_')[-1]
+                                playlists_m3u_url_inputs[index] = request.form.get(key)
+
+                            if key.startswith('playlists_epg_xml_'):
+                                index = key.split('_')[-1]
+                                playlists_epg_xml_inputs[index] = request.form.get(key)
+
+                            if key.startswith('playlists_stream_format_'):
+                                index = key.split('_')[-1]
+                                playlists_stream_format_inputs[index] = request.form.get(key)
+
+                            if key.startswith('playlists_m3u_active_'):
+                                index = key.split('_')[-1]
+                                playlists_m3u_active_inputs[index] = request.form.get(key)
+
+                            if key.startswith('playlists_m3u_priority_'):
+                                index = key.split('_')[-1]
+                                playlists_m3u_priority_inputs[index] = request.form.get(key)
+
+                        for row in playlists_m3u_id_inputs:
+                            playlists_m3u_id_input =  playlists_m3u_id_inputs.get(row)
+                            playlists_m3u_name_input = playlists_m3u_name_inputs.get(row)
+                            playlists_m3u_url_input = playlists_m3u_url_inputs.get(row)
+                            playlists_epg_xml_input = playlists_epg_xml_inputs.get(row)
+                            playlists_stream_format_input = playlists_stream_format_inputs.get(row)
+                            playlists_m3u_active_input = "On" if playlists_m3u_active_inputs.get(row) == 'On' else "Off"
+                            playlists_m3u_priority_input = playlists_m3u_priority_inputs.get(row)
+
+                            for idx, playlist in enumerate(playlists):
+                                if idx == int(row) - 1:
+                                    playlist['m3u_id'] = playlists_m3u_id_input
+                                    playlist['m3u_name'] = playlists_m3u_name_input
+                                    playlist['m3u_url'] = playlists_m3u_url_input
+                                    playlist['epg_xml'] = playlists_epg_xml_input
+                                    playlist['stream_format'] = playlists_stream_format_input
+                                    playlist['m3u_active'] = playlists_m3u_active_input
+                                    playlist['m3u_priority'] = playlists_m3u_priority_input
+
+                    elif playlists_action == "playlists_action_new":
+                        playlists_m3u_id_input = f"m3u_{max((int(playlist['m3u_id'].split('_')[1]) for playlist in playlists), default=0) + 1:04d}"
+                        playlists_m3u_name_input = request.form.get('playlists_m3u_name_new')
+                        playlists_m3u_url_input = request.form.get('playlists_m3u_url_new')
+                        playlists_epg_xml_input = request.form.get('playlists_epg_xml_new')
+                        playlists_stream_format_input = request.form.get('playlists_stream_format_new')
+                        playlists_m3u_active_input = "On" if request.form.get('playlists_m3u_active_new') == 'On' else "Off"
+                        playlists_m3u_priority_input = max((int(playlist['m3u_priority']) for playlist in playlists), default=0) + 1
+
+                        playlists.append({
+                            "m3u_id": playlists_m3u_id_input,
+                            "m3u_name": playlists_m3u_name_input,
+                            "m3u_url": playlists_m3u_url_input,
+                            "epg_xml": playlists_epg_xml_input,
+                            "stream_format": playlists_stream_format_input,
+                            "m3u_active": playlists_m3u_active_input,
+                            "m3u_priority": playlists_m3u_priority_input
+                        })
+
+                    elif playlists_action.startswith('playlists_action_delete_'):
+                        playlists_action_delete_index = int(playlists_action.split('_')[-1]) - 1
+
+                        # Create a temporary record with fields set to None
+                        temp_record = create_temp_record(playlists[0].keys())
+
+                        if 0 <= playlists_action_delete_index < len(playlists):
+                            combined_children = read_data(csv_playlistmanager_combined_m3us)
+                            for combined_child in combined_children:
+                                if combined_child['m3u_id'] == playlists[playlists_action_delete_index]['m3u_id']:
+                                    remove_row_csv(csv_playlistmanager_combined_m3us, combined_child['station_playlist'])
+
+                            playlists.pop(playlists_action_delete_index)
+
+                            # If the list is now empty, add the temp record to keep headers
+                            if not playlists:
+                                playlists.append(temp_record)
+                                run_empty_row = True
+
+                        if len (playlists) > 1:
+                            for index, playlist in enumerate(sorted(playlists, key=lambda x: int(x['m3u_priority'])), start=1):
+                                playlist['m3u_priority'] = str(index)
+                        else:
+                            if playlists[0]['m3u_id'] is None or playlists[0]['m3u_id'] == '':
+                                pass
+                            else:
+                                playlists[0]['m3u_priority'] = 1
+
+                    elif playlists_action == "priority_playlists_action_save":
+                        priority_playlists_input = request.form.get('priority_playlists')
+                        priority_playlists_input_json = json.loads(priority_playlists_input)
+                        playlists = priority_playlists_input_json
+
+                    if len(playlists) > 1:
+                        playlists = sorted(playlists, key=lambda x: sort_key(x["m3u_name"].casefold()))
+
+                    csv_to_write = csv_playlistmanager_playlists
+                    data_to_write = playlists
+
+                elif playlists_action.startswith('uploaded_playlists_'):
+
+                    if playlists_action.startswith('uploaded_playlists_action_delete_'):
+                        uploaded_playlists_action_delete_index = int(playlists_action.split('_')[-1]) - 1
+                        uploaded_playlists_action_delete_filename = uploaded_playlist_files[uploaded_playlists_action_delete_index]
+                        uploaded_playlists_action_delete_filename_combined = os.path.join(playlists_uploads_dir_name, uploaded_playlists_action_delete_filename)
+
+                        last_period_index = uploaded_playlists_action_delete_filename_combined.rfind('.')
+
+                        if last_period_index != -1:
+                            before_last_period = uploaded_playlists_action_delete_filename_combined[:last_period_index]
+                            after_last_period = uploaded_playlists_action_delete_filename_combined[last_period_index + 1:]
+                        else:
+                            before_last_period = uploaded_playlists_action_delete_filename_combined
+                            after_last_period = ''
+
+                        file_delete(program_files_dir, before_last_period, after_last_period)
+
+                    elif playlists_action == "uploaded_playlists_action_new":
+                        file = None
+                        filename = None
+                        uploaded_playlists_message = ''
+                        temp_upload = os.path.join(playlists_uploads_dir_name, "temp_upload.txt")
+                        upload_extensions = [
+                            "m3u",
+                            "xml",
+                            "gz"
+                        ]
+
+                        file = request.files.get('uploaded_playlists_action_new_file')
+                        
+                        if file:
+                            filename = file.filename
+
+                            last_period_index = filename.rfind('.')
+
+                            if last_period_index != -1:
+                                before_last_period = filename[:last_period_index]
+                                after_last_period = filename[last_period_index + 1:]
+                            else:
+                                before_last_period = filename
+                                after_last_period = ''
+
+                            if after_last_period in upload_extensions:
+                                final_filename = filename.replace(' ', '_')
+                                final_upload = os.path.join(playlists_uploads_dir_name, final_filename)
+                                file.save(full_path(temp_upload))
+                                os.replace(full_path(temp_upload), full_path(final_upload))
+                            
+                            else:
+                                uploaded_playlists_message = "Incorrect format. Files must be 'm3u', 'xml', or 'gz'."    
+
+                        else:
+                            uploaded_playlists_message = "No selected file"
+
+                    uploaded_playlist_files = get_uploaded_playlist_files()
+                    csv_to_write = None
+                    data_to_write = None
+
+                elif playlists_action.startswith('parents_action_') or '_make_parent_' in playlists_action:
+
+                    if playlists_action == "parents_action_save":
+                        parents_parent_channel_id_inputs = {}
+                        parents_parent_title_inputs = {}
+                        parents_parent_tvg_id_override_inputs = {}
+                        parents_parent_tvg_logo_override_inputs = {}
+                        parents_parent_channel_number_override_inputs = {}
+                        parents_parent_tvc_guide_stationid_override_inputs = {}
+
+                        parents_parent_preferred_playlist_inputs = {}
+
+                        for key in request.form.keys():
+                            if key.startswith('parents_parent_channel_id_'):
+                                index = key.split('_')[-1]
+                                parents_parent_channel_id_inputs[index] = request.form.get(key)
+
+                            if key.startswith('parents_parent_title_'):
+                                index = key.split('_')[-1]
+                                parents_parent_title_inputs[index] = request.form.get(key)
+
+                            if key.startswith('parents_parent_tvg_id_override_'):
+                                index = key.split('_')[-1]
+                                parents_parent_tvg_id_override_inputs[index] = request.form.get(key)
+
+                            if key.startswith('parents_parent_tvg_logo_override_'):
+                                index = key.split('_')[-1]
+                                parents_parent_tvg_logo_override_inputs[index] = request.form.get(key)
+
+                            if key.startswith('parents_parent_channel_number_override_'):
+                                index = key.split('_')[-1]
+                                parents_parent_channel_number_override_inputs[index] = request.form.get(key)
+
+                            if key.startswith('parents_parent_tvc_guide_stationid_override_'):
+                                index = key.split('_')[-1]
+                                parents_parent_tvc_guide_stationid_override_inputs[index] = request.form.get(key)
+
+                            if key.startswith('parents_parent_preferred_playlist_'):
+                                index = key.split('_')[-1]
+                                parents_parent_preferred_playlist_inputs[index] = request.form.get(key)
+
+                        for row in parents_parent_channel_id_inputs:
+                            parents_parent_channel_id_input =  parents_parent_channel_id_inputs.get(row)
+                            parents_parent_title_input = parents_parent_title_inputs.get(row)
+                            parents_parent_tvg_id_override_input = parents_parent_tvg_id_override_inputs.get(row)
+                            parents_parent_tvg_logo_override_input = parents_parent_tvg_logo_override_inputs.get(row)
+                            parents_parent_channel_number_override_input = parents_parent_channel_number_override_inputs.get(row)
+                            parents_parent_tvc_guide_stationid_override_input = parents_parent_tvc_guide_stationid_override_inputs.get(row)
+                            parents_parent_preferred_playlist_input = parents_parent_preferred_playlist_inputs.get(row)
+                            if parents_parent_preferred_playlist_input == "None":
+                                parents_parent_preferred_playlist_input = None
+
+                            for idx, parent in enumerate(parents):
+                                if idx == int(row) - 1:
+                                    parent['parent_channel_id'] = parents_parent_channel_id_input
+                                    parent['parent_title'] = parents_parent_title_input
+                                    parent['parent_tvg_id_override'] = parents_parent_tvg_id_override_input
+                                    parent['parent_tvg_logo_override'] = parents_parent_tvg_logo_override_input
+                                    parent['parent_channel_number_override'] = parents_parent_channel_number_override_input
+                                    parent['parent_tvc_guide_stationid_override'] = parents_parent_tvc_guide_stationid_override_input
+                                    parent['parent_preferred_playlist'] = parents_parent_preferred_playlist_input
+
+                    elif playlists_action == "parents_action_new" or '_make_parent_' in playlists_action:
+                        
+                        parents_parent_channel_id_input = f"plm_{max((int(parent['parent_channel_id'].split('_')[1]) for parent in parents), default=0) + 1:04d}"
+
+                        # Placeholder values for potential future functionality expansion
+                        parents_parent_tvc_guide_art_override_input = None
+                        parents_parent_tvc_guide_tags_override_input = None
+                        parents_parent_tvc_guide_genres_override_input = None
+                        parents_parent_tvc_guide_categories_override_input = None
+                        parents_parent_tvc_guide_placeholders_override_input = None
+                        parents_parent_tvc_stream_vcodec_override_input = None
+                        parents_parent_tvc_stream_acodec_override_input = None
+
+                        if playlists_action == "parents_action_new":
+                            parents_parent_title_input = request.form.get('parents_parent_title_new')
+                            parents_parent_tvg_id_override_input = request.form.get('parents_parent_tvg_id_override_new')
+                            parents_parent_tvg_logo_override_input = request.form.get('parents_parent_tvg_logo_override_new')
+                            parents_parent_channel_number_override_input = request.form.get('parents_parent_channel_number_override_new')
+                            parents_parent_tvc_guide_stationid_override_input = request.form.get('parents_parent_tvc_guide_stationid_override_new')
+                            parents_parent_preferred_playlist_input = request.form.get('parents_parent_preferred_playlist_new')
+                            if parents_parent_preferred_playlist_input == "None":
+                                parents_parent_preferred_playlist_input = None
+
+                        elif '_make_parent_' in playlists_action:
+                            child_to_parents_action_make_parent_index = int(playlists_action.split('_')[-1]) - 1
+
+                            if playlists_action.startswith("unassigned"):
+                                keycheck_prefix = "unassigned"
+                            elif playlists_action.startswith("assigned"):
+                                keycheck_prefix = "assigned"
+
+                            # Add to Parents table
+                            child_to_parents_title_inputs = {}
+
+                            keycheck_base = "_child_to_parents_title_"
+                            keycheck = f"{keycheck_prefix}{keycheck_base}"
+                            for key in request.form.keys():
+                                if key.startswith(keycheck):
+                                    index = key.split('_')[-1]
+                                    child_to_parents_title_inputs[index] = request.form.get(key)
+
+                            child_to_parents_title_inputs = list(child_to_parents_title_inputs.values())
+
+                            parents_parent_title_input = child_to_parents_title_inputs[child_to_parents_action_make_parent_index]
+                            parents_parent_tvg_id_override_input = None
+                            parents_parent_tvg_logo_override_input = None
+                            parents_parent_channel_number_override_input = None
+                            parents_parent_tvc_guide_stationid_override_input = None
+                            parents_parent_preferred_playlist_input = None
+
+                            # Modify Child to Parent table
+                            child_to_parents_channel_id_inputs = {}
+
+                            keycheck_base = "_child_to_parents_channel_id_"
+                            keycheck = f"{keycheck_prefix}{keycheck_base}"
+                            for key in request.form.keys():
+                                if key.startswith(keycheck):
+                                    index = key.split('_')[-1]
+                                    child_to_parents_channel_id_inputs[index] = request.form.get(key)
+
+                            child_to_parents_channel_id_inputs = list(child_to_parents_channel_id_inputs.values())
+
+                            child_to_parents_channel_id = child_to_parents_channel_id_inputs[child_to_parents_action_make_parent_index]
+
+                            set_child_to_parent(child_to_parents_channel_id, parents_parent_channel_id_input)
+                            unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
+
+                        parents.append({
+                            "parent_channel_id": parents_parent_channel_id_input,
+                            "parent_title": parents_parent_title_input,
+                            "parent_tvg_id_override": parents_parent_tvg_id_override_input,
+                            "parent_tvg_logo_override": parents_parent_tvg_logo_override_input,
+                            "parent_channel_number_override": parents_parent_channel_number_override_input,
+                            "parent_tvc_guide_stationid_override": parents_parent_tvc_guide_stationid_override_input,
+                            "parent_tvc_guide_art_override": parents_parent_tvc_guide_art_override_input,
+                            "parent_tvc_guide_tags_override": parents_parent_tvc_guide_tags_override_input,
+                            "parent_tvc_guide_genres_override": parents_parent_tvc_guide_genres_override_input,
+                            "parent_tvc_guide_categories_override": parents_parent_tvc_guide_categories_override_input,
+                            "parent_tvc_guide_placeholders_override": parents_parent_tvc_guide_placeholders_override_input,
+                            "parent_tvc_stream_vcodec_override": parents_parent_tvc_stream_vcodec_override_input,
+                            "parent_tvc_stream_acodec_override": parents_parent_tvc_stream_acodec_override_input,
+                            "parent_preferred_playlist": parents_parent_preferred_playlist_input
+                        })
+
+                    elif playlists_action.startswith('parents_action_delete_'):
+                        parents_action_delete_index = int(playlists_action.split('_')[-1]) - 1
+                        parent_channel_id = parents[parents_action_delete_index]['parent_channel_id']
+
+                        # Create a temporary record with fields set to None
+                        temp_record = create_temp_record(parents[0].keys())
+
+                        if 0 <= parents_action_delete_index < len(parents):                           
+                            parents.pop(parents_action_delete_index)
+                            
+                            # If the list is now empty, add the temp record to keep headers
+                            if not parents:
+                                parents.append(temp_record)
+                                run_empty_row = True
+
+                        # Unassign children with that parent
+                        child_to_parents = read_data(csv_playlistmanager_child_to_parent)
+                        unassign_children = []
+                        
+                        for child_to_parent in child_to_parents:
+                            if child_to_parent['parent_channel_id'] == parent_channel_id:
+                                unassign_children.append(child_to_parent['child_m3u_id_channel_id'])
+
+                        if unassign_children:
+                            for unassign_child in unassign_children:
+                                set_child_to_parent(unassign_child, "Unassigned")
+
+                            unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
+
+                    if len(parents) > 1:
+                        parents = sorted(parents, key=lambda x: sort_key(x["parent_title"].casefold()))
+
+                    csv_to_write = csv_playlistmanager_parents
+                    data_to_write = parents
+
+                if csv_to_write:
+
+                    write_data(csv_to_write, data_to_write)
+
+                    if run_empty_row:
+                        remove_empty_row(csv_to_write)
+
+                        if csv_to_write == csv_playlistmanager_playlists:
+                            delete_all_rows_except_header(csv_playlistmanager_child_to_parent)
+                            delete_all_rows_except_header(csv_playlistmanager_combined_m3us)
+
+                    if csv_to_write == csv_playlistmanager_playlists:
+                        playlists = read_data(csv_playlistmanager_playlists)
+                    elif csv_to_write == csv_playlistmanager_parents:
+                        parents = read_data(csv_playlistmanager_parents)
+                        child_to_parent_mappings = get_child_to_parent_mappings(child_to_parent_mappings_default)
+
+            elif playlists_action.endswith('_save_all') or '_set_parent_' in playlists_action:
+
+                if '_child_to_parents_action_' in playlists_action:
+
+                    send_child_to_parents = []
+
+                    if playlists_action.startswith("unassigned"):
+                        keycheck_prefix = "unassigned"
+                    elif playlists_action.startswith("assigned"):
+                        keycheck_prefix = "assigned"
+
+                    keycheck_base = "_child_to_parents_"
+                    keycheck_start = f"{keycheck_prefix}{keycheck_base}"
+
+                    child_to_parents_channel_id_inputs = {}
+                    child_to_parents_parent_channel_id_inputs = {}
+
+                    for key in request.form.keys():
+                        keycheck = f"{keycheck_start}channel_id_"
+                        if key.startswith(keycheck):
+                            index = key.split('_')[-1]
+                            child_to_parents_channel_id_inputs[index] = request.form.get(key)
+
+                        keycheck = f"{keycheck_start}parent_channel_id_"
+                        if key.startswith(keycheck):
+                            index = key.split('_')[-1]
+                            child_to_parents_parent_channel_id_inputs[index] = request.form.get(key)
+
+                    for index in child_to_parents_channel_id_inputs.keys():
+                        child_to_parents_channel_id_input = child_to_parents_channel_id_inputs.get(index)
+                        
+                        if child_to_parents_parent_channel_id_inputs.get(index) == "Make Parent":
+                            stations = read_data(csv_playlistmanager_combined_m3us)
+                            save_all_parent_channel_id = f"plm_{max((int(parent['parent_channel_id'].split('_')[1]) for parent in parents), default=0) + 1:04d}"
+
+                            for station in stations:
+                                check_m3u_id_channel_id = f"{station['m3u_id']}_{station['channel_id']}"
+                                if check_m3u_id_channel_id == child_to_parents_channel_id_input:
+                                    save_all_parent_title = station['title']
+
+                            parents.append({
+                                "parent_channel_id": save_all_parent_channel_id,
+                                "parent_title": save_all_parent_title,
+                                "parent_tvg_id_override": None,
+                                "parent_tvg_logo_override": None,
+                                "parent_channel_number_override": None,
+                                "parent_tvc_guide_stationid_override": None,
+                                "parent_tvc_guide_art_override": None,
+                                "parent_tvc_guide_tags_override": None,
+                                "parent_tvc_guide_genres_override": None,
+                                "parent_tvc_guide_categories_override": None,
+                                "parent_tvc_guide_placeholders_override": None,
+                                "parent_tvc_stream_vcodec_override": None,
+                                "parent_tvc_stream_acodec_override": None,
+                                "parent_preferred_playlist": None
+                            })
+
+                            child_to_parents_parent_channel_id_input = save_all_parent_channel_id
+
+                        else:
+                            child_to_parents_parent_channel_id_input = child_to_parents_parent_channel_id_inputs.get(index)
+
+                        send_child_to_parents.append({'child_m3u_id_channel_id': child_to_parents_channel_id_input, 'parent_channel_id': child_to_parents_parent_channel_id_input})
+
+                    if '_set_parent_' in playlists_action:
+
+                        send_child_to_parents_single = []
+                        child_to_parents_action_set_parent_index = int(playlists_action.split('_')[-1]) - 1
+
+                        child_to_parents_channel_id_input_single = send_child_to_parents[child_to_parents_action_set_parent_index]['child_m3u_id_channel_id']
+                        child_to_parents_parent_channel_id_input_single = send_child_to_parents[child_to_parents_action_set_parent_index]['parent_channel_id']
+
+                        send_child_to_parents_single.append({'child_m3u_id_channel_id': child_to_parents_channel_id_input_single, 'parent_channel_id': child_to_parents_parent_channel_id_input_single})
+
+                        send_child_to_parents = send_child_to_parents_single
+
+                    # Write back
+                    for send_child_to_parent in send_child_to_parents:
+                        child_to_parents_channel_id = send_child_to_parent['child_m3u_id_channel_id']
+                        child_to_parents_parent_channel_id = send_child_to_parent['parent_channel_id']
+                        set_child_to_parent(child_to_parents_channel_id, child_to_parents_parent_channel_id)
+                    
+                    parents = sorted(parents, key=lambda x: sort_key(x["parent_title"].casefold()))
+                    write_data(csv_playlistmanager_parents, parents)
+                    parents = read_data(csv_playlistmanager_parents)
+                    child_to_parent_mappings = get_child_to_parent_mappings(child_to_parent_mappings_default)
+                    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
+
+            elif '_update_' in playlists_action:
+
+                if playlists_action == 'final_playlists_action_update_station_list':
+                    get_combined_m3us()
+                    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
+
+                elif playlists_action == 'final_playlists_action_update_m3u_epg':
+                    get_final_m3us_epgs()
+                    playlist_files = get_playlist_files()
+
+    response = make_response(render_template(
+        #'main/playlists.html',
+        template,
+        segment='playlists',
+        html_slm_version = slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_playlists_anchor_id = playlists_anchor_id,
+        html_playlists = playlists,
+        html_preferred_playlists = preferred_playlists,
+        html_parents = parents,
+        html_stream_formats = stream_formats,
+        html_child_to_parent_mappings = child_to_parent_mappings,
+        html_unassigned_child_to_parents = unassigned_child_to_parents,
+        html_assigned_child_to_parents = assigned_child_to_parents,
+        html_all_child_to_parents_stats = all_child_to_parents_stats,
+        html_playlist_files = playlist_files,
+        html_uploaded_playlist_files = uploaded_playlist_files,
+        html_current_path = current_path,
+        html_uploaded_playlists_message = uploaded_playlists_message
+    ))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+
+    if playlists_anchor_id:
+        response.headers['Location'] = f'/playlists#{playlists_anchor_id}'
+
+    return response
+
+# Used to download an m3u or XML EPG
+@app.route('/playlists/files/<filename>')
+def download_m3u_epg(filename):
+    return export_csv(filename)
+
+# Used to download an m3u or XML EPG
+@app.route('/playlists/uploads/<filename>')
+def download_uploads(filename):
+    filename = os.path.join(playlists_uploads_dir_name, filename)
+    return export_csv(filename)
+
+# Used to manage the potential of deleting all records
+def create_temp_record(fields):
+    return {field: None for field in fields}
+
+# Goes through each of the playlists and combines all m3us together into a single list
+def get_combined_m3us():
+    playlists = read_data(csv_playlistmanager_playlists)
+    combined_m3us = []
+
+    print(f"\n{current_time()} Starting combination of playlists...")
+
+    for playlist in playlists:
+        try:
+            response = requests.get(playlist['m3u_url'], headers=url_headers)
+            if response:
+                combined_m3us.extend(parse_m3u(playlist['m3u_id'], playlist['m3u_name'], response))
+        except requests.RequestException:
+            notification_add(f"\n{current_time()} WARNING: m3u URL not found for '{playlist['m3u_name']}'. Skipping...")
+
+    id_field = "station_playlist"
+    update_rows(csv_playlistmanager_combined_m3us, combined_m3us, id_field, True)
+
+    stations = read_data(csv_playlistmanager_combined_m3us)
+    maps = read_data(csv_playlistmanager_child_to_parent)
+
+    for station in stations:
+        check_m3u_id_channel_id = f"{station['m3u_id']}_{station['channel_id']}"
+        if check_m3u_id_channel_id not in [map['child_m3u_id_channel_id'] for map in maps]:
+            new_row = { 'child_m3u_id_channel_id': check_m3u_id_channel_id, 'parent_channel_id': 'Unassigned' }
+            append_data(csv_playlistmanager_child_to_parent, new_row)
+
+    print(f"\n{current_time()} Finished combination of playlists.")
+
+# Parse the m3u Playlist to get all the details
+def parse_m3u(m3u_id, m3u_name, response):
+    data = response.text.splitlines()
+    cleaned_data = clean_m3u(data)
+    
+    records = []
+    current_record = None
+    for line in cleaned_data:
+        if line.startswith('#EXTINF'):
+            if current_record:
+                records.append(current_record)
+
+            match = re.match(r'#EXTINF:(.*)', line)
+            if match:
+                fields = match.group(1)
+                metadata = {
+                    "tvc-guide-title": "",
+                    "channel-id": "",
+                    "tvg-id": "",
+                    "tvg-name": "",
+                    "tvg-logo": "",
+                    "tvg-chno": "",
+                    "channel-number": "",
+                    "tvg-description": "",
+                    "tvc-guide-description": "",
+                    "group-title": "",
+                    "tvc-guide-stationid": "",
+                    "tvc-guide-art": "",
+                    "tvc-guide-tags": "",
+                    "tvc-guide-genres": "",
+                    "tvc-guide-categories": "",
+                    "tvc-guide-placeholders": "",
+                    "tvc-stream-vcodec": "",
+                    "tvc-stream-acodec": ""
+                }
+
+                # Extract known fields
+                for key in metadata.keys():
+                    pattern = re.compile(rf'{key}="(.*?)"')
+                    result = pattern.search(fields)
+                    if result:
+                        metadata[key] = result.group(1)
+                        fields = fields.replace(result.group(0), "")
+
+                # What remains is the title
+                if ',' in fields:
+                    _, title = fields.rsplit(',', 1)
+                    metadata["title"] = title.strip()
+                else:
+                    metadata["title"] = fields.strip()
+                
+                current_record = {
+                    'station_playlist': f"{metadata['title']} on {m3u_name} [{metadata['channel-id']}]",
+                    'm3u_id': m3u_id,
+                    'title': metadata["title"],
+                    'tvc_guide_title': metadata["tvc-guide-title"],
+                    'channel_id': metadata["channel-id"],
+                    'tvg_id': metadata["tvg-id"],
+                    'tvg_name': metadata["tvg-name"],
+                    'tvg_logo': metadata["tvg-logo"],
+                    'tvg_chno': metadata["tvg-chno"],
+                    'channel_number': metadata["channel-number"],
+                    'tvg_description': metadata["tvg-description"],
+                    'tvc_guide_description': metadata["tvc-guide-description"],
+                    'group_title': metadata["group-title"],
+                    'tvc_guide_stationid': metadata["tvc-guide-stationid"],
+                    'tvc_guide_art': metadata["tvc-guide-art"],
+                    'tvc_guide_tags': metadata["tvc-guide-tags"],
+                    'tvc_guide_genres': metadata["tvc-guide-genres"],
+                    'tvc_guide_categories': metadata["tvc-guide-categories"],
+                    'tvc_guide_placeholders': metadata["tvc-guide-placeholders"],
+                    'tvc_stream_vcodec': metadata["tvc-stream-vcodec"],
+                    'tvc_stream_acodec': metadata["tvc-stream-acodec"],
+                    'url': ""
+                }
+        elif line.startswith('http'):
+            if current_record:
+                current_record['url'] = line.strip()
+                records.append(current_record)
+                current_record = None
+
+    if current_record:
+        records.append(current_record)
+
+    return records
+
+# Removes extra carriage returns that mess up reading the data
+def clean_m3u(data):
+    cleaned_lines = []
+    for i, line in enumerate(data):
+        if not (line.startswith('http') or line.startswith('#EXTINF:')):
+            if i > 0:
+                cleaned_lines[-1] += ' ' + line.strip()
+            else:
+                cleaned_lines.append(line.strip())
+        else:
+            cleaned_lines.append(line.strip())
+    return cleaned_lines
+
+# Creates the dropdown list of 'Preferred Playlists'
+def get_preferred_playlists(preferred_playlists_default):
+    playlists = []
+    sorted_playlists = []
+    
+    playlists = read_data(csv_playlistmanager_playlists)
+    sorted_playlists = sorted(playlists, key=lambda x: sort_key(x["m3u_name"].casefold()))
+    
+    # Initialize preferred_playlists with a copy of the default list
+    preferred_playlists = preferred_playlists_default.copy()
+    
+    for sorted_playlist in sorted_playlists:
+        prefer = f"Prefer: {sorted_playlist['m3u_name']}"
+        preferred_playlists.append({
+            'm3u_id': sorted_playlist['m3u_id'],
+            'prefer_name': prefer
+        })
+    
+    return preferred_playlists
+
+# Creates the dropdown list of 'Parent Station'
+def get_child_to_parent_mappings(child_to_parent_mappings_default):
+    child_to_parent_mappings = []
+    sorted_child_to_parent_mappings = []
+    
+    child_to_parent_mappings = read_data(csv_playlistmanager_parents)
+    if len(child_to_parent_mappings) > 1:
+        sorted_child_to_parent_mappings = sorted(child_to_parent_mappings, key=lambda x: sort_key(x["parent_title"].casefold()))
+    else:
+        sorted_child_to_parent_mappings = child_to_parent_mappings
+    
+    # Initialize with a copy of the default list
+    final_child_to_parent_mappings = child_to_parent_mappings_default.copy()
+    
+    for sorted_child_to_parent_mapping in sorted_child_to_parent_mappings:
+        final = f"Station: {sorted_child_to_parent_mapping['parent_title']}"
+        final_child_to_parent_mappings.append({
+            'parent_channel_id': sorted_child_to_parent_mapping['parent_channel_id'],
+            'parent_title': final
+        })
+    
+    return final_child_to_parent_mappings
+
+# Creates the list of Unassigned and Assigned stations on the webpage
+def get_child_to_parents():
+    playlists = read_data(csv_playlistmanager_playlists)
+    combined_m3us = read_data(csv_playlistmanager_combined_m3us)
+    child_to_parents = read_data(csv_playlistmanager_child_to_parent)
+
+    all_child_to_parents = []
+    sorted_all_child_to_parents = []
+    unassigned_child_to_parents = []
+    assigned_child_to_parents = []
+
+    for child_to_parent in child_to_parents:
+        for combined_m3u in combined_m3us:
+            check_m3u_id_channel_id = f"{combined_m3u['m3u_id']}_{combined_m3u['channel_id']}"
+
+            if check_m3u_id_channel_id == child_to_parent['child_m3u_id_channel_id']:
+
+                child_to_parent_channel_id = f"{combined_m3u['m3u_id']}_{combined_m3u['channel_id']}"
+                child_to_parent_title = combined_m3u['title']
+
+                for playlist in playlists:
+                    if playlist['m3u_id'] == combined_m3u['m3u_id']:
+                        child_to_parent_m3u_name = f"{playlist['m3u_name']} [{child_to_parent_channel_id}]"
+
+                if combined_m3u['tvc_guide_description'] is not None and combined_m3u['tvc_guide_description'] != '':
+                    child_to_parent_description = combined_m3u['tvc_guide_description']
+                elif combined_m3u['tvg_description'] is not None and combined_m3u['tvg_description'] != '':
+                    child_to_parent_description = combined_m3u['tvg_description']
+                else:
+                    child_to_parent_description = "No description available..."
+        
+                child_to_parent_parent_channel_id = child_to_parent['parent_channel_id']
+
+                all_child_to_parents.append({
+                    'channel_id': child_to_parent_channel_id,
+                    'title': child_to_parent_title,
+                    'm3u_name': child_to_parent_m3u_name,
+                    'description': child_to_parent_description,
+                    'parent_channel_id': child_to_parent_parent_channel_id
+                })
+
+    # Create statistics
+    total_records = len(all_child_to_parents)
+
+    unassigned_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Unassigned")
+    ignore_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Ignore")
+
+    assigned_to_parent_ids = {record['parent_channel_id'] for record in all_child_to_parents if record['parent_channel_id'] not in ["Unassigned", "Ignore"]}
+    assigned_to_parent_count = len(assigned_to_parent_ids)
+
+    redundant_count = total_records - (unassigned_count + ignore_count + assigned_to_parent_count)
+    
+    all_child_to_parents_stats = {
+        'total_records': total_records,
+        'unassigned_count': unassigned_count,
+        'unassigned_percentage': calc_percentage(unassigned_count, total_records),
+        'ignore_count': ignore_count,
+        'ignore_percentage': calc_percentage(ignore_count, total_records),
+        'assigned_to_parent_count': assigned_to_parent_count,
+        'assigned_to_parent_percentage': calc_percentage(assigned_to_parent_count, total_records),
+        'redundant_count': redundant_count,
+        'redundant_percentage': calc_percentage(redundant_count, total_records),
+    }
+
+    # Split unassigned and assigned
+    sorted_all_child_to_parents = sorted(all_child_to_parents, key=lambda x: sort_key(x["title"].casefold()))
+    for sorted_all_child_to_parent in sorted_all_child_to_parents:
+        if sorted_all_child_to_parent['parent_channel_id'] == "Unassigned":
+            unassigned_child_to_parents.append({
+                'channel_id': sorted_all_child_to_parent['channel_id'],
+                'title': sorted_all_child_to_parent['title'],
+                'm3u_name': sorted_all_child_to_parent['m3u_name'],
+                'description': sorted_all_child_to_parent['description'],
+                'parent_channel_id': sorted_all_child_to_parent['parent_channel_id']
+            })
+        else:
+            assigned_child_to_parents.append({
+                'channel_id': sorted_all_child_to_parent['channel_id'],
+                'title': sorted_all_child_to_parent['title'],
+                'm3u_name': sorted_all_child_to_parent['m3u_name'],
+                'description': sorted_all_child_to_parent['description'],
+                'parent_channel_id': sorted_all_child_to_parent['parent_channel_id']
+            })
+
+    return unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats
+
+# Calculate percentages or set to zero if total_records is zero
+def calc_percentage(count, total):
+    return f"{round((count / total) * 100, 1)}%" if total > 0 else "0.0%"
+
+# Sets a child to a parent for a station
+def set_child_to_parent(child_m3u_id_channel_id, parent_channel_id):
+    child_to_parents = read_data(csv_playlistmanager_child_to_parent)
+
+    for child_to_parent in child_to_parents:
+        if child_to_parent['child_m3u_id_channel_id'] == child_m3u_id_channel_id:
+            child_to_parent['parent_channel_id'] = parent_channel_id
+            break
+
+    write_data(csv_playlistmanager_child_to_parent, child_to_parents)
+
+# Creates the m3u(s) and XML EPG(s)
+def get_final_m3us_epgs():
+    notification_add(f"\n{current_time()} Starting generation of final m3u(s) and XML EPG(s)...\n")
+
+    settings = read_data(csv_settings)
+
+    station_start_number = int(settings[11]['settings'])
+    max_stations = int(settings[12]['settings'])
+
+    parents = read_data(csv_playlistmanager_parents)
+    maps = read_data(csv_playlistmanager_child_to_parent)
+    combined_children = read_data(csv_playlistmanager_combined_m3us)
+    playlists = read_data(csv_playlistmanager_playlists)
+    playlists.sort(key=lambda x: int(x.get("m3u_priority", float("inf"))))
+
+    fields = [
+        "tvg_id",
+        "tvg_name",
+        "tvg_logo",
+        "tvg_description",
+        "tvc_guide_description",
+        "group_title",
+        "tvc_guide_stationid",
+        "tvc_guide_art",
+        "tvc_guide_tags",
+        "tvc_guide_genres",
+        "tvc_guide_categories",
+        "tvc_guide_placeholders",
+        "tvc_stream_vcodec",
+        "tvc_stream_acodec",
+        "url",
+        "stream_format"
+    ]
+
+    final_m3us = []
+
+    for parent in parents:
+        title = None
+        tvc_guide_title = None
+        channel_id = None
+        tvg_id = None
+        tvg_name = None
+        tvg_logo = None
+        tvg_chno = None
+        channel_number = None
+        tvg_description = None
+        tvc_guide_description = None
+        group_title = None
+        tvc_guide_stationid = None
+        tvc_guide_art = None
+        tvc_guide_tags = None
+        tvc_guide_genres = None
+        tvc_guide_categories = None
+        tvc_guide_placeholders = None
+        tvc_stream_vcodec = None
+        tvc_stream_acodec = None
+        url = None
+        stream_format = None
+
+        channel_id = parent['parent_channel_id']
+
+        playlist_preferences = []
+
+        if parent['parent_preferred_playlist'] is not None and parent['parent_preferred_playlist'] != '':
+            playlist_preferences.append(parent['parent_preferred_playlist'])
+
+        inactive_playlists = []
+        for playlist in playlists:
+            if playlist['m3u_active'] == "On":
+                playlist_preferences.append(playlist['m3u_id'])
+            else:
+                inactive_playlists.append(playlist['m3u_id'])
+        
+        if parent['parent_preferred_playlist'] in inactive_playlists:
+            playlist_preferences.remove(parent['parent_preferred_playlist'])
+
+        children = []
+        for map in maps:
+            if map['parent_channel_id'] == channel_id:
+                children.append(map['child_m3u_id_channel_id'])
+
+        children = [child for child in children if re.search(r'm3u_\d{4}', child).group(0) in playlist_preferences]
+
+        children = sorted(
+            children,
+            key=lambda child: (
+                playlist_preferences.index(re.match(r'm3u_\d{4}', child).group(0)),
+                re.sub(r'^m3u_\d{4}_', '', child)
+            )
+        )
+
+        for field in fields:
+            field_value = None
+            field_value = get_m3u_field_value(field, combined_children, children)
+
+            if field == "tvg_id":
+                if parent['parent_tvg_id_override'] is not None and parent['parent_tvg_id_override'] != '':
+                    tvg_id = parent['parent_tvg_id_override']
+                else:
+                    tvg_id = field_value
+
+            elif field == "tvg_name":
+                tvg_name = field_value
+
+            elif field == "tvg_logo":
+                if parent['parent_tvg_logo_override'] is not None and parent['parent_tvg_logo_override'] != '':
+                    tvg_logo = parent['parent_tvg_logo_override']
+                else:
+                    tvg_logo = field_value
+
+            elif field == "tvg_description":
+                tvg_description = field_value
+            
+            elif field == "tvc_guide_description":
+                tvc_guide_description = field_value
+
+                if tvc_guide_description is not None and tvc_guide_description != '':
+                    tvg_description = tvc_guide_description
+                elif tvg_description is not None and tvg_description != '':
+                    tvc_guide_description = tvg_description
+                else:
+                    tvg_description = f"No description available..."
+                    tvc_guide_description = tvg_description
+
+            elif field == "group_title":
+                group_title = field_value
+
+            elif field == "tvc_guide_stationid":
+                if parent['parent_tvc_guide_stationid_override'] is not None and parent['parent_tvc_guide_stationid_override'] != '':
+                    tvc_guide_stationid = parent['parent_tvc_guide_stationid_override']
+                else:
+                    tvc_guide_stationid = field_value
+
+            elif field == "tvc_guide_art":
+                if parent['parent_tvc_guide_art_override'] is not None and parent['parent_tvc_guide_art_override'] != '':
+                    tvc_guide_art = parent['parent_tvc_guide_art_override']
+                else:
+                    tvc_guide_art = field_value
+
+            elif field == "tvc_guide_tags":
+                if parent['parent_tvc_guide_tags_override'] is not None and parent['parent_tvc_guide_tags_override'] != '':
+                    tvc_guide_tags = parent['parent_tvc_guide_tags_override']
+                else:
+                    tvc_guide_tags = field_value
+
+            elif field == "tvc_guide_genres":
+                if parent['parent_tvc_guide_genres_override'] is not None and parent['parent_tvc_guide_genres_override'] != '':
+                    tvc_guide_genres = parent['parent_tvc_guide_genres_override']
+                else:
+                    tvc_guide_genres = field_value
+
+            elif field == "tvc_guide_categories":
+                if parent['parent_tvc_guide_categories_override'] is not None and parent['parent_tvc_guide_categories_override'] != '':
+                    tvc_guide_categories = parent['parent_tvc_guide_categories_override']
+                else:
+                    tvc_guide_categories = field_value
+
+            elif field == "tvc_guide_placeholders":
+                if parent['parent_tvc_guide_placeholders_override'] is not None and parent['parent_tvc_guide_placeholders_override'] != '':
+                    tvc_guide_placeholders = parent['parent_tvc_guide_placeholders_override']
+                else:
+                    tvc_guide_placeholders = field_value
+
+            elif field == "tvc_stream_vcodec":
+                if parent['parent_tvc_stream_vcodec_override'] is not None and parent['parent_tvc_stream_vcodec_override'] != '':
+                    tvc_stream_vcodec = parent['parent_tvc_stream_vcodec_override']
+                else:
+                    tvc_stream_vcodec = field_value
+
+            elif field == "tvc_stream_acodec":
+                if parent['parent_tvc_stream_acodec_override'] is not None and parent['parent_tvc_stream_acodec_override'] != '':
+                    tvc_stream_acodec = parent['parent_tvc_stream_acodec_override']
+                else:
+                    tvc_stream_acodec = field_value
+
+            elif field == "url":
+                url = field_value
+
+            elif field == "stream_format":
+                stream_format = field_value
+
+        if url:
+            title = parent['parent_title']
+            tvc_guide_title = title
+
+            if parent['parent_channel_number_override'] is not None and parent['parent_channel_number_override'] != '':
+                tvg_chno = parent['parent_channel_number_override']
+            else:
+                tvg_chno = int(channel_id.split('_')[-1]) + int(station_start_number)
+            
+            channel_number = tvg_chno
+
+        if title:
+            final_m3us.append({
+                "title": title,
+                "tvc_guide_title": tvc_guide_title,
+                "channel_id": channel_id,
+                "tvg_id": tvg_id,
+                "tvg_name": tvg_name,
+                "tvg_logo": tvg_logo,
+                "tvg_chno": tvg_chno,
+                "channel_number": channel_number,
+                "tvg_description": tvg_description,
+                "tvc_guide_description": tvc_guide_description,
+                "group_title": group_title,
+                "tvc_guide_stationid": tvc_guide_stationid,
+                "tvc_guide_art": tvc_guide_art,
+                "tvc_guide_tags": tvc_guide_tags,
+                "tvc_guide_genres": tvc_guide_genres,
+                "tvc_guide_categories": tvc_guide_categories,
+                "tvc_guide_placeholders": tvc_guide_placeholders,
+                "tvc_stream_vcodec": tvc_stream_vcodec,
+                "tvc_stream_acodec": tvc_stream_acodec,
+                "url": url,
+                "stream_format": stream_format
+            })
+    
+    gracenote_hls_final_m3us = []
+    gracenote_mpeg_ts_final_m3us = []
+    epg_hls_final_m3us = []
+    epg_mpeg_ts_final_m3us = []
+
+    for final_m3u in final_m3us:
+        if final_m3u['tvc_guide_stationid'] is not None and final_m3u['tvc_guide_stationid'] != '':
+            if final_m3u['stream_format'] == "HLS":
+                gracenote_hls_final_m3us.append(final_m3u)
+            elif final_m3u['stream_format'] == "MPEG-TS":
+                gracenote_mpeg_ts_final_m3us.append(final_m3u)
+        else:
+            if final_m3u['stream_format'] == "HLS":
+                epg_hls_final_m3us.append(final_m3u)
+            elif final_m3u['stream_format'] == "MPEG-TS":
+                epg_mpeg_ts_final_m3us.append(final_m3u)
+
+    extensions = ['m3u']
+    all_prior_files = []
+    all_prior_files = get_all_prior_files(program_files_dir, extensions)
+    for all_prior_file in all_prior_files:
+        file_delete(program_files_dir, all_prior_file['filename'], all_prior_file['extension'])
+
+    create_chunk_files(gracenote_hls_final_m3us, "plm_gracenote_hls_m3u", "m3u", max_stations)
+    create_chunk_files(gracenote_mpeg_ts_final_m3us, "plm_gracenote_mpeg_ts_m3u", "m3u", max_stations)
+    create_chunk_files(epg_hls_final_m3us, "plm_epg_hls_m3u", "m3u", max_stations)
+    create_chunk_files(epg_mpeg_ts_final_m3us, "plm_epg_mpeg_ts_m3u", "m3u", max_stations)
+    get_epgs_for_m3us()
+
+    notification_add(f"\n{current_time()} Finished generation of final m3u(s) and XML EPG(s).")
+
+# Runs through all the records to find a valid value to return
+def get_m3u_field_value(field, combined_children, children):
+    field_original = None
+    field_value = None
+
+    if field == "stream_format":
+        field_original = field
+        field = "url"
+
+    for child in children:
+        for combined_child in combined_children:
+            check_m3u_id_channel_id = f"{combined_child['m3u_id']}_{combined_child['channel_id']}"
+            if child == check_m3u_id_channel_id:
+                if combined_child[field] is None or combined_child[field] == '':
+                    pass
+                else:
+                    if field_original == "stream_format":
+                        playlists = read_data(csv_playlistmanager_playlists)
+                        for playlist in playlists:
+                            if playlist['m3u_id'] == combined_child['m3u_id']:
+                                field_value = playlist['stream_format']
+                                break
+                    else:
+                        field_value = combined_child[field]
+                    break
+        if field_value:
+            break
+
+    return field_value
+
+# Generates m3u content from the data list
+def generate_m3u_content(data_list):
+    m3u_content = "#EXTM3U\n"
+    for item in data_list:
+        m3u_content += f'\n#EXTINF:-1 tvc-guide-title="{item["tvc_guide_title"]}"'
+        m3u_content += f' channel-id="{item["channel_id"]}"'
+        m3u_content += f' tvg-id="{item["tvg_id"]}"'
+        m3u_content += f' tvg-name="{item["tvg_name"]}"'
+        m3u_content += f' tvg-logo="{item["tvg_logo"]}"'
+        m3u_content += f' tvg-chno="{item["tvg_chno"]}"'
+        m3u_content += f' channel-number="{item["channel_number"]}"'
+        m3u_content += f' tvg-description="{item["tvg_description"]}"'
+        m3u_content += f' tvc-guide-description="{item["tvc_guide_description"]}"'
+        m3u_content += f' group-title="{item["group_title"]}"'
+        m3u_content += f' tvc-guide-stationid="{item["tvc_guide_stationid"]}"'
+        m3u_content += f' tvc-guide-art="{item["tvc_guide_art"]}"'
+        m3u_content += f' tvc-guide-tags="{item["tvc_guide_tags"]}"'
+        m3u_content += f' tvc-guide-genres="{item["tvc_guide_genres"]}"'
+        m3u_content += f' tvc-guide-categories="{item["tvc_guide_categories"]}"'
+        m3u_content += f' tvc-guide-placeholders="{item["tvc_guide_placeholders"]}"'
+        m3u_content += f' tvc-stream-vcodec="{item["tvc_stream_vcodec"]}"'
+        m3u_content += f' tvc-stream-acodec="{item["tvc_stream_acodec"]}"'
+        m3u_content += f',{item["title"]}\n'
+        m3u_content += f'{item["url"]}\n'
+
+    m3u_content = m3u_content.replace('"None"', '""')
+
+    return m3u_content
+
+# Processes the data list into multiple chunks and saves files
+def create_chunk_files(data_list, base_filename, extension, max):
+    for index, chunk in enumerate(split_list(data_list, max)):
+        if extension == "m3u":
+            content = generate_m3u_content(chunk)
+
+        filename = f"{base_filename}_{index+1:02d}.{extension}"
+
+        create_program_file(filename, content)
+
+# Splits a data list into chunks of a specified size
+def split_list(data_list, max):
+    for i in range(0, len(data_list), max):
+        yield data_list[i:i + max]
+
+# Create a file in the Program Files directory
+def create_program_file(filename, content):
+    file_path = full_path(filename)
+
+    try:
+        with open(file_path, 'w', encoding="utf-8") as file:
+            try:
+                file.write(content)
+                notification_add(f"    Created: {filename}")
+            except OSError as e:
+                notification_add(f"    Error creating file {filename}: {e}")
+
+    except FileNotFoundError as fnf_error:
+        notification_add(f"    Error with original path: {fnf_error}")
+
+# Wrapper for getting m3u and XML EPG files
+def get_playlist_files():
+    extensions = ['m3u', 'xml']
+    all_prior_files = get_all_prior_files(program_files_dir, extensions)
+
+    playlist_files = []
+    for all_prior_file in all_prior_files:
+        playlist_extension = all_prior_file['extension']
+        playlist_filename = f"{all_prior_file['filename']}.{playlist_extension}"
+        playlist_number = all_prior_file['filename'].split('_')[-1]
+
+        playlist_label = None
+        if playlist_extension == "m3u":
+            if 'gracenote_' in playlist_filename:
+                if 'hls' in playlist_filename:
+                    playlist_label = f"m3u Playlist - Gracenote (HLS) [{playlist_number}]: "
+                elif 'mpeg_ts' in playlist_filename:
+                    playlist_label = f"m3u Playlist - Gracenote (MPEG-TS) [{playlist_number}]: "
+            elif 'epg_' in playlist_filename:
+                if 'hls' in playlist_filename:
+                    playlist_label = f"m3u Playlist - Non-Gracenote (HLS) [{playlist_number}]: "
+                elif 'mpeg_ts' in playlist_filename:
+                    playlist_label = f"m3u Playlist - Non-Gracenote (MPEG-TS) [{playlist_number}]: "
+        elif playlist_extension == "xml":
+            if 'epg_' in playlist_filename:
+                if 'hls' in playlist_filename:
+                    playlist_label = f"XML EPG for Non-Gracenote (HLS) [{playlist_number}]: "
+                elif 'mpeg_ts' in playlist_filename:
+                    playlist_label = f"XML EPG for Non-Gracenote (MPEG-TS) [{playlist_number}]: "
+
+        playlist_files.append({'playlist_label': playlist_label, 'playlist_filename': playlist_filename})
+        
+    playlist_files = sorted(playlist_files, key=lambda x: (not "gracenote" in x['playlist_filename'], x['playlist_filename']))
+    return playlist_files
+
+# Wrapper for getting uploaded m3u and XML EPG files
+def get_uploaded_playlist_files():
+    extensions = ['m3u', 'xml']
+    all_prior_files = get_all_prior_files(playlists_uploads_dir, extensions)
+
+    playlist_files = []
+    for all_prior_file in all_prior_files:
+        playlist_extension = all_prior_file['extension']
+        playlist_filename = f"{all_prior_file['filename']}.{playlist_extension}"
+        playlist_files.append(playlist_filename)
+    
+    playlist_files.sort()
+    return playlist_files
+
+# Wrapper for searching for files with multiple extensions
+def get_all_prior_files(search_directory, extensions):
+    all_prior_files = []
+
+    for extension in extensions:
+        prior_files = search_directory_for_files_with_extensions(search_directory, extension)
+        for prior_file in prior_files:
+            all_prior_files.append({'filename': prior_file['filename'], 'extension': prior_file['extension']})
+
+    return all_prior_files
+
+# Finds files in a directory with a certain extension
+def search_directory_for_files_with_extensions(search_directory, base_extension):
+    result = []
+    seen_files = set()  # Track seen files to avoid duplicates
+
+    for file in os.listdir(search_directory):
+        if file.endswith(base_extension):
+            filename, extension = os.path.splitext(file)
+            if filename not in seen_files:
+                result.append({'filename': filename, 'extension': base_extension})
+                seen_files.add(filename)  # Mark file as seen
+
+    return result
+
+def delete_all_rows_except_header(csv_file):
+    full_path_file = full_path(csv_file)
+    
+    # Ensure the file exists
+    if os.path.exists(full_path_file):
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            header = next(reader)  # Read the header
+
+        with open(full_path_file, "w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(header)  # Write the header back
+
+    else:
+        print(f"{current_time()} ERROR: File {csv_file} does not exist.")
+
+# Gets the XML EPG for each m3u that needs one
+def get_epgs_for_m3us():
+    playlists = read_data(csv_playlistmanager_playlists)
+    temp_file_path = full_path("temp.txt")
+    
+    with open(temp_file_path, "a", encoding="utf-8") as temp_file:
+        for playlist in playlists:
+            if playlist['m3u_active'] == "On":
+                try:
+                    if playlist['epg_xml'] is not None and playlist['epg_xml'] != '':
+                        response = requests.get(playlist['epg_xml'], headers=url_headers)
+                        response.raise_for_status()
+                        
+                        # Handle .gz files
+                        if playlist['epg_xml'].endswith('.gz'):
+                            gz = gzip.GzipFile(fileobj=io.BytesIO(response.content))
+                            response_text = gz.read().decode('utf-8')
+                        else:
+                            response_text = response.text
+                        
+                        temp_file.write(response_text + "\n")
+                except requests.RequestException:
+                    notification_add(f"\n{current_time()} WARNING: EPG XML not found for '{playlist['epg_xml']}'. Skipping...")
+
+    extensions = ['m3u']
+    m3u_files = get_all_prior_files(program_files_dir, extensions)
+
+    # Filter the list to include only values that contain '_epg_'
+    filtered_files = [filtered_file for filtered_file in m3u_files if '_epg_' in filtered_file['filename']]
+
+    extensions = ['xml']
+    all_prior_files = []
+    all_prior_files = get_all_prior_files(program_files_dir, extensions)
+    for all_prior_file in all_prior_files:
+        file_delete(program_files_dir, all_prior_file['filename'], all_prior_file['extension'])
+
+    for filtered_file in filtered_files:
+        tvg_ids = []  # Reset the list for each playlist
+        playlist_extension = filtered_file['extension']
+        playlist_filename = f"{filtered_file['filename']}.{playlist_extension}"
+        epg_filename = f"{filtered_file['filename']}.xml"
+
+        # Read the M3U file content
+        with open(full_path(playlist_filename), "r", encoding="utf-8") as file:
+            content = file.read()
+            # Extract tvg-id values
+            ids = re.findall(r'tvg-id="(.*?)"', content)
+            tvg_ids.extend(ids)
+
+        # Ensure temp.txt exists before attempting to read it
+        if os.path.exists(temp_file_path):
+            # Write the EPG data to epg_filename
+            with open(full_path(epg_filename), "w", encoding="utf-8") as epg_file:
+                # Write the initial lines
+                epg_file.write("<?xml version='1.0' encoding='utf-8'?>\n")
+                epg_file.write("<!DOCTYPE tv SYSTEM \"xmltv.dtd\">\n")
+                epg_file.write("<tv generator-info-name=\"SLM\" generated-ts=\"\">\n")
+                
+                # Read temp.txt and extract relevant sections
+                with open(temp_file_path, "r", encoding="utf-8") as temp_file:
+                    temp_content = temp_file.read()
+                    
+                    # Extract <channel> sections
+                    for tvg_id in tvg_ids:
+                        channel_pattern = re.compile(rf'<channel\b[^>]*\bid="{tvg_id}"[^>]*>.*?</channel>', re.DOTALL)
+                        channels = channel_pattern.findall(temp_content)
+                        for channel in channels:
+                            epg_file.write("  " + channel + "\n")  # 2 spaces for indentation
+                        
+                        # Extract <programme> sections
+                        programme_pattern = re.compile(rf'<programme\b[^>]*\bchannel="{tvg_id}"[^>]*>.*?</programme>', re.DOTALL)
+                        programmes = programme_pattern.findall(temp_content)
+                        for programme in programmes:
+                            epg_file.write("  " + programme + "\n")  # 2 spaces for indentation
+                
+                # Write the closing tag
+                epg_file.write("</tv>\n")
+                
+            notification_add(f"    Created: {epg_filename}")
+
+    # Delete temp.txt after processing
+    os.remove(temp_file_path)
+
 # Reports / Queries webpage
 @app.route('/reports_queries', methods=['GET', 'POST'])
 def webpage_reports_queries():
@@ -3121,6 +4969,7 @@ def webpage_reports_queries():
         'main/reports_queries.html',
         segment='reports_queries',
         html_slm_version=slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
         html_slm_query = slm_query,
         html_slm_query_name = slm_query_name
     )
@@ -3224,48 +5073,57 @@ def run_query(query_name):
 # Files webpage
 @app.route('/files', methods=['GET', 'POST'])
 def webpage_files():
+    global select_file_prior
+
     table_html = None
     replace_message = None
 
+    file_lists = [
+        {'file_name': 'Settings', 'file': csv_settings },
+        {'file_name': 'Streaming Services', 'file': csv_streaming_services },
+        {'file_name': 'Stream Link Mappings', 'file': csv_slmappings },
+        {'file_name': 'Bookmarks', 'file': csv_bookmarks },
+        {'file_name': 'Bookmarks Statuses', 'file': csv_bookmarks_status }
+    ]
+
+    plm_file_lists = [
+        {'file_name': 'Playlists', 'file': csv_playlistmanager_playlists },
+        {'file_name': 'Parent Station', 'file': csv_playlistmanager_parents },
+        {'file_name': 'Child to Parent Station Map', 'file': csv_playlistmanager_child_to_parent },
+        {'file_name': 'All Stations', 'file': csv_playlistmanager_combined_m3us }
+    ]
+
+    if slm_playlist_manager:
+        for plm_file_list in plm_file_lists:
+            file_lists.append({'file_name': plm_file_list['file_name'], 'file': plm_file_list['file']})
+
     if request.method == 'POST':
         action = request.form['action']
-        if action == 'view_settings':
-            table_html = view_csv(csv_settings, "csv")
-        elif action == 'export_settings':
-            return export_csv(csv_settings)
-        elif action == 'replace_settings':
-            replace_message = replace_csv(csv_settings, 'file_settings')
-        elif action == 'view_streaming_services':
-            table_html = view_csv(csv_streaming_services, "csv")
-        elif action == 'export_streaming_services':
-            return export_csv(csv_streaming_services)
-        elif action == 'replace_streaming_services':
-            replace_message = replace_csv(csv_streaming_services, 'file_streaming_services')
-        elif action == 'view_slmappings':
-            table_html = view_csv(csv_slmappings, "csv")
-        elif action == 'export_slmappings':
-            return export_csv(csv_slmappings)
-        elif action == 'replace_slmappings':
-            replace_message = replace_csv(csv_slmappings, 'file_slmappings')
-        elif action == 'view_bookmarks':
-            table_html = view_csv(csv_bookmarks, "csv")
-        elif action == 'export_bookmarks':
-            return export_csv(csv_bookmarks)
-        elif action == 'replace_bookmarks':
-            replace_message = replace_csv(csv_bookmarks, 'file_bookmarks')
-        elif action == 'view_bookmarks_statuses':
-            table_html = view_csv(csv_bookmarks_status, "csv")
-        elif action == 'export_bookmarks_statuses':
-            return export_csv(csv_bookmarks_status)
-        elif action == 'replace_bookmarks_statuses':
-            replace_message = replace_csv(csv_bookmarks_status, 'file_bookmarks_statuses')
+
+        select_file_input = request.form.get('select_file')
+        select_file_prior = select_file_input
+        select_file_input_csv = None
+        for file_list in file_lists:
+            if file_list['file_name'] == select_file_input:
+                select_file_input_csv = file_list['file']
+                break
+
+        if action == 'view_file':
+            table_html = view_csv(select_file_input_csv, "csv")
+        elif action == 'export_file':
+            return export_csv(select_file_input_csv)
+        elif action == 'replace_file':
+            replace_message = replace_csv(select_file_input_csv, 'file_file')
 
     return render_template(
         'main/files.html',
         segment='files',
         html_slm_version=slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
         table_html=table_html,
-        replace_message=replace_message
+        replace_message=replace_message,
+        html_file_lists = file_lists,
+        html_select_file_prior = select_file_prior
     )
 
 # Makes CSV file able to be viewable in HTML
@@ -3371,6 +5229,7 @@ def webpage_logs():
         'main/logs.html',
         segment='logs',
         html_slm_version=slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
         html_log_filename_fullpath=log_filename_fullpath,
         html_page_lines=page_lines,
         html_page=page,
@@ -3394,7 +5253,7 @@ def webpage_runprocess():
         elif action == 'update_streaming_services':
             update_streaming_services()
         elif action == 'get_new_episodes':
-            get_new_episodes()
+            get_new_episodes(None)
         elif action == 'import_program_updates':
             import_program_updates()
         elif action == 'generate_stream_links':
@@ -3405,7 +5264,8 @@ def webpage_runprocess():
     return render_template(
         'main/runprocess.html',
         segment = 'runprocess',
-        html_slm_version = slm_version
+        html_slm_version = slm_version,
+        html_slm_playlist_manager = slm_playlist_manager
     )
 
 # Create a continous stream of the log file
@@ -3423,7 +5283,7 @@ def stream_log():
     return Response(generate(), mimetype='text/event-stream')
 
 # Check for new episodes
-def get_new_episodes():
+def get_new_episodes(entry_id_filter):
     print("\n==========================================================")
     print("|                                                        |")
     print("|                 Check for New Episodes                 |")
@@ -3433,7 +5293,19 @@ def get_new_episodes():
     print(f"\n{current_time()} Scanning for new episodes...\n")
     
     bookmarks = read_data(csv_bookmarks)
-    show_bookmarks = [bookmark for bookmark in bookmarks if not bookmark['entry_id'].startswith('slm') and bookmark['object_type'] == "SHOW"]
+    show_bookmarks = [
+        bookmark for bookmark in bookmarks 
+        if not bookmark['entry_id'].startswith('slm') 
+        and bookmark['object_type'] == "SHOW"
+        and bookmark['bookmark_action'] not in ["Hide", "Disable Get New Episodes"]
+    ]
+
+    if entry_id_filter is not None and entry_id_filter != '':
+        show_bookmarks = [
+            show_bookmark for show_bookmark in show_bookmarks
+            if show_bookmark['entry_id'] == entry_id_filter
+        ]
+
 
     episodes = read_data(csv_bookmarks_status)
 
@@ -5185,7 +7057,11 @@ def generate_stream_links():
     settings = read_data(csv_settings)
     channels_directory = settings[1]["settings"]
     bookmarks = read_data(csv_bookmarks)
-    auto_bookmarks = [bookmark for bookmark in bookmarks if not bookmark['entry_id'].startswith('slm')]
+    auto_bookmarks = [
+        bookmark for bookmark in bookmarks 
+        if not bookmark['entry_id'].startswith('slm') 
+        and bookmark['bookmark_action'] not in ["Hide"]
+    ]
 
     run_generation = None
 
@@ -5615,7 +7491,12 @@ def get_stream_link_ids():
         notification_add(f"\n{current_time()} INFO: Cannot check for changes from last run due to Channels URL error.\n")
 
 # Creates Stream Link Files and removes invalid ones and empty directories (for TV)
-def create_stream_link_files(bookmarks, remove_choice):
+def create_stream_link_files(base_bookmarks, remove_choice):
+    bookmarks = [
+        base_bookmark for base_bookmark in base_bookmarks 
+        if base_bookmark['bookmark_action'] not in ["Hide"]
+    ]
+
     bookmarks_statuses = read_data(csv_bookmarks_status)
 
     movie_path, tv_path = get_movie_tv_path()
@@ -5746,7 +7627,10 @@ def file_delete(path, name, special_action):
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
-                notification_add(f"    Deleted: {file_path}")
+                if special_action in ['m3u', 'xml']:
+                    notification_add(f"    Deleted: {name}.{special_action}")
+                else:
+                    notification_add(f"    Deleted: {file_path}")
         except OSError as e:
             notification_add(f"    Error removing file {file_path}: {e}")
     except FileNotFoundError as fnf_error:
@@ -5758,6 +7642,8 @@ def get_file_path(path, name, special_action):
 
     if special_action == "Make STRM":
         file_name_extension = "strm"
+    elif special_action in ['m3u', 'xml']:
+        file_name_extension = special_action
     else:
         file_name_extension = "strmlnk"
 
@@ -5875,7 +7761,7 @@ def end_to_end():
     time.sleep(2)
     update_streaming_services()
     time.sleep(2)
-    get_new_episodes()
+    get_new_episodes(None)
     time.sleep(2)
     import_program_updates()
     time.sleep(2)
@@ -5899,17 +7785,45 @@ def end_to_end():
 def check_schedule():
     while True:
         settings = read_data(csv_settings)
+        wait_trigger = None
+        current_time = datetime.datetime.now().strftime('%H:%M')
+        current_hour = datetime.datetime.now().hour
+        current_minute = datetime.datetime.now().minute
+        
         try:
             auto_update_schedule = settings[8]["settings"]
         except (IndexError, KeyError):
             auto_update_schedule = 'Off'
-        auto_update_schedule_time = settings[6]["settings"] 
-
+            
+        auto_update_schedule_time = settings[6]["settings"]
+        plm_update_stations_schedule = settings[13]["settings"]
+        plm_update_stations_schedule_time = settings[14]["settings"]
+        plm_update_m3us_epgs_schedule = settings[15]["settings"]
+        plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
+        plm_m3us_epgs_schedule_frequency = settings[17]["settings"]
+        plm_m3us_epgs_schedule_frequency_parsed = int(re.search(r'\d+', plm_m3us_epgs_schedule_frequency).group())
+        
         if auto_update_schedule == 'On' and auto_update_schedule_time:
-            current_time = datetime.datetime.now().strftime('%H:%M')
             if current_time == auto_update_schedule_time:
-                end_to_end()
-                time.sleep(60)  # Wait a minute to avoid multiple triggers within the same minute
+                threading.Thread(target=end_to_end).start()
+                wait_trigger = True
+        
+        if plm_update_stations_schedule == 'On' and plm_update_stations_schedule_time:
+            if current_time == plm_update_stations_schedule_time:
+                threading.Thread(target=get_combined_m3us).start()
+                wait_trigger = True
+        
+        if plm_update_m3us_epgs_schedule == 'On' and plm_update_m3us_epgs_schedule_time:
+            plm_update_m3us_epgs_schedule_hour, plm_update_m3us_epgs_schedule_minute = map(int, plm_update_m3us_epgs_schedule_time.split(':'))
+            
+            if current_minute == plm_update_m3us_epgs_schedule_minute and (current_hour - plm_update_m3us_epgs_schedule_hour) % plm_m3us_epgs_schedule_frequency_parsed == 0:
+                threading.Thread(target=get_final_m3us_epgs).start()
+                wait_trigger = True
+
+        if wait_trigger:
+            time.sleep(65)  # Wait a bit longer to avoid multiple triggers within the same minute+
+            wait_trigger = None
+
         time.sleep(1)  # Check every second
 
 # Start the background thread
@@ -5948,19 +7862,22 @@ def route_template(template):
         return render_template(
             "main/" + template,
             segment = segment,
-            html_slm_version = slm_version
+            html_slm_version = slm_version,
+            html_slm_playlist_manager = slm_playlist_manager
         )
 
     except TemplateNotFound:
         return render_template(
             'main/page-404.html',
-            html_slm_version = slm_version
+            html_slm_version = slm_version,
+            html_slm_playlist_manager = slm_playlist_manager
         ), 404
 
     except:
         return render_template(
             'main/page-500.html',
-            html_slm_version = slm_version
+            html_slm_version = slm_version,
+            html_slm_playlist_manager = slm_playlist_manager
         ), 500
 
 # Start-up Check
