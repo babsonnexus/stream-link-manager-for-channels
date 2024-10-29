@@ -13,7 +13,7 @@
           <!-- Row for end_to_end button -->
           <div class="row">
             <div class="col-12">
-              <button type="submit" name="action" value="end_to_end" class="btn bg-gradient-primary w-100 h-100 my-2 mb-2">End to End</button>
+              <button type="submit" name="action" value="end_to_end" class="btn bg-gradient-primary w-100 h-100 my-2 mb-2">Stream Links/Files: End-to-End</button>
             </div>
           </div>
           <!-- Spacer row -->
@@ -39,14 +39,14 @@
         </pre>
       </div>
     </div>
-    <div class="modal" id="loadingModal" tabindex="-1" role="dialog">
-      <div class="modal-dialog" role="document">
+    <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Process Running</h5>
+            <h5 class="modal-title" id="loadingModalLabel">Processing</h5>
           </div>
           <div class="modal-body">
-            <p>Please wait while the process is running. Do not navigate away from this page.</p>
+            Please wait while the process completes...
           </div>
         </div>
       </div>

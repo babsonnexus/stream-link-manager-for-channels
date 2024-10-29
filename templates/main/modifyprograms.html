@@ -55,7 +55,7 @@
         <form method="POST" action="/modifyprograms" id="process-form" enctype="multipart/form-data">
           <!-- Select Program Section -->
           <h4>Select a Program...</h4>
-          <select name="title" id="title_select" style="width: calc(40%);" onchange="setEntryId()">
+          <select name="title" id="title_select" style="width: calc(30%);" onchange="setEntryId()">
             {% for item in html_sorted_bookmarks %}
                 <option value="{{ item.title }} ({{ item.release_year }}) | {{ item.object_type }}" data-entry-id="{{ item.entry_id }}" 
                     {% if item.entry_id == html_entry_id_selected %}selected{% endif %}>
@@ -68,6 +68,7 @@
           <button type="submit" name="action" value="program_modify_delete" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Delete</button>
           <button type="submit" name="action" value="program_modify_available" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Check Availability</button>
           <button type="submit" name="action" value="program_modify_generate" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Generate Stream Links</button>
+          <button type="submit" name="action" value="program_modify_show_hidden" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Show Hidden</button>
           <p><div id="html_program_modify_message">{{ html_program_modify_message }}</div></p>
           <hr>
           <!-- Check Availability Section -->
@@ -83,12 +84,18 @@
               {% endfor %}
             </div>
           {% endif %}
-          <!-- Title & Release Year Section -->
+          <!-- Bookmark Section -->
           {% if html_edit_flag %}
             <label for="field_title">Title:</label>
             <input type="text" id="field_title" name="field_title" value="{{ html_title_selected }}" placeholder="A 'Title' is required..." style="width: calc(40%);">
             <label for="field_release_year">Release Year:</label>
             <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected}}" placeholder="Enter year (i.e., 2024)" style="width: calc(15%);">
+            <label for="field_bookmark_action">Bookmark Action:</label>
+            <select name="field_bookmark_action" id="field_bookmark_action">
+              {% for html_bookmark_action in html_bookmark_actions %}
+                <option {% if html_bookmark_action_selected == html_bookmark_action %}selected{% endif %}>{{ html_bookmark_action }}</option>
+              {% endfor %}
+            </select>
             <hr>
           {% endif %}
           <!-- START: Looping for Bookmarks Statuses Selected -->
@@ -252,8 +259,10 @@
           <!-- Save / Cancel Section -->
           {% if html_edit_flag %}
             <hr>
-            <button type="submit" name="action" value="program_modify_save" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_save_cancel()">Save</button>
-            <button type="submit" name="action" value="program_modify_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_save_cancel()">Finish / Cancel</button>
+            <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
+              <button type="submit" name="action" value="program_modify_save" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_save_cancel()">Save</button>
+              <button type="submit" name="action" value="program_modify_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_save_cancel()">Finish / Cancel</button>
+            </div>
             <script>
               let allowNavigate_save_cancel = false;
         
@@ -269,6 +278,18 @@
             </script>
           {% endif %}
         </form>
+      </div>
+    </div>
+    <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="loadingModalLabel">Processing</h5>
+          </div>
+          <div class="modal-body">
+            Please wait while the process completes...
+          </div>
+        </div>
       </div>
     </div>
 
@@ -373,6 +394,40 @@
     function toggleSeasonTextBoxes(season, source) {
       document.querySelectorAll('input.' + season).forEach(textbox => textbox.value = source.value);
     }
+  });
+</script>
+<!-- Processing Box -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('process-form').addEventListener('submit', function(event) {
+      console.log("Form submitted"); // Debugging
+
+      // Wait for a short delay to ensure the form submission is not blocked
+      setTimeout(() => {
+        // Ensure the modal element exists
+        const modalElement = document.getElementById('loadingModal');
+        if (!modalElement) {
+          console.error('Modal element not found!');
+          return;
+        }
+
+        // Show the modal
+        const loadingModal = new bootstrap.Modal(modalElement, {
+          backdrop: 'static',
+          keyboard: false
+        });
+        console.log("Showing modal"); // Debugging
+        loadingModal.show();
+
+        // Disable all navigation links
+        document.querySelectorAll('a').forEach(element => {
+          element.setAttribute('disabled', 'true');
+          element.addEventListener('click', function(event) {
+            event.preventDefault();
+          });
+        });
+      }, 500); // Adjust the delay as needed
+    });
   });
 </script>
 {% endblock javascripts %}

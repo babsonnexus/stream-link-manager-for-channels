@@ -142,24 +142,30 @@
           <input type="hidden" id="streaming_services" name="streaming_services">
           <hr>
           <!-- Search Defaults -->
-          <h4 id="search_defaults_anchor">Search Defaults</h4>
-          <label for="country_code">Country Code:</label>
-          <select name="country_code" id="country_code"  style="width: calc(13%);">
+          <div class="search-defaults-container" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px;">
+            <h4 id="search_defaults_anchor" style="flex-basis: 100%;">Search Defaults</h4>
+            <label for="country_code" style="margin-top: 8px;">Country Code:</label>
+            <select name="country_code" id="country_code" style="width: calc(13%);">
               {% for country_code_item in html_valid_country_codes %}
-                  <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %}>{{ country_code_item }}</option>
+                <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %}>{{ country_code_item }}</option>
               {% endfor %}
-          </select>
-          <label for="language_code">Language Code:</label>
-          <select name="language_code" id="language_code"  style="width: calc(13%);">
+            </select>
+            <label for="language_code" style="margin-left: 15px; margin-top: 8px;">Language Code:</label>
+            <select name="language_code" id="language_code" style="width: calc(13%);">
               {% for language_code_item in html_valid_language_codes %}
-                  <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %}>{{ language_code_item }}</option>
+                <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %}>{{ language_code_item }}</option>
               {% endfor %}
-          </select>
-          <label for="num_results">Number of Results:</label>
-          <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(13%);">
-          <button type="submit" name="action" value="search_defaults_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
-          <button type="submit" name="action" value="search_defaults_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
-          <p><div id="search_defaults_message">{{ html_search_defaults_message }}</div></p>
+            </select>
+            <label for="num_results" style="margin-left: 15px; margin-top: 8px;">Number of Results:</label>
+            <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(13%);">
+            <span class="form-check form-switch ps-0 is-filled" style="display: flex; align-items: center; width: calc(13%);">
+              <label class="form-check-label text-body text-truncate w-80 mb-0" for="hide_bookmarked" style="margin-right: 5px; margin-left: 15px;">Hide Bookmarked</label>
+              <input type="checkbox" class="form-check-input" id="hide_bookmarked" name="hide_bookmarked" {% if html_hide_bookmarked == "On" %}checked{% endif %}>
+            </span>
+            <button type="submit" name="action" value="search_defaults_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
+            <button type="submit" name="action" value="search_defaults_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
+            <p><div id="search_defaults_message">{{ html_search_defaults_message }}</div></p>
+          </div>
           <hr>
           <!-- Stream Link Mappings -->
           <h4 id="slmapping_anchor">Stream Link Mappings</h4>
@@ -236,19 +242,20 @@
                 <input type="text" id="slmapping_replace_string_new" name="slmapping_replace_string_new">
               </div>
               <div class="grid-item">
-                <button type="submit" name="action" value="slmapping_action_new" class="btn bg-gradient-primary my-2 mb-2">Add</button>
+                <button type="submit" name="action" value="slmapping_action_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
               </div>
             </div>
-            <button type="submit" name="action" value="slmapping_action_save" class="btn bg-gradient-primary w-25 my-2 mb-2">Save</button>
+            <button type="submit" name="action" value="slmapping_action_save" class="btn bg-gradient-primary w-25 my-2 mb-2" disabled>Save</button>
             <button type="submit" name="action" value="slmapping_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
           </div>
           <hr>
           <!-- Scheduler -->
           <h4 id="scheduler_anchor">Scheduler</h4>
+          <p><em>WARNING: A buffer of at least 1 minute is required between automated processes, otherwise they may not run</em></p>
           <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
             <div class="form-check form-switch ps-0 is-filled">
               <input type="checkbox" class="form-check-input ms-auto" id="auto_update_schedule" name="auto_update_schedule" {% if html_auto_update_schedule == "On" %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule">End-to-End Process</label>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule">Stream Links/Files: End-to-End Process</label>
             </div>
             <div>
               <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule_time">Run at:</label>
@@ -259,6 +266,44 @@
               <button type="submit" name="action" value="end_to_end_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
             </div>
           </div>
+          {% if html_slm_playlist_manager %}
+            <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top;">
+              <div class="form-check form-switch ps-0 is-filled">
+                <input type="checkbox" class="form-check-input ms-auto" id="plm_update_stations_schedule" name="plm_update_stations_schedule" {% if html_plm_update_stations_schedule == "On" %}checked{% endif %}>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_stations_schedule">Playlist Manager: Update Station List</label>
+              </div>
+              <div>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_stations_schedule_time">Run at:</label>
+                <input type="time" id="plm_update_stations_schedule_time" name="plm_update_stations_schedule_time" value="{{ html_plm_update_stations_schedule_time }}" class="ms-3">
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                <button type="submit" name="action" value="plm_update_stations_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+                <button type="submit" name="action" value="plm_update_stations_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
+              </div>
+            </div>
+            <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top;">
+              <div class="form-check form-switch ps-0 is-filled">
+                <input type="checkbox" class="form-check-input ms-auto" id="plm_update_m3us_epgs_schedule" name="plm_update_m3us_epgs_schedule" {% if html_plm_update_m3us_epgs_schedule == "On" %}checked{% endif %}>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_m3us_epgs_schedule">Playlist Manager: Update m3u(s) & XML EPG(s)</label>
+              </div>
+              <div>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_m3us_epgs_schedule_time">Start at:</label>
+                <input type="time" id="plm_update_m3us_epgs_schedule_time" name="plm_update_m3us_epgs_schedule_time" value="{{ html_plm_update_m3us_epgs_schedule_time }}" class="ms-3">
+              </div>
+              <div style="margin-top: 10px;">
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_m3us_epgs_schedule_frequency">And run:</label>
+                <select name="plm_update_m3us_epgs_schedule_frequency" id="plm_update_m3us_epgs_schedule_frequency" style="margin-left: 15px;">
+                  {% for html_plm_m3us_epgs_schedule_frequency in html_plm_m3us_epgs_schedule_frequencies %}
+                    <option value="{{ html_plm_m3us_epgs_schedule_frequency }}" {% if html_plm_m3us_epgs_schedule_frequency == html_plm_update_m3us_epgs_schedule_frequency %}selected{% endif %}>{{ html_plm_m3us_epgs_schedule_frequency }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                <button type="submit" name="action" value="plm_update_m3us_epgs_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+                <button type="submit" name="action" value="plm_update_m3us_epgs_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
+              </div>
+            </div>
+          {% endif %}
           <hr>
           <!-- Channels URL -->
           <h4 id="channels_url_anchor">Channels URL</h4>
@@ -291,7 +336,8 @@
           <hr>
           <!-- Advanced / Experimental -->
           <h4 id="advanced_experimental_anchor">Advanced / Experimental</h4>
-          <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
+          <p><div id="html_advanced_experimental_message">{{ html_advanced_experimental_message }}</div></p>
+          <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top;">
             <div class="form-check form-switch ps-0 is-filled">
               <input type="checkbox" class="form-check-input ms-auto" id="channels_prune" name="channels_prune" {% if html_channels_prune == "On" %}checked{% endif %}>
               <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_prune">Run 'Prune' function in Channels</label>
@@ -299,6 +345,24 @@
             <div style="display: flex; justify-content: space-between; margin-top: 10px;">
               <button type="submit" name="action" value="channels_prune_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
               <button type="submit" name="action" value="channels_prune_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
+            </div>
+          </div>
+          <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top;">
+            <div class="form-check form-switch ps-0 is-filled">
+              <input type="checkbox" class="form-check-input ms-auto" id="playlist_manager" name="playlist_manager" {% if html_slm_playlist_manager %}checked{% endif %}>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="playlist_manager">Use Playlist Manager</label>
+            </div>
+            <div>
+              <label for="station_start_number" style="margin-left: 15px; margin-top: 8px; margin-right: 10px;">Station Start Number:</label>
+              <input type="text" id="station_start_number" name="station_start_number" value="{{ html_station_start_number }}">
+            </div>
+            <div>
+              <label for="max_stations" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Max Stations per m3u:</label>
+              <input type="text" id="max_stations" name="max_stations" value="{{ html_max_stations }}">
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+              <button type="submit" name="action" value="playlist_manager_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+              <button type="submit" name="action" value="playlist_manager_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
             </div>
           </div>
           <hr>
@@ -449,6 +513,47 @@
       if (anchorId) {
           window.location.hash = anchorId;
       }
+  });
+</script>
+<!-- Stream Link Mapping Buttons -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const addButton = document.querySelector('button[name="action"][value="slmapping_action_new"]');
+    const saveButton = document.querySelector('button[name="action"][value="slmapping_action_save"]');
+
+    const checkNewInputs = () => {
+      const newName = document.getElementById('slmapping_contains_string_new').value.trim();
+      const newUrl = document.getElementById('slmapping_replace_string_new').value.trim();
+      addButton.disabled = !newName || !newUrl;
+    };
+
+    const checkExistingInputs = () => {
+      let allValid = true;
+      let hasExistingRecords = false;
+      document.querySelectorAll('input[id^="slmapping_contains_string_"]').forEach(input => {
+        if (input.id.includes('_new')) return;
+        hasExistingRecords = true;
+        if (!input.value.trim()) allValid = false;
+      });
+      document.querySelectorAll('input[id^="slmapping_replace_string_"]').forEach(input => {
+        if (input.id.includes('_new')) return;
+        hasExistingRecords = true;
+        if (!input.value.trim()) allValid = false;
+      });
+      saveButton.disabled = !allValid || !hasExistingRecords;
+    };
+
+    document.getElementById('slmapping_contains_string_new').addEventListener('input', checkNewInputs);
+    document.getElementById('slmapping_replace_string_new').addEventListener('input', checkNewInputs);
+
+    document.querySelectorAll('input[id^="slmapping_contains_string_"], input[id^="slmapping_replace_string_"]').forEach(input => {
+      if (!input.id.includes('_new')) {
+        input.addEventListener('input', checkExistingInputs);
+      }
+    });
+
+    checkNewInputs();
+    checkExistingInputs(); // Ensure initial state is checked
   });
 </script>
 {% endblock javascripts %}

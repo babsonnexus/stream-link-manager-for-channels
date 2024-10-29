@@ -69,20 +69,26 @@
           <!-- Search / Manual Options -->
           <div class="settings-box" style="width: calc(55%); display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
             <h6 style="text-align: center;">Search Options</h6>
-            <label for="country_code">Country Code:</label>
-            <select name="country_code" id="country_code"  style="width: calc(13%);">
-                {% for country_code_item in html_valid_country_codes %}
-                    <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %}>{{ country_code_item }}</option>
-                {% endfor %}
-            </select>
-            <label for="language_code">Language Code:</label>
-            <select name="language_code" id="language_code"  style="width: calc(13%);">
-                {% for language_code_item in html_valid_language_codes %}
-                    <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %}>{{ language_code_item }}</option>
-                {% endfor %}
-            </select>
-            <label for="num_results">Number of Results:</label>
-            <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(13%);">
+            <div class="search-defaults-container" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px;">
+              <label for="country_code" style="margin-top: 8px;">Country Code:</label>
+              <select name="country_code" id="country_code" style="width: calc(10%);">
+                  {% for country_code_item in html_valid_country_codes %}
+                      <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %}>{{ country_code_item }}</option>
+                  {% endfor %}
+              </select>
+              <label for="language_code" style="margin-left: 15px; margin-top: 8px;">Language Code:</label>
+              <select name="language_code" id="language_code" style="width: calc(10%);">
+                  {% for language_code_item in html_valid_language_codes %}
+                      <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %}>{{ language_code_item }}</option>
+                  {% endfor %}
+              </select>
+              <label for="num_results" style="margin-left: 15px; margin-top: 8px;">Number of Results:</label>
+              <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(10%);">
+              <span class="form-check form-switch ps-0 is-filled" style="display: flex; align-items: center; width: calc(21%);">
+                <label class="form-check-label text-body text-truncate w-80 mb-0" for="hide_bookmarked" style="margin-left: 15px;">Hide Bookmarked</label>
+                <input type="checkbox" class="form-check-input" id="hide_bookmarked" name="hide_bookmarked" {% if html_hide_bookmarked == "On" %}checked{% endif %}>
+              </span>
+            </div>
           </div>
           <div class="settings-box" style="width: calc(40%); display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
             <h6 style="text-align: center;">Manual Options</h6>
@@ -131,7 +137,7 @@
                 </div>
               {% endif %}
               {% for program in html_program_search_results %}
-                <button type="submit" name="action" class="btn bg-gradient-primary w-60 my-2 mb-2" value="program_search_result_{{ loop.index }}">
+                <button type="submit" name="action" class="btn bg-gradient-primary w-55 my-2 mb-2" value="program_search_result_{{ loop.index }}" style="margin-left: calc(5%);">
                   <img src="{{ program.poster }}" class="program-poster" alt="Poster">
                   <div class="program-content">
                     <div style="font-size: 2em;">{{ program.title }} ({{ program.release_year }}) | {{ program.object_type }}</div>
@@ -152,7 +158,8 @@
                       {% endfor %}
                     </div>
                   </div>
-                </button>              
+                </button>
+                <button type="submit" name="action" class="btn bg-gradient-primary w-5 my-2 mb-2" value="hide_program_search_result_{{ loop.index }}">Hide</button>
                 <!-- Spacer row -->
                 <div class="row">
                   <div class="col-12 my-2"></div>
@@ -225,6 +232,22 @@
                   document.getElementById('season_episode_manual_next').disabled = !allFilled;
                 }
               </script>
+            {% endif %}
+          </div>
+          <!-- Bookmark Section -->
+          <div>
+            {% if html_done_generate_flag %}
+              <label for="field_title">Title:</label>
+              <input type="text" id="field_title" name="field_title" value="{{ html_title_selected }}" placeholder="A 'Title' is required..." style="width: calc(40%);">
+              <label for="field_release_year">Release Year:</label>
+              <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected}}" placeholder="Enter year (i.e., 2024)" style="width: calc(15%);">
+              <label for="field_bookmark_action">Bookmark Action:</label>
+              <select name="field_bookmark_action" id="field_bookmark_action">
+                {% for html_bookmark_action in html_bookmark_actions %}
+                  <option {% if html_bookmark_action_selected == html_bookmark_action %}selected{% endif %}>{{ html_bookmark_action }}</option>
+                {% endfor %}
+              </select>
+              <hr>
             {% endif %}
           </div>
           <!-- Selected Movie Options -->
@@ -352,42 +375,42 @@
             {% endif %}
           </div>
           <!-- Display Done / Generate Stream Link Buttons -->
-          <div>
-            {% if html_done_generate_flag %}
+          {% if html_done_generate_flag %}
+            <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
               <button type="submit" name="action" value="program_add_done" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Done</button>
               <button type="submit" name="action" value="program_add_generate" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Generate Stream Links</button>
-              <hr>
-              <h4 style="text-align: center;" for="log-output">Live Process Log (While Running)</h4>
-              <pre style="white-space: pre; overflow-x: auto; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll;">
-                <div id="log-output" style="text-align: left; white-space: pre-wrap;"></div>
-              </pre>
-              <hr>
-              <script>
-                let allowNavigate_done_generate = false;
-          
-                function allowNavigation_done_generate() {
-                  allowNavigate_done_generate = true;
+            </div>
+            <hr>
+            <h4 style="text-align: center;" for="log-output">Live Process Log (While Running)</h4>
+            <pre style="white-space: pre; overflow-x: auto; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll;">
+              <div id="log-output" style="text-align: left; white-space: pre-wrap;"></div>
+            </pre>
+            <hr>
+            <script>
+              let allowNavigate_done_generate = false;
+        
+              function allowNavigation_done_generate() {
+                allowNavigate_done_generate = true;
+              }
+        
+              window.onbeforeunload = function() {
+                if (!allowNavigate_done_generate) {
+                  return "WARNING: Do not navigate away before selecting 'Done' or 'Generate Stream Links' as your program may not be saved correctly.";
                 }
-          
-                window.onbeforeunload = function() {
-                  if (!allowNavigate_done_generate) {
-                    return "WARNING: Do not navigate away before selecting 'Done' or 'Generate Stream Links' as your program may not be saved correctly.";
-                  }
-                };
-              </script>
-            {% endif %}
-          </div>
+              };
+            </script>
+          {% endif %}
         </form>
       </div>
     </div>
-    <div class="modal" id="loadingModal" tabindex="-1" role="dialog">
-      <div class="modal-dialog" role="document">
+    <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Process Running</h5>
+            <h5 class="modal-title" id="loadingModalLabel">Processing</h5>
           </div>
           <div class="modal-body">
-            <p>Please wait while the process is running. Do not navigate away from this page.</p>
+            Please wait while the process completes...
           </div>
         </div>
       </div>

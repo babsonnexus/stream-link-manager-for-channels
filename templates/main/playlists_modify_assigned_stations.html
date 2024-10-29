@@ -1,0 +1,180 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Playlists (BETA) {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<style> 
+  .child_to_parents .grid-container {
+      display: grid;
+      grid-template-columns: 2fr 1fr 3fr 3fr 1fr 1fr;
+      gap: 10px;
+  }
+
+  .grid-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+  }
+
+  .form-check {
+      display: flex;
+      align-items: center;
+      gap: 3.5em; /* Adjust the gap as needed */
+  }
+
+  .form-check-label {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+  }
+
+  .form-check-input {
+      flex-shrink: 0;
+  }
+
+  input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+  }
+
+  .btn {
+      width: 100%;
+      box-sizing: border-box;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="container-fluid py-4"></div>
+  <div class="row min-vh-80 h-100">
+    <div class="col-12">
+      <form method="POST" action="/playlists/modify_assigned_stations" id="process-form">
+        <!-- Playlist Manger Navigation -->
+        <div style="width: 90%; border: 1px solid black; padding: 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto;">
+          <h3>Playlist Manager Navigation</h3>
+          <div style="width: 100%; display: flex; flex-wrap: wrap; justify-content: space-around; gap: 10px;">
+              <a href="/playlists" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Main Page</a>
+              <a href="/playlists/modify_assigned_stations" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Modify Assigned Stations</a>
+              <a href="/playlists/parent_stations" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Parent Stations</a>
+              <a href="/playlists/manage" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Manage Playlists</a>
+          </div>
+        </div>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
+        <!-- Modify Assigned Stations -->
+        <h4 id="assigned_child_to_parents_anchor" style="margin: 0;">Modify Assigned Stations</h4>
+        <div class="child_to_parents container-fluid">
+          <div class="grid-container" style="text-align: center;">
+            <div class="grid-item"><h6>Station Name</h6></div>
+            <div class="grid-item"><h6>Playlist [ID]</h6></div>
+            <div class="grid-item"><h6>Description</h6></div>
+            <div class="grid-item"><h6>Parent Station</h6></div>
+            <div class="grid-item"><h6>Choice 1</h6></div>
+            <div class="grid-item"><h6>Choice 2</h6></div>
+          </div>
+          {% for item in html_assigned_child_to_parents %}
+            <input type="hidden" name="assigned_child_to_parents_channel_id_{{ loop.index }}" id="assigned_child_to_parents_channel_id_{{ loop.index }}" value="{{ item.channel_id }}">
+            <div class="grid-container">
+              <div class="grid-item">
+                <input type="text" id="assigned_child_to_parents_title_{{ loop.index }}" name="assigned_child_to_parents_title_{{ loop.index }}" value="{{ item.title }}" readonly style="background-color: #d1cdcde5;">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="assigned_child_to_parents_m3u_name_{{ loop.index }}" name="assigned_child_to_parents_m3u_name_{{ loop.index }}" value="{{ item.m3u_name }}" readonly style="background-color: #d1cdcde5;">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="assigned_child_to_parents_description_{{ loop.index }}" name="assigned_child_to_parents_description_{{ loop.index }}" value="{{ item.description }}" readonly style="background-color: #d1cdcde5;">
+              </div>
+              <div class="grid-item">
+                <select name="assigned_child_to_parents_parent_channel_id_{{ loop.index }}" id="assigned_child_to_parents_parent_channel_id_{{ loop.index }}">
+                  {% for html_child_to_parent_mapping in html_child_to_parent_mappings %}
+                    <option value="{{ html_child_to_parent_mapping.parent_channel_id }}" {% if html_child_to_parent_mapping.parent_channel_id == item.parent_channel_id %}selected{% endif %}>{{ html_child_to_parent_mapping.parent_title }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="grid-item">
+                <button type="submit" name="action" value="assigned_child_to_parents_action_set_parent_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Set Parent</button>
+              </div>
+              <div class="grid-item">
+                <button type="submit" name="action" value="assigned_child_to_parents_action_make_parent_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Make Parent</button>
+              </div>
+            </div>
+          {% endfor %}
+          <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
+            <button type="submit" name="action" value="assigned_child_to_parents_action_save_all" class="btn bg-gradient-primary w-25 my-2 mb-2">Save All</button>
+            <button type="submit" name="action" value="assigned_child_to_parents_action_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="loadingModalLabel">Processing</h5>
+        </div>
+        <div class="modal-body">
+          Please wait while the process completes...
+        </div>
+      </div>
+    </div>
+  </div>
+
+    {% include 'includes/footer.html' %}
+
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<!-- Anchor ID -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const anchorId = "{{ html_playlists_anchor_id }}";
+      if (anchorId) {
+          window.location.hash = anchorId;
+      }
+  });
+</script>
+<!-- Processing Box -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('process-form').addEventListener('submit', function(event) {
+      console.log("Form submitted"); // Debugging
+
+      // Wait for a short delay to ensure the form submission is not blocked
+      setTimeout(() => {
+        // Ensure the modal element exists
+        const modalElement = document.getElementById('loadingModal');
+        if (!modalElement) {
+          console.error('Modal element not found!');
+          return;
+        }
+
+        // Show the modal
+        const loadingModal = new bootstrap.Modal(modalElement, {
+          backdrop: 'static',
+          keyboard: false
+        });
+        console.log("Showing modal"); // Debugging
+        loadingModal.show();
+
+        // Disable all navigation links
+        document.querySelectorAll('a').forEach(element => {
+          element.setAttribute('disabled', 'true');
+          element.addEventListener('click', function(event) {
+            event.preventDefault();
+          });
+        });
+      }, 500); // Adjust the delay as needed
+    });
+  });
+</script>
+{% endblock javascripts %}

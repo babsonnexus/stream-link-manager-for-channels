@@ -25,6 +25,7 @@
     border-radius: 0.25em;
     cursor: pointer;
     margin-right: 1em;
+    margin-left: 10px;
     box-shadow: 0 3px 3px 0 rgba(76, 37, 136, 0.15), 0 3px 1px -2px rgba(76, 37, 136, 0.2), 0 1px 5px 0 rgba(76, 37, 136, 0.15);
   }
 
@@ -235,59 +236,21 @@
     <div class="row min-vh-80 h-100 justify-content-center">
       <form method="POST" action="/files" id="process-form" enctype="multipart/form-data">
         <div class="row min-vh-25 h-100 justify-content-center">
-          <div style="width: 20%">
-            <h4 class="file_header">Settings</h4>
-            <button type="submit" name="action" value="view_settings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">View</button>
-            <button type="submit" name="action" value="export_settings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Export</button>
-            <button type="submit" name="action" value="replace_settings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Replace</button>
+          <div style="width: 80%;">
             <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
-              <label for="file_settings">Browse...</label>
-              <input type="file" id="file_settings" name="file_settings" class="form-control" onchange="document.getElementById('file_file_settings').textContent = this.files[0].name">
-              <div id="file_file_settings" class="file-name">No file chosen</div>
+              <select name="select_file" id="select_file" style="width: calc(60%);">
+                {% for html_file_list in html_file_lists %}
+                  <option value="{{ html_file_list.file_name }}" {% if html_select_file_prior == html_file_list.file_name %}selected{% endif %}>{{ html_file_list.file_name }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" name="action" value="view_file" class="btn bg-gradient-primary w-20 h-15 my-2 mb-2" style="margin-left: 10px;">View</button>
+              <button type="submit" name="action" value="export_file" class="btn bg-gradient-primary w-20 h-15 my-2 mb-2" style="margin-left: 10px;">Export</button>
             </div>
-          </div>
-          <div style="width: 20%">
-            <h4 class="file_header">Streaming Services</h4>
-            <button type="submit" name="action" value="view_streaming_services" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">View</button>
-            <button type="submit" name="action" value="export_streaming_services" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Export</button>
-            <button type="submit" name="action" value="replace_streaming_services" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Replace</button>
             <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
-              <label for="file_streaming_services">Browse...</label>
-              <input type="file" id="file_streaming_services" name="file_streaming_services" class="form-control" onchange="document.getElementById('file_file_streaming_services').textContent = this.files[0].name">
-              <div id="file_file_streaming_services" class="file-name">No file chosen</div>
-            </div>
-          </div>
-          <div style="width: 20%">
-            <h4 class="file_header">Stream Link Mappings</h4>
-            <button type="submit" name="action" value="view_slmappings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">View</button>
-            <button type="submit" name="action" value="export_slmappings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Export</button>
-            <button type="submit" name="action" value="replace_slmappings" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Replace</button>
-            <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
-              <label for="file_slmappings">Browse...</label>
-              <input type="file" id="file_slmappings" name="file_slmappings" class="form-control" onchange="document.getElementById('file_file_slmappings').textContent = this.files[0].name">
-              <div id="file_file_slmappings" class="file-name">No file chosen</div>
-            </div>
-          </div>
-          <div style="width: 20%">
-            <h4 class="file_header">Bookmarks</h4>
-            <button type="submit" name="action" value="view_bookmarks" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">View</button>
-            <button type="submit" name="action" value="export_bookmarks" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Export</button>
-            <button type="submit" name="action" value="replace_bookmarks" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Replace</button>
-            <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
-              <label for="file_bookmarks">Browse...</label>
-              <input type="file" id="file_bookmarks" name="file_bookmarks" class="form-control" onchange="document.getElementById('file_file_bookmarks').textContent = this.files[0].name">
-              <div id="file_file_bookmarks" class="file-name">No file chosen</div>
-            </div>
-          </div>
-          <div style="width: 20%">
-            <h4 class="file_header">Bookmarks Statuses</h4>
-            <button type="submit" name="action" value="view_bookmarks_statuses" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">View</button>
-            <button type="submit" name="action" value="export_bookmarks_statuses" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Export</button>
-            <button type="submit" name="action" value="replace_bookmarks_statuses" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Replace</button>
-            <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
-              <label for="file_bookmarks_statuses">Browse...</label>
-              <input type="file" id="file_bookmarks_statuses" name="file_bookmarks_statuses" class="form-control" onchange="document.getElementById('file_file_bookmarks_statuses').textContent = this.files[0].name">
-              <div id="file_file_bookmarks_statuses" class="file-name">No file chosen</div>
+              <button type="submit" name="action" value="replace_file" class="btn bg-gradient-primary w-20 h-15 my-2 mb-2" style="margin-right: 10px;">Replace</button>
+              <input type="file" id="file_file" name="file_file" class="form-control" onchange="document.getElementById('file_file_file').textContent = this.files[0].name">
+              <div id="file_file_file" class="file-name">No file chosen</div>
+              <label for="file_file">Browse...</label>
             </div>
           </div>
         </div>

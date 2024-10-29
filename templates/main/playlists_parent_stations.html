@@ -1,0 +1,253 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Playlists (BETA) {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<style> 
+  .parents .grid-container {
+      display: grid;
+      grid-template-columns: 3fr 1fr 2fr 1fr 1fr 2fr 1fr;
+      gap: 10px;
+  }
+
+  .grid-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+  }
+
+  .form-check {
+      display: flex;
+      align-items: center;
+      gap: 3.5em; /* Adjust the gap as needed */
+  }
+
+  .form-check-label {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+  }
+
+  .form-check-input {
+      flex-shrink: 0;
+  }
+
+  input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+  }
+
+  .btn {
+      width: 100%;
+      box-sizing: border-box;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="container-fluid py-4"></div>
+  <div class="row min-vh-80 h-100">
+    <div class="col-12">
+      <form method="POST" action="/playlists/parent_stations" id="process-form">
+        <!-- Playlist Manger Navigation -->
+        <div style="width: 90%; border: 1px solid black; padding: 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto;">
+          <h3>Playlist Manager Navigation</h3>
+          <div style="width: 100%; display: flex; flex-wrap: wrap; justify-content: space-around; gap: 10px;">
+              <a href="/playlists" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Main Page</a>
+              <a href="/playlists/modify_assigned_stations" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Modify Assigned Stations</a>
+              <a href="/playlists/parent_stations" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Parent Stations</a>
+              <a href="/playlists/manage" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Manage Playlists</a>
+          </div>
+        </div>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
+        <!-- Manage Parent Stations -->
+        <h4 id="parents_anchor" style="margin: 0;">Manage Parent Stations</h4>
+        <div class="parents container-fluid">
+          <div class="grid-container" style="text-align: center;">
+            <div class="grid-item"><h6>Station Name</h6></div>
+            <div class="grid-item"><h6>[OPTIONAL]<br>Alternate XML EPG Guide ID (tvg-id)<br>Override</h6></div>
+            <div class="grid-item"><h6>[OPTIONAL]<br>Guide Logo (tvg-logo)<br>Override</h6></div>
+            <div class="grid-item"><h6>[OPTIONAL]<br>Channel Number (channel-number | tvg-chno)<br>Override</h6></div>
+            <div class="grid-item"><h6>[OPTIONAL]<br>Gracenote ID (tvc-guide-stationid)<br>Override</h6></div>
+            <div class="grid-item"><h6>Preferred Playlist</h6></div>
+            <div class="grid-item"><h6>Action</h6></div>
+          </div>
+          {% for item in html_parents %}
+            <input type="hidden" name="parents_parent_channel_id_{{ loop.index }}" id="parents_parent_channel_id_{{ loop.index }}" value="{{ item.parent_channel_id }}">
+            <div class="grid-container">
+              <div class="grid-item">
+                <input type="text" id="parents_parent_title_{{ loop.index }}" name="parents_parent_title_{{ loop.index }}" value="{{ item.parent_title }}">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="parents_parent_tvg_id_override_{{ loop.index }}" name="parents_parent_tvg_id_override_{{ loop.index }}" value="{{ item.parent_tvg_id_override }}">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="parents_parent_tvg_logo_override_{{ loop.index }}" name="parents_parent_tvg_logo_override_{{ loop.index }}" value="{{ item.parent_tvg_logo_override }}">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="parents_parent_channel_number_override_{{ loop.index }}" name="parents_parent_channel_number_override_{{ loop.index }}" value="{{ item.parent_channel_number_override }}">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="parents_parent_tvc_guide_stationid_override_{{ loop.index }}" name="parents_parent_tvc_guide_stationid_override_{{ loop.index }}" value="{{ item.parent_tvc_guide_stationid_override }}">
+              </div>
+              <div class="grid-item">
+                <select name="parents_parent_preferred_playlist_{{ loop.index }}" id="parents_parent_preferred_playlist_{{ loop.index }}">
+                  {% for html_preferred_playlist in html_preferred_playlists %}
+                    <option value="{{ html_preferred_playlist.m3u_id }}" {% if html_preferred_playlist.m3u_id == item.parent_preferred_playlist %}selected{% endif %}>{{ html_preferred_playlist.prefer_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="grid-item">
+                <button type="submit" name="action" value="parents_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
+              </div>
+            </div>
+            <input type="hidden" name="parents_m3u_priority_{{ loop.index }}" id="parents_m3u_priority_{{ loop.index }}" value="{{ item.m3u_priority }}">
+          {% endfor %}
+          <div class="grid-container">
+            <div class="grid-item">
+              <input type="text" id="parents_parent_title_new" name="parents_parent_title_new" placeholder="i.e., The Pet Collective">
+            </div>
+            <div class="grid-item">
+              <input type="text" id="parents_parent_tvg_id_override_new" name="parents_parent_tvg_id_override_new" placeholder="i.e., r4nd0m35tr1ng0fl3tt3r54ndnum83r5">
+            </div>
+            <div class="grid-item">
+              <input type="text" id="parents_parent_tvg_logo_override_new" name="parents_parent_tvg_logo_override_new" placeholder="i.e., https://somewebsite.com/thepetcollectivelogo.png">
+            </div>
+            <div class="grid-item">
+              <input type="text" id="parents_parent_channel_number_override_new" name="parents_parent_channel_number_override_new" placeholder="i.e., 9876">
+            </div>
+            <div class="grid-item">
+              <input type="text" id="parents_parent_tvc_guide_stationid_override_new" name="parents_parent_tvc_guide_stationid_override_new" placeholder="i.e., 121165">
+            </div>
+            <div class="grid-item">
+              <select name="parents_parent_preferred_playlist_new" id="parents_parent_preferred_playlist_new">
+                {% for html_preferred_playlist in html_preferred_playlists %}
+                  <option value="{{ html_preferred_playlist.m3u_id }}" {% if loop.first %}selected{% endif %}>{{ html_preferred_playlist.prefer_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="grid-item">
+              <button type="submit" name="action" value="parents_action_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
+            </div>
+          </div>
+          <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
+            <button type="submit" name="action" value="parents_action_save" class="btn bg-gradient-primary w-25 my-2 mb-2" disabled>Save</button>
+            <button type="submit" name="action" value="parents_action_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="loadingModalLabel">Processing</h5>
+        </div>
+        <div class="modal-body">
+          Please wait while the process completes...
+        </div>
+      </div>
+    </div>
+  </div>
+
+    {% include 'includes/footer.html' %}
+
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<!-- Anchor ID -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const anchorId = "{{ html_playlists_anchor_id }}";
+      if (anchorId) {
+          window.location.hash = anchorId;
+      }
+  });
+</script>
+<!-- Processing Box -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('process-form').addEventListener('submit', function(event) {
+      console.log("Form submitted"); // Debugging
+
+      // Wait for a short delay to ensure the form submission is not blocked
+      setTimeout(() => {
+        // Ensure the modal element exists
+        const modalElement = document.getElementById('loadingModal');
+        if (!modalElement) {
+          console.error('Modal element not found!');
+          return;
+        }
+
+        // Show the modal
+        const loadingModal = new bootstrap.Modal(modalElement, {
+          backdrop: 'static',
+          keyboard: false
+        });
+        console.log("Showing modal"); // Debugging
+        loadingModal.show();
+
+        // Disable all navigation links
+        document.querySelectorAll('a').forEach(element => {
+          element.setAttribute('disabled', 'true');
+          element.addEventListener('click', function(event) {
+            event.preventDefault();
+          });
+        });
+      }, 500); // Adjust the delay as needed
+    });
+  });
+</script>
+<!-- Parents Buttons -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const addButton = document.querySelector('button[name="action"][value="parents_action_new"]');
+    const saveButton = document.querySelector('button[name="action"][value="parents_action_save"]');
+
+    const checkNewInputs = () => {
+      const newParentTitle = document.getElementById('parents_parent_title_new').value.trim();
+      const newParentPreferredPlaylist = document.getElementById('parents_parent_preferred_playlist_new').value.trim();
+      addButton.disabled = !newParentTitle || !newParentPreferredPlaylist;
+    };
+
+    const checkExistingInputs = () => {
+      let allValid = true;
+      let hasExistingRecords = false;
+      document.querySelectorAll('input[id^="parents_parent_title_"]').forEach(input => {
+        if (input.id.includes('_new')) return;
+        hasExistingRecords = true;
+        if (!input.value.trim()) allValid = false;
+      });
+      document.querySelectorAll('input[id^="parents_parent_preferred_playlist_"]').forEach(input => {
+        if (input.id.includes('_new')) return;
+        hasExistingRecords = true;
+        if (!input.value.trim()) allValid = false;
+      });
+      saveButton.disabled = !allValid || !hasExistingRecords;
+    };
+
+    document.getElementById('parents_parent_title_new').addEventListener('input', checkNewInputs);
+    document.getElementById('parents_parent_preferred_playlist_new').addEventListener('input', checkNewInputs);
+
+    document.querySelectorAll('input[id^="parents_parent_title_"], input[id^="parents_parent_preferred_playlist_"]').forEach(input => {
+      if (!input.id.includes('_new')) {
+        input.addEventListener('input', checkExistingInputs);
+      }
+    });
+
+    checkNewInputs();
+    checkExistingInputs(); // Ensure initial state is checked
+  });
+</script>
+{% endblock javascripts %}

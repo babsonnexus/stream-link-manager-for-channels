@@ -1,0 +1,496 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Playlists (BETA) {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<style> 
+  .playlists .grid-container {
+      display: grid;
+      grid-template-columns: 1fr 2fr 3fr 3fr 1fr 1fr;
+      gap: 10px;
+  }
+
+  .uploaded_playlists .grid-container {
+    display: grid;
+      grid-template-columns: 10fr 1fr;
+      gap: 10px;
+  }
+
+  .grid-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+  }
+
+  .form-check {
+      display: flex;
+      align-items: center;
+      gap: 3.5em; /* Adjust the gap as needed */
+  }
+
+  .form-check-label {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+  }
+
+  .form-check-input {
+      flex-shrink: 0;
+  }
+
+  input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+  }
+
+  .btn {
+      width: 100%;
+      box-sizing: border-box;
+  }
+
+  .file-input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 2px solid #4c2588;
+    border-radius: 0.25em;
+    padding: 0.5em;
+    background: linear-gradient(195deg, #6a4ca8 0%, #6a4eaa 100%);
+    margin-left: 1em;
+  }
+
+  .file-input-wrapper input[type="file"] {
+    display: none;
+  }
+
+  .file-input-wrapper label {
+    background: linear-gradient(195deg, #4c2588 0%, #4c278a 100%);
+    color: white;
+    border: none;
+    padding: 0.5em 1em;
+    border-radius: 0.25em;
+    cursor: pointer;
+    margin-right: 1em;
+    margin-left: 10px;
+    box-shadow: 0 3px 3px 0 rgba(76, 37, 136, 0.15), 0 3px 1px -2px rgba(76, 37, 136, 0.2), 0 1px 5px 0 rgba(76, 37, 136, 0.15);
+  }
+
+  .file-input-wrapper label:hover {
+    background-color: #4c2588;
+    border-color: #4c2588;
+    box-shadow: 0 14px 26px -12px rgba(76, 37, 136, 0.4), 0 4px 23px 0 rgba(76, 37, 136, 0.15), 0 8px 10px -5px rgba(76, 37, 136, 0.2);
+  }
+
+  .file-input-wrapper label:focus {
+    color: #fff;
+  }
+
+  .file-input-wrapper .file-name {
+    flex-grow: 1;
+    padding: 0.5em;
+    background: #dcc4ff;
+    border: 2px solid #4c2588;
+    border-radius: 0.25em;
+    color: #4c2588;
+    width: calc(100% - 1em - 2px);
+  }
+
+  .dark-version .file-input-wrapper {
+    background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+    border-color: #2c1a4a;
+  }
+
+  .dark-version .file-input-wrapper label {
+    background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+    color: #ccc;
+    box-shadow: 0 3px 3px 0 rgba(44, 26, 74, 0.15), 0 3px 1px -2px rgba(44, 26, 74, 0.2), 0 1px 5px 0 rgba(44, 26, 74, 0.15);
+  }
+
+  .dark-version .file-input-wrapper label:hover {
+    background-color: #2c1a4a;
+    border-color: #2c1a4a;
+    box-shadow: 0 14px 26px -12px rgba(44, 26, 74, 0.4), 0 4px 23px 0 rgba(44, 26, 74, 0.15), 0 8px 10px -5px rgba(44, 26, 74, 0.2);
+  }
+
+  .dark-version .file-input-wrapper .file-name {
+    background: #3c2a6a;
+    border-color: #2c1a4a;
+    color: #ccc;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="container-fluid py-4"></div>
+  <div class="row min-vh-80 h-100">
+    <div class="col-12">
+      <form method="POST" action="/playlists/manage" id="process-form" enctype="multipart/form-data">
+        <!-- Playlist Manger Navigation -->
+        <div style="width: 90%; border: 1px solid black; padding: 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto;">
+          <h3>Playlist Manager Navigation</h3>
+          <div style="width: 100%; display: flex; flex-wrap: wrap; justify-content: space-around; gap: 10px;">
+              <a href="/playlists" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Main Page</a>
+              <a href="/playlists/modify_assigned_stations" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Modify Assigned Stations</a>
+              <a href="/playlists/parent_stations" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Parent Stations</a>
+              <a href="/playlists/manage" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Manage Playlists</a>
+          </div>
+        </div>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
+        <!-- Prioritize Playlists -->
+        <h4 id="priority_playlists_anchor">Prioritize Playlists</h4>
+        <div class="container">
+          <style>
+            .listbox {
+              width: 400px;
+              height: 300px;
+              overflow-y: scroll;
+              border: 1px solid #ccc;
+            }
+            .container {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+            }
+            .buttons {
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+            }
+            .priority-container {
+              display: flex;
+              align-items: center;
+            }
+            .centered-button {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            }
+            .box-container {
+              border: 1px solid #ccc;
+              padding: 10px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              position: relative;
+              width: 100%;
+              max-width: 482px;
+            }
+            .form-buttons {
+              display: flex;
+              justify-content: center;
+              margin-top: 5px;
+              width: 100%;
+              margin-left: -72px;
+            }
+          </style>
+          <div class="box-container">
+            <div class="priority-container">
+              <div>
+                <select id="priorityList" class="listbox" multiple>
+                  <!-- Priority list options will be populated by JavaScript -->
+                </select>
+              </div>
+              <div class="buttons">
+                <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="playlists_moveUp()">
+                  <i class="material-icons opacity-10">keyboard_arrow_up</i>
+                </button>
+                <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="playlists_moveDown()">
+                  <i class="material-icons opacity-10">keyboard_arrow_down</i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="form-buttons">
+            <button type="submit" name="action" value="priority_playlists_action_save" class="btn bg-gradient-primary w-25 my-2 mb-2" style="margin-right: 2px;">Save</button>
+            <button type="submit" name="action" value="priority_playlists_action_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2" style="margin-left: 2px;">Cancel / Reset</button>
+          </div>
+        </div>
+        <input type="hidden" id="priority_playlists" name="priority_playlists">
+        <hr>
+        <!-- Enter Playlists -->
+        <h4 id="playlists_anchor">Enter Playlists</h4>
+        <p><em>WARNING: It is not recommended to use 'https' as it may result in the link failing to be read.</em></p>
+        <div class="playlists container-fluid">
+          <div class="grid-container" style="text-align: center;">
+            <div class="grid-item"><h6>Active</h6></div>
+            <div class="grid-item"><h6>Name</h6></div>
+            <div class="grid-item"><h6>m3u URL</h6></div>
+            <div class="grid-item"><h6>[OPTIONAL]<br>EPG XML</h6></div>
+            <div class="grid-item"><h6>Stream Format</h6></div>
+            <div class="grid-item"><h6>Action</h6></div>
+          </div>
+          {% for item in html_playlists %}
+            <input type="hidden" name="playlists_m3u_id_{{ loop.index }}" id="playlists_m3u_id_{{ loop.index }}" value="{{ item.m3u_id }}">
+            <div class="grid-container">
+              <div class="grid-item">
+                <div class="form-check form-switch ps-0 is-filled">
+                  <input type="checkbox" id="playlists_m3u_active_{{ loop.index }}" name="playlists_m3u_active_{{ loop.index }}" class="form-check-input" 
+                    {% if item.m3u_active|lower == 'on' %}checked{% endif %} 
+                    onchange="this.value = this.checked ? 'On' : 'Off'" 
+                    value="On">
+                </div>
+              </div>
+              <div class="grid-item">
+                <input type="text" id="playlists_m3u_name_{{ loop.index }}" name="playlists_m3u_name_{{ loop.index }}" value="{{ item.m3u_name }}">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="playlists_m3u_url_{{ loop.index }}" name="playlists_m3u_url_{{ loop.index }}" value="{{ item.m3u_url }}">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="playlists_epg_xml_{{ loop.index }}" name="playlists_epg_xml_{{ loop.index }}" value="{{ item.epg_xml }}">
+              </div>
+              <div class="grid-item">
+                <select name="playlists_stream_format_{{ loop.index }}" id="playlists_stream_format_{{ loop.index }}">
+                  {% for html_stream_format in html_stream_formats %}
+                    <option value="{{ html_stream_format }}" {% if html_stream_format == item.stream_format %}selected{% endif %}>{{ html_stream_format }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="grid-item">
+                <button type="submit" name="action" value="playlists_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
+              </div>
+            </div>
+            <input type="hidden" name="playlists_m3u_priority_{{ loop.index }}" id="playlists_m3u_priority_{{ loop.index }}" value="{{ item.m3u_priority }}">
+          {% endfor %}
+          <div class="grid-container">
+            <div class="grid-item">
+              <div class="form-check form-switch ps-0 is-filled">
+                <input type="checkbox" id="playlists_m3u_active_new" name="playlists_m3u_active_new" class="form-check-input" checked
+                  onchange="this.value = this.checked ? 'On' : 'Off'" 
+                  value="On">
+              </div>
+            </div>
+            <div class="grid-item">
+              <input type="text" id="playlists_m3u_name_new" name="playlists_m3u_name_new" placeholder="i.e., Pluto, Plex (Gracenote)">
+            </div>
+            <div class="grid-item">
+              <input type="text" id="playlists_m3u_url_new" name="playlists_m3u_url_new" placeholder="i.e., http://localhost:7972/pluto/local/playlist.m3u">
+            </div>
+            <div class="grid-item">
+              <input type="text" id="playlists_epg_xml_new" name="playlists_epg_xml_new" placeholder="i.e., http://localhost:7972/pluto/epg/local/epg-local.xml">
+            </div>
+            <div class="grid-item">
+              <select name="playlists_stream_format_new" id="playlists_stream_format_new">
+                {% for html_stream_format in html_stream_formats %}
+                  <option value="{{ html_stream_format }}" {% if loop.first %}selected{% endif %}>{{ html_stream_format }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="grid-item">
+              <button type="submit" name="action" value="playlists_action_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
+            </div>
+          </div>
+          <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
+            <button type="submit" name="action" value="playlists_action_save" class="btn bg-gradient-primary w-25 my-2 mb-2" disabled>Save</button>
+            <button type="submit" name="action" value="playlists_action_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
+          </div>
+        </div>
+        <hr>
+        <!-- Uploaded Playlists -->
+        <h4 id="uploaded_playlists_anchor">Uploaded m3u(s) and XML EPG(s)</h4>
+        {% if html_uploaded_playlist_files %}
+          <div class="uploaded_playlists container-fluid">
+            <div class="grid-container" style="text-align: center;">
+              <div class="grid-item"><h6>File Link</h6></div>
+              <div class="grid-item"><h6>Action</h6></div>
+            </div>
+          {% endif %} 
+          {% for html_uploaded_playlist_file in html_uploaded_playlist_files %}
+            <div class="grid-container" style="text-align: center;">
+              <div class="grid-item">
+                <input type="text" id="uploaded_playlists_file_{{ loop.index }}" name="uploaded_playlists_file_{{ loop.index }}" value="{{ request.url_root }}playlists/uploads/{{ html_uploaded_playlist_file }}" readonly style="background-color: #d1cdcde5;">
+              </div>
+              <div class="grid-item">
+                <button type="submit" name="action" value="uploaded_playlists_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="file-input-wrapper w-90 h-15 my-2 mb-2">
+          <button type="submit" name="action" value="uploaded_playlists_action_new" class="btn bg-gradient-primary w-20 h-15 my-2 mb-2" style="margin-right: 10px;">Upload / Replace</button>
+          <input type="file" id="uploaded_playlists_action_new_file" name="uploaded_playlists_action_new_file" class="form-control" onchange="document.getElementById('uploaded_playlists_action_new_file_file').textContent = this.files[0].name">
+          <div id="uploaded_playlists_action_new_file_file" class="file-name">No file chosen</div>
+          <label for="uploaded_playlists_action_new_file">Browse...</label>
+        </div>
+        <p><div id="html_uploaded_playlists_message">{{ html_uploaded_playlists_message }}</div></p>
+      </form>
+    </div>
+  </div>
+  <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="loadingModalLabel">Processing</h5>
+        </div>
+        <div class="modal-body">
+          Please wait while the process completes...
+        </div>
+      </div>
+    </div>
+  </div>
+
+    {% include 'includes/footer.html' %}
+
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<!-- Anchor ID -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const anchorId = "{{ html_playlists_anchor_id }}";
+      if (anchorId) {
+          window.location.hash = anchorId;
+      }
+  });
+</script>
+<!-- Processing Box -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('process-form').addEventListener('submit', function(event) {
+      console.log("Form submitted"); // Debugging
+
+      // Wait for a short delay to ensure the form submission is not blocked
+      setTimeout(() => {
+        // Ensure the modal element exists
+        const modalElement = document.getElementById('loadingModal');
+        if (!modalElement) {
+          console.error('Modal element not found!');
+          return;
+        }
+
+        // Show the modal
+        const loadingModal = new bootstrap.Modal(modalElement, {
+          backdrop: 'static',
+          keyboard: false
+        });
+        console.log("Showing modal"); // Debugging
+        loadingModal.show();
+
+        // Disable all navigation links
+        document.querySelectorAll('a').forEach(element => {
+          element.setAttribute('disabled', 'true');
+          element.addEventListener('click', function(event) {
+            event.preventDefault();
+          });
+        });
+      }, 500); // Adjust the delay as needed
+    });
+  });
+</script>
+<!-- Playlists Buttons -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const addButton = document.querySelector('button[name="action"][value="playlists_action_new"]');
+    const saveButton = document.querySelector('button[name="action"][value="playlists_action_save"]');
+
+    const checkNewInputs = () => {
+      const newName = document.getElementById('playlists_m3u_name_new').value.trim();
+      const newUrl = document.getElementById('playlists_m3u_url_new').value.trim();
+      addButton.disabled = !newName || !newUrl;
+    };
+
+    const checkExistingInputs = () => {
+      let allValid = true;
+      let hasExistingRecords = false;
+      document.querySelectorAll('input[id^="playlists_m3u_name_"]').forEach(input => {
+        if (input.id.includes('_new')) return;
+        hasExistingRecords = true;
+        if (!input.value.trim()) allValid = false;
+      });
+      document.querySelectorAll('input[id^="playlists_m3u_url_"]').forEach(input => {
+        if (input.id.includes('_new')) return;
+        hasExistingRecords = true;
+        if (!input.value.trim()) allValid = false;
+      });
+      saveButton.disabled = !allValid || !hasExistingRecords;
+    };
+
+    document.getElementById('playlists_m3u_name_new').addEventListener('input', checkNewInputs);
+    document.getElementById('playlists_m3u_url_new').addEventListener('input', checkNewInputs);
+
+    document.querySelectorAll('input[id^="playlists_m3u_name_"], input[id^="playlists_m3u_url_"]').forEach(input => {
+      if (!input.id.includes('_new')) {
+        input.addEventListener('input', checkExistingInputs);
+      }
+    });
+
+    checkNewInputs();
+    checkExistingInputs(); // Ensure initial state is checked
+  });
+</script>
+<!-- Playlist Priority -->
+<script>
+  const priorityPlaylists = {{ html_playlists | tojson }};
+  const priorityList = document.getElementById('priorityList');
+  const priorityPlaylistsInput = document.getElementById('priority_playlists');
+
+  function populateLists() {
+    priorityList.innerHTML = '';
+    priorityPlaylists.sort((a, b) => (a.m3u_priority || 0) - (b.m3u_priority || 0));
+    priorityPlaylists.forEach(playlist => {
+        const option = document.createElement('option');
+        option.value = playlist.m3u_id;
+        option.text = playlist.m3u_name;
+        priorityList.appendChild(option);
+    });
+  }
+
+  function playlists_moveUp() {
+    const selectedOptions = Array.from(priorityList.selectedOptions);
+    selectedOptions.forEach(option => {
+      const previousOption = option.previousElementSibling;
+      if (previousOption) {
+        priorityList.insertBefore(option, previousOption);
+        playlists_updatePlaylistPriority();
+      }
+    });
+  }
+
+  function playlists_moveDown() {
+    const selectedOptions = Array.from(priorityList.selectedOptions);
+    selectedOptions.reverse().forEach(option => {
+      const nextOption = option.nextElementSibling;
+      if (nextOption) {
+        priorityList.insertBefore(nextOption, option);
+        playlists_updatePlaylistPriority();
+      }
+    });
+  }
+
+  function playlists_updatePlaylistPriority() {
+    Array.from(priorityList.options).forEach((option, index) => {
+      const playlist = priorityPlaylists.find(s => s.m3u_id === option.value);
+      if (playlist) {
+        playlist.m3u_priority = index + 1;
+      }
+    });
+    playlists_updateHiddenInput();
+  }
+
+  function playlists_updateHiddenInput() {
+    priorityPlaylistsInput.value = JSON.stringify(priorityPlaylists.map(playlist => ({
+      m3u_id: playlist.m3u_id,
+      m3u_name: playlist.m3u_name,
+      m3u_url: playlist.m3u_url,
+      epg_xml: playlist.epg_xml,
+      stream_format: playlist.stream_format,
+      m3u_active: playlist.m3u_active,
+      m3u_priority: playlist.m3u_priority
+    })));
+    console.log("Hidden input updated:", priorityPlaylistsInput.value); // Debugging
+  }
+
+  populateLists();
+  playlists_updateHiddenInput();
+</script>
+{% endblock javascripts %}
