@@ -978,10 +978,10 @@ Lastly, there is the ```About``` area to see the latest version information, cre
 
 ---
 # Troubleshooting / FAQ
-### My Streaming Service is missing
+### [SLM] My Streaming Service is missing
 First, make sure you have selected the correct country code and saved. If that is already done, please make a request for the missing service by filling out [this form](https://forms.gle/APyd1t8qs3nhpKRy9). Note that JustWatch is responsible for the availability of Streaming Services and SLM is just a downstream consumer.
 
-### What is the difference between Streaming Services with similar names (i.e., Apple TV vs. Apple TV Plus or Amazon Video vs. Amazon Prime Video)? Should I select both, or is it redundant?
+### [SLM] What is the difference between Streaming Services with similar names (i.e., Apple TV vs. Apple TV Plus or Amazon Video vs. Amazon Prime Video)? Should I select both, or is it redundant?
 JustWatch is responsible for the list of Streaming Services and their definitions, as such there is no specific guidance from the perspective of this program. However, it is most likely a question of content. For instance, "Apple TV" is Apple's generic name for all streaming content available for purchase and/or rent, just as "Amazon Video" is for Amazon. Each have exclusive content available for paying subscribers, hence "Apple TV Plus" and "Amazon Prime Video". Notably, in these highlighted examples, if you make your settings to have either the basic tier or the subscription tier as the top priority, the Stream Links that are generated will be exactly the same, therefore they will launch the same apps on your device. Due to this, if you have access to the subscription tier, then it may be redundant to have both. Nevertheless, that might not be the case for these or other services with multiple tiers and/or separate apps.
 
 For example, say your Streaming Services were this:
@@ -1010,19 +1010,19 @@ You end up with no Stream Link:
 
 It is all a function of what services you have selected and the data on JustWatch. As such, it is up to you to manage your services and find the best combination that works for your particular use case.
 
-### My Streaming Service suddenly disappeared and ruined my Stream Links!
+### [SLM] My Streaming Service suddenly disappeared and ruined my Stream Links!
 While new Streaming Services are brought online and shut down on a regular basis, they also sometimes just change names. Any name change will result in the "old name" being removed and the "new name" being added. If this happens to you, all you need to do is return to the ```Setttings``` area, add the "new name", and prioritize it. The next time you generate your Stream Links, any missing Movies and Shows that were removed will be recreated. Remember, there is a difference between "bookmarking" a Movie or Show and having Stream Links for it.
 
-### The data or links for my program are wrong
+### [SLM] The data or links for my program are wrong
 JustWatch is the provider for all of the information. If there are any issues, please let them know by filling out [this form](https://support.justwatch.com/hc/en-us/requests/new) or emailing them at feedback@justwatch.com. It is unlikely that they will make an update in a timely manner as they are also dependent upon upstream data, so please take advantage of the manual and override capabilities built into the program, or using mapping if possible.
 
-### Why can't I find the Movie or Show I'm searching for?
+### [SLM] Why can't I find the Movie or Show I'm searching for?
 SLM is completely dependent upon Movie and Show data from the JustWatch website, which in turn is a consumer of other upstream data. There may be a gap in any of those steps along the way, especially for non-domestic content and independent studios. Sometimes, though, you may even be able to see the content on JustWatch but are unable to find it in this program. There appears to be a small gap of time (usually one or two days) for some content to be completely discoverable by the tools that this program uses.
 
-### I'm able to bookmark a Movie or Show and I know it's on a streaming service I've selected, but a Stream Link still won't generate
+### [SLM] I'm able to bookmark a Movie or Show and I know it's on a streaming service I've selected, but a Stream Link still won't generate
 Go to the JustWatch website and search for it on there. A Movie or Show might be available, but still be missing links to the appropriate streaming service. If it is brand new, it might also take a day or two until they update their data, which is what SLM uses. Should the links be missing on JustWatch, submit a request by filling out [this form](https://support.justwatch.com/hc/en-us/requests/new) or sending an e-mail to feedback@justwatch.com. If you can confirm JustWatch has a working link on there and it still won't show up in this program, please submit an issue request with as much detail as possible. There may be an edge case for how that particular Movie or Show is stored on JustWatch that this software has not accounted for.
 
-### I generated my Stream Links when I bookmarked my Movie/Show, but it didn't show up in Channels
+### [SLM] I generated my Stream Links when I bookmarked my Movie/Show, but it didn't show up in Channels
 Generating the Stream Link(s) is not enough; you need to update personal media from within Channels so that it appears inside that interface. There are several ways to deal with this. First and foremost, within this software, under ```Run Processes```, is a button that will do all the necessary steps:
 
 ![image](https://github.com/user-attachments/assets/7163353d-9e95-42b9-9bf3-2c942f2aa490)
@@ -1033,24 +1033,52 @@ However, it is worth noting that there is a setting in Channels for how often it
 
 As such, you could just wait for that to run if you have it set for a particular interval.
 
-### A Stream Link generated and the Movie or Show is available in Channels, but when I click to launch it, I get an error. It works in the web, though. | The Stream Link works on one platform like iPad OS but does not work in another like tvOS.
+### [SLM] A Stream Link generated and the Movie or Show is available in Channels, but when I click to launch it, I get an error. It works in the web, though. | The Stream Link works on one platform like iPad OS but does not work in another like tvOS.
 There are two main potential situations. The most likely one is that the Streaming Service's app itself is written incorrectly and cannot accept "deep links". Without this, nothing can be done. You can request the app developers to update their program. In a similar vein, they may have programmed it to accept "deep links", but only in a certain way. If there is a systematic method to do a replacement in the generated link, then it could be added to SLM in the ```Stream Link Mappings``` setting. For instance, JustWatch provides a link for Amazon content like ```watch.amazon.com/detail?gti=``` and, by default, this program replaces it with ```www.amazon.com/gp/video/detail/```. If this is the case, please add a new mapping. Further, do let the community know about your mapping and, if it is useful for many people, it will be added to the default list that comes with a new installation.
 
 There is also the possibility that the link cleaning and replacement process that this program is doing is overzealous. Please also put in a request for those situations and examples of working Stream Links.
 
-### Why do some things play the correct movie/episode automatically and why do others go to a generic landing page for that movie/show?
+### [SLM] Why do some things play the correct movie/episode automatically and why do others go to a generic landing page for that movie/show?
 There are two components that relate to this. First is the quality of the links provided by JustWatch. For instance, with Disney+, JustWatch only has links to generic landing pages and does not have individual episode information like it has for Hulu. There is nothing that can be done aside from requesting that JustWatch updates their data.
 
 The second situation is that even though JustWatch provides links to more generic areas, there may be systematic ways to correct them. As an example, JustWatch provides a link to a movie on Netflix that looks like this: ```http://www.netflix.com/title/81078554```. However, if you replace ```title``` with ```watch```, it will play automatically. This being a “systematic way” to do a replace, it was included in the ```Stream Link Mappings``` settings as highlighted above. If you have more examples that could be accomplished this way, please let the community know. If they are deemed benefitial for other users, they will be added to the default list that comes with a new installation.
 
-### I set the scheduler for a certain time and it is running hours earlier/later. | The time showing in the logs is wrong.
+### [PLM] Is Playlist Manager a complete replacement for all my sources in Channels?
+There is no "right way" to approach this; PLM is a tool to use as you please, with thousands of possibilities on what you might want to do. While one user might desire to have PLM playlists be the only sources in Channels, others will not choose to go down that path. For instance, there is no great replacement for how Channels handles TVE (unless you have Frndly or use ADBTuner or CC4C for every station), so a user who wants those stations would have to keep that as a source no matter what, just at a lower priority so it is not used by default.
+
+In the end, it's totally up to the end user how far they want to take this. Give it a try, play around, and see what happens. There's no danger in just starting PLM up!
+
+### [PLM] I do want all my stations to come from Playlist Manager. How do I get rid of everything else?
+There are too many potential sources to answer that question. Most available m3u playlists can be imported directly, so that is one-for-one. For something like the HDHR, you could do this:
+
+```
+http://hdhomerun.local/lineup.m3u
+
+or...
+
+http://[IP_ADDRESS_OF_HDHR]/lineup.m3u
+```
+
+However, if you do that, you must set your `Gracenote ID` at the Parent level correctly. Similarly, you could use tools like [ADBTuner](https://community.getchannels.com/t/36822) or [Chrome Capture for Channels](https://community.getchannels.com/t/36667/130) for getting more "traditional" cable/TVE stations into Channels. PLM will accept playlists for both of those and plenty of other tools discussed elsewhere.
+
+### [PLM] None of my m3u/XML links work and I see errors like `WARNING: m3u URL not found for '[MY_M3U_OR_XML]'. Skipping...`
+First, make sure your link is `http` instead of `https` as that latter may not be able to be read. Next, there may be an issue with how the program is trying to talk to certain location, especially if that location is in-network and/or you are using Docker; most especially if you are going container-to-container. In either case, the potential solutions are, instead of `http://localhost:[PORT]`, try:
+
+* `http://[COMPUTER_NAME].local:[PORT]`
+* `http://[IP_ADDRESS]:[PORT]`
+* `http://host.docker.internal:[PORT]`
+
+Also, you can test these in the `Channels URL` section of `Settings`, making sure you get a positive response. Just be sure not to save!
+
+### [GEN] I set the scheduler for a certain time and it is running hours earlier/later. | The time showing in the logs is wrong.
 Follow the directions related to "TIMEZONE" in the installation steps above.
 
-### I never see anything in the "Live Process Log (While Running)" block
+### [GEN] I never see anything in the "Live Process Log (While Running)" block
 This block is just an indicator to let you know nothing is stuck and that things are still running in the background. For actions that last less than a couple of seconds, not enough time will pass to begin to fill it in. For anything longer, you will see information fill up to the top, but it will all clear out when the process finishes running. However, there are some issues with certain browsers like Safari where it seems incapable of displaying what is happening. Rest assured that although the background process is running as expected, you can always verify in the logs if desired.
 
 ### Additional questions or issues
-Please ask at the [Channels DVR Community Message Board](https://community.getchannels.com/t/39684).
+* For SLM, please ask at the [Channels DVR Community Message Board](https://community.getchannels.com/t/39684).
+* For PLM, please ask in [this thread](https://community.getchannels.com/t/41719).
 
 ![SpaceX_ASDS_moving_into_position_for_CRS-7_launch_(18610429514)_EDITED](https://github.com/user-attachments/assets/ab32ab8c-3acd-4c72-b047-8c2bad7ef7d9)
 <i>Image (edited) courtesy of SpaceX, CC0, via Wikimedia Commons.</i>
