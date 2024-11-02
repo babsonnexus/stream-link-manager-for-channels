@@ -87,13 +87,13 @@
           <!-- Bookmark Section -->
           {% if html_edit_flag %}
             <label for="field_title">Title:</label>
-            <input type="text" id="field_title" name="field_title" value="{{ html_title_selected }}" placeholder="A 'Title' is required..." style="width: calc(40%);">
+            <input type="text" id="field_title" name="field_title" value="{{ html_title_selected }}" placeholder="A 'Title' is required..." style="width: calc(40%);" title="{{ html_title_selected }}">
             <label for="field_release_year">Release Year:</label>
-            <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected}}" placeholder="Enter year (i.e., 2024)" style="width: calc(15%);">
+            <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected }}" placeholder="Enter year (i.e., 2024)" style="width: calc(15%);" title="{{ html_release_year_selected }}">
             <label for="field_bookmark_action">Bookmark Action:</label>
             <select name="field_bookmark_action" id="field_bookmark_action">
               {% for html_bookmark_action in html_bookmark_actions %}
-                <option {% if html_bookmark_action_selected == html_bookmark_action %}selected{% endif %}>{{ html_bookmark_action }}</option>
+                <option {% if html_bookmark_action_selected == html_bookmark_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_bookmark_action }}</option>
               {% endfor %}
             </select>
             <hr>
@@ -132,9 +132,9 @@
                 <hr style="border: 3px solid; width: 100%;">
               </div>
               <div class="grid-item">
-                <select name="global_special_action" id="global_special_action" onchange="toggleAllDropdowns(this)">
+                <select name="global_special_action" id="global_special_action" onchange="toggleAllDropdowns(this)" style="width: 100%; max-width: 100%;">
                   {% for html_special_action in html_special_actions %}
-                    <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                    <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -157,15 +157,15 @@
                   </div>
                 </div>
                 <div class="grid-item">
-                  <input type="text" value="{{ item.stream_link }}" readonly style="background-color: #d1cdcde5;">
+                  <input type="text" value="{{ item.stream_link }}" readonly style="background-color: #d1cdcde5;" title="{{ item.stream_link }}">
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
+                  <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="{{ item.stream_link_override }}">
                 </div>
                 <div class="grid-item">
-                  <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}">
+                  <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" style="width: 100%; max-width: 100%;">
                     {% for html_special_action in html_special_actions %}
-                      <option {% if html_special_action == item.special_action %}selected{% endif %}>{{ html_special_action }}</option>
+                      <option {% if html_special_action == item.special_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                     {% endfor %}
                   </select>
                 </div>
@@ -190,9 +190,9 @@
                     <hr style="border: 3px solid; width: 100%;">
                   </div>
                   <div class="grid-item">
-                    <select name="season_special_action_{{ season }}" id="season_special_action_{{ season }}" class="{{ season }}" onchange="toggleSeasonDropdowns('{{ season }}', this)">
+                    <select name="season_special_action_{{ season }}" id="season_special_action_{{ season }}" class="{{ season }}" onchange="toggleSeasonDropdowns('{{ season }}', this)" style="width: 100%; max-width: 100%;">
                       {% for html_special_action in html_special_actions %}
-                        <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                        <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                       {% endfor %}
                     </select>
                   </div>
@@ -213,20 +213,20 @@
                   </div>
                 </div>
                 <div class="grid-item">
-                  <input type="text" value="{{ item.stream_link }}" readonly style="background-color: #d1cdcde5;">
+                  <input type="text" value="{{ item.stream_link }}" readonly style="background-color: #d1cdcde5;" title="{{ item.stream_link }}">
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
+                  <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="{{ item.stream_link_override }}">
                 </div>
                 <div class="grid-item">
-                  <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" class="{{ season }}">
+                  <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" class="{{ season }}" style="width: 100%; max-width: 100%;">
                     {% for html_special_action in html_special_actions %}
-                      <option {% if html_special_action == item.special_action %}selected{% endif %}>{{ html_special_action }}</option>
+                      <option {% if html_special_action == item.special_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                     {% endfor %}
                   </select>
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="field_episode_prefix_{{ loop.index }}" name="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}">
+                  <input type="text" id="field_episode_prefix_{{ loop.index }}" name="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}" title="{{ item.season_episode_prefix }}">
                 </div>
                 <div class="grid-item">
                   <button type="submit" name="action" value="program_modify_delete_episode_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2" onclick="allowNavigation_save_cancel()">Delete</button>
@@ -251,7 +251,7 @@
             <label for="program_modify_add_episode_special_action">Special Action:</label>
             <select name="program_modify_add_episode_special_action" id="program_modify_add_episode_special_action" style="width: calc(10%);">
               {% for html_special_action in html_special_actions %}
-                <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
               {% endfor %}
             </select>
             <button type="submit" name="action" value="program_modify_add_episode" class="btn bg-gradient-primary w-20 my-2 mb-2" onclick="allowNavigation_save_cancel()">Add Episode</button>

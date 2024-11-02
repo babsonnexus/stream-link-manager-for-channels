@@ -147,17 +147,17 @@
             <label for="country_code" style="margin-top: 8px;">Country Code:</label>
             <select name="country_code" id="country_code" style="width: calc(13%);">
               {% for country_code_item in html_valid_country_codes %}
-                <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %}>{{ country_code_item }}</option>
+                <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %} style="width: auto; min-width: 100%;">{{ country_code_item }}</option>
               {% endfor %}
             </select>
             <label for="language_code" style="margin-left: 15px; margin-top: 8px;">Language Code:</label>
             <select name="language_code" id="language_code" style="width: calc(13%);">
               {% for language_code_item in html_valid_language_codes %}
-                <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %}>{{ language_code_item }}</option>
+                <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %} style="width: auto; min-width: 100%;">{{ language_code_item }}</option>
               {% endfor %}
             </select>
             <label for="num_results" style="margin-left: 15px; margin-top: 8px;">Number of Results:</label>
-            <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(13%);">
+            <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(13%);" title="{{ html_num_results }}">
             <span class="form-check form-switch ps-0 is-filled" style="display: flex; align-items: center; width: calc(13%);">
               <label class="form-check-label text-body text-truncate w-80 mb-0" for="hide_bookmarked" style="margin-right: 5px; margin-left: 15px;">Hide Bookmarked</label>
               <input type="checkbox" class="form-check-input" id="hide_bookmarked" name="hide_bookmarked" {% if html_hide_bookmarked == "On" %}checked{% endif %}>
@@ -191,24 +191,24 @@
                   </div>
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="slmapping_contains_string_existing_{{ loop.index }}" name="slmapping_contains_string_existing_{{ loop.index }}" value="{{ item.contains_string }}">
+                  <input type="text" id="slmapping_contains_string_existing_{{ loop.index }}" name="slmapping_contains_string_existing_{{ loop.index }}" value="{{ item.contains_string }}" title="{{ item.contains_string }}">
                 </div>
                 <div class="grid-item">
-                  <select name="slmapping_object_type_existing_{{ loop.index }}" id="slmapping_object_type_existing_{{ loop.index }}">
+                  <select name="slmapping_object_type_existing_{{ loop.index }}" id="slmapping_object_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
                     {% for object_type_item in html_slmappings_object_type %}
-                      <option value="{{ object_type_item }}" {% if object_type_item == object_type %}selected{% endif %}>{{ object_type_item }}</option>
+                      <option value="{{ object_type_item }}" {% if object_type_item == object_type %}selected{% endif %} style="width: auto; min-width: 100%;">{{ object_type_item }}</option>
                     {% endfor %}
                   </select>
                 </div>
                 <div class="grid-item">
-                  <select name="slmapping_replace_type_existing_{{ loop.index }}" id="slmapping_replace_type_existing_{{ loop.index }}">
+                  <select name="slmapping_replace_type_existing_{{ loop.index }}" id="slmapping_replace_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
                     {% for replace_type_item in html_slmappings_replace_type %}
-                      <option value="{{ replace_type_item }}" {% if replace_type_item == replace_type %}selected{% endif %}>{{ replace_type_item }}</option>
+                      <option value="{{ replace_type_item }}" {% if replace_type_item == replace_type %}selected{% endif %} style="width: auto; min-width: 100%;">{{ replace_type_item }}</option>
                     {% endfor %}
                   </select>
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="slmapping_replace_string_existing_{{ loop.index }}" name="slmapping_replace_string_existing_{{ loop.index }}" value="{{ item.replace_string }}">
+                  <input type="text" id="slmapping_replace_string_existing_{{ loop.index }}" name="slmapping_replace_string_existing_{{ loop.index }}" value="{{ item.replace_string }}" title="{{ item.replace_string }}">
                 </div>
                 <div class="grid-item">
                   <button type="submit" name="action" value="slmapping_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
@@ -225,16 +225,16 @@
                 <input type="text" id="slmapping_contains_string_new" name="slmapping_contains_string_new">
               </div>
               <div class="grid-item">
-                <select name="slmapping_object_type_new" id="slmapping_object_type_new">
+                <select name="slmapping_object_type_new" id="slmapping_object_type_new" style="width: 100%; max-width: 100%;">
                   {% for object_type_item in html_slmappings_object_type %}
-                    <option value="{{ object_type_item }}">{{ object_type_item }}</option>
+                    <option value="{{ object_type_item }}" style="width: auto; min-width: 100%;">{{ object_type_item }}</option>
                   {% endfor %}
                 </select>
               </div>
               <div class="grid-item">
-                <select name="slmapping_replace_type_new" id="slmapping_replace_type_new">
+                <select name="slmapping_replace_type_new" id="slmapping_replace_type_new" style="width: 100%; max-width: 100%;">
                   {% for replace_type_item in html_slmappings_replace_type %}
-                    <option value="{{ replace_type_item }}">{{ replace_type_item }}</option>
+                    <option value="{{ replace_type_item }}" style="width: auto; min-width: 100%;">{{ replace_type_item }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -294,7 +294,7 @@
                 <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_m3us_epgs_schedule_frequency">And run:</label>
                 <select name="plm_update_m3us_epgs_schedule_frequency" id="plm_update_m3us_epgs_schedule_frequency" style="margin-left: 15px;">
                   {% for html_plm_m3us_epgs_schedule_frequency in html_plm_m3us_epgs_schedule_frequencies %}
-                    <option value="{{ html_plm_m3us_epgs_schedule_frequency }}" {% if html_plm_m3us_epgs_schedule_frequency == html_plm_update_m3us_epgs_schedule_frequency %}selected{% endif %}>{{ html_plm_m3us_epgs_schedule_frequency }}</option>
+                    <option value="{{ html_plm_m3us_epgs_schedule_frequency }}" {% if html_plm_m3us_epgs_schedule_frequency == html_plm_update_m3us_epgs_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_plm_m3us_epgs_schedule_frequency }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -308,7 +308,7 @@
           <!-- Channels URL -->
           <h4 id="channels_url_anchor">Channels URL</h4>
           <p>Channel URL currently set to <b>{{ html_channels_url }}</b></p>
-          <input type="text" id="channels_url" name="channels_url" value="{{ html_channels_url_prior }}" style="width: calc(55%);">
+          <input type="text" id="channels_url" name="channels_url" value="{{ html_channels_url_prior }}" style="width: calc(55%);" title="{{ html_channels_url_prior }}">
           <button type="submit" name="action" value="channels_url_test" class="btn bg-gradient-primary w-10 my-2 mb-2">Test</button>
           <button type="submit" name="action" value="channels_url_scan" class="btn bg-gradient-primary w-10 my-2 mb-2">Scan</button>
           <button type="submit" name="action" value="channels_url_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
@@ -320,7 +320,7 @@
           <h4 id="channels_directory_anchor">Channels Directory</h4>
           <p>The Channels Directory is currently set to: <b><span id="channels_directory">{{ html_channels_directory }}</span></b></p>
           <p><div id="html_channels_directory_message">{{ html_channels_directory_message }}</div></p>
-          <input type="text" id="current_directory" name="current_directory" value="{{ html_current_directory }}" readonly style="width: calc(65%); background-color: #d1cdcde5;">
+          <input type="text" id="current_directory" name="current_directory" value="{{ html_current_directory }}" readonly style="width: calc(65%); background-color: #d1cdcde5;" title="{{ html_current_directory }}">
           <button type="submit" name="action" value="channels_directory_nav_up" class="btn bg-gradient-primary w-10 my-2 mb-2">Nav Up</button>
           <button type="submit" name="action" value="channels_directory_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Select</button>
           <button type="submit" name="action" value="channels_directory_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Reset</button>

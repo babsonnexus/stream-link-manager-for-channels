@@ -238,18 +238,18 @@
                 </div>
               </div>
               <div class="grid-item">
-                <input type="text" id="playlists_m3u_name_{{ loop.index }}" name="playlists_m3u_name_{{ loop.index }}" value="{{ item.m3u_name }}">
+                <input type="text" id="playlists_m3u_name_{{ loop.index }}" name="playlists_m3u_name_{{ loop.index }}" value="{{ item.m3u_name }}" title="{{ item.m3u_name }}">
               </div>
               <div class="grid-item">
-                <input type="text" id="playlists_m3u_url_{{ loop.index }}" name="playlists_m3u_url_{{ loop.index }}" value="{{ item.m3u_url }}">
+                <input type="text" id="playlists_m3u_url_{{ loop.index }}" name="playlists_m3u_url_{{ loop.index }}" value="{{ item.m3u_url }}" title="{{ item.m3u_url }}">
               </div>
               <div class="grid-item">
-                <input type="text" id="playlists_epg_xml_{{ loop.index }}" name="playlists_epg_xml_{{ loop.index }}" value="{{ item.epg_xml }}">
+                <input type="text" id="playlists_epg_xml_{{ loop.index }}" name="playlists_epg_xml_{{ loop.index }}" value="{{ item.epg_xml }}" title="{{ item.epg_xml }}">
               </div>
               <div class="grid-item">
-                <select name="playlists_stream_format_{{ loop.index }}" id="playlists_stream_format_{{ loop.index }}">
+                <select name="playlists_stream_format_{{ loop.index }}" id="playlists_stream_format_{{ loop.index }}" style="width: 100%; max-width: 100%;">
                   {% for html_stream_format in html_stream_formats %}
-                    <option value="{{ html_stream_format }}" {% if html_stream_format == item.stream_format %}selected{% endif %}>{{ html_stream_format }}</option>
+                    <option value="{{ html_stream_format }}" {% if html_stream_format == item.stream_format %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_stream_format }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -277,9 +277,9 @@
               <input type="text" id="playlists_epg_xml_new" name="playlists_epg_xml_new" placeholder="i.e., http://localhost:7972/pluto/epg/local/epg-local.xml">
             </div>
             <div class="grid-item">
-              <select name="playlists_stream_format_new" id="playlists_stream_format_new">
+              <select name="playlists_stream_format_new" id="playlists_stream_format_new" style="width: 100%; max-width: 100%;">
                 {% for html_stream_format in html_stream_formats %}
-                  <option value="{{ html_stream_format }}" {% if loop.first %}selected{% endif %}>{{ html_stream_format }}</option>
+                  <option value="{{ html_stream_format }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_stream_format }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -305,7 +305,7 @@
           {% for html_uploaded_playlist_file in html_uploaded_playlist_files %}
             <div class="grid-container" style="text-align: center;">
               <div class="grid-item">
-                <input type="text" id="uploaded_playlists_file_{{ loop.index }}" name="uploaded_playlists_file_{{ loop.index }}" value="{{ request.url_root }}playlists/uploads/{{ html_uploaded_playlist_file }}" readonly style="background-color: #d1cdcde5;">
+                <input type="text" id="uploaded_playlists_file_{{ loop.index }}" name="uploaded_playlists_file_{{ loop.index }}" value="{{ request.url_root }}playlists/uploads/{{ html_uploaded_playlist_file }}" readonly style="background-color: #d1cdcde5;" title="{{ request.url_root }}playlists/uploads/{{ html_uploaded_playlist_file }}">
               </div>
               <div class="grid-item">
                 <button type="submit" name="action" value="uploaded_playlists_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>

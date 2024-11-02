@@ -70,7 +70,7 @@
         <!-- Manage Parent Stations -->
         <h4 id="parents_anchor" style="margin: 0;">Manage Parent Stations</h4>
         <div class="parents container-fluid">
-          <div class="grid-container" style="text-align: center;">
+          <div class="grid-container" style="text-align: center; margin-right: 17px;">
             <div class="grid-item"><h6>Station Name</h6></div>
             <div class="grid-item"><h6>[OPTIONAL]<br>Alternate XML EPG Guide ID (tvg-id)<br>Override</h6></div>
             <div class="grid-item"><h6>[OPTIONAL]<br>Guide Logo (tvg-logo)<br>Override</h6></div>
@@ -79,38 +79,7 @@
             <div class="grid-item"><h6>Preferred Playlist</h6></div>
             <div class="grid-item"><h6>Action</h6></div>
           </div>
-          {% for item in html_parents %}
-            <input type="hidden" name="parents_parent_channel_id_{{ loop.index }}" id="parents_parent_channel_id_{{ loop.index }}" value="{{ item.parent_channel_id }}">
-            <div class="grid-container">
-              <div class="grid-item">
-                <input type="text" id="parents_parent_title_{{ loop.index }}" name="parents_parent_title_{{ loop.index }}" value="{{ item.parent_title }}">
-              </div>
-              <div class="grid-item">
-                <input type="text" id="parents_parent_tvg_id_override_{{ loop.index }}" name="parents_parent_tvg_id_override_{{ loop.index }}" value="{{ item.parent_tvg_id_override }}">
-              </div>
-              <div class="grid-item">
-                <input type="text" id="parents_parent_tvg_logo_override_{{ loop.index }}" name="parents_parent_tvg_logo_override_{{ loop.index }}" value="{{ item.parent_tvg_logo_override }}">
-              </div>
-              <div class="grid-item">
-                <input type="text" id="parents_parent_channel_number_override_{{ loop.index }}" name="parents_parent_channel_number_override_{{ loop.index }}" value="{{ item.parent_channel_number_override }}">
-              </div>
-              <div class="grid-item">
-                <input type="text" id="parents_parent_tvc_guide_stationid_override_{{ loop.index }}" name="parents_parent_tvc_guide_stationid_override_{{ loop.index }}" value="{{ item.parent_tvc_guide_stationid_override }}">
-              </div>
-              <div class="grid-item">
-                <select name="parents_parent_preferred_playlist_{{ loop.index }}" id="parents_parent_preferred_playlist_{{ loop.index }}">
-                  {% for html_preferred_playlist in html_preferred_playlists %}
-                    <option value="{{ html_preferred_playlist.m3u_id }}" {% if html_preferred_playlist.m3u_id == item.parent_preferred_playlist %}selected{% endif %}>{{ html_preferred_playlist.prefer_name }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="grid-item">
-                <button type="submit" name="action" value="parents_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
-              </div>
-            </div>
-            <input type="hidden" name="parents_m3u_priority_{{ loop.index }}" id="parents_m3u_priority_{{ loop.index }}" value="{{ item.m3u_priority }}">
-          {% endfor %}
-          <div class="grid-container">
+          <div class="grid-container" style="margin-right: 17px;">
             <div class="grid-item">
               <input type="text" id="parents_parent_title_new" name="parents_parent_title_new" placeholder="i.e., The Pet Collective">
             </div>
@@ -127,9 +96,9 @@
               <input type="text" id="parents_parent_tvc_guide_stationid_override_new" name="parents_parent_tvc_guide_stationid_override_new" placeholder="i.e., 121165">
             </div>
             <div class="grid-item">
-              <select name="parents_parent_preferred_playlist_new" id="parents_parent_preferred_playlist_new">
+              <select name="parents_parent_preferred_playlist_new" id="parents_parent_preferred_playlist_new" style="width: 100%; max-width: 100%;">
                 {% for html_preferred_playlist in html_preferred_playlists %}
-                  <option value="{{ html_preferred_playlist.m3u_id }}" {% if loop.first %}selected{% endif %}>{{ html_preferred_playlist.prefer_name }}</option>
+                  <option value="{{ html_preferred_playlist.m3u_id }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_preferred_playlist.prefer_name }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -137,6 +106,8 @@
               <button type="submit" name="action" value="parents_action_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
             </div>
           </div>
+          <div id="record-container" style="height: 100vh; overflow-y: scroll;"><!-- Records handled by 'Infinite Scroll' --></div>
+          <div id="loading-spinner" style="display: none; text-align: center;">Loading...</div>
           <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
             <button type="submit" name="action" value="parents_action_save" class="btn bg-gradient-primary w-25 my-2 mb-2" disabled>Save</button>
             <button type="submit" name="action" value="parents_action_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
@@ -212,42 +183,178 @@
 <!-- Parents Buttons -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const addButton = document.querySelector('button[name="action"][value="parents_action_new"]');
-    const saveButton = document.querySelector('button[name="action"][value="parents_action_save"]');
-
-    const checkNewInputs = () => {
-      const newParentTitle = document.getElementById('parents_parent_title_new').value.trim();
-      const newParentPreferredPlaylist = document.getElementById('parents_parent_preferred_playlist_new').value.trim();
-      addButton.disabled = !newParentTitle || !newParentPreferredPlaylist;
-    };
-
-    const checkExistingInputs = () => {
-      let allValid = true;
-      let hasExistingRecords = false;
-      document.querySelectorAll('input[id^="parents_parent_title_"]').forEach(input => {
-        if (input.id.includes('_new')) return;
-        hasExistingRecords = true;
-        if (!input.value.trim()) allValid = false;
-      });
-      document.querySelectorAll('input[id^="parents_parent_preferred_playlist_"]').forEach(input => {
-        if (input.id.includes('_new')) return;
-        hasExistingRecords = true;
-        if (!input.value.trim()) allValid = false;
-      });
-      saveButton.disabled = !allValid || !hasExistingRecords;
-    };
-
-    document.getElementById('parents_parent_title_new').addEventListener('input', checkNewInputs);
-    document.getElementById('parents_parent_preferred_playlist_new').addEventListener('input', checkNewInputs);
-
-    document.querySelectorAll('input[id^="parents_parent_title_"], input[id^="parents_parent_preferred_playlist_"]').forEach(input => {
-      if (!input.id.includes('_new')) {
-        input.addEventListener('input', checkExistingInputs);
+      const recordContainer = document.getElementById('record-container');
+      const loadingSpinner = document.getElementById('loading-spinner');
+      const allRecords = {{ html_parents|tojson }};
+      const preferredPlaylists = {{ html_preferred_playlists|tojson }};
+      const limit = 100;
+      let offset = 0;
+  
+      const addButton = document.querySelector('button[name="action"][value="parents_action_new"]');
+      const saveButton = document.querySelector('button[name="action"][value="parents_action_save"]');
+  
+      const checkNewInputs = () => {
+          const newParentTitle = document.getElementById('parents_parent_title_new').value.trim();
+          const newParentPreferredPlaylist = document.getElementById('parents_parent_preferred_playlist_new').value.trim();
+          addButton.disabled = !newParentTitle || !newParentPreferredPlaylist;
+      };
+  
+      const checkExistingInputs = () => {
+          let allValid = true;
+          let hasExistingRecords = false;
+          document.querySelectorAll('input[id^="parents_parent_title_"]').forEach(input => {
+              if (input.id.includes('_new')) return;
+              hasExistingRecords = true;
+              if (!input.value.trim()) allValid = false;
+          });
+          document.querySelectorAll('input[id^="parents_parent_preferred_playlist_"]').forEach(input => {
+              if (input.id.includes('_new')) return;
+              hasExistingRecords = true;
+              if (!input.value.trim()) allValid = false;
+          });
+          saveButton.disabled = !allValid || !hasExistingRecords;
+      };
+  
+      function renderRecords(records, startIndex) {
+          records.forEach((item, index) => {
+              const adjustedIndex = startIndex + index + 1;
+  
+              const gridContainer = document.createElement('div');
+              gridContainer.className = 'grid-container';
+  
+              const hiddenInput = document.createElement('input');
+              hiddenInput.type = 'hidden';
+              hiddenInput.name = `parents_parent_channel_id_${adjustedIndex}`;
+              hiddenInput.id = `parents_parent_channel_id_${adjustedIndex}`;
+              hiddenInput.value = item.parent_channel_id;
+  
+              const titleItem = document.createElement('div');
+              titleItem.className = 'grid-item';
+              const titleInput = document.createElement('input');
+              titleInput.type = 'text';
+              titleInput.id = `parents_parent_title_${adjustedIndex}`;
+              titleInput.name = `parents_parent_title_${adjustedIndex}`;
+              titleInput.value = item.parent_title;
+              titleInput.title = item.parent_title;
+              titleItem.appendChild(titleInput);
+  
+              const tvgidOverrideItem = document.createElement('div');
+              tvgidOverrideItem.className = 'grid-item';
+              const tvgidOverrideInput = document.createElement('input');
+              tvgidOverrideInput.type = 'text';
+              tvgidOverrideInput.id = `parents_parent_tvg_id_override_${adjustedIndex}`;
+              tvgidOverrideInput.name = `parents_parent_tvg_id_override_${adjustedIndex}`;
+              tvgidOverrideInput.value = item.parent_tvg_id_override;
+              tvgidOverrideInput.title = item.parent_tvg_id_override;
+              tvgidOverrideItem.appendChild(tvgidOverrideInput);
+  
+              const tvglogoOverrideItem = document.createElement('div');
+              tvglogoOverrideItem.className = 'grid-item';
+              const tvglogoOverrideInput = document.createElement('input');
+              tvglogoOverrideInput.type = 'text';
+              tvglogoOverrideInput.id = `parents_parent_tvg_logo_override_${adjustedIndex}`;
+              tvglogoOverrideInput.name = `parents_parent_tvg_logo_override_${adjustedIndex}`;
+              tvglogoOverrideInput.value = item.parent_tvg_logo_override;
+              tvglogoOverrideInput.title = item.parent_tvg_logo_override;
+              tvglogoOverrideItem.appendChild(tvglogoOverrideInput);
+  
+              const channelnumberOverrideItem = document.createElement('div');
+              channelnumberOverrideItem.className = 'grid-item';
+              const channelnumberOverrideInput = document.createElement('input');
+              channelnumberOverrideInput.type = 'text';
+              channelnumberOverrideInput.id = `parents_parent_channel_number_override_${adjustedIndex}`;
+              channelnumberOverrideInput.name = `parents_parent_channel_number_override_${adjustedIndex}`;
+              channelnumberOverrideInput.value = item.parent_channel_number_override;
+              channelnumberOverrideInput.title = item.parent_channel_number_override;
+              channelnumberOverrideItem.appendChild(channelnumberOverrideInput);
+  
+              const tvcguidestationidOverrideItem = document.createElement('div');
+              tvcguidestationidOverrideItem.className = 'grid-item';
+              const tvcguidestationidOverrideInput = document.createElement('input');
+              tvcguidestationidOverrideInput.type = 'text';
+              tvcguidestationidOverrideInput.id = `parents_parent_tvc_guide_stationid_override_${adjustedIndex}`;
+              tvcguidestationidOverrideInput.name = `parents_parent_tvc_guide_stationid_override_${adjustedIndex}`;
+              tvcguidestationidOverrideInput.value = item.parent_tvc_guide_stationid_override;
+              tvcguidestationidOverrideInput.title = item.parent_tvc_guide_stationid_override;
+              tvcguidestationidOverrideItem.appendChild(tvcguidestationidOverrideInput);
+  
+              const selectItem = document.createElement('div');
+              selectItem.className = 'grid-item';
+              const select = document.createElement('select');
+              select.name = `parents_parent_preferred_playlist_${adjustedIndex}`;
+              select.id = `parents_parent_preferred_playlist_${adjustedIndex}`;
+              select.style.width = '100%';
+              select.style.maxWidth = '100%';
+  
+              preferredPlaylists.forEach(playlist => {
+                  const option = document.createElement('option');
+                  option.value = playlist.m3u_id;
+                  option.text = playlist.prefer_name;
+                  if (playlist.m3u_id === item.parent_preferred_playlist) {
+                      option.selected = true;
+                  }
+                  select.appendChild(option);
+              });
+              selectItem.appendChild(select);
+  
+              const deleteParentButtonItem = document.createElement('div');
+              deleteParentButtonItem.className = 'grid-item';
+              const deleteParentButton = document.createElement('button');
+              deleteParentButton.type = 'submit';
+              deleteParentButton.name = 'action';
+              deleteParentButton.value = `parents_action_delete_${adjustedIndex}`;
+              deleteParentButton.className = 'btn bg-gradient-primary my-2 mb-2';
+              deleteParentButton.textContent = 'Delete';
+              deleteParentButtonItem.appendChild(deleteParentButton);
+  
+              gridContainer.appendChild(hiddenInput);
+              gridContainer.appendChild(titleItem);
+              gridContainer.appendChild(tvgidOverrideItem);
+              gridContainer.appendChild(tvglogoOverrideItem);
+              gridContainer.appendChild(channelnumberOverrideItem);
+              gridContainer.appendChild(tvcguidestationidOverrideItem);
+              gridContainer.appendChild(selectItem);
+              gridContainer.appendChild(deleteParentButtonItem);
+  
+              recordContainer.appendChild(gridContainer);
+  
+              titleInput.addEventListener('input', checkExistingInputs);
+              select.addEventListener('change', checkExistingInputs);
+          });
       }
-    });
-
-    checkNewInputs();
-    checkExistingInputs(); // Ensure initial state is checked
+  
+      function loadMoreRecords() {
+          loadingSpinner.style.display = 'block';
+          const nextBatch = allRecords.slice(offset, offset + limit);
+  
+          renderRecords(nextBatch, offset);
+          offset += limit;
+          loadingSpinner.style.display = 'none';
+  
+          if (offset >= allRecords.length) {
+              recordContainer.removeEventListener('scroll', onScroll);
+          }
+  
+          checkExistingInputs(); // Re-check validity whenever new records are loaded
+      }
+  
+      function onScroll() {
+          if (recordContainer.scrollTop + recordContainer.clientHeight >= recordContainer.scrollHeight) {
+              if (offset < allRecords.length) {
+                  loadMoreRecords();
+              }
+          }
+      }
+  
+      document.getElementById('parents_parent_title_new').addEventListener('input', checkNewInputs);
+      document.getElementById('parents_parent_preferred_playlist_new').addEventListener('input', checkNewInputs);
+  
+      recordContainer.addEventListener('scroll', onScroll);
+  
+      // Initial load
+      loadMoreRecords();
+      checkNewInputs();
+      checkExistingInputs(); // Ensure initial state is checked
   });
-</script>
+</script>  
 {% endblock javascripts %}

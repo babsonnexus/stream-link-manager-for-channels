@@ -83,7 +83,7 @@
                   {% endfor %}
               </select>
               <label for="num_results" style="margin-left: 15px; margin-top: 8px;">Number of Results:</label>
-              <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(10%);">
+              <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(10%);" title="{{ html_num_results }}">
               <span class="form-check form-switch ps-0 is-filled" style="display: flex; align-items: center; width: calc(21%);">
                 <label class="form-check-label text-body text-truncate w-80 mb-0" for="hide_bookmarked" style="margin-left: 15px;">Hide Bookmarked</label>
                 <input type="checkbox" class="form-check-input" id="hide_bookmarked" name="hide_bookmarked" {% if html_hide_bookmarked == "On" %}checked{% endif %}>
@@ -97,7 +97,7 @@
             <label for="program_type">Program Type:</label>
             <select name="program_type" id="program_type"  style="width: calc(25%);">
                 {% for program_type_item in html_program_types %}
-                    <option value="{{ program_type_item }}" {% if program_type_item == html_program_type_default %}selected{% endif %}>{{ program_type_item }}</option>
+                    <option value="{{ program_type_item }}" {% if program_type_item == html_program_type_default %}selected{% endif %} style="width: auto; min-width: 100%;">{{ program_type_item }}</option>
                 {% endfor %}
             </select>
           </div>
@@ -238,13 +238,13 @@
           <div>
             {% if html_done_generate_flag %}
               <label for="field_title">Title:</label>
-              <input type="text" id="field_title" name="field_title" value="{{ html_title_selected }}" placeholder="A 'Title' is required..." style="width: calc(40%);">
+              <input type="text" id="field_title" name="field_title" value="{{ html_title_selected }}" placeholder="A 'Title' is required..." style="width: calc(40%);" title="{{ html_title_selected }}">
               <label for="field_release_year">Release Year:</label>
-              <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected}}" placeholder="Enter year (i.e., 2024)" style="width: calc(15%);">
+              <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected }}" placeholder="Enter year (i.e., 2024)" style="width: calc(15%);" title="{{ html_release_year_selected }}">
               <label for="field_bookmark_action">Bookmark Action:</label>
               <select name="field_bookmark_action" id="field_bookmark_action">
                 {% for html_bookmark_action in html_bookmark_actions %}
-                  <option {% if html_bookmark_action_selected == html_bookmark_action %}selected{% endif %}>{{ html_bookmark_action }}</option>
+                  <option {% if html_bookmark_action_selected == html_bookmark_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_bookmark_action }}</option>
                 {% endfor %}
               </select>
               <hr>
@@ -274,9 +274,9 @@
                 <input type="text" id="stream_link_override_movie" name="stream_link_override_movie" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
               </div>
               <div class="grid-item">
-                <select name="special_action_movie" id="special_action_movie">
+                <select name="special_action_movie" id="special_action_movie" style="width: 100%; max-width: 100%;">
                   {% for html_special_action in html_special_actions %}
-                    <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                    <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -311,9 +311,9 @@
                   <hr style="border: 3px solid; width: 100%;">
                 </div>
                 <div class="grid-item">
-                  <select name="global_special_action" id="global_special_action" onchange="toggleAllDropdowns(this)">
+                  <select name="global_special_action" id="global_special_action" onchange="toggleAllDropdowns(this)" style="width: 100%; max-width: 100%;">
                     {% for html_special_action in html_special_actions %}
-                      <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                      <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                     {% endfor %}
                   </select>
                 </div>
@@ -337,9 +337,9 @@
                       <hr style="border: 3px solid; width: 100%;">
                     </div>
                     <div class="grid-item">
-                      <select name="season_special_action_{{ season }}" id="season_special_action_{{ season }}" class="{{ season }}" onchange="toggleSeasonDropdowns('{{ season }}', this)">
+                      <select name="season_special_action_{{ season }}" id="season_special_action_{{ season }}" class="{{ season }}" onchange="toggleSeasonDropdowns('{{ season }}', this)" style="width: 100%; max-width: 100%;">
                         {% for html_special_action in html_special_actions %}
-                          <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                          <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                         {% endfor %}
                       </select>
                     </div>
@@ -360,9 +360,9 @@
                     <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
                   </div>
                   <div class="grid-item">
-                    <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" class="{{ season }}">
+                    <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" class="{{ season }}" style="width: 100%; max-width: 100%;">
                       {% for html_special_action in html_special_actions %}
-                        <option {% if loop.first %}selected{% endif %}>{{ html_special_action }}</option>
+                        <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                       {% endfor %}
                     </select>
                   </div>

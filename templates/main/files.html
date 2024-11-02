@@ -240,7 +240,7 @@
             <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
               <select name="select_file" id="select_file" style="width: calc(60%);">
                 {% for html_file_list in html_file_lists %}
-                  <option value="{{ html_file_list.file_name }}" {% if html_select_file_prior == html_file_list.file_name %}selected{% endif %}>{{ html_file_list.file_name }}</option>
+                  <option value="{{ html_file_list.file_name }}" {% if html_select_file_prior == html_file_list.file_name %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_file_list.file_name }}</option>
                 {% endfor %}
               </select>
               <button type="submit" name="action" value="view_file" class="btn bg-gradient-primary w-20 h-15 my-2 mb-2" style="margin-left: 10px;">View</button>
