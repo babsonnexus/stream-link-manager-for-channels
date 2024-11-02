@@ -29,7 +29,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.10.29.1540"
+slm_version = "v2024.11.02.0936"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -4028,6 +4028,7 @@ def playlists_webpage(sub_page):
                     child_to_parents_parent_channel_id_inputs = {}
 
                     for key in request.form.keys():
+                        
                         keycheck = f"{keycheck_start}channel_id_"
                         if key.startswith(keycheck):
                             index = key.split('_')[-1]
@@ -4075,7 +4076,7 @@ def playlists_webpage(sub_page):
                         send_child_to_parents.append({'child_m3u_id_channel_id': child_to_parents_channel_id_input, 'parent_channel_id': child_to_parents_parent_channel_id_input})
 
                     if '_set_parent_' in playlists_action:
-
+                        
                         send_child_to_parents_single = []
                         child_to_parents_action_set_parent_index = int(playlists_action.split('_')[-1]) - 1
 
@@ -4160,12 +4161,10 @@ def get_combined_m3us():
     print(f"\n{current_time()} Starting combination of playlists...")
 
     for playlist in playlists:
-        try:
-            response = requests.get(playlist['m3u_url'], headers=url_headers)
-            if response:
-                combined_m3us.extend(parse_m3u(playlist['m3u_id'], playlist['m3u_name'], response))
-        except requests.RequestException:
-            notification_add(f"\n{current_time()} WARNING: m3u URL not found for '{playlist['m3u_name']}'. Skipping...")
+        response = None
+        response = fetch_url(playlist['m3u_url'], 5, 10)
+        if response:
+            combined_m3us.extend(parse_m3u(playlist['m3u_id'], playlist['m3u_name'], response))
 
     id_field = "station_playlist"
     update_rows(csv_playlistmanager_combined_m3us, combined_m3us, id_field, True)
@@ -4180,6 +4179,19 @@ def get_combined_m3us():
             append_data(csv_playlistmanager_child_to_parent, new_row)
 
     print(f"\n{current_time()} Finished combination of playlists.")
+
+# Used to loop through a URL that might error
+def fetch_url(url, retries, delay):
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, headers=url_headers)
+            return response
+        except Exception as e:
+            if attempt < retries - 1:
+                notification_add(f"\n{current_time()} WARNING: For '{url}', Encountered an error ({e}). Retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                notification_add(f"\n{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...")
 
 # Parse the m3u Playlist to get all the details
 def parse_m3u(m3u_id, m3u_name, response):
@@ -4859,11 +4871,11 @@ def get_epgs_for_m3us():
     with open(temp_file_path, "a", encoding="utf-8") as temp_file:
         for playlist in playlists:
             if playlist['m3u_active'] == "On":
-                try:
-                    if playlist['epg_xml'] is not None and playlist['epg_xml'] != '':
-                        response = requests.get(playlist['epg_xml'], headers=url_headers)
-                        response.raise_for_status()
-                        
+                if playlist['epg_xml'] is not None and playlist['epg_xml'] != '':
+                    response = None
+                    response = fetch_url(playlist['epg_xml'], 5, 10)
+            
+                    if response:
                         # Handle .gz files
                         if playlist['epg_xml'].endswith('.gz'):
                             gz = gzip.GzipFile(fileobj=io.BytesIO(response.content))
@@ -4872,8 +4884,6 @@ def get_epgs_for_m3us():
                             response_text = response.text
                         
                         temp_file.write(response_text + "\n")
-                except requests.RequestException:
-                    notification_add(f"\n{current_time()} WARNING: EPG XML not found for '{playlist['epg_xml']}'. Skipping...")
 
     extensions = ['m3u']
     m3u_files = get_all_prior_files(program_files_dir, extensions)
