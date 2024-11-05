@@ -29,7 +29,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.11.02.0936"
+slm_version = "v2024.11.05.1648"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -271,6 +271,11 @@ plm_m3us_epgs_schedule_frequencies = [
     "Every 12 hours",
     "Every 24 hours"
 ]
+slm_end_to_end_frequencies = [
+    "Every 8 hours",
+    "Every 12 hours",
+    "Every 24 hours"
+]
 stream_formats = [
     "HLS",
     "MPEG-TS"
@@ -456,6 +461,7 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Off"}, 17, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule On/Off")
         check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 18, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time")
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 19, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 20, "SLM: End-to-End Process Schedule Frequency")
 
 # Clean up empty data files
 def remove_empty_row(csv_file):
@@ -500,11 +506,12 @@ def update_rows(csv_file, data, id_field, modify_flag):
             print(f"\n{current_time()} INFO: Finished removing old rows.\n")
 
         if modify_flag:
-            modified_rows = extract_modified_rows(csv_file, data, id_field)
+            modified_rows, no_notify_rows = extract_modified_rows(csv_file, data, id_field)
             if modified_rows:
                 print(f"\n{current_time()} INFO: Updating modified rows in {csv_file}...\n")
                 for modified_row in modified_rows:
-                    notification_add(f"    MODIFIED: {modified_row[id_field]}")
+                    if modified_row not in no_notify_rows:
+                        notification_add(f"    MODIFIED: {modified_row[id_field]}")
                 update_data(csv_file, modified_rows, id_field)
                 print(f"\n{current_time()} INFO: Finished updating modified rows.\n")
 
@@ -571,15 +578,21 @@ def extract_modified_rows(csv_file, data, id_field):
     # Create a dictionary for quick lookup of existing rows by id_field
     existing_data_dict = {row[id_field]: row for row in existing_data}
 
-    # Extract modified rows
+    # Extract modified rows and rows to not notify
     modified_rows = []
+    no_notify_rows = []
+
     for row in data:
         if row[id_field] in existing_data_dict:
             existing_row = existing_data_dict[row[id_field]]
             if any(row[key] != existing_row[key] for key in row.keys() if key != id_field):
                 modified_rows.append(row)
-    
-    return modified_rows
+                # Check for ?X-Plex-Token= difference 
+                differing_keys = [key for key in row.keys() if key != id_field and row[key] != existing_row[key]]
+                if all('X-Plex-Token' in key or row[key].startswith(existing_row[key].split('?X-Plex-Token=')[0]) for key in differing_keys):
+                    no_notify_rows.append(row)
+
+    return modified_rows, no_notify_rows
 
 # Updates rows in the CSV file with modified content
 def update_data(csv_file, modified_rows, id_field):
@@ -607,9 +620,6 @@ def update_data(csv_file, modified_rows, id_field):
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(updated_data)
-
-    for modified_row in modified_rows:
-        notification_add(f"    MODIFIED: {modified_row[id_field]}")
 
 # Removes duplicate rows from the CSV file
 def remove_duplicate_rows(csv_file):
@@ -664,9 +674,9 @@ def initial_data(csv_file):
                     {"settings": "en"},                                                        # [3]  Search Defaults: Language Code
                     {"settings": "9"},                                                         # [4]  Search Defaults: Number of Results
                     {"settings": "Off"},                                                       # DEPRECATED: [5] Hulu to Disney+ Automatic Conversion
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [6]  End-to-End Process Schedule Time
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [6]  SLM: End-to-End Process Schedule Time
                     {"settings": "On"},                                                        # [7]  Channels Prune
-                    {"settings": "Off"},                                                       # [8]  End-to-End Process Schedule On/Off
+                    {"settings": "Off"},                                                       # [8]  SLM: End-to-End Process Schedule On/Off
                     {"settings": "Off"},                                                       # [9]  Search Defaults: Filter out already bookmarked
                     {"settings": "Off"},                                                       # [10] Playlist Manager: On/Off
                     {"settings": 10000},                                                       # [11] Playlist Manager: Starting station number
@@ -675,7 +685,8 @@ def initial_data(csv_file):
                     {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [14] Playlist Manager: Update Stations Process Schedule Time
                     {"settings": "Off"},                                                       # [15] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule On/Off
                     {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [16] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time
-                    {"settings": "Every 24 hours"} #,                                          # [17] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency
+                    {"settings": "Every 24 hours"},                                            # [17] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency
+                    {"settings": "Every 24 hours"} #,                                          # [18] SLM: End-to-End Process Schedule Frequency
                     # Add more rows as needed
         ]        
     elif csv_file == csv_streaming_services:
@@ -1124,6 +1135,7 @@ def settings():
     except (IndexError, KeyError):
         auto_update_schedule = 'Off'
     auto_update_schedule_time = settings[6]["settings"]
+    auto_update_schedule_frequency = settings[18]["settings"]
     plm_update_stations_schedule = settings[13]["settings"]
     plm_update_stations_schedule_time = settings[14]["settings"]
     plm_update_m3us_epgs_schedule = settings[15]["settings"]
@@ -1187,6 +1199,7 @@ def settings():
         streaming_services_input = request.form.get('streaming_services')
         auto_update_schedule_input = request.form.get('auto_update_schedule')
         auto_update_schedule_time_input = request.form.get('auto_update_schedule_time')
+        auto_update_schedule_frequency_input = request.form.get('auto_update_schedule_frequency')
         plm_update_stations_schedule_input = request.form.get('plm_update_stations_schedule')
         plm_update_stations_schedule_time_input = request.form.get('plm_update_stations_schedule_time')
         plm_update_m3us_epgs_schedule_input = request.form.get('plm_update_m3us_epgs_schedule')
@@ -1274,6 +1287,7 @@ def settings():
                         except (IndexError, KeyError):
                             settings.append({"settings": "On" if auto_update_schedule_input == 'on' else "Off"})
                         settings[6]["settings"] = auto_update_schedule_time_input
+                        settings[18]["settings"] = auto_update_schedule_frequency_input
 
                     elif settings_action == 'plm_update_stations_process_save':
                         settings[13]["settings"] = "On" if plm_update_stations_schedule_input == 'on' else "Off"
@@ -1465,6 +1479,7 @@ def settings():
         except (IndexError, KeyError):
             auto_update_schedule = 'Off'
         auto_update_schedule_time = settings[6]["settings"]
+        auto_update_schedule_frequency = settings[18]["settings"]
         plm_update_stations_schedule = settings[13]["settings"]
         plm_update_stations_schedule_time = settings[14]["settings"]
         plm_update_m3us_epgs_schedule = settings[15]["settings"]
@@ -1496,6 +1511,8 @@ def settings():
         html_auto_update_schedule_time = auto_update_schedule_time,
         html_plm_update_stations_schedule = plm_update_stations_schedule,
         html_plm_update_stations_schedule_time = plm_update_stations_schedule_time,
+        html_slm_end_to_end_frequencies = slm_end_to_end_frequencies,
+        html_auto_update_schedule_frequency = auto_update_schedule_frequency,
         html_plm_update_m3us_epgs_schedule = plm_update_m3us_epgs_schedule,
         html_plm_update_m3us_epgs_schedule_time = plm_update_m3us_epgs_schedule_time,
         html_plm_m3us_epgs_schedule_frequencies = plm_m3us_epgs_schedule_frequencies,
@@ -3815,6 +3832,8 @@ def playlists_webpage(sub_page):
                 elif playlists_action.startswith('parents_action_') or '_make_parent_' in playlists_action:
 
                     if playlists_action == "parents_action_save":
+                        temp_parents = []
+
                         parents_parent_channel_id_inputs = {}
                         parents_parent_title_inputs = {}
                         parents_parent_tvg_id_override_inputs = {}
@@ -3864,15 +3883,25 @@ def playlists_webpage(sub_page):
                             if parents_parent_preferred_playlist_input == "None":
                                 parents_parent_preferred_playlist_input = None
 
-                            for idx, parent in enumerate(parents):
-                                if idx == int(row) - 1:
-                                    parent['parent_channel_id'] = parents_parent_channel_id_input
-                                    parent['parent_title'] = parents_parent_title_input
-                                    parent['parent_tvg_id_override'] = parents_parent_tvg_id_override_input
-                                    parent['parent_tvg_logo_override'] = parents_parent_tvg_logo_override_input
-                                    parent['parent_channel_number_override'] = parents_parent_channel_number_override_input
-                                    parent['parent_tvc_guide_stationid_override'] = parents_parent_tvc_guide_stationid_override_input
-                                    parent['parent_preferred_playlist'] = parents_parent_preferred_playlist_input
+                            temp_parents.append({
+                                'parent_channel_id': parents_parent_channel_id_input,
+                                'parent_title': parents_parent_title_input,
+                                'parent_tvg_id_override': parents_parent_tvg_id_override_input,
+                                'parent_tvg_logo_override': parents_parent_tvg_logo_override_input,
+                                'parent_channel_number_override': parents_parent_channel_number_override_input,
+                                'parent_tvc_guide_stationid_override': parents_parent_tvc_guide_stationid_override_input,
+                                'parent_preferred_playlist': parents_parent_preferred_playlist_input
+                            })
+
+                        for parent in parents:
+                            for temp_parent in temp_parents:
+                                if parent['parent_channel_id'] == temp_parent['parent_channel_id']:
+                                    parent['parent_title'] = temp_parent['parent_title']
+                                    parent['parent_tvg_id_override'] = temp_parent['parent_tvg_id_override']
+                                    parent['parent_tvg_logo_override'] = temp_parent['parent_tvg_logo_override']
+                                    parent['parent_channel_number_override'] = temp_parent['parent_channel_number_override']
+                                    parent['parent_tvc_guide_stationid_override'] = temp_parent['parent_tvc_guide_stationid_override']
+                                    parent['parent_preferred_playlist'] = temp_parent['parent_preferred_playlist']
 
                     elif playlists_action == "parents_action_new" or '_make_parent_' in playlists_action:
                         
@@ -4188,7 +4217,7 @@ def fetch_url(url, retries, delay):
             return response
         except Exception as e:
             if attempt < retries - 1:
-                notification_add(f"\n{current_time()} WARNING: For '{url}', Encountered an error ({e}). Retrying in {delay} seconds...")
+                print(f"\n{current_time()} WARNING: For '{url}', Encountered an error ({e}). Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
                 notification_add(f"\n{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...")
@@ -4201,6 +4230,8 @@ def parse_m3u(m3u_id, m3u_name, response):
     records = []
     current_record = None
     for line in cleaned_data:
+        channel_id_replacement = None
+
         if line.startswith('#EXTINF'):
             if current_record:
                 records.append(current_record)
@@ -4244,6 +4275,12 @@ def parse_m3u(m3u_id, m3u_name, response):
                 else:
                     metadata["title"] = fields.strip()
                 
+                if metadata["channel-id"] is None or metadata["channel-id"] == '':
+                    channel_id_replacement = f"{m3u_name}_{metadata['title']}"
+                    channel_id_replacement = channel_id_replacement.replace(' ', '_')
+                    channel_id_replacement = channel_id_replacement.lower()
+                    metadata["channel-id"] = channel_id_replacement
+
                 current_record = {
                     'station_playlist': f"{metadata['title']} on {m3u_name} [{metadata['channel-id']}]",
                     'm3u_id': m3u_id,
@@ -4568,6 +4605,11 @@ def get_final_m3us_epgs():
                     tvc_guide_stationid = parent['parent_tvc_guide_stationid_override']
                 else:
                     tvc_guide_stationid = field_value
+
+                # Check if tvc_guide_stationid (Gracenote ID) only has numeric characters
+                if tvc_guide_stationid:
+                    if not tvc_guide_stationid.isdigit():
+                        tvc_guide_stationid = None
 
             elif field == "tvc_guide_art":
                 if parent['parent_tvc_guide_art_override'] is not None and parent['parent_tvc_guide_art_override'] != '':
@@ -4972,6 +5014,14 @@ def webpage_reports_queries():
                     slm_query_name = "Currently Unavailable"
                 elif action == "query_previously_watched":
                     slm_query_name = "Previously Watched"
+                
+                
+            elif action in [
+                                "query_plm_parent_children"
+                           ]:
+                
+                if action == "query_plm_parent_children":
+                    slm_query_name = "Stations: Parents and Children"
 
             slm_query = view_csv(slm_query_raw, "library")
 
@@ -4993,6 +5043,10 @@ def run_query(query_name):
     settings_data = read_data(csv_settings)
     slmappings_data = read_data(csv_slmappings)
     streaming_services_data = read_data(csv_streaming_services)
+    plm_child_to_parent_maps_data = read_data(csv_playlistmanager_child_to_parent)
+    plm_all_stations_data = read_data(csv_playlistmanager_combined_m3us)
+    plm_parents_data = read_data(csv_playlistmanager_parents)
+    plm_playlists_data = read_data(csv_playlistmanager_playlists)
 
     # Convert the data into pandas DataFrames
     bookmarks = pd.DataFrame(bookmarks_data)
@@ -5000,6 +5054,10 @@ def run_query(query_name):
     settings = pd.DataFrame(settings_data)
     slmappings = pd.DataFrame(slmappings_data)
     streaming_services = pd.DataFrame(streaming_services_data)
+    plm_child_to_parent_maps = pd.DataFrame(plm_child_to_parent_maps_data)
+    plm_all_stations = pd.DataFrame(plm_all_stations_data)
+    plm_parents = pd.DataFrame(plm_parents_data)
+    plm_playlists = pd.DataFrame(plm_playlists_data)
 
     if query_name in [
                         'query_currently_unavailable',
@@ -5072,6 +5130,50 @@ def run_query(query_name):
                 ORDER BY 
                     bookmarks.object_type, 
                     bookmarks.title || " (" || bookmarks.release_year || ")"
+                """
+
+    elif query_name in [
+                            'query_plm_parent_children'
+                       ]:
+
+        if plm_playlists.empty or plm_all_stations.empty or plm_parents.empty:
+            results = []
+
+        else:
+
+            run_query = True
+
+            if query_name == 'query_plm_parent_children':
+
+                query = """
+                SELECT
+                    CASE
+                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN plm_child_to_parent_maps.parent_channel_id
+                        ELSE plm_parents.parent_title
+                    END AS "Parent Station",
+                    plm_all_stations.station_playlist AS "Child Station",
+                    COALESCE(plm_parents.parent_tvc_guide_stationid_override, '') AS "Gracenote ID (Override)",
+                    COALESCE(plm_all_stations.tvc_guide_stationid, '') AS "Gracenote ID (Imported)"
+                FROM plm_child_to_parent_maps
+                LEFT JOIN plm_parents ON plm_child_to_parent_maps.parent_channel_id = plm_parents.parent_channel_id
+                LEFT JOIN plm_all_stations ON plm_child_to_parent_maps.child_m3u_id_channel_id = plm_all_stations.m3u_id || '_' || plm_all_stations.channel_id
+                LEFT JOIN plm_playlists ON plm_all_stations.m3u_id = plm_playlists.m3u_id
+                WHERE plm_all_stations.station_playlist IS NOT NULL
+                ORDER BY
+                    CASE
+                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN 2
+                        ELSE 1
+                    END,
+                    "Parent Station",
+                    CASE
+                        WHEN plm_parents.parent_preferred_playlist IS NOT NULL AND plm_parents.parent_preferred_playlist != '' THEN 
+                            CASE 
+                                WHEN plm_all_stations.m3u_id = plm_parents.parent_preferred_playlist THEN 0
+                                ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
+                            END
+                        ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
+                    END,
+                    "Child Station"
                 """
 
     # Execute the query
@@ -7806,6 +7908,8 @@ def check_schedule():
             auto_update_schedule = 'Off'
             
         auto_update_schedule_time = settings[6]["settings"]
+        auto_update_schedule_frequency = settings[18]["settings"]
+        auto_update_schedule_frequency_parsed = int(re.search(r'\d+', auto_update_schedule_frequency).group())
         plm_update_stations_schedule = settings[13]["settings"]
         plm_update_stations_schedule_time = settings[14]["settings"]
         plm_update_m3us_epgs_schedule = settings[15]["settings"]
@@ -7814,7 +7918,9 @@ def check_schedule():
         plm_m3us_epgs_schedule_frequency_parsed = int(re.search(r'\d+', plm_m3us_epgs_schedule_frequency).group())
         
         if auto_update_schedule == 'On' and auto_update_schedule_time:
-            if current_time == auto_update_schedule_time:
+            auto_update_schedule_hour, auto_update_schedule_minute = map(int, auto_update_schedule_time.split(':'))
+
+            if current_minute == auto_update_schedule_minute and (current_hour - auto_update_schedule_hour) % auto_update_schedule_frequency_parsed == 0:
                 threading.Thread(target=end_to_end).start()
                 wait_trigger = True
         
