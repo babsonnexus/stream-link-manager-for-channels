@@ -13,6 +13,21 @@
         <!-- Version History -->
         <h4>Version History</h4>
         <div style="overflow-x: auto; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll;">
+          <h6>v2024.11.05.1648</h6>
+          <p>
+            <ul>
+              <li>MODIFIED: [PLM] Unassigned, Assigned, and Parent stations now have a filter on top</li>
+              <li>MODIFIED: [PLM] Made 'warning' about having issues connecting to source playlists be log only; 'errors' will continue to be notifications</li>
+              <li>MODIFIED: [GEN] Notification for modified row was repeating in function, removed</li>
+              <li>MODIFIED: [PLM] Filtered out 'modified' notifications if the only difference is the Plex token</li>
+              <li>FIXED: [PLM] Gracenote ID (tvc-guide-stationid) values are ignored in final m3u(s) if they are not numeric</li>
+              <li>FIXED: [PLM] Malformed playlists that lacked a 'channel-id' tag were causing a station to be created multiple times</li>
+              <li>MODIFIED: [PLM] Playlist Manager is now incorporated into `Reports & Queries'</li>
+              <li>NEW: [PLM] Report showing Parent Stations, their children (in priority order, including override), and Gracenote ID--both imported and override</li>
+              <li>MODIFIED: [SLM] Stream Link/Files: End-to-End Process can now be run in cycles of 8, 12, and 24 (default) hours</li>
+            </ul>
+          </p>
+          <hr>
           <h6>v2024.11.02.0936</h6>
           <p>
             <ul>

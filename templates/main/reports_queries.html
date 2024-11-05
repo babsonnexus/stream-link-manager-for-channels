@@ -196,6 +196,12 @@
             <button type="submit" name="action" value="query_currently_unavailable" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Currently Unavailable</button>
             <button type="submit" name="action" value="query_previously_watched" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Previously Watched</button>
           </div>
+          {% if html_slm_playlist_manager %}
+            <div style="width: 20%">
+              <h4 class="file_header">Playlists / Stations</h4>
+              <button type="submit" name="action" value="query_plm_parent_children" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Stations: Parents and Children</button>
+            </div>
+          {% endif %}
           <div style="width: 20%">
             <h4 class="file_header">Controls</h4>
             <button type="submit" name="action" value="reports_queries_cancel" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Cancel / Clear</button>

@@ -106,6 +106,29 @@
               <button type="submit" name="action" value="parents_action_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
             </div>
           </div>
+          <div class="grid-container" style="margin-right: 17px;">
+            <div class="grid-item">
+                <input type="text" id="filter-parent-title" placeholder="Filter">
+            </div>
+            <div class="grid-item">
+                <input type="text" id="filter-parent-tvg-id-override" placeholder="Filter">
+            </div>
+            <div class="grid-item">
+                <input type="text" id="filter-parent-tvg-logo-override" placeholder="Filter">
+            </div>
+            <div class="grid-item">
+                <input type="text" id="filter-parent-channel-number-override" placeholder="Filter">
+            </div>
+            <div class="grid-item">
+              <input type="text" id="filter-parent-tvc-guide-stationid-override" placeholder="Filter">
+            </div>
+            <div class="grid-item">
+              <input type="text" id="filter-parent-preferred-playlist" placeholder="Filter">
+            </div>
+            <div class="grid-item">
+              <hr style="border: 3px solid; width: 100%;">
+            </div>
+          </div>
           <div id="record-container" style="height: 100vh; overflow-y: scroll;"><!-- Records handled by 'Infinite Scroll' --></div>
           <div id="loading-spinner" style="display: none; text-align: center;">Loading...</div>
           <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
@@ -180,7 +203,7 @@
     });
   });
 </script>
-<!-- Parents Buttons -->
+<!-- Parents Buttons and Infinite Scroll -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
       const recordContainer = document.getElementById('record-container');
@@ -189,7 +212,16 @@
       const preferredPlaylists = {{ html_preferred_playlists|tojson }};
       const limit = 100;
       let offset = 0;
-  
+      let filteredRecords = allRecords;  // Store filtered records
+
+      // Filter input elements
+      const filterParentTitle = document.getElementById('filter-parent-title');
+      const filterParenttvgidoverride = document.getElementById('filter-parent-tvg-id-override');
+      const filterParenttvglogooverride = document.getElementById('filter-parent-tvg-logo-override');
+      const filterParentchannelnumberoverride = document.getElementById('filter-parent-channel-number-override');
+      const filterParenttvcguidestationidoverride = document.getElementById('filter-parent-tvc-guide-stationid-override');
+      const filterParentpreferredplaylist = document.getElementById('filter-parent-preferred-playlist');
+
       const addButton = document.querySelector('button[name="action"][value="parents_action_new"]');
       const saveButton = document.querySelector('button[name="action"][value="parents_action_save"]');
   
@@ -214,7 +246,23 @@
           });
           saveButton.disabled = !allValid || !hasExistingRecords;
       };
-  
+
+      function applyFilters(records) {
+        return records.filter(item => {
+            const parentPreferredPlaylist = preferredPlaylists.find(playlist => playlist.m3u_id === item.parent_preferred_playlist);
+            const parentPreferredPlaylistName = parentPreferredPlaylist ? parentPreferredPlaylist.prefer_name.toLowerCase() : 'none';
+
+            return (
+                item.parent_title.toLowerCase().includes(filterParentTitle.value.toLowerCase()) &&
+                item.parent_tvg_id_override.toLowerCase().includes(filterParenttvgidoverride.value.toLowerCase()) &&
+                item.parent_tvg_logo_override.toLowerCase().includes(filterParenttvglogooverride.value.toLowerCase()) &&
+                item.parent_channel_number_override.toLowerCase().includes(filterParentchannelnumberoverride.value.toLowerCase()) &&
+                item.parent_tvc_guide_stationid_override.toLowerCase().includes(filterParenttvcguidestationidoverride.value.toLowerCase()) &&
+                parentPreferredPlaylistName.includes(filterParentpreferredplaylist.value.toLowerCase())
+            );
+        });
+      }
+
       function renderRecords(records, startIndex) {
           records.forEach((item, index) => {
               const adjustedIndex = startIndex + index + 1;
@@ -324,37 +372,56 @@
       }
   
       function loadMoreRecords() {
-          loadingSpinner.style.display = 'block';
-          const nextBatch = allRecords.slice(offset, offset + limit);
-  
-          renderRecords(nextBatch, offset);
-          offset += limit;
-          loadingSpinner.style.display = 'none';
-  
-          if (offset >= allRecords.length) {
-              recordContainer.removeEventListener('scroll', onScroll);
-          }
-  
-          checkExistingInputs(); // Re-check validity whenever new records are loaded
+        loadingSpinner.style.display = 'block';
+        const nextBatch = filteredRecords.slice(offset, offset + limit);
+
+        renderRecords(nextBatch, offset);
+        offset += limit;
+        loadingSpinner.style.display = 'none';
+
+        if (offset >= filteredRecords.length) {
+            recordContainer.removeEventListener('scroll', onScroll);
+        }
+      
+        checkExistingInputs(); // Re-check validity whenever new records are loaded
+      
       }
-  
+
       function onScroll() {
-          if (recordContainer.scrollTop + recordContainer.clientHeight >= recordContainer.scrollHeight) {
-              if (offset < allRecords.length) {
-                  loadMoreRecords();
-              }
-          }
+        if (recordContainer.scrollTop + recordContainer.clientHeight >= recordContainer.scrollHeight) {
+            if (offset < filteredRecords.length) {
+                loadMoreRecords();
+            }
+        }
       }
-  
+
+      function resetAndLoadRecords() {
+        offset = 0;
+        recordContainer.innerHTML = '';  // Clear existing records
+        filteredRecords = applyFilters(allRecords);  // Re-apply filters to all records
+        loadMoreRecords();  // Load filtered records
+        if (filteredRecords.length > limit) {
+            recordContainer.addEventListener('scroll', onScroll);  // Re-attach scroll event listener
+        }
+      }
+
       document.getElementById('parents_parent_title_new').addEventListener('input', checkNewInputs);
       document.getElementById('parents_parent_preferred_playlist_new').addEventListener('input', checkNewInputs);
-  
+
+      // Add event listeners for filter inputs
+      filterParentTitle.addEventListener('input', resetAndLoadRecords);
+      filterParenttvgidoverride.addEventListener('input', resetAndLoadRecords);
+      filterParenttvglogooverride.addEventListener('input', resetAndLoadRecords);
+      filterParentchannelnumberoverride.addEventListener('input', resetAndLoadRecords);
+      filterParenttvcguidestationidoverride.addEventListener('input', resetAndLoadRecords);
+      filterParentpreferredplaylist.addEventListener('input', resetAndLoadRecords);
+
       recordContainer.addEventListener('scroll', onScroll);
   
       // Initial load
-      loadMoreRecords();
+      resetAndLoadRecords();
       checkNewInputs();
       checkExistingInputs(); // Ensure initial state is checked
   });
-</script>  
+</script>
 {% endblock javascripts %}

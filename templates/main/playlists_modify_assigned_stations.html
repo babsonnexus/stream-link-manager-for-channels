@@ -78,6 +78,26 @@
             <div class="grid-item"><h6>Choice 1</h6></div>
             <div class="grid-item"><h6>Choice 2</h6></div>
           </div>
+          <div class="grid-container" style="margin-right: 17px;">
+            <div class="grid-item">
+                <input type="text" id="filter-title" placeholder="Filter">
+            </div>
+            <div class="grid-item">
+                <input type="text" id="filter-m3u-name" placeholder="Filter">
+            </div>
+            <div class="grid-item">
+                <input type="text" id="filter-description" placeholder="Filter">
+            </div>
+            <div class="grid-item">
+                <input type="text" id="filter-parent" placeholder="Filter">
+            </div>
+            <div class="grid-item">
+              <hr style="border: 3px solid; width: 100%;">
+            </div>
+            <div class="grid-item">
+              <hr style="border: 3px solid; width: 100%;">
+            </div>
+          </div>
           <div id="record-container" style="height: 100vh; overflow-y: scroll;"><!-- Records handled by 'Infinite Scroll' --></div>
           <div id="loading-spinner" style="display: none; text-align: center;">Loading...</div>
           <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
@@ -155,138 +175,172 @@
 <!-- Infinite Scroll -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-      const recordContainer = document.getElementById('record-container');
-      const loadingSpinner = document.getElementById('loading-spinner');
-      const allRecords = {{ html_assigned_child_to_parents|tojson }};
-      const parentMappings = {{ html_child_to_parent_mappings|tojson }};
-      const limit = 100;
-      let offset = 0;
-  
-      function renderRecords(records, startIndex) {
-          records.forEach((item, index) => {
-              const adjustedIndex = startIndex + index + 1;
-  
-              const gridContainer = document.createElement('div');
-              gridContainer.className = 'grid-container';
-  
-              const hiddenInput = document.createElement('input');
-              hiddenInput.type = 'hidden';
-              hiddenInput.name = `assigned_child_to_parents_channel_id_${adjustedIndex}`;
-              hiddenInput.id = `assigned_child_to_parents_channel_id_${adjustedIndex}`;
-              hiddenInput.value = item.channel_id;
-  
-              const titleItem = document.createElement('div');
-              titleItem.className = 'grid-item';
-              const titleInput = document.createElement('input');
-              titleInput.type = 'text';
-              titleInput.id = `assigned_child_to_parents_title_${adjustedIndex}`;
-              titleInput.name = `assigned_child_to_parents_title_${adjustedIndex}`;
-              titleInput.value = item.title;
-              titleInput.readOnly = true;
-              titleInput.style.backgroundColor = '#d1cdcde5';
-              titleInput.title = item.title;
-              titleItem.appendChild(titleInput);
-  
-              const m3uNameItem = document.createElement('div');
-              m3uNameItem.className = 'grid-item';
-              const m3uNameInput = document.createElement('input');
-              m3uNameInput.type = 'text';
-              m3uNameInput.id = `assigned_child_to_parents_m3u_name_${adjustedIndex}`;
-              m3uNameInput.name = `assigned_child_to_parents_m3u_name_${adjustedIndex}`;
-              m3uNameInput.value = item.m3u_name;
-              m3uNameInput.readOnly = true;
-              m3uNameInput.style.backgroundColor = '#d1cdcde5';
-              m3uNameInput.title = item.m3u_name;
-              m3uNameItem.appendChild(m3uNameInput);
-  
-              const descriptionItem = document.createElement('div');
-              descriptionItem.className = 'grid-item';
-              const descriptionInput = document.createElement('input');
-              descriptionInput.type = 'text';
-              descriptionInput.id = `assigned_child_to_parents_description_${adjustedIndex}`;
-              descriptionInput.name = `assigned_child_to_parents_description_${adjustedIndex}`;
-              descriptionInput.value = item.description;
-              descriptionInput.readOnly = true;
-              descriptionInput.style.backgroundColor = '#d1cdcde5';
-              descriptionInput.title = item.description;
-              descriptionItem.appendChild(descriptionInput);
-  
-              const selectItem = document.createElement('div');
-              selectItem.className = 'grid-item';
-              const select = document.createElement('select');
-              select.name = `assigned_child_to_parents_parent_channel_id_${adjustedIndex}`;
-              select.id = `assigned_child_to_parents_parent_channel_id_${adjustedIndex}`;
-              select.style.width = '100%';
-              select.style.maxWidth = '100%';
-  
-              parentMappings.forEach(mapping => {
-                  const option = document.createElement('option');
-                  option.value = mapping.parent_channel_id;
-                  option.text = mapping.parent_title;
-                  if (mapping.parent_channel_id === item.parent_channel_id) {
-                      option.selected = true;
-                  }
-                  select.appendChild(option);
-              });
-              selectItem.appendChild(select);
-  
-              const setParentButtonItem = document.createElement('div');
-              setParentButtonItem.className = 'grid-item';
-              const setParentButton = document.createElement('button');
-              setParentButton.type = 'submit';
-              setParentButton.name = 'action';
-              setParentButton.value = `assigned_child_to_parents_action_set_parent_${adjustedIndex}`;
-              setParentButton.className = 'btn bg-gradient-primary my-2 mb-2';
-              setParentButton.textContent = 'Set Parent';
-              setParentButtonItem.appendChild(setParentButton);
-  
-              const makeParentButtonItem = document.createElement('div');
-              makeParentButtonItem.className = 'grid-item';
-              const makeParentButton = document.createElement('button');
-              makeParentButton.type = 'submit';
-              makeParentButton.name = 'action';
-              makeParentButton.value = `assigned_child_to_parents_action_make_parent_${adjustedIndex}`;
-              makeParentButton.className = 'btn bg-gradient-primary my-2 mb-2';
-              makeParentButton.textContent = 'Make Parent';
-              makeParentButtonItem.appendChild(makeParentButton);
-  
-              gridContainer.appendChild(hiddenInput);
-              gridContainer.appendChild(titleItem);
-              gridContainer.appendChild(m3uNameItem);
-              gridContainer.appendChild(descriptionItem);
-              gridContainer.appendChild(selectItem);
-              gridContainer.appendChild(setParentButtonItem);
-              gridContainer.appendChild(makeParentButtonItem);
-  
-              recordContainer.appendChild(gridContainer);
-          });
-      }
-  
-      function loadMoreRecords() {
-          loadingSpinner.style.display = 'block';
-          const nextBatch = allRecords.slice(offset, offset + limit);
-  
-          renderRecords(nextBatch, offset);
-          offset += limit;
-          loadingSpinner.style.display = 'none';
-  
-          if (offset >= allRecords.length) {
-              recordContainer.removeEventListener('scroll', onScroll);
-          }
-      }
-  
-      function onScroll() {
-          if (recordContainer.scrollTop + recordContainer.clientHeight >= recordContainer.scrollHeight) {
-              if (offset < allRecords.length) {
-                  loadMoreRecords();
-              }
-          }
-      }
-  
-      recordContainer.addEventListener('scroll', onScroll);
-  
-      // Initial load
-      loadMoreRecords();
+    const recordContainer = document.getElementById('record-container');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const allRecords = {{ html_assigned_child_to_parents|tojson }};
+    const parentMappings = {{ html_child_to_parent_mappings|tojson }};
+    const limit = 100;
+    let offset = 0;
+    let filteredRecords = allRecords;  // Store filtered records
+
+    // Filter input elements
+    const filterTitle = document.getElementById('filter-title');
+    const filterM3UName = document.getElementById('filter-m3u-name');
+    const filterDescription = document.getElementById('filter-description');
+    const filterParent = document.getElementById('filter-parent');
+
+    function applyFilters(records) {
+        return records.filter(item => {
+            return (
+                item.title.toLowerCase().includes(filterTitle.value.toLowerCase()) &&
+                item.m3u_name.toLowerCase().includes(filterM3UName.value.toLowerCase()) &&
+                item.description.toLowerCase().includes(filterDescription.value.toLowerCase()) &&
+                parentMappings.find(mapping => mapping.parent_channel_id === item.parent_channel_id)?.parent_title.toLowerCase().includes(filterParent.value.toLowerCase())
+            );
+        });
+    }
+
+    function renderRecords(records, startIndex) {
+        records.forEach((item, index) => {
+            const adjustedIndex = startIndex + index + 1;
+
+            const gridContainer = document.createElement('div');
+            gridContainer.className = 'grid-container';
+
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = `assigned_child_to_parents_channel_id_${adjustedIndex}`;
+            hiddenInput.id = `assigned_child_to_parents_channel_id_${adjustedIndex}`;
+            hiddenInput.value = item.channel_id;
+
+            const titleItem = document.createElement('div');
+            titleItem.className = 'grid-item';
+            const titleInput = document.createElement('input');
+            titleInput.type = 'text';
+            titleInput.id = `assigned_child_to_parents_title_${adjustedIndex}`;
+            titleInput.name = `assigned_child_to_parents_title_${adjustedIndex}`;
+            titleInput.value = item.title;
+            titleInput.readOnly = true;
+            titleInput.style.backgroundColor = '#d1cdcde5';
+            titleInput.title = item.title;
+            titleItem.appendChild(titleInput);
+
+            const m3uNameItem = document.createElement('div');
+            m3uNameItem.className = 'grid-item';
+            const m3uNameInput = document.createElement('input');
+            m3uNameInput.type = 'text';
+            m3uNameInput.id = `assigned_child_to_parents_m3u_name_${adjustedIndex}`;
+            m3uNameInput.name = `assigned_child_to_parents_m3u_name_${adjustedIndex}`;
+            m3uNameInput.value = item.m3u_name;
+            m3uNameInput.readOnly = true;
+            m3uNameInput.style.backgroundColor = '#d1cdcde5';
+            m3uNameInput.title = item.m3u_name;
+            m3uNameItem.appendChild(m3uNameInput);
+
+            const descriptionItem = document.createElement('div');
+            descriptionItem.className = 'grid-item';
+            const descriptionInput = document.createElement('input');
+            descriptionInput.type = 'text';
+            descriptionInput.id = `assigned_child_to_parents_description_${adjustedIndex}`;
+            descriptionInput.name = `assigned_child_to_parents_description_${adjustedIndex}`;
+            descriptionInput.value = item.description;
+            descriptionInput.readOnly = true;
+            descriptionInput.style.backgroundColor = '#d1cdcde5';
+            descriptionInput.title = item.description;
+            descriptionItem.appendChild(descriptionInput);
+
+            const selectItem = document.createElement('div');
+            selectItem.className = 'grid-item';
+            const select = document.createElement('select');
+            select.name = `assigned_child_to_parents_parent_channel_id_${adjustedIndex}`;
+            select.id = `assigned_child_to_parents_parent_channel_id_${adjustedIndex}`;
+            select.style.width = '100%';
+            select.style.maxWidth = '100%';
+
+            parentMappings.forEach(mapping => {
+                const option = document.createElement('option');
+                option.value = mapping.parent_channel_id;
+                option.text = mapping.parent_title;
+                if (mapping.parent_channel_id === item.parent_channel_id) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            selectItem.appendChild(select);
+
+            const setParentButtonItem = document.createElement('div');
+            setParentButtonItem.className = 'grid-item';
+            const setParentButton = document.createElement('button');
+            setParentButton.type = 'submit';
+            setParentButton.name = 'action';
+            setParentButton.value = `assigned_child_to_parents_action_set_parent_${adjustedIndex}`;
+            setParentButton.className = 'btn bg-gradient-primary my-2 mb-2';
+            setParentButton.textContent = 'Set Parent';
+            setParentButtonItem.appendChild(setParentButton);
+
+            const makeParentButtonItem = document.createElement('div');
+            makeParentButtonItem.className = 'grid-item';
+            const makeParentButton = document.createElement('button');
+            makeParentButton.type = 'submit';
+            makeParentButton.name = 'action';
+            makeParentButton.value = `assigned_child_to_parents_action_make_parent_${adjustedIndex}`;
+            makeParentButton.className = 'btn bg-gradient-primary my-2 mb-2';
+            makeParentButton.textContent = 'Make Parent';
+            makeParentButtonItem.appendChild(makeParentButton);
+
+            gridContainer.appendChild(hiddenInput);
+            gridContainer.appendChild(titleItem);
+            gridContainer.appendChild(m3uNameItem);
+            gridContainer.appendChild(descriptionItem);
+            gridContainer.appendChild(selectItem);
+            gridContainer.appendChild(setParentButtonItem);
+            gridContainer.appendChild(makeParentButtonItem);
+
+            recordContainer.appendChild(gridContainer);
+        });
+    }
+
+    function loadMoreRecords() {
+        loadingSpinner.style.display = 'block';
+        const nextBatch = filteredRecords.slice(offset, offset + limit);
+
+        renderRecords(nextBatch, offset);
+        offset += limit;
+        loadingSpinner.style.display = 'none';
+
+        if (offset >= filteredRecords.length) {
+            recordContainer.removeEventListener('scroll', onScroll);
+        }
+    }
+
+    function onScroll() {
+        if (recordContainer.scrollTop + recordContainer.clientHeight >= recordContainer.scrollHeight) {
+            if (offset < filteredRecords.length) {
+                loadMoreRecords();
+            }
+        }
+    }
+
+    function resetAndLoadRecords() {
+        offset = 0;
+        recordContainer.innerHTML = '';  // Clear existing records
+        filteredRecords = applyFilters(allRecords);  // Re-apply filters to all records
+        loadMoreRecords();  // Load filtered records
+        if (filteredRecords.length > limit) {
+            recordContainer.addEventListener('scroll', onScroll);  // Re-attach scroll event listener
+        }
+    }
+
+    // Add event listeners for filter inputs
+    filterTitle.addEventListener('input', resetAndLoadRecords);
+    filterM3UName.addEventListener('input', resetAndLoadRecords);
+    filterDescription.addEventListener('input', resetAndLoadRecords);
+    filterParent.addEventListener('input', resetAndLoadRecords);
+
+    recordContainer.addEventListener('scroll', onScroll);
+
+    // Initial load
+    resetAndLoadRecords();
   });
 </script>
 {% endblock javascripts %}

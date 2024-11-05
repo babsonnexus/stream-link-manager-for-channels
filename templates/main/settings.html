@@ -258,8 +258,16 @@
               <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule">Stream Links/Files: End-to-End Process</label>
             </div>
             <div>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule_time">Run at:</label>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule_time">Start at:</label>
               <input type="time" id="auto_update_schedule_time" name="auto_update_schedule_time" value="{{ html_auto_update_schedule_time }}" class="ms-3">
+            </div>
+            <div style="margin-top: 10px;">
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule_frequency">And run:</label>
+              <select name="auto_update_schedule_frequency" id="auto_update_schedule_frequency" style="margin-left: 15px;">
+                {% for html_slm_end_to_end_frequency in html_slm_end_to_end_frequencies %}
+                  <option value="{{ html_slm_end_to_end_frequency }}" {% if html_slm_end_to_end_frequency == html_auto_update_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_slm_end_to_end_frequency }}</option>
+                {% endfor %}
+              </select>
             </div>
             <div style="display: flex; justify-content: space-between; margin-top: 10px;">
               <button type="submit" name="action" value="end_to_end_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
