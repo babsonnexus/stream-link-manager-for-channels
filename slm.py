@@ -29,7 +29,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.11.05.1648"
+slm_version = "v2024.11.08.1720"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -3831,8 +3831,7 @@ def playlists_webpage(sub_page):
 
                 elif playlists_action.startswith('parents_action_') or '_make_parent_' in playlists_action:
 
-                    if playlists_action == "parents_action_save":
-                        temp_parents = []
+                    if playlists_action == "parents_action_save" or playlists_action.startswith('parents_action_delete_'):
 
                         parents_parent_channel_id_inputs = {}
                         parents_parent_title_inputs = {}
@@ -3840,7 +3839,6 @@ def playlists_webpage(sub_page):
                         parents_parent_tvg_logo_override_inputs = {}
                         parents_parent_channel_number_override_inputs = {}
                         parents_parent_tvc_guide_stationid_override_inputs = {}
-
                         parents_parent_preferred_playlist_inputs = {}
 
                         for key in request.form.keys():
@@ -3872,36 +3870,71 @@ def playlists_webpage(sub_page):
                                 index = key.split('_')[-1]
                                 parents_parent_preferred_playlist_inputs[index] = request.form.get(key)
 
-                        for row in parents_parent_channel_id_inputs:
-                            parents_parent_channel_id_input =  parents_parent_channel_id_inputs.get(row)
-                            parents_parent_title_input = parents_parent_title_inputs.get(row)
-                            parents_parent_tvg_id_override_input = parents_parent_tvg_id_override_inputs.get(row)
-                            parents_parent_tvg_logo_override_input = parents_parent_tvg_logo_override_inputs.get(row)
-                            parents_parent_channel_number_override_input = parents_parent_channel_number_override_inputs.get(row)
-                            parents_parent_tvc_guide_stationid_override_input = parents_parent_tvc_guide_stationid_override_inputs.get(row)
-                            parents_parent_preferred_playlist_input = parents_parent_preferred_playlist_inputs.get(row)
-                            if parents_parent_preferred_playlist_input == "None":
-                                parents_parent_preferred_playlist_input = None
+                        if playlists_action == "parents_action_save":
+                            temp_parents = []
 
-                            temp_parents.append({
-                                'parent_channel_id': parents_parent_channel_id_input,
-                                'parent_title': parents_parent_title_input,
-                                'parent_tvg_id_override': parents_parent_tvg_id_override_input,
-                                'parent_tvg_logo_override': parents_parent_tvg_logo_override_input,
-                                'parent_channel_number_override': parents_parent_channel_number_override_input,
-                                'parent_tvc_guide_stationid_override': parents_parent_tvc_guide_stationid_override_input,
-                                'parent_preferred_playlist': parents_parent_preferred_playlist_input
-                            })
+                            for row in parents_parent_channel_id_inputs:
+                                parents_parent_channel_id_input =  parents_parent_channel_id_inputs.get(row)
+                                parents_parent_title_input = parents_parent_title_inputs.get(row)
+                                parents_parent_tvg_id_override_input = parents_parent_tvg_id_override_inputs.get(row)
+                                parents_parent_tvg_logo_override_input = parents_parent_tvg_logo_override_inputs.get(row)
+                                parents_parent_channel_number_override_input = parents_parent_channel_number_override_inputs.get(row)
+                                parents_parent_tvc_guide_stationid_override_input = parents_parent_tvc_guide_stationid_override_inputs.get(row)
+                                parents_parent_preferred_playlist_input = parents_parent_preferred_playlist_inputs.get(row)
+                                if parents_parent_preferred_playlist_input == "None":
+                                    parents_parent_preferred_playlist_input = None
 
-                        for parent in parents:
-                            for temp_parent in temp_parents:
-                                if parent['parent_channel_id'] == temp_parent['parent_channel_id']:
-                                    parent['parent_title'] = temp_parent['parent_title']
-                                    parent['parent_tvg_id_override'] = temp_parent['parent_tvg_id_override']
-                                    parent['parent_tvg_logo_override'] = temp_parent['parent_tvg_logo_override']
-                                    parent['parent_channel_number_override'] = temp_parent['parent_channel_number_override']
-                                    parent['parent_tvc_guide_stationid_override'] = temp_parent['parent_tvc_guide_stationid_override']
-                                    parent['parent_preferred_playlist'] = temp_parent['parent_preferred_playlist']
+                                temp_parents.append({
+                                    'parent_channel_id': parents_parent_channel_id_input,
+                                    'parent_title': parents_parent_title_input,
+                                    'parent_tvg_id_override': parents_parent_tvg_id_override_input,
+                                    'parent_tvg_logo_override': parents_parent_tvg_logo_override_input,
+                                    'parent_channel_number_override': parents_parent_channel_number_override_input,
+                                    'parent_tvc_guide_stationid_override': parents_parent_tvc_guide_stationid_override_input,
+                                    'parent_preferred_playlist': parents_parent_preferred_playlist_input
+                                })
+
+                            for parent in parents:
+                                for temp_parent in temp_parents:
+                                    if parent['parent_channel_id'] == temp_parent['parent_channel_id']:
+                                        parent['parent_title'] = temp_parent['parent_title']
+                                        parent['parent_tvg_id_override'] = temp_parent['parent_tvg_id_override']
+                                        parent['parent_tvg_logo_override'] = temp_parent['parent_tvg_logo_override']
+                                        parent['parent_channel_number_override'] = temp_parent['parent_channel_number_override']
+                                        parent['parent_tvc_guide_stationid_override'] = temp_parent['parent_tvc_guide_stationid_override']
+                                        parent['parent_preferred_playlist'] = temp_parent['parent_preferred_playlist']
+
+                        elif playlists_action.startswith('parents_action_delete_'):
+                            parents_action_delete_index = int(playlists_action.split('_')[-1])
+                            delete_parent_channel_id = parents_parent_channel_id_inputs[str(parents_action_delete_index)]
+
+                            # Create a temporary record with fields set to None
+                            temp_record = create_temp_record(parents[0].keys())
+
+                            if 0 <= parents_action_delete_index < len(parents):
+                                for parent in parents:
+                                    if parent['parent_channel_id'] == delete_parent_channel_id:
+                                        parents.remove(parent)
+                                        break
+                                
+                                # If the list is now empty, add the temp record to keep headers
+                                if not parents:
+                                    parents.append(temp_record)
+                                    run_empty_row = True
+
+                            # Unassign children with that parent
+                            child_to_parents = read_data(csv_playlistmanager_child_to_parent)
+                            unassign_children = []
+                            
+                            for child_to_parent in child_to_parents:
+                                if child_to_parent['parent_channel_id'] == delete_parent_channel_id:
+                                    unassign_children.append(child_to_parent['child_m3u_id_channel_id'])
+
+                            if unassign_children:
+                                for unassign_child in unassign_children:
+                                    set_child_to_parent(unassign_child, "Unassigned")
+
+                                unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
 
                     elif playlists_action == "parents_action_new" or '_make_parent_' in playlists_action:
                         
@@ -3986,35 +4019,6 @@ def playlists_webpage(sub_page):
                             "parent_tvc_stream_acodec_override": parents_parent_tvc_stream_acodec_override_input,
                             "parent_preferred_playlist": parents_parent_preferred_playlist_input
                         })
-
-                    elif playlists_action.startswith('parents_action_delete_'):
-                        parents_action_delete_index = int(playlists_action.split('_')[-1]) - 1
-                        parent_channel_id = parents[parents_action_delete_index]['parent_channel_id']
-
-                        # Create a temporary record with fields set to None
-                        temp_record = create_temp_record(parents[0].keys())
-
-                        if 0 <= parents_action_delete_index < len(parents):                           
-                            parents.pop(parents_action_delete_index)
-                            
-                            # If the list is now empty, add the temp record to keep headers
-                            if not parents:
-                                parents.append(temp_record)
-                                run_empty_row = True
-
-                        # Unassign children with that parent
-                        child_to_parents = read_data(csv_playlistmanager_child_to_parent)
-                        unassign_children = []
-                        
-                        for child_to_parent in child_to_parents:
-                            if child_to_parent['parent_channel_id'] == parent_channel_id:
-                                unassign_children.append(child_to_parent['child_m3u_id_channel_id'])
-
-                        if unassign_children:
-                            for unassign_child in unassign_children:
-                                set_child_to_parent(unassign_child, "Unassigned")
-
-                            unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
 
                     if len(parents) > 1:
                         parents = sorted(parents, key=lambda x: sort_key(x["parent_title"].casefold()))
