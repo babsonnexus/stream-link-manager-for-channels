@@ -82,7 +82,7 @@ services:
     ports:
       - "${SLM_PORT:-5000}:5000"
     volumes:
-      - slm_files:/app/program_files
+      - ${SLM_HOST_FOLDER:-slm_files}:/app/program_files
       - ${CHANNELS_FOLDER}:/app/channels_folder
     environment:
       - TZ=${TIMEZONE:-UTC}
@@ -94,7 +94,7 @@ volumes:
 
 Environment variables are included, some required, some optional.
 
-![image](https://github.com/user-attachments/assets/fafa4c3f-23b8-4830-8830-7b4c08a6f71c)
+![image](https://github.com/user-attachments/assets/ebb9867e-c619-49f3-a09b-83de5efb6ea3)
 
 * <b>TAG</b> | OPTIONAL | Which version of the program you want. The default is "latest" if you do not add.
 
@@ -102,24 +102,26 @@ Environment variables are included, some required, some optional.
 
 * <b>CHANNELS_FOLDER</b> | REQUIRED | The path to your Channels DVR parent directory (see details in <i>Startup</i> below), i.e., ```/usr/lib/channels-dvr```. You could optionally put in any parent path, so long as the Channels DVR path is accessible somewhere inside. Note that spaces are fine and you do not have to enclose the path in quotes. In Windows, your slashes should go the opposite of the normal way, i.e., ```C:/Files/Media/Channels DVR```. In MacOS, be sure to include your ```/Volumes``` first, i.e., ```/Volumes/external-hdd/Channels DVR```. Be careful not to put extra characters as your system may then create that directory anyway. In other words, there will be no error as the directory exists, but it is not set to where you want it to be.
 
+* <b>SLM_HOST_FOLDER</b> | OPTIONAL | The path on your local host machine where you would like the program files for **Stream Link (+Files +Playlists) Manager for Channels** to reside. As will be discussed in more detail later, these are the files that the application uses to manage the entire solution. The software itself can be replaced at any time, but these files have all of your settings, bookmarks, etc.... As such, you may desire to have them available on your local machine that is hosting Docker in order to back them up. If you do not add this, it will be set to `slm_files` inside the `Volumes` area of Docker Desktop itself.
+
 * <b>TIMEZONE</b> | OPTIONAL | The timezone you want to use. To know what to input, go [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), find your timezone, make sure it is a "Canonical" Type, and use the "TZ identifier". The default is "UTC" if you do not add. Please keep this in mind when using the scheduler function.
 
 ### Command Line
-Follow the directions above for <b>SLM_PORT</b> in place of ```[YOUR_PORT_HERE]``` (except now it is REQUIRED), <b>CHANNELS_FOLDER</b> in place of ```[PATH_TO_CHANNELS_FOLDER]```, and <b>TIMEZONE</b> in place of ```[TIMEZONE]```. Do not leave the ```[``` and ```]``` when putting in your values.
+Follow the directions above for <b>SLM_PORT</b> in place of ```[YOUR_PORT_HERE]``` (except now it is REQUIRED), <b>CHANNELS_FOLDER</b> in place of ```[PATH_TO_CHANNELS_FOLDER]```, <b>SLM_HOST_FOLDER</b> in place of `[PATH_TO_HOST_SLM_FOLDER]` (except now it is required, too, but you can put in the default value of `slm_files`), and <b>TIMEZONE</b> in place of ```[TIMEZONE]```. Do not leave the ```[``` and ```]``` when putting in your values.
 
 #### Most Cases
 ```
-docker run -d --restart=unless-stopped --name slm -p [YOUR_PORT_HERE]:5000 -v slm_files:/app/program_files -v "[PATH_TO_CHANNELS_FOLDER]":/app/channels_folder -e TZ="[TIMEZONE]" ghcr.io/babsonnexus/stream-link-manager-for-channels:latest
+docker run -d --restart=unless-stopped --name slm -p [YOUR_PORT_HERE]:5000 -v [PATH_TO_HOST_SLM_FOLDER]:/app/program_files -v "[PATH_TO_CHANNELS_FOLDER]":/app/channels_folder -e TZ="[TIMEZONE]" ghcr.io/babsonnexus/stream-link-manager-for-channels:latest
 ```
 
 #### Some Linux Cases
 ```
-docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=[YOUR_PORT_HERE] -v slm_files:/app/program_files -v "[PATH_TO_CHANNELS_FOLDER]":/app/channels_folder -e TZ="[TIMEZONE]" ghcr.io/babsonnexus/stream-link-manager-for-channels:latest
+docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=[YOUR_PORT_HERE] -v [PATH_TO_HOST_SLM_FOLDER]:/app/program_files -v "[PATH_TO_CHANNELS_FOLDER]":/app/channels_folder -e TZ="[TIMEZONE]" ghcr.io/babsonnexus/stream-link-manager-for-channels:latest
 ```
 
 #### Examples
 ```
-docker run -d --restart=unless-stopped --name slm -p 7900:5000 -v slm_files:/app/program_files -v "C:/Files/Media/Channels DVR":/app/channels_folder -e TZ="America/New_York" ghcr.io/babsonnexus/stream-link-manager-for-channels:latest
+docker run -d --restart=unless-stopped --name slm -p 7900:5000 -v "C:/Temp/SLM Host Test":/app/program_files -v "C:/Files/Media/Channels DVR":/app/channels_folder -e TZ="America/New_York" ghcr.io/babsonnexus/stream-link-manager-for-channels:latest
 docker run -d --restart=unless-stopped --name slm --network=host -e SLM_PORT=7900 -v slm_files:/app/program_files -v "/somewhere/channels_dvr":/app/channels_folder -e TZ="America/New_York" ghcr.io/babsonnexus/stream-link-manager-for-channels:latest
 ```
 
