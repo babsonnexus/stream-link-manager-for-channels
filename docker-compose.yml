@@ -5,7 +5,7 @@ services:
     ports:
       - "${SLM_PORT:-5000}:5000"
     volumes:
-      - slm_files:/app/program_files
+      - ${SLM_HOST_FOLDER:-slm_files}:/app/program_files
       - ${CHANNELS_FOLDER}:/app/channels_folder
     environment:
       - TZ=${TIMEZONE:-UTC}
