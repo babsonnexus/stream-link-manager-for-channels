@@ -29,7 +29,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.11.08.1720"
+slm_version = "v2024.11.13.1347"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -1889,7 +1889,6 @@ def add_programs():
             language_code_input_prior = None
             entry_id_prior = None
             season_episodes_prior = []
-            date_new_default_prior = date_new_default
             program_add_prior = ''
             title_selected_prior = None
             release_year_selected_prior = None
@@ -3628,7 +3627,7 @@ def playlists_webpage(sub_page):
     unassigned_child_to_parents = []
     assigned_child_to_parents = []
     all_child_to_parents_stats = {}
-    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
+    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents()
 
     playlist_files = []
     playlist_files = get_playlist_files()
@@ -3934,7 +3933,7 @@ def playlists_webpage(sub_page):
                                 for unassign_child in unassign_children:
                                     set_child_to_parent(unassign_child, "Unassigned")
 
-                                unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
+                                unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents()
 
                     elif playlists_action == "parents_action_new" or '_make_parent_' in playlists_action:
                         
@@ -4001,7 +4000,7 @@ def playlists_webpage(sub_page):
                             child_to_parents_channel_id = child_to_parents_channel_id_inputs[child_to_parents_action_make_parent_index]
 
                             set_child_to_parent(child_to_parents_channel_id, parents_parent_channel_id_input)
-                            unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
+                            unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents()
 
                         parents.append({
                             "parent_channel_id": parents_parent_channel_id_input,
@@ -4062,15 +4061,21 @@ def playlists_webpage(sub_page):
 
                     for key in request.form.keys():
                         
-                        keycheck = f"{keycheck_start}channel_id_"
-                        if key.startswith(keycheck):
-                            index = key.split('_')[-1]
-                            child_to_parents_channel_id_inputs[index] = request.form.get(key)
+                        if not key.endswith('all'):
 
-                        keycheck = f"{keycheck_start}parent_channel_id_"
-                        if key.startswith(keycheck):
-                            index = key.split('_')[-1]
-                            child_to_parents_parent_channel_id_inputs[index] = request.form.get(key)
+                            keycheck = f"{keycheck_start}channel_id_"
+                            if key.startswith(keycheck):
+                                index = key.split('_')[-1]
+                                child_to_parents_channel_id_inputs[index] = request.form.get(key)
+
+                            keycheck = f"{keycheck_start}parent_channel_id_"
+                            if key.startswith(keycheck):
+                                index = key.split('_')[-1]
+                                if playlists_action.endswith('_set_parent_all'):
+                                    all_key = f"{keycheck}all"
+                                    child_to_parents_parent_channel_id_inputs[index] = request.form.get(all_key)
+                                else:
+                                    child_to_parents_parent_channel_id_inputs[index] = request.form.get(key)
 
                     for index in child_to_parents_channel_id_inputs.keys():
                         child_to_parents_channel_id_input = child_to_parents_channel_id_inputs.get(index)
@@ -4109,16 +4114,20 @@ def playlists_webpage(sub_page):
                         send_child_to_parents.append({'child_m3u_id_channel_id': child_to_parents_channel_id_input, 'parent_channel_id': child_to_parents_parent_channel_id_input})
 
                     if '_set_parent_' in playlists_action:
-                        
-                        send_child_to_parents_single = []
-                        child_to_parents_action_set_parent_index = int(playlists_action.split('_')[-1]) - 1
 
-                        child_to_parents_channel_id_input_single = send_child_to_parents[child_to_parents_action_set_parent_index]['child_m3u_id_channel_id']
-                        child_to_parents_parent_channel_id_input_single = send_child_to_parents[child_to_parents_action_set_parent_index]['parent_channel_id']
+                        if playlists_action.endswith('_set_parent_all'):
+                            pass
 
-                        send_child_to_parents_single.append({'child_m3u_id_channel_id': child_to_parents_channel_id_input_single, 'parent_channel_id': child_to_parents_parent_channel_id_input_single})
+                        else:
+                            send_child_to_parents_single = []
+                            child_to_parents_action_set_parent_index = int(playlists_action.split('_')[-1]) - 1
 
-                        send_child_to_parents = send_child_to_parents_single
+                            child_to_parents_channel_id_input_single = send_child_to_parents[child_to_parents_action_set_parent_index]['child_m3u_id_channel_id']
+                            child_to_parents_parent_channel_id_input_single = send_child_to_parents[child_to_parents_action_set_parent_index]['parent_channel_id']
+
+                            send_child_to_parents_single.append({'child_m3u_id_channel_id': child_to_parents_channel_id_input_single, 'parent_channel_id': child_to_parents_parent_channel_id_input_single})
+
+                            send_child_to_parents = send_child_to_parents_single
 
                     # Write back
                     for send_child_to_parent in send_child_to_parents:
@@ -4130,13 +4139,13 @@ def playlists_webpage(sub_page):
                     write_data(csv_playlistmanager_parents, parents)
                     parents = read_data(csv_playlistmanager_parents)
                     child_to_parent_mappings = get_child_to_parent_mappings(child_to_parent_mappings_default)
-                    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
+                    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents()
 
             elif '_update_' in playlists_action:
 
                 if playlists_action == 'final_playlists_action_update_station_list':
                     get_combined_m3us()
-                    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats = get_child_to_parents()
+                    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents()
 
                 elif playlists_action == 'final_playlists_action_update_m3u_epg':
                     get_final_m3us_epgs()
@@ -4157,6 +4166,7 @@ def playlists_webpage(sub_page):
         html_unassigned_child_to_parents = unassigned_child_to_parents,
         html_assigned_child_to_parents = assigned_child_to_parents,
         html_all_child_to_parents_stats = all_child_to_parents_stats,
+        html_playlists_station_count = playlists_station_count,
         html_playlist_files = playlist_files,
         html_uploaded_playlist_files = uploaded_playlist_files,
         html_current_path = current_path,
@@ -4215,13 +4225,18 @@ def get_combined_m3us():
 
 # Used to loop through a URL that might error
 def fetch_url(url, retries, delay):
+    timeout_duration = 60
+
     for attempt in range(retries):
         try:
-            response = requests.get(url, headers=url_headers)
-            return response
+            response = requests.get(url, headers=url_headers, timeout=timeout_duration)
+            if response.status_code == 200:
+                return response
+            else:
+                raise Exception(f"HTTP Status Code {response.status_code}")
         except Exception as e:
             if attempt < retries - 1:
-                print(f"\n{current_time()} WARNING: For '{url}', Encountered an error ({e}). Retrying in {delay} seconds...")
+                print(f"\n{current_time()} WARNING: For '{url}', encountered an error ({e}). Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
                 notification_add(f"\n{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...")
@@ -4382,10 +4397,18 @@ def get_child_to_parents():
     combined_m3us = read_data(csv_playlistmanager_combined_m3us)
     child_to_parents = read_data(csv_playlistmanager_child_to_parent)
 
+    playlists_station_count = []
     all_child_to_parents = []
     sorted_all_child_to_parents = []
     unassigned_child_to_parents = []
     assigned_child_to_parents = []
+
+    for playlist in playlists:
+        station_count = sum(1 for record in combined_m3us if record['m3u_id'] == playlist['m3u_id'])
+        playlists_station_count.append({
+            'm3u_id': playlist['m3u_id'],
+            'station_count': station_count
+        })
 
     for child_to_parent in child_to_parents:
         for combined_m3u in combined_m3us:
@@ -4460,7 +4483,7 @@ def get_child_to_parents():
                 'parent_channel_id': sorted_all_child_to_parent['parent_channel_id']
             })
 
-    return unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats
+    return unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count
 
 # Calculate percentages or set to zero if total_records is zero
 def calc_percentage(count, total):
@@ -4830,18 +4853,31 @@ def get_playlist_files():
         playlist_filename = f"{all_prior_file['filename']}.{playlist_extension}"
         playlist_number = all_prior_file['filename'].split('_')[-1]
 
+        station_count = None
+        station_word = None
         playlist_label = None
+
         if playlist_extension == "m3u":
+            with open(full_path(playlist_filename), 'r', encoding='utf-8') as file:
+                content = file.read()
+            station_count = content.count("channel-id")
+            if int(station_count) > 1:
+                station_word = "Stations"
+            else:
+                station_word = "Station"
+
             if 'gracenote_' in playlist_filename:
                 if 'hls' in playlist_filename:
-                    playlist_label = f"m3u Playlist - Gracenote (HLS) [{playlist_number}]: "
+                    playlist_label = f"m3u Playlist - Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
                 elif 'mpeg_ts' in playlist_filename:
-                    playlist_label = f"m3u Playlist - Gracenote (MPEG-TS) [{playlist_number}]: "
+                    playlist_label = f"m3u Playlist - Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
+
             elif 'epg_' in playlist_filename:
                 if 'hls' in playlist_filename:
-                    playlist_label = f"m3u Playlist - Non-Gracenote (HLS) [{playlist_number}]: "
+                    playlist_label = f"m3u Playlist - Non-Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
                 elif 'mpeg_ts' in playlist_filename:
-                    playlist_label = f"m3u Playlist - Non-Gracenote (MPEG-TS) [{playlist_number}]: "
+                    playlist_label = f"m3u Playlist - Non-Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
+
         elif playlist_extension == "xml":
             if 'epg_' in playlist_filename:
                 if 'hls' in playlist_filename:
