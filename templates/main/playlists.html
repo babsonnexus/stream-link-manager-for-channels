@@ -186,9 +186,13 @@
             </td>
           </tr>
         </table>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
         <div class="collapse" id="unassignedChildToParentsContent">
           <div class="content-placeholder">
-            <div class="child_to_parents container-fluid">
+            <div class="child_to_parents container-fluid" style="width: 98%;">
               <div class="grid-container" style="text-align: center; margin-right: 17px;">
                 <div class="grid-item"><h6>Station Name</h6></div>
                 <div class="grid-item"><h6>Playlist [ID]</h6></div>
@@ -199,16 +203,40 @@
               </div>
               <div class="grid-container" style="margin-right: 17px;">
                 <div class="grid-item">
-                    <input type="text" id="filter-title" placeholder="Filter">
+                  <hr style="border: 3px solid; width: 100%;">
                 </div>
                 <div class="grid-item">
-                    <input type="text" id="filter-m3u-name" placeholder="Filter">
+                  <hr style="border: 3px solid; width: 100%;">
                 </div>
                 <div class="grid-item">
-                    <input type="text" id="filter-description" placeholder="Filter">
+                  <hr style="border: 3px solid; width: 100%;">
                 </div>
                 <div class="grid-item">
-                    <input type="text" id="filter-parent" placeholder="Filter">
+                  <select name="unassigned_child_to_parents_parent_channel_id_all" id="unassigned_child_to_parents_parent_channel_id_all" style="width: 100%; max-width: 100%;">
+                    {% for html_child_to_parent_mapping in html_child_to_parent_mappings %}
+                      <option value="{{ html_child_to_parent_mapping.parent_channel_id }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_child_to_parent_mapping.parent_title }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="grid-item">
+                  <button type="submit" name="action" value="unassigned_child_to_parents_action_set_parent_all" class="btn bg-gradient-primary my-2 mb-2">Set Visible</button>
+                </div>
+                <div class="grid-item">
+                  <hr style="border: 3px solid; width: 100%;">
+                </div>
+              </div>
+              <div class="grid-container" style="margin-right: 17px;">
+                <div class="grid-item">
+                  <input type="text" id="filter-title" placeholder="Filter">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="filter-m3u-name" placeholder="Filter">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="filter-description" placeholder="Filter">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="filter-parent" placeholder="Filter">
                 </div>
                 <div class="grid-item">
                   <hr style="border: 3px solid; width: 100%;">

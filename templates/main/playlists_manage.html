@@ -7,7 +7,7 @@
 <style> 
   .playlists .grid-container {
       display: grid;
-      grid-template-columns: 1fr 2fr 3fr 3fr 1fr 1fr;
+      grid-template-columns: 0.5fr 2fr 3fr 3fr 1fr 0.5fr 1fr;
       gap: 10px;
   }
 
@@ -224,6 +224,7 @@
             <div class="grid-item"><h6>m3u URL</h6></div>
             <div class="grid-item"><h6>[OPTIONAL]<br>EPG XML</h6></div>
             <div class="grid-item"><h6>Stream Format</h6></div>
+            <div class="grid-item"><h6># Station(s)</h6></div>
             <div class="grid-item"><h6>Action</h6></div>
           </div>
           {% for item in html_playlists %}
@@ -254,6 +255,9 @@
                 </select>
               </div>
               <div class="grid-item">
+                <input type="text" value="{% for count_item in html_playlists_station_count if count_item.m3u_id == item.m3u_id %}{{ count_item.station_count }}{% endfor %}" readonly style="background-color: #d1cdcde5;" title="{% for count_item in html_playlists_station_count if count_item.m3u_id == item.m3u_id %}{{ count_item.station_count }}{% endfor %}">
+              </div>
+              <div class="grid-item">
                 <button type="submit" name="action" value="playlists_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
               </div>
             </div>
@@ -282,6 +286,9 @@
                   <option value="{{ html_stream_format }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_stream_format }}</option>
                 {% endfor %}
               </select>
+            </div>
+            <div class="grid-item">
+              <hr style="border: 3px solid; width: 100%;">
             </div>
             <div class="grid-item">
               <button type="submit" name="action" value="playlists_action_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
