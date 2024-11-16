@@ -1072,6 +1072,13 @@ First, make sure your link is `http` instead of `https` as that latter may not b
 
 Also, you can test these in the `Channels URL` section of `Settings`, making sure you get a positive response. Just be sure not to save!
 
+### [PLM] I set custom logos and they show up in the web, but they don't appear in the Channels app
+If you see a situation like this...
+
+![Missing Station Logos](https://github.com/user-attachments/assets/b632a80d-2c33-4707-b19e-e71f2e078694)
+
+... the most likely culprit is the file type for the images. The Channels DVR apps require images to be either `.png` or `.jpg`, unlike the web which can accept about anything.
+
 ### [GEN] I set the scheduler for a certain time and it is running hours earlier/later. | The time showing in the logs is wrong.
 Follow the directions related to "TIMEZONE" in the installation steps above.
 
