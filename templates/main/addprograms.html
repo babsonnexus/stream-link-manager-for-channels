@@ -125,47 +125,61 @@
           <!-- Display search results -->
           <div class="text-center">
             {% if html_program_search_results %}
-              {% if html_program_add_filter_panel == 'on' %}
-                <div>
-                  <button type="submit" name="action" value="program_add_resort_filter_movie" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Movies</button>
-                  <button type="submit" name="action" value="program_add_resort_filter_show" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Shows</button>
-                </div>
-              {% endif %}
-              {% if html_program_add_resort_panel == 'on' %}
-                <div>
-                  <button type="submit" name="action" value="program_add_resort_alpha" class="btn bg-gradient-primary w-25 my-2 mb-2">Resort Results Alphabetically</button>
-                </div>
+              <div style="margin-right: 70px;">
+                {% if html_program_add_filter_panel == 'on' %}
+                  <div>
+                    <button type="submit" name="action" value="program_add_resort_filter_movie" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Movies</button>
+                    <button type="submit" name="action" value="program_add_resort_filter_show" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Shows</button>
+                  </div>
+                {% endif %}
+                {% if html_program_add_resort_panel == 'on' %}
+                  <div>
+                    <button type="submit" name="action" value="program_add_resort_alpha" class="btn bg-gradient-primary w-25 my-2 mb-2">Resort Results Alphabetically</button>
+                  </div>
+                {% endif %}
+              </div>
+              {% if html_program_add_filter_panel == 'on' or html_program_add_resort_panel == 'on' %}
+              <hr>
               {% endif %}
               {% for program in html_program_search_results %}
-                <button type="submit" name="action" class="btn bg-gradient-primary w-55 my-2 mb-2" value="program_search_result_{{ loop.index }}" style="margin-left: calc(5%);">
-                  <img src="{{ program.poster }}" class="program-poster" alt="Poster">
-                  <div class="program-content">
-                    <div style="font-size: 2em;">{{ program.title }} ({{ program.release_year }}) | {{ program.object_type }}</div>
-                    <hr>
-                    <div style="text-align: left; text-transform: none; font-weight: normal; font-size: 1.25em;">{{ program.short_description }}</div>
-                    <div style="text-align: left; text-transform: none; font-weight: normal; font-size: 0.9em;">IMDB: {{ program.score }} / 10.0</div>
-                    <div class="row">
-                      <div class="col-12 my-1"></div>
-                    </div>
-                    <div style="text-align: center; text-transform: none; font-weight: normal; font-size: 1.3em;">
-                      <hr style="display: inline-block; width: calc(50% - 90px); margin: 0 10px; vertical-align: middle;">
-                      <b>Available On</b>
-                      <hr style="display: inline-block; width: calc(50% - 90px); margin: 0 10px; vertical-align: middle;">
-                    </div>                    
-                    <div style="display: flex; flex-wrap: wrap; align-items: center;">
-                      {% for icon in program.offers_list %}
-                        <img src="{{ icon }}" style="width: 55px; height: 55px; margin-right: 5px; margin-top: 5px; object-fit: contain;">
-                      {% endfor %}
-                    </div>
+                <div style="display: flex; align-items: center; justify-content: center; width: 100%;">
+                  <div class="form-check form-switch ps-0 is-filled" style="margin-right: 5px;">
+                    <input type="checkbox" class="form-check-input program-checkbox" id="select_program_search_result_{{ loop.index }}" name="select_program_search_result_{{ loop.index }}" style="transform: translateY(-50%); position: relative; top: 50%;" onclick="checkCheckboxes()">
                   </div>
-                </button>
-                <button type="submit" name="action" class="btn bg-gradient-primary w-5 my-2 mb-2" value="hide_program_search_result_{{ loop.index }}">Hide</button>
-                <!-- Spacer row -->
-                <div class="row">
-                  <div class="col-12 my-2"></div>
+                  <button type="submit" name="action" class="btn bg-gradient-secondary w-55 my-2 mb-2" value="program_search_result_{{ loop.index }}" style="margin-left: 10px;">
+                    <img src="{{ program.poster }}" class="program-poster" alt="Poster">
+                    <div class="program-content">
+                      <div style="font-size: 2em;">{{ program.title }} ({{ program.release_year }}) | {{ program.object_type }}</div>
+                      <hr>
+                      <div style="text-align: left; text-transform: none; font-weight: normal; font-size: 1.25em;">{{ program.short_description }}</div>
+                      <div style="text-align: left; text-transform: none; font-weight: normal; font-size: 0.9em;">IMDB: {{ program.score }} / 10.0</div>
+                      <div class="row">
+                        <div class="col-12 my-1"></div>
+                      </div>
+                      <div style="text-align: center; text-transform: none; font-weight: normal; font-size: 1.3em;">
+                        <hr style="display: inline-block; width: calc(50% - 90px); margin: 0 10px; vertical-align: middle;">
+                        <b>Available On</b>
+                        <hr style="display: inline-block; width: calc(50% - 90px); margin: 0 10px; vertical-align: middle;">
+                      </div>                    
+                      <div style="display: flex; flex-wrap: wrap; align-items: center;">
+                        {% for icon in program.offers_list %}
+                          <img src="{{ icon }}" style="width: 55px; height: 55px; margin-right: 5px; margin-top: 5px; object-fit: contain;">
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </button>
+                  <button type="submit" name="action" class="btn bg-gradient-secondary w-5 my-2 mb-2" value="hide_program_search_result_{{ loop.index }}" style="margin-left: 10px;">Hide</button>
+                  <!-- Spacer row -->
+                  <div class="row">
+                    <div class="col-12 my-2"></div>
+                  </div>
                 </div>
               {% endfor %}
               <hr>
+              <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px; display: none; margin-right: 70px;">
+                <button type="submit" name="action" value="program_search_result_selected" class="btn bg-gradient-primary w-25 my-2 mb-2">Bookmark All Selected</button>
+                <button type="submit" name="action" value="hide_program_search_result_selected" class="btn bg-gradient-primary w-25 my-2 mb-2">Hide All Selected</button>
+              </div>        
             {% endif %}
           </div>
           <!-- Get manual episodes -->
@@ -534,5 +548,25 @@
       document.querySelectorAll('input.' + season).forEach(textbox => textbox.value = source.value);
     }
   });
+</script>
+<!-- Make "All" buttons visible in program selection -->
+<script>
+  function checkCheckboxes() {
+    var checkboxes = document.querySelectorAll('.program-checkbox');
+    var floatingButtons = document.getElementById('floating-buttons');
+    var atLeastOneChecked = false;
+
+    checkboxes.forEach(function(checkbox) {
+      if (checkbox.checked) {
+        atLeastOneChecked = true;
+      }
+    });
+
+    if (atLeastOneChecked) {
+      floatingButtons.style.display = 'block';
+    } else {
+      floatingButtons.style.display = 'none';
+    }
+  }
 </script>
 {% endblock javascripts %}
