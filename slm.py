@@ -29,7 +29,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.11.13.1347"
+slm_version = "v2024.11.18.1135"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -280,6 +280,7 @@ stream_formats = [
     "HLS",
     "MPEG-TS"
 ]
+select_program_to_bookmarks = []
 
 # Adds a notification
 def notification_add(notification):
@@ -1560,6 +1561,7 @@ def add_programs():
     global title_selected_prior
     global release_year_selected_prior
     global bookmark_action_prior
+    global select_program_to_bookmarks
 
     settings = read_data(csv_settings)
     country_code = settings[2]["settings"]
@@ -1670,42 +1672,55 @@ def add_programs():
                 program_add_filter_panel = ''
 
             elif add_programs_action.startswith('hide_program_search_result_'):
-                program_search_index = int(add_programs_action.split('_')[-1]) - 1
-                program_search_results, program_add_message = hide_bookmark_select(program_search_results_prior, program_search_index, country_code_input_prior, language_code_input_prior)
+                hide_programs = []
+                
+                if add_programs_action.endswith('selected'):
+                    for key in request.form.keys():
+                        if key.startswith('select_program_search_result_') and request.form.get(key) == 'on':
+                            hide_program_index = int(key.split('_')[-1]) - 1
+                            hide_programs.append(hide_program_index)
 
+                else:
+                    hide_program_index = int(add_programs_action.split('_')[-1]) - 1
+                    hide_programs.append(hide_program_index)
+                
+                hide_programs.sort(reverse=True)
+
+                program_search_results = program_search_results_prior
+
+                for program_search_index in hide_programs:
+                    program_search_results, program_add_message = hide_bookmark_select(program_search_results, program_search_index, country_code_input_prior, language_code_input_prior)
+            
             program_search_results_prior = program_search_results
 
         # Select a program from the search
         elif add_programs_action.startswith('program_search_result_'):
-            program_search_index = int(add_programs_action.split('_')[-1]) - 1
-            program_add_message, entry_id, season_episodes, object_type = search_bookmark_select(program_search_results_prior, program_search_index, country_code_input_prior, language_code_input_prior)
-
             program_add_resort_panel = ''
             program_add_filter_panel = ''
 
-            test_terms = ("WARNING: ", "ERROR: ")
-            if any(term in program_add_message for term in test_terms):
-                pass
+            select_programs = []
+
+            if add_programs_action.endswith('selected'):
+                for key in request.form.keys():
+                    if key.startswith('select_program_search_result_') and request.form.get(key) == 'on':
+                        select_program_index = int(key.split('_')[-1]) - 1
+                        select_programs.append(select_program_index)
 
             else:
-                entry_id_prior = entry_id
-                season_episodes_prior = season_episodes
+                select_program_index = int(add_programs_action.split('_')[-1]) - 1
+                select_programs.append(select_program_index)
+            
+            select_programs.sort(reverse=True)
 
-                if not season_episodes:
-                    if object_type == "MOVIE":
-                        stream_link_override_movie_flag = True
-                    elif object_type == "SHOW":
-                        program_add_message = f"{current_time()} WARNING: Selected show has no episodes, but is bookmarked in case episodes are added later."
-                
-                done_generate_flag = True
-                bookmark_actions = get_bookmark_actions(object_type)
+            for program_search_index in select_programs:
+                program_add_message, entry_id, season_episodes, object_type = search_bookmark_select(program_search_results_prior, program_search_index, country_code_input_prior, language_code_input_prior)
 
-                bookmarks = read_data(csv_bookmarks)
-                for bookmark in bookmarks:
-                    if bookmark['entry_id'] == entry_id_prior:
-                        title_selected_prior = bookmark['title']
-                        release_year_selected_prior = bookmark['release_year']
-                        bookmark_action_prior = bookmark['bookmark_action']
+                select_program_to_bookmarks.append({
+                    'program_add_message': program_add_message,
+                    'entry_id': entry_id,
+                    'season_episodes': season_episodes,
+                    'object_type': object_type
+                })
 
         # Add a manual program
         elif add_programs_action == 'program_add_manual':
@@ -1893,6 +1908,42 @@ def add_programs():
             title_selected_prior = None
             release_year_selected_prior = None
             bookmark_action_prior = None
+
+        if select_program_to_bookmarks:
+            for select_program_to_bookmark in select_program_to_bookmarks:
+
+                select_program_to_bookmarks.remove(select_program_to_bookmark)
+                program_add_message = select_program_to_bookmark['program_add_message']
+                entry_id = select_program_to_bookmark['entry_id']
+                season_episodes = select_program_to_bookmark['season_episodes']
+                object_type = select_program_to_bookmark['object_type']
+
+                test_terms = ("WARNING: ", "ERROR: ")
+                if any(term in program_add_message for term in test_terms):
+                    pass
+
+                else:
+                    entry_id_prior = entry_id
+                    season_episodes_prior = season_episodes
+
+                    if not season_episodes:
+                        if object_type == "MOVIE":
+                            stream_link_override_movie_flag = True
+                        elif object_type == "SHOW":
+                            program_add_message = f"{current_time()} WARNING: Selected show has no episodes, but is bookmarked in case episodes are added later."
+                    
+                    done_generate_flag = True
+                    bookmark_actions = get_bookmark_actions(object_type)
+
+                    bookmarks = read_data(csv_bookmarks)
+                    for bookmark in bookmarks:
+                        if bookmark['entry_id'] == entry_id_prior:
+                            title_selected_prior = bookmark['title']
+                            release_year_selected_prior = bookmark['release_year']
+                            bookmark_action_prior = bookmark['bookmark_action']
+                            break
+
+                    break
 
     return render_template(
         'main/addprograms.html',
