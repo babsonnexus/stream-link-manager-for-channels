@@ -11,13 +11,13 @@ In <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to ad
 
 Enter <b>Stream Link/Files Manager</b>!
 
-![image](https://github.com/user-attachments/assets/af1aee90-7e9c-40cd-b49d-d26c99954cca)
+![image](https://github.com/user-attachments/assets/5bc18966-5c65-40d4-ab45-ef098ed1263e)
 
 SLM is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, for "Stream Links", the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order—including setting a preferred service for a particular Movie or Episode as an overarching setting—in order to determine the appropriate link. There is also the ability to input user-derived links, especially when dealing with "Stream Files". After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another or the user does a manual adjustment, SLM will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
 
 [![image](https://github.com/user-attachments/assets/0100b998-f9ea-46f8-8baa-59213d398cd3)](https://www.youtube.com/watch?v=5qm_2pU1h1c)
 
-## Playlist Manager (BETA) [PLM]
+## Playlist Manager [PLM]
 There are a lot of fantastic methods for integrating [custom stations](https://getchannels.com/custom-channels/) into Channels DVR, especially from FAST and similar providers like [Pluto](https://github.com/jgomez177/pluto-for-channels), [Plex](https://github.com/jgomez177/plex-for-channels), [Tubi](https://github.com/jgomez177/tubi-for-channels), [Samsung TV+](https://github.com/matthuisman/samsung-tvplus-for-channels), [ESPN+, NFL+](https://github.com/m0ngr31/EPlusTV), and [plenty more](https://getchannels.com/community/)! The problem is, they require a fair bit of maintenance. For instance, there are [whole](https://community.getchannels.com/t/changes-in-channel-lineups/36494) [threads](https://community.getchannels.com/t/2024-channel-lineup-changes-non-us-services/41159) and [tools](https://github.com/mjitkop/Channels-DVR-Monitor-Channel-Lineups) dedicated just to keeping track of which stations have been added and removed. And that doesn't even get into the redundancy of when each of these services have the same stations, but you have to decide which one you want to put in your [Channel Collection](https://getchannels.com/docs/channels-dvr-server/how-to/channel-collections) before it inevitably disappears without you knowing it and not realizing you need to put a replacement in its spot.
 
 Enter **Playlist Manager**, a custom add-on for **Stream Link (+Files +Playlists) Manager for Channels**!
@@ -29,8 +29,6 @@ From a high-level perspective, PLM works on the same premise as SLM. The idea is
 To see a short demonstration, watch the video here:
 
 [![image](https://github.com/user-attachments/assets/58833ffc-c7e5-4c4e-bfca-d054f9339a53)](https://www.youtube.com/watch?v=Cgd7tUIdpHI)
-
-***NOTE:** This is a BETA release, which means there may be bugs, issues, and enhancements to deal with. Feedback is greatly appreciated to address these, and each will be dealt with accordingly. Nevertheless, please be forewarned that some fixes may require a manual intervention on your part to keep using this tool after an update.*
 
 ---
 ![SpaceX_ASDS_in_position_prior_to_Falcon_9_Flight_17_carrying_CRS-6_(17127808431)_EDITED](https://github.com/user-attachments/assets/c45005cf-081f-4eba-bcb4-fcdccd7ca281)
@@ -750,6 +748,12 @@ For Shows in particular, it may be an older title that is no longer putting out 
 
 ![image](https://github.com/user-attachments/assets/167cd956-c9a3-47f0-93dd-9fffbc4790a7)
 
+There is also the option to select multiple results and do an action on all of them at once.
+
+![386863080-48a9664a-0962-49a2-b3c4-a39cb748c675](https://github.com/user-attachments/assets/8f0b917e-af35-4f78-9998-7f21d19a4398)
+
+Checking off one or multiple programs will make buttons for `Bookmark All Selected` and `Hide All Selected` appear. Hiding will then do exactly that while bookmarking will give you a final screen for each of the programs you have selected. Otherwise, the activities are exactly the same as going one-by-one.
+
 Sometimes when searching, you still might not be able to find the Movie or Show you are looking for. While uncommon (see ```Troubleshooting / FAQ```), it may happen, especially for rare or foreign content. In these cases, you can always create a manual bookmark.
 
 ![image](https://github.com/user-attachments/assets/c763e42f-8af8-4e0a-bad7-9e72caff7865)
@@ -804,20 +808,20 @@ Programs that were previously hidden are not show in the list by default. Howeve
 
 At this point, you can edit them and make them not hidden by changing their ```Bookmark Status``` to "None".
 
-## Playlist Manager (BETA)
+## Playlist Manager
 
 ### Installation
 1. Go to ```Settings``` and scroll down to ```Advanced / Experimental```.
 
 ![b3ae8a7666bb3fa0fe028f1567cb36f5db453d3b](https://github.com/user-attachments/assets/e0d7d3a2-c3e6-4c56-921f-7b15afc52258)
 
-2. Check the box for ```Use Playlist Manager``` and click save. When you do so, a lot of things will become available both in the front-end and the back-end. Most notably, you will now see ```Playlists (BETA)``` in the navigation pane.
+2. Check the box for ```Use Playlist Manager``` and click save. When you do so, a lot of things will become available both in the front-end and the back-end. Most notably, you will now see ```Playlists``` in the navigation pane.
 
 ![cbaa23e3a34a18b5dd9f00ac7ee5b85518645d7b](https://github.com/user-attachments/assets/52d924a4-b6dd-4fb6-b144-7c8c4305a3a0)
 
 ### Initialization
 
-3. Navigating to the ```Playlists (BETA)``` area, you will see something like this:
+3. Navigating to the ```Playlists``` area, you will see something like this:
 
 ![image](https://github.com/user-attachments/assets/9216dd27-1d67-4542-a393-5d934aa40bf2)
 
@@ -888,56 +892,62 @@ As shown at the top, PLM will give you the status for each of the stations it fi
 
 ![eb7cf5e9c730cb3bfb37e6192b104e538cf42a8b](https://github.com/user-attachments/assets/2f4049b7-cb23-4b6c-bb8a-713bb816360c)
 
-20. Everything that is set for a station can always be changed and even undone in the ```Modify Assigned Stations``` section:
+20. Conversely, you can set the Parent for everything visible on the screen at once using the `Set Visible` button.
+
+![385899452-9cf8da42-a639-443f-a6ed-f2b87a516bea](https://github.com/user-attachments/assets/1448813e-7894-47a3-a946-7668cfdec093)
+
+This works with both scrolling downward to get more or all available stations, or using the filter functionality.
+
+21. Everything that is set for a station can always be changed and even undone in the ```Modify Assigned Stations``` section:
 
 ![image](https://github.com/user-attachments/assets/7909d3d0-108c-4f6c-8b7f-c77ca8dc8ad8)
 
-21. As you make your assignments, the chart on top of the ```Main Page``` updates to let you know the status of your stations. "Assigned to Parent" means that a Parent has at least one child and will create a unique station. "Redundant" means that a Parent has additional children (i.e., repeating/same stations) and that they are available if the higher priority option goes away for any reason.
+22. As you make your assignments, the chart on top of the ```Main Page``` updates to let you know the status of your stations. "Assigned to Parent" means that a Parent has at least one child and will create a unique station. "Redundant" means that a Parent has additional children (i.e., repeating/same stations) and that they are available if the higher priority option goes away for any reason.
 
 ![7f176279fe9fa3788090d2d1a9b458cf5a6ab46b](https://github.com/user-attachments/assets/940e11f0-b7ec-44c5-8302-236a5285b4b3)
 
-22. At any time, you can also click the ```Update m3u(s) and XML EPG(s)```. This is the process that will parse through all of these parent-child assignments and create the playlists and guide links that you will load into Channels DVR or other tools. It should be noted that when PLM processes a station, if a certain field does not have a value in the higher priority playlist, it will take that field from a lower priority one. For instance, if your preferred playlist does not have a "description", but a lower priority one does, it will get that "description" and make it available in the final output.
+23. At any time, you can also click the ```Update m3u(s) and XML EPG(s)```. This is the process that will parse through all of these parent-child assignments and create the playlists and guide links that you will load into Channels DVR or other tools. It should be noted that when PLM processes a station, if a certain field does not have a value in the higher priority playlist, it will take that field from a lower priority one. For instance, if your preferred playlist does not have a "description", but a lower priority one does, it will get that "description" and make it available in the final output.
 
 ![e3ba0b4c08c7abceba0f1f7e10c04bdacc010572](https://github.com/user-attachments/assets/8a931bb1-da96-4ac7-988b-ff0c1b1ceb41)
 
-23. As before, this process can be automated and is discussed later. At this point, though, you will now have fully active m3u and EPG files that you can integrate. The links will be visible at the top of the page:
+24. As before, this process can be automated and is discussed later. At this point, though, you will now have fully active m3u and EPG files that you can integrate. The links will be visible at the top of the page:
 
 ![ecb35db14a4e60ba4eca7d72d322b2d1147cb004](https://github.com/user-attachments/assets/0f8a4331-3243-4b56-9707-0c9916a452e1)
 
-24. "Gracenote" m3u files do not have XML EPG data because the guide information comes from the loaded Gracenote ID. On the other hand, all the "Non-Gracenote" m3u(s) do require their own corresponding XML EPG. Either way, each is split between "HLS" and "MPEG-TS" options since those are interpreted by Channels DVR differently. Also, depending on circumstances described below, you may end up with multiple of these lists.
+25. "Gracenote" m3u files do not have XML EPG data because the guide information comes from the loaded Gracenote ID. On the other hand, all the "Non-Gracenote" m3u(s) do require their own corresponding XML EPG. Either way, each is split between "HLS" and "MPEG-TS" options since those are interpreted by Channels DVR differently. Also, depending on circumstances described below, you may end up with multiple of these lists.
 
 ![7d29a9e78fb4a76389438800549f02a6ff5f67ea](https://github.com/user-attachments/assets/0b122137-be06-4262-b106-07a132a9103d)
 
-25. At this point, you have everything you need and can continue using PLM as a regular function. However, there are several settings and automated routines to consider before proceeding.
+26. At this point, you have everything you need and can continue using PLM as a regular function. However, there are several settings and automated routines to consider before proceeding.
 
 ### Settings and Automation
-26. Back in the ```Settings``` area under ```Advanced / Experimental```, at the spot where you turned on PLM, there are two additional inputs. One is the station number you would like to start at, with a default of ```10000```. Each new Parent that is added will increase this value by one.
+27. Back in the ```Settings``` area under ```Advanced / Experimental```, at the spot where you turned on PLM, there are two additional inputs. One is the station number you would like to start at, with a default of ```10000```. Each new Parent that is added will increase this value by one.
 
 ![bc46bb2060f475b904d04176ab173352bb2dcd95](https://github.com/user-attachments/assets/7ced31ed-9352-49a7-8925-ebaf83266727)
 
-27. The other choice is the ```Max Stations per m3u```, with a default of ```750```. This is the number of stations that will be in an m3u file before it splits into a new file, 750 being the maximum Channels DVR allows at the time of this writing. This can be set to any positive integer. It should be noted the XML EPG data is split by the same stations in the end-result m3u(s).
+28. The other choice is the ```Max Stations per m3u```, with a default of ```750```. This is the number of stations that will be in an m3u file before it splits into a new file, 750 being the maximum Channels DVR allows at the time of this writing. This can be set to any positive integer. It should be noted the XML EPG data is split by the same stations in the end-result m3u(s).
 
-28. Further up under the ```Scheduler``` section are two more things for you to set. The first is the equivalent of the ```Update Station List``` button. Turning this on will run a process once per day at the time you set to update the station list, thus giving you an automated way to handle changes and get new selections in the ```Unassigned Stations``` section.
+29. Further up under the ```Scheduler``` section are two more things for you to set. The first is the equivalent of the ```Update Station List``` button. Turning this on will run a process once per day at the time you set to update the station list, thus giving you an automated way to handle changes and get new selections in the ```Unassigned Stations``` section.
 
 ![936126de4bb11635dc6f575b548c8f63f93c8ca1](https://github.com/user-attachments/assets/2f9ac1d2-8991-40bb-811d-556fc9c02dd0)
 
-29. When stations are updated, there are notices that are also made available in the ```Notifications``` pane in the ```Home``` area. You will get info on "Added", "Removed", and "Modified" stations, the latter meaning there has been a change in at least one field of provided data.
+30. When stations are updated, there are notices that are also made available in the ```Notifications``` pane in the ```Home``` area. You will get info on "Added", "Removed", and "Modified" stations, the latter meaning there has been a change in at least one field of provided data.
 
 ![ceb602109eadd02f18f731e8246ff6ce6aff2a1f](https://github.com/user-attachments/assets/3c2ddb87-e24b-43ad-94c7-a4ec29112caf)
 
-30. In the same vein, you can also turn on the process to update the m3u and EPG files at regular intervals.
+31. In the same vein, you can also turn on the process to update the m3u and EPG files at regular intervals.
 
 ![62eff4d47820765cfaf4accecb3a928ff0666318](https://github.com/user-attachments/assets/9853492b-17b5-4352-969b-ad69c9e2d6a6)
 
-31. Unlike the updating the station list, this one allows you to make a selection to how frequently you want the action to happen based upon a starting time. For instance, if we leave the time at ```02:01 PM``` and select ```Every 6 hours```, it will run at ```02:01 PM```, ```08:01 PM```, ```02:01 AM```, and ```08:01 AM```.
+32. Unlike the updating the station list, this one allows you to make a selection to how frequently you want the action to happen based upon a starting time. For instance, if we leave the time at ```02:01 PM``` and select ```Every 6 hours```, it will run at ```02:01 PM```, ```08:01 PM```, ```02:01 AM```, and ```08:01 AM```.
 
 ![1a5fe30027fe5e5072079da26e0e3aa1006799cf](https://github.com/user-attachments/assets/a70e379b-6b4f-4b50-b5d8-5d71c5bf2f9f)
 
-32. As with the previous automation, this one will also give you notifications. In all cases, there is additional detail available in the ```Logs``` area.
+33. As with the previous automation, this one will also give you notifications. In all cases, there is additional detail available in the ```Logs``` area.
 
 ![d06f0c709256037b1995f6ca47e10cff68e7084f](https://github.com/user-attachments/assets/499a632b-fd2c-47ce-b19b-d40232770091)
 
-33. With these in place and set, the process will take care of itself and you should be good to go!
+34. With these in place and set, the process will take care of itself and you should be good to go!
 
 # Administrative Functions
 
