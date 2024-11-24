@@ -29,7 +29,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.11.23.1909"
+slm_version = "v2024.11.24.1010"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -408,7 +408,15 @@ def check_and_create_csv(csv_file):
     full_path_file = full_path(csv_file)
 
     data = initial_data(csv_file)
-    
+
+    # Check if the file is empty or only contains blank lines; if so, delete it to start over
+    if os.path.exists(full_path_file):
+        with open(full_path_file, 'r', encoding="utf-8") as file:
+            content = file.readlines()
+        
+        if all(line.strip() == '' for line in content):
+            os.remove(full_path_file)
+
     # Check if the file exists, if not create it
     if not os.path.exists(full_path_file):
         # Write data to the file
