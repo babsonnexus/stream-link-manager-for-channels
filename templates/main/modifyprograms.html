@@ -64,11 +64,11 @@
             {% endfor %}
           </select>
           <input type="hidden" name="entry_id" id="entry_id">
-          <button type="submit" name="action" value="program_modify_edit" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Edit</button>
-          <button type="submit" name="action" value="program_modify_delete" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Delete</button>
-          <button type="submit" name="action" value="program_modify_available" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Check Availability</button>
-          <button type="submit" name="action" value="program_modify_generate" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Generate Stream Links</button>
-          <button type="submit" name="action" value="program_modify_show_hidden" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag %}disabled{% endif %}>Show Hidden</button>
+          <button type="submit" name="action" value="program_modify_edit" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag or html_sorted_bookmarks|length == 0 %}disabled{% endif %}>Edit</button>
+          <button type="submit" name="action" value="program_modify_delete" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag or html_sorted_bookmarks|length == 0 %}disabled{% endif %}>Delete</button>
+          <button type="submit" name="action" value="program_modify_available" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag or html_sorted_bookmarks|length == 0 %}disabled{% endif %}>Check Availability</button>
+          <button type="submit" name="action" value="program_modify_generate" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag or html_sorted_bookmarks|length == 0 %}disabled{% endif %}>Generate Stream Links</button>
+          <button type="submit" name="action" value="program_modify_show_hidden" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag or html_sorted_bookmarks|length == 0 %}disabled{% endif %}>Show Hidden</button>
           <p><div id="html_program_modify_message">{{ html_program_modify_message }}</div></p>
           <hr>
           <!-- Check Availability Section -->
