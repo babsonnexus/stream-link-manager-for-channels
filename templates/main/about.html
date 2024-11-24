@@ -13,6 +13,13 @@
         <!-- Version History -->
         <h4>Version History</h4>
         <div style="overflow-x: auto; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll;">
+          <h6>v2024.11.24.1010</h6>
+          <p>
+            <ul>
+              <li>FIXED: [GEN] In a rare situation where a user somehow was able to delete all the content in a CSV control file (including the header row), it would cause an error during initialization, notably when attempting to add a column since there were no base columns to compare anymore. New process checks for this situation and resets the files back to default/first time status.</li>
+            </ul>
+          </p>
+          <hr>
           <h6>v2024.11.23.1909</h6>
           <p>
             <ul>
