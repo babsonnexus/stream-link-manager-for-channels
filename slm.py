@@ -29,7 +29,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.11.18.1135"
+slm_version = "v2024.11.23.1909"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -293,11 +293,6 @@ def full_path(file):
     full_path = os.path.join(program_files_dir, file)
     return full_path
 
-# Get the previous full path for a file after upgrade
-def full_path_old(file):
-    full_path = os.path.join(script_dir, file)
-    return full_path
-
 # Normalize the file path for systems that can't handle certain characters like 'é'
 def normalize_path(path):
     return unicodedata.normalize('NFKC', path)
@@ -334,13 +329,6 @@ def create_backup(src_dir, dst_dir, max_backups):
 ### Program directories
 create_directory(program_files_dir)
 create_directory(backup_dir)
-
-### Move old program files if they exist
-for program_file in program_files:
-    old_path = full_path_old(program_file)
-    new_path = full_path(program_file)
-    if os.path.exists(old_path):
-        os.rename(old_path, new_path)
 
 ### Make a backup and remove old backups
 if os.path.exists(program_files_dir):
@@ -5024,17 +5012,12 @@ def get_epgs_for_m3us():
     # Filter the list to include only values that contain '_epg_'
     filtered_files = [filtered_file for filtered_file in m3u_files if '_epg_' in filtered_file['filename']]
 
-    extensions = ['xml']
-    all_prior_files = []
-    all_prior_files = get_all_prior_files(program_files_dir, extensions)
-    for all_prior_file in all_prior_files:
-        file_delete(program_files_dir, all_prior_file['filename'], all_prior_file['extension'])
-
     for filtered_file in filtered_files:
         tvg_ids = []  # Reset the list for each playlist
         playlist_extension = filtered_file['extension']
         playlist_filename = f"{filtered_file['filename']}.{playlist_extension}"
         epg_filename = f"{filtered_file['filename']}.xml"
+        epg_filename_tmp = f"{epg_filename}.tmp"
 
         # Read the M3U file content
         with open(full_path(playlist_filename), "r", encoding="utf-8") as file:
@@ -5046,7 +5029,7 @@ def get_epgs_for_m3us():
         # Ensure temp.txt exists before attempting to read it
         if os.path.exists(temp_file_path):
             # Write the EPG data to epg_filename
-            with open(full_path(epg_filename), "w", encoding="utf-8") as epg_file:
+            with open(full_path(epg_filename_tmp), "w", encoding="utf-8") as epg_file:
                 # Write the initial lines
                 epg_file.write("<?xml version='1.0' encoding='utf-8'?>\n")
                 epg_file.write("<!DOCTYPE tv SYSTEM \"xmltv.dtd\">\n")
@@ -5071,11 +5054,29 @@ def get_epgs_for_m3us():
                 
                 # Write the closing tag
                 epg_file.write("</tv>\n")
-                
-            notification_add(f"    Created: {epg_filename}")
 
     # Delete temp.txt after processing
     os.remove(temp_file_path)
+
+    extensions = ['xml']
+    all_prior_files = []
+    all_prior_files = get_all_prior_files(program_files_dir, extensions)
+    for all_prior_file in all_prior_files:
+        file_delete(program_files_dir, all_prior_file['filename'], all_prior_file['extension'])
+
+    rename_files_suffix(program_files_dir, ".xml.tmp", ".xml")
+
+# Loops through all the files in a directory and changes one suffix to another
+def rename_files_suffix(directory, old_suffix, new_suffix):
+    for filename in os.listdir(directory):
+        if filename.endswith(old_suffix):
+            old_file = os.path.join(directory, filename)
+            new_filename = filename[:-len(old_suffix)] + new_suffix
+            new_file = os.path.join(directory, new_filename)
+            
+            os.rename(old_file, new_file)
+
+            notification_add(f"    Created: {new_filename}")
 
 # Reports / Queries webpage
 @app.route('/reports_queries', methods=['GET', 'POST'])
