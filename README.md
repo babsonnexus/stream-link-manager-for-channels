@@ -1,15 +1,15 @@
-![slm_logo_plus_files_playlists](https://github.com/user-attachments/assets/37e660b6-686f-45d5-86bc-1f169db0ba1c)
+![slm_logo_v2](https://github.com/user-attachments/assets/caf56400-1523-4efa-b9be-7306942f9f06)
 
 ---
-# Stream Link (+Files + Playlists) Manager for Channels
-In <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to add "<b>[Stream Links](https://getchannels.com/docs/channels-dvr-server/how-to/stream-links/)</b>" and "<b>[Stream Files](https://getchannels.com/docs/channels-dvr-server/how-to/stream-files/)</b>" as local content. They can also integrate additional [custom stations](https://getchannels.com/custom-channels/) by integrating streaming m3u playlists. While these tools are powerful, they have limitations that often require a fair bit of maintenance. But what if we could make the whole process a little... easier?
+# Streaming Library Manager for Channels
+In <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to add "<b>[Stream Links](https://getchannels.com/docs/channels-dvr-server/how-to/stream-links/)</b>" and "<b>[Stream Files](https://getchannels.com/docs/channels-dvr-server/how-to/stream-files/)</b>" as local content. They can also integrate additional <b>[custom stations](https://getchannels.com/custom-channels/)</b> by integrating streaming m3u playlists. And then there are even more ways to customize the experience! While these tools are powerful, they have limitations that often require a fair bit of maintenance and knowhow. But what if we could make the whole process a little... easier?
 
 <i><b>NOTE:</b> Some of the visuals seen in the videos and in the screen shots below may be out of date as updates to format and functionality have been applied to the program.</i>
 
-## Stream Link/Files Manager [SLM]
+## Stream Link/File Manager [SLM]
 <b>Stream Links/Files</b> appear as normal Movies, TV Shows, and Videos next to recorded and other content. While <b>Stream Files</b> act like regular local media and directly play in the Channels app or admin web page, <b>Stream Links</b> do not. Instead, clicking on one of these launches the appropriate app or web page and plays the content there. In order to do either, the process consists of creating ```.strmlnk``` or ```.strm``` files, putting them in the appropriate location, and running updates in the <b>Channels DVR</b> admin interface to get the content to appear. As can be imagined, the activity around creation and maintenance is incredibly manual and cumbersome.
 
-Enter <b>Stream Link/Files Manager</b>!
+Enter <b>Stream Link/File Manager</b>!
 
 ![image](https://github.com/user-attachments/assets/5bc18966-5c65-40d4-ab45-ef098ed1263e)
 
@@ -20,7 +20,7 @@ SLM is a background service that sets up a web-based graphical user interface (G
 ## Playlist Manager [PLM]
 There are a lot of fantastic methods for integrating [custom stations](https://getchannels.com/custom-channels/) into Channels DVR, especially from FAST and similar providers like [Pluto](https://github.com/jgomez177/pluto-for-channels), [Plex](https://github.com/jgomez177/plex-for-channels), [Tubi](https://github.com/jgomez177/tubi-for-channels), [Samsung TV+](https://github.com/matthuisman/samsung-tvplus-for-channels), [ESPN+, NFL+](https://github.com/m0ngr31/EPlusTV), and [plenty more](https://getchannels.com/community/)! The problem is, they require a fair bit of maintenance. For instance, there are [whole](https://community.getchannels.com/t/changes-in-channel-lineups/36494) [threads](https://community.getchannels.com/t/2024-channel-lineup-changes-non-us-services/41159) and [tools](https://github.com/mjitkop/Channels-DVR-Monitor-Channel-Lineups) dedicated just to keeping track of which stations have been added and removed. And that doesn't even get into the redundancy of when each of these services have the same stations, but you have to decide which one you want to put in your [Channel Collection](https://getchannels.com/docs/channels-dvr-server/how-to/channel-collections) before it inevitably disappears without you knowing it and not realizing you need to put a replacement in its spot.
 
-Enter **Playlist Manager**, a custom add-on for **Stream Link (+Files +Playlists) Manager for Channels**!
+Enter **Playlist Manager**, a custom add-on for **Streaming Library Manager for Channels**!
 
 ![image](https://github.com/user-attachments/assets/63754633-2d19-41fa-a0aa-457c164c3d4c)
 
@@ -35,9 +35,9 @@ To see a short demonstration, watch the video here:
 <i>Image (edited) courtesy of SpaceX, CC0, via Wikimedia Commons.</i>
 
 # Installation
-There are several methods to install <b>Stream Link (+Files + Playlists) Manager for Channels</b> and only one should be followed. While Docker is the preferred route for those who have it as it is the most controlled path, if you are not comfortable with Docker or are having issues, you can do a straight self-deployment in Windows or Linux, or use Python in any OS type. For those unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are installing Docker in Windows, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591). Channels DVR users who have deployed [OliveTin for Channels](https://community.getchannels.com/t/37609) and/or [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process. Just follow one of these paths throughout the entire installation, doing the step-by-step actions exactly as described.
+There are several methods to install <b>Streaming Library Manager for Channels</b> and only one should be followed. While Docker is the preferred route for those who have it as it is the most controlled path, if you are not comfortable with Docker or are having issues, you can do a straight self-deployment in Windows or Linux, or use Python in any OS type. For those unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are installing Docker in Windows, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591). Channels DVR users who have deployed [OliveTin for Channels](https://community.getchannels.com/t/37609) and/or [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process. Just follow one of these paths throughout the entire installation, doing the step-by-step actions exactly as described.
 
-![SLM Installation Decision Tree (+Files +Playlists)](https://github.com/user-attachments/assets/e50bdf49-14fe-481a-bbe3-65ae52d5a02f)
+![SLM Installation Decision Tree v2](https://github.com/user-attachments/assets/0cd52be1-bbe3-45ea-98b3-ecf906d2565f)
 
 You can also follow along in the video here:
 
@@ -66,7 +66,7 @@ You can also follow along in the video here:
 * [01:06:08](https://www.youtube.com/watch?v=APuUaAvNo-k&t=3968s) Settings - Scheduler
 * [01:08:56](https://www.youtube.com/watch?v=APuUaAvNo-k&t=4136s) Final Thoughts
 
-As a general note, it does not matter "where" <b>Stream Link (+Files +Playlists) Manager for Channels</b> is installed; it could even be placed in the Channels DVR directory. The only requirements are that it must be on a machine and in a location that has directory access to the Channels DVR directory and be able to see the Channels DVR Administrative webpage.
+As a general note, it does not matter "where" <b>Streaming Library Manager for Channels</b> is installed; it could even be placed in the Channels DVR directory. The only requirements are that it must be on a machine and in a location that has directory access to the Channels DVR directory and be able to see the Channels DVR Administrative webpage.
 
 ## Docker
 If you are not using <i>OliveTin/Project One-Click</i>, it is recommended to install via Stack using [Portainer](https://www.portainer.io/) ([Docker Desktop](https://open.docker.com/extensions/marketplace?extensionId=portainer/portainer-docker-extension) | [Docker Standalone](https://docs.portainer.io/start/install-ce/server/docker)). Otherwise, you can use the single command line method as shown below.
@@ -100,7 +100,7 @@ Environment variables are included, some required, some optional.
 
 * <b>CHANNELS_FOLDER</b> | REQUIRED | The path to your Channels DVR parent directory (see details in <i>Startup</i> below), i.e., ```/usr/lib/channels-dvr```. You could optionally put in any parent path, so long as the Channels DVR path is accessible somewhere inside. Note that spaces are fine and you do not have to enclose the path in quotes. In Windows, your slashes should go the opposite of the normal way, i.e., ```C:/Files/Media/Channels DVR```. In MacOS, be sure to include your ```/Volumes``` first, i.e., ```/Volumes/external-hdd/Channels DVR```. Be careful not to put extra characters as your system may then create that directory anyway. In other words, there will be no error as the directory exists, but it is not set to where you want it to be.
 
-* <b>SLM_HOST_FOLDER</b> | OPTIONAL | The path on your local host machine where you would like the program files for **Stream Link (+Files +Playlists) Manager for Channels** to reside. As will be discussed in more detail later, these are the files that the application uses to manage the entire solution. The software itself can be replaced at any time, but these files have all of your settings, bookmarks, etc.... As such, you may desire to have them available on your local machine that is hosting Docker in order to back them up. If you do not add this, it will be set to `slm_files` inside the `Volumes` area of Docker Desktop itself.
+* <b>SLM_HOST_FOLDER</b> | OPTIONAL | The path on your local host machine where you would like the program files for **Streaming Library Manager for Channels** to reside. As will be discussed in more detail later, these are the files that the application uses to manage the entire solution. The software itself can be replaced at any time, but these files have all of your settings, bookmarks, etc.... As such, you may desire to have them available on your local machine that is hosting Docker in order to back them up. If you do not add this, it will be set to `slm_files` inside the `Volumes` area of Docker Desktop itself.
 
 * <b>TIMEZONE</b> | OPTIONAL | The timezone you want to use. To know what to input, go [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), find your timezone, make sure it is a "Canonical" Type, and use the "TZ identifier". The default is "UTC" if you do not add. Please keep this in mind when using the scheduler function.
 
@@ -140,7 +140,7 @@ If using PowerShell, type in:
 .\slm.bat install
 ```
 
-3. You will be given one last chance to decide if you want to do the installation. Note that an installation will remove any previous instance of <b>Stream Link (+Files +Playlists) Manager for Channels</b> at that location. This is unlike the "upgrade" below which will maintain all your files and settings.
+3. You will be given one last chance to decide if you want to do the installation. Note that an installation will remove any previous instance of <b>Streaming Library Manager for Channels</b> at that location. This is unlike the "upgrade" below which will maintain all your files and settings.
 
 ![image](https://github.com/user-attachments/assets/a93612b4-2159-47ae-8ccb-d959078bea8b)
 
@@ -152,7 +152,7 @@ If using PowerShell, type in:
 
 ![image](https://github.com/user-attachments/assets/8cbdac78-5dba-469d-ad58-93459bdf6056)
    
-6. OPTIONAL: By default, <b>Stream Link (+Files +Playlists) Manager for Channels</b> runs on port 5000. You can change this to another port by typing in this command:
+6. OPTIONAL: By default, <b>Streaming Library Manager for Channels</b> runs on port 5000. You can change this to another port by typing in this command:
 
 ```
 slm.bat port
@@ -221,7 +221,7 @@ chmod +x "slm.sh"
 ./slm.sh install
 ```
 
-4. You will be given one last chance to decide if you want to do the installation. Note that an installation will remove any previous instance of <b>Stream Link (+Files +Playlists) Manager for Channels</b> at that location. This is unlike the "upgrade" below which will maintain all your files and settings.
+4. You will be given one last chance to decide if you want to do the installation. Note that an installation will remove any previous instance of <b>Streaming Library Manager for Channels</b> at that location. This is unlike the "upgrade" below which will maintain all your files and settings.
 
 ![image](https://github.com/user-attachments/assets/53160f56-0c47-4b07-be7b-dfc9bd4cfd03)
 
@@ -237,7 +237,7 @@ chmod +x "slm.sh"
 
 ![image](https://github.com/user-attachments/assets/9b3e34e1-7da2-4001-866e-292df7bf52ae)
 
-7. OPTIONAL: By default, <b>Stream Link (+Files +Playlists) Manager for Channels</b> runs on port 5000. You can change this to another port by typing in this command:
+7. OPTIONAL: By default, <b>Streaming Library Manager for Channels</b> runs on port 5000. You can change this to another port by typing in this command:
 
 ```
 ./slm.sh port
@@ -306,7 +306,7 @@ pyinstaller --noconfirm --onedir --console --add-data="requirements.txt:." --add
 * ```dist``` contains the entire executable program. You can leave it in its current location, rename it, and/or move it somewhere else.
 * With that, you no longer need the original content that was unzipped and you can delete it if you want.
 
-6. OPTIONAL: You can change the port for <b>Stream Link (+Files +Playlists) Manager for Channels</b> by creating a permanent Environment Variable called ```SLM_PORT``` (case sensitive) and giving it a value of the port you want to use. If you don't, the program will run on port 5000. You may also need to open the port up to bypass firewalls or other such settings.
+6. OPTIONAL: You can change the port for <b>Streaming Library Manager for Channels</b> by creating a permanent Environment Variable called ```SLM_PORT``` (case sensitive) and giving it a value of the port you want to use. If you don't, the program will run on port 5000. You may also need to open the port up to bypass firewalls or other such settings.
 
 ---
 # Upgrade
@@ -336,7 +336,7 @@ When the option comes up, make sure "Re-pull image" is selected.
 It then rebuilds the Image and the Container with all the original command lines. Remember to delete the old, unused Image afterwards.
 
 ## Windows
-1. In ```Command Prompt```, navigate to your <b>Stream Link (+Files +Playlists) Manager for Channels</b> directory and type in the following command:
+1. In ```Command Prompt```, navigate to your <b>Streaming Library Manager for Channels</b> directory and type in the following command:
 
 ```
 slm.bat upgrade
@@ -355,7 +355,7 @@ If using PowerShell, type in:
 3. The most important thing is that ```slm.exe``` was terminated or not running, allowing the upgrade to take place. After the upgrade, you will need to restart the program manually or with a reboot. See <b>Startup</b> below.
 
 ## Linux
-1. In a terminal, navigate to your <b>Stream Link (+Files +Playlists) Manager for Channels</b> directory and type in the following command:
+1. In a terminal, navigate to your <b>Streaming Library Manager for Channels</b> directory and type in the following command:
 
 ```
 ./slm.sh upgrade
@@ -372,7 +372,7 @@ If using PowerShell, type in:
 3. The most important thing is that the ```/slm``` application was terminated or not running, allowing the upgrade to take place. After the upgrade, you will need to restart the program manually or with a reboot. See <b>Startup</b> below.
 
 ## Python
-1. Make sure <b>Stream Link (+Files +Playlists) Manager for Channels</b> is closed and is not running in the background.
+1. Make sure <b>Streaming Library Manager for Channels</b> is closed and is not running in the background.
 
 2. Copy the ```program_files``` directory under ```_internal``` to a safe location.
 
@@ -386,13 +386,13 @@ If using PowerShell, type in:
 
 ---
 # Startup
-Since <b>Stream Link (+Files +Playlists) Manager for Channels</b> is designed to run as a service that you access through a webpage, it should be set up to launch at system startup. There may also be reasons to start manually, like after initial installation or an upgrade.
+Since <b>Streaming Library Manager for Channels</b> is designed to run as a service that you access through a webpage, it should be set up to launch at system startup. There may also be reasons to start manually, like after initial installation or an upgrade.
 
 ## Docker
 1. There is nothing additional to do as Docker will automatically start up.
 
 ## Windows
-1. In ```Command Prompt```, navigate to your <b>Stream Link (+Files +Playlists) Manager for Channels</b> directory and type in the following command:
+1. In ```Command Prompt```, navigate to your <b>Streaming Library Manager for Channels</b> directory and type in the following command:
 
 ```
 slm.bat startup
@@ -408,11 +408,11 @@ If using PowerShell, type in:
 
 ![image](https://github.com/user-attachments/assets/53d24b29-8701-4cb1-96e5-9c7f93c48d73)
 
-3. If you open ```Task Scheduler```, you should now see a task called "Stream Link (+Files +Playlists) Manager for Channels":
+3. If you open ```Task Scheduler```, you should now see a task called "Streaming Library Manager for Channels":
 
 ![image](https://github.com/user-attachments/assets/c909fde6-3ca5-4b73-9ff5-09f65c945f32)
 
-4. The next time you reboot, <b>Stream Link (+Files +Playlists) Manager for Channels</b> will automatically start. Similarly, you can manually start it by either...
+4. The next time you reboot, <b>Streaming Library Manager for Channels</b> will automatically start. Similarly, you can manually start it by either...
    
 * Running the process directly in ```Task Scheduler```
 * Double clicking on the ```slm.bat``` file
@@ -423,7 +423,7 @@ If using PowerShell, type in:
 ![image](https://github.com/user-attachments/assets/de995caf-d7fc-4d82-b428-a2b1592d0629)
 
 ## Linux
-1. In a terminal, navigate to your <b>Stream Link (+Files +Playlists) Manager for Channels</b> directory and type in the following command:
+1. In a terminal, navigate to your <b>Streaming Library Manager for Channels</b> directory and type in the following command:
 
 ```
 ./slm.sh startup
@@ -445,7 +445,7 @@ You should see a file named ```slm_startup.sh```:
 
 ![image](https://github.com/user-attachments/assets/0518f462-d077-427d-94d1-8e94600686c3)
 
-4. The next time you reboot, <b>Stream Link (+Files +Playlists) Manager for Channels</b> will automatically start. Similarly, you can manually start it by entering:
+4. The next time you reboot, <b>Streaming Library Manager for Channels</b> will automatically start. Similarly, you can manually start it by entering:
    
 ```
 ./slm.sh
@@ -468,7 +468,7 @@ In either case, you should see something similar to this:
 ![image](https://github.com/user-attachments/assets/3428ac17-5e1e-4ac2-a9d2-6ff82ff601c8)
 
 ## Python
-You have the option for how you want to handle this. Since <b>Stream Link (+Files +Playlists) Manager for Channels</b> is designed to be a background service, just running the program like this...
+You have the option for how you want to handle this. Since <b>Streaming Library Manager for Channels</b> is designed to be a background service, just running the program like this...
 
 ```
 python slm.py
@@ -496,11 +496,11 @@ Replace ```[YOUR_SLM_DIRECTORY]``` with the path you created earlier and save th
 
 ## All
 
-1. The first time you start <b>Stream Link (+Files +Playlists) Manager for Channels</b>, it may take a couple of minutes before it is available. This is due to it running many activities during initial setup that are not repeated. In later startups, it should be just a few seconds depending upon system performance and internet speeds. If you watch the logs or are in an interactive window, you may see something like this:
+1. The first time you start <b>Streaming Library Manager for Channels</b>, it may take a couple of minutes before it is available. This is due to it running many activities during initial setup that are not repeated. In later startups, it should be just a few seconds depending upon system performance and internet speeds. If you watch the logs or are in an interactive window, you may see something like this:
 
 ![image](https://github.com/user-attachments/assets/c94b5031-94af-4741-9d0c-3a7e1ee38fc2)
 
-While the Initialization process attempts to find all the necessary values—even noting when it has to use a substitute value—do not worry if any of the searches faulter. There are various levels of safety checks and automatic timeouts that will move the process along. More so, you can always make adjustments in the ```Settings``` later. To be clear, any "error" or the like shown are not failures and are expected behavior. Everything directly related to <b>Stream Link (+Files +Playlists) Manager for Channels</b> is managed from the ```Settings``` area as discussed below.
+While the Initialization process attempts to find all the necessary values—even noting when it has to use a substitute value—do not worry if any of the searches faulter. There are various levels of safety checks and automatic timeouts that will move the process along. More so, you can always make adjustments in the ```Settings``` later. To be clear, any "error" or the like shown are not failures and are expected behavior. Everything directly related to <b>Streaming Library Manager for Channels</b> is managed from the ```Settings``` area as discussed below.
 
 Also worth highlighting: if you are using Docker, you may still see it says it starts on port 5000. There are no concerns about this as it is being mapped correctly so long as you gave a port value.
 
@@ -520,7 +520,7 @@ Example Mapped...
 https://localhost:7900
 ```
 
-If you are on a different machine than where <b>Stream Link (+Files +Playlists) Manager for Channels</b> is installed, you will need to use the name or IP Address of that machine in place of ```localhost``` and make sure the port is open (as discussed in the installation directions) to be accessed.
+If you are on a different machine than where <b>Streaming Library Manager for Channels</b> is installed, you will need to use the name or IP Address of that machine in place of ```localhost``` and make sure the port is open (as discussed in the installation directions) to be accessed.
 
 3. Once at the location, you should see the homepage:
 
@@ -540,71 +540,24 @@ With the program running, there are a number of activities you should do before 
 
 Aside from the visuals, everything will function exactly the same.
 
-## Stream Link/Files Manager
-
+## General
 ### Settings: Introduction
 
 1. Navigate to the ```Settings``` area. You should see something like this:
 
 ![image](https://github.com/user-attachments/assets/e981d21f-36f7-4136-9686-d1166949675c)
 
-### Settings: Search Defaults
-
-2. Before doing anything, you must set your country correctly (if it was not found or set incorrectly during initialization). This determines which streaming services are available to you:
-
-![image](https://github.com/user-attachments/assets/f8f279fc-d04a-4fec-9cfa-2dae775694d1)
-
-Note for instance the difference between a US and GB list:
-
-![image](https://github.com/user-attachments/assets/46a30da8-a02d-4ecd-8777-dc0c056dd7fe)
-
-![image](https://github.com/user-attachments/assets/673f17fc-daa6-457a-b937-620f210eba56)
-
-Click ```Save``` after you have selected your country, preferred language, default number of programs to come up when you search, and if you want to hide previously bookmarked programs from search. Please be advised that only certain country/language combinations are valid. A non-exhaustive list is available [here](https://apis.justwatch.com/docs/api/#locales).
-
-### Settings: Streaming Services
-
-3. With that done, you can select your streaming services and prioritize them. You can select multiple at a time for any of the actions.
-
-![image](https://github.com/user-attachments/assets/8ba75968-061b-4267-aa84-633edad18fce)
-
-![image](https://github.com/user-attachments/assets/c65bdf1b-cd90-4379-b4dd-28412c45f4f9)
-
-Remember to click ```Save``` when complete.
-
-![image](https://github.com/user-attachments/assets/f47f4621-9139-4dc0-9ef8-64a6f082a5a7)
-
-Be sure to keep this up-to-date as you subscribe, unsubscribe, and change preferences. This list is what determines which Stream Links you will get.
-
-### Settings: Stream Link Mappings
-
-4. SLM uses JustWatch as the source for the final generated Stream Links. While a process is undertaken to "clean" the links of any tracking information, some may still be imperfect or have ways to work better with a "mapping". You have the ability to activate and/or create/delete those mappings:
-
-![image](https://github.com/user-attachments/assets/78ff1c44-11a6-4023-be21-de7b798cdb22)
-
-Out-of-the-box, several are included that are all functional as well as informative:
-
-* Changing ```hulu.com/watch``` to ```disneyplus.com/play``` allows Hulu content to play within in the Disney+ app. This is off by default, but can be activated by clicking the checkbox and saving. It should be noted that not all Hulu content is available within Disney+. To work around this, ```Stream Link Overrides``` may be used as discussed below.
-  
-* All Netflix Movies and Shows come from JustWatch with a link that contains ```netflix.com/title```, which goes to the landing page of that content. However, if you change ```title``` to ```watch```, it will play automatically. However, that only works for Movies, hence why that is in the dropdown selection ```For Object Type```. This is on be default.
-  
-* While JustWatch does provide Amazon links directly for Movies and Shows, the links that are given do not work in all situations, notably on Apple TV and the web. To get around this, the links can be converted with the string ```watch.amazon.com/detail?gti=``` being replaced with ```www.amazon.com/gp/video/detail/```. This is on by default. 
-
-* At the time of this program's launch, ```Vudu``` had changed its name to ```Fandango at Home``` and created a newly named app, but did not fix the app to accept ```Vudu``` links that it was still using. Since deep linking directly is not possible, this mapping says to replace any link that contains ```vudu.com``` in its entirety with a link that will just launch their app generically. This is off by default.
-
-It is not required to set these immediately; they can be added, deleted, or modified at any time.
-
 ### Settings: Channels URL
 
-5. Next, make sure the Channels URL is correct.
+2. Next, make sure the Channels URL is correct.
 
 ![image](https://github.com/user-attachments/assets/b24ac2e4-2dd3-4319-acb0-35763f18582e)
 
-During Initialization, an attempt was made at determining the correct link. However, that may not have succeeded or the selection may not be the case for you. Modify if necessary and click the ```Test``` button to confirm that <b>Stream Link (+Files +Playlists) Manager for Channels</b> can attach to Channels DVR.
+During Initialization, an attempt was made at determining the correct link. However, that may not have succeeded or the selection may not be the case for you. Modify if necessary and click the ```Test``` button to confirm that <b>Streaming Library Manager for Channels</b> can attach to Channels DVR.
 
 ![image](https://github.com/user-attachments/assets/2b1c427e-f6f0-4b4d-9d0c-3a2c1139281f)
 
-You also have the option to let <b>Stream Link (+Files +Playlists) Manager for Channels</b> attempt to determine the link again by clicking the ```Scan``` button:
+You also have the option to let <b>Streaming Library Manager for Channels</b> attempt to determine the link again by clicking the ```Scan``` button:
 
 ![image](https://github.com/user-attachments/assets/1a945756-a29d-478d-a6fa-711823f8ab48)
 
@@ -618,7 +571,7 @@ http://host.docker.internal:8089
 
 ### Settings: Channels Directory
 
-6. Similarly, in order for the program to work correctly, it needs to be pointed to your Channels DVR folder. During initialization, an attempt was made to find the folder. If it could not be discovered, the directory you installed the program in was used.
+3. Similarly, in order for many of the program functions to work correctly, it needs to be pointed to your Channels DVR folder. During initialization, an attempt was made to find the folder. If it could not be discovered, the directory you installed the program in was used.
 
 ![image](https://github.com/user-attachments/assets/0298be2e-bc82-4d31-9d70-d5fb41aec790)
 
@@ -638,29 +591,30 @@ This is the folder you set during installation and should be what you are using.
 
 ![image](https://github.com/user-attachments/assets/7e555c41-41e4-40b2-8e0b-2aad7d48a355)
 
-Do note that you <i>must</i> use the parent Channels DVR directory, not the ```Imports``` or anything similar. If you do not set this correctly or do not have access from the machine you installed <b>Stream Link (+Files +Playlists) Manager for Channels</b> on, then you will not be able to generate Stream Links that Channels DVR can see, nor be able to get updates from Channels DVR when programs are watched and deleted.
+Do note that you <i>must</i> use the parent Channels DVR directory, not the ```Imports``` or anything similar. If you do not set this correctly or do not have access from the machine you installed <b>Streaming Library Manager for Channels</b> on, then you will not be able to do many things, such as generate Stream Links that Channels DVR can see or be able to get updates from Channels DVR when programs are watched and deleted.
 
 ### Settings: Advanced / Experimental
 
-7. Under ```Advanced / Experimental```, you will find some tools to manage the program and your results.
+4. Under ```Advanced / Experimental```, you will find some tools to manage the program and your results.
 
-![image](https://github.com/user-attachments/assets/ee0c303d-d9c5-40b1-8108-bec8296b15c8)
+![image](https://github.com/user-attachments/assets/ceb0cafb-90a8-4042-a98e-b924c64d5b5d)
 
-```Run 'Prune' function in Channels``` is on by default, which means that the program will initiate a delete in Channels DVR for any missing personal media, not just Stream Links. You may decide that you do not want this to run automatically.
+* `Use Stream Link/File Manager` is on by default. You have the option to turn it off if you are not using those tools. It will then hide everything related to SLM.
+* `Use Playlist Manager` is off by default. This is discussed in detail below.
+* ```Run 'Prune' function in Channels``` is on by default, which means that the program will initiate a delete in Channels DVR for any missing personal media, not just Stream Links. You may decide that you do not want this to run automatically.
 
 ### Settings: Scheduler + Run Processes and Logs
 
-8. Finally, there is the ```Scheduler```.
+5. Finally, there is the ```Scheduler```.
 
-![image](https://github.com/user-attachments/assets/524ab628-705d-48af-8cc5-69e47373e166)
+![image](https://github.com/user-attachments/assets/ee84c754-a47b-4169-9e8d-b56527fbfe19)
 
-In the ```End-to-End Process```, several steps are taken. These can all be seen and initiated manually in the ```Run Processes``` area.
+Depending upon your choices above, there will be several automations that you can set timing, frequency, and other details for. For intstance, in the ```Stream Links/Files: End-to-End Process```, several steps are taken. These can all be seen and initiated manually in the ```Run Processes``` area.
 
-![image](https://github.com/user-attachments/assets/f9c5ecec-0fef-46f1-97f2-e7dc000ec575)
+![image](https://github.com/user-attachments/assets/ff2ce43c-892d-44b7-ad31-372904f5c43f)
 
 These tasks are:
 
-* Do a backup
 * Update the Streaming Services for any new or removed providers
 * Check for new episodes of bookmarked shows
 * Import from Channels DVR any Movies and Episodes that have been watched and deleted, marking them as "watched" in SLM
@@ -669,11 +623,7 @@ These tasks are:
 
 ![image](https://github.com/user-attachments/assets/89958211-b692-4e94-82c0-b4a89282dfe7)
 
-While these can all be done manually, it is recommended to set a schedule to run automatically at some point during the day.
-
-![image](https://github.com/user-attachments/assets/698b0151-b64e-413c-89ac-00b2ca70550b)
-
-Note that this can take a significant amount of time, depending upon the number of Movies and Episodes that you have bookmarked. Also, the clock shown should match your system and locale settings. After a process is complete, you can see pertinent notifications in the ```Home``` area (newest on top), such as if there are changes to Streaming Services or new episodes were added.
+While these can all be done manually, it is recommended to set a schedule to run automatically at some point during the day. Note that this can take a significant amount of time, depending upon the number of Movies and Episodes that you have bookmarked. Also, the clock shown should match your system and locale settings. After a process is complete, you can see pertinent notifications in the ```Home``` area (newest on top), such as if there are changes to Streaming Services or new episodes were added.
 
 ![image](https://github.com/user-attachments/assets/d3dea0dc-edf6-40eb-bd6c-0d573deafd1f)
 
@@ -683,9 +633,57 @@ If you are looking for additional detail as to what transpired, the ```Logs``` a
 
 Unlike the notifications and live process trackers, the log is in order of action.
 
+## Stream Link/File Manager
+
+### Settings: Search Defaults
+
+1. Before doing anything, you must set your country correctly (if it was not found or set incorrectly during initialization). This determines which streaming services are available to you:
+
+![image](https://github.com/user-attachments/assets/f8f279fc-d04a-4fec-9cfa-2dae775694d1)
+
+Note for instance the difference between a US and GB list:
+
+![image](https://github.com/user-attachments/assets/46a30da8-a02d-4ecd-8777-dc0c056dd7fe)
+
+![image](https://github.com/user-attachments/assets/673f17fc-daa6-457a-b937-620f210eba56)
+
+Click ```Save``` after you have selected your country, preferred language, default number of programs to come up when you search, and if you want to hide previously bookmarked programs from search. Please be advised that only certain country/language combinations are valid. A non-exhaustive list is available [here](https://apis.justwatch.com/docs/api/#locales).
+
+### Settings: Streaming Services
+
+2. With that done, you can select your streaming services and prioritize them. You can select multiple at a time for any of the actions.
+
+![image](https://github.com/user-attachments/assets/8ba75968-061b-4267-aa84-633edad18fce)
+
+![image](https://github.com/user-attachments/assets/c65bdf1b-cd90-4379-b4dd-28412c45f4f9)
+
+Remember to click ```Save``` when complete.
+
+![image](https://github.com/user-attachments/assets/f47f4621-9139-4dc0-9ef8-64a6f082a5a7)
+
+Be sure to keep this up-to-date as you subscribe, unsubscribe, and change preferences. This list is what determines which Stream Links you will get.
+
+### Settings: Stream Link Mappings
+
+3. SLM uses JustWatch as the source for the final generated Stream Links. While a process is undertaken to "clean" the links of any tracking information, some may still be imperfect or have ways to work better with a "mapping". You have the ability to activate and/or create/delete those mappings:
+
+![image](https://github.com/user-attachments/assets/78ff1c44-11a6-4023-be21-de7b798cdb22)
+
+Out-of-the-box, several are included that are all functional as well as informative:
+
+* Changing ```hulu.com/watch``` to ```disneyplus.com/play``` allows Hulu content to play within in the Disney+ app. This is off by default, but can be activated by clicking the checkbox and saving. It should be noted that not all Hulu content is available within Disney+. To work around this, ```Stream Link Overrides``` may be used as discussed below.
+  
+* All Netflix Movies and Shows come from JustWatch with a link that contains ```netflix.com/title```, which goes to the landing page of that content. However, if you change ```title``` to ```watch```, it will play automatically. However, that only works for Movies, hence why that is in the dropdown selection ```For Object Type```. This is on be default.
+  
+* While JustWatch does provide Amazon links directly for Movies and Shows, the links that are given do not work in all situations, notably on Apple TV and the web. To get around this, the links can be converted with the string ```watch.amazon.com/detail?gti=``` being replaced with ```www.amazon.com/gp/video/detail/```. This is on by default. 
+
+* At the time of this program's launch, ```Vudu``` had changed its name to ```Fandango at Home``` and created a newly named app, but did not fix the app to accept ```Vudu``` links that it was still using. Since deep linking directly is not possible, this mapping says to replace any link that contains ```vudu.com``` in its entirety with a link that will just launch their app generically. This is off by default.
+
+It is not required to set these immediately; they can be added, deleted, or modified at any time.
+
 ### Search and Add Movies and Shows
 
-9. With this all in place, you can now navigate to ```Add Programs```.
+4. With this all in place, you can now navigate to ```Add Programs```.
 
 ![image](https://github.com/user-attachments/assets/7ac9c760-3b69-446c-b953-8ae694fe3f6d)
 
@@ -774,7 +772,7 @@ Here you will see the episodes created as designed by the user. It should be hig
 
 ### Modify Programs
 
-10. Even if a Movie or Show is added through search or manual selection, that does not mean they are set in stone. You can use the ```Modify Programs``` area to make any update as desired.
+5. Even if a Movie or Show is added through search or manual selection, that does not mean they are set in stone. You can use the ```Modify Programs``` area to make any update as desired.
 
 ![image](https://github.com/user-attachments/assets/a0a4e244-0288-48f8-9a81-26705e034665)
 
