@@ -29,7 +29,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.11.24.1123"
+slm_version = "v2024.11.30.1816"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -48,7 +48,6 @@ program_files_dir = os.path.join(script_dir, "program_files")
 backup_dir = os.path.join(program_files_dir, "backups")
 playlists_uploads_dir_name = "playlists_uploads"
 playlists_uploads_dir = os.path.join(program_files_dir, playlists_uploads_dir_name)
-max_backups = 3
 csv_settings = "StreamLinkManager_Settings.csv"
 csv_streaming_services = "StreamLinkManager_StreamingServices.csv"
 csv_bookmarks = "StreamLinkManager_Bookmarks.csv"
@@ -276,6 +275,14 @@ slm_end_to_end_frequencies = [
     "Every 12 hours",
     "Every 24 hours"
 ]
+gen_backup_frequencies = [
+    "Every 1 hour",
+    "Every 2 hours",
+    "Every 4 hours",
+    "Every 8 hours",
+    "Every 12 hours",
+    "Every 24 hours"
+]
 stream_formats = [
     "HLS",
     "MPEG-TS"
@@ -307,8 +314,36 @@ def create_directory(directory_path):
     except OSError as e:
         print(f"    Error creating directory {directory_path}: {e}")
 
+# Read data from a CSV file.
+def read_data(csv_file):
+    full_path_file = full_path(csv_file)
+    data = []
+
+    try:
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                data.append(row)
+        return data
+    except Exception as e:
+        print(f"\n{current_time()} ERROR: Reading data... {e}\n")
+        return None
+
 # Create a backup of program files and remove old backups
-def create_backup(src_dir, dst_dir, max_backups):
+def create_backup():
+    src_dir = program_files_dir
+    dst_dir = backup_dir
+    
+    # Determine the max number of backups to keep
+    max_backups = 3
+    try:
+        if os.path.exists(full_path(csv_settings)):
+            settings = read_data(csv_settings)
+            if len(settings) > 22:
+                max_backups = int(settings[22]["settings"])
+    except (FileNotFoundError, KeyError, IndexError) as e:
+        pass
+
     # Copy the contents of src_dir to the backup subdirectory
     timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     backup_subdir = os.path.join(dst_dir, timestamp)
@@ -332,7 +367,7 @@ create_directory(backup_dir)
 
 ### Make a backup and remove old backups
 if os.path.exists(program_files_dir):
-    create_backup(program_files_dir, backup_dir, max_backups)
+    create_backup()
 
 # Set up session logging
 log_filename_fullpath = full_path(log_filename)
@@ -415,7 +450,7 @@ def check_and_create_csv(csv_file):
             content = file.readlines()
         
         if all(line.strip() == '' for line in content):
-            os.remove(full_path_file)
+            reliable_remove(full_path_file)
 
     # Check if the file exists, if not create it
     if not os.path.exists(full_path_file):
@@ -459,6 +494,11 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 18, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time")
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 19, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency")
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 20, "SLM: End-to-End Process Schedule Frequency")
+        check_and_append(csv_file, {"settings": "On"}, 21, "GEN: Backup Process On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 22, "GEN: Backup Process Schedule Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 23, "GEN: Backup Process Schedule Frequency")
+        check_and_append(csv_file, {"settings": 3}, 24, "GEN: Backup Process Max number of backups to keep")
+        check_and_append(csv_file, {"settings": "On"}, 25, "Stream Link/Files Manager: On/Off")
 
 # Clean up empty data files
 def remove_empty_row(csv_file):
@@ -683,7 +723,12 @@ def initial_data(csv_file):
                     {"settings": "Off"},                                                       # [15] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule On/Off
                     {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [16] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time
                     {"settings": "Every 24 hours"},                                            # [17] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency
-                    {"settings": "Every 24 hours"} #,                                          # [18] SLM: End-to-End Process Schedule Frequency
+                    {"settings": "Every 24 hours"},                                            # [18] SLM: End-to-End Process Schedule Frequency
+                    {"settings": "On"},                                                        # [19] GEN: Backup Process On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [20] GEN: Backup Process Schedule Start Time
+                    {"settings": "Every 24 hours"},                                            # [21] GEN: Backup Process Schedule Frequency
+                    {"settings": 3},                                                           # [22] GEN: Backup Process Max number of backups to keep
+                    {"settings": "On"} #,                                                      # [23] Stream Link/Files Manager: On/Off
                     # Add more rows as needed
         ]        
     elif csv_file == csv_streaming_services:
@@ -840,21 +885,6 @@ def get_streaming_services():
 def update_streaming_services():
     data = get_streaming_services()
     update_rows(csv_streaming_services, data, "streaming_service_name", None)
-
-# Read data from a CSV file.
-def read_data(csv_file):
-    full_path_file = full_path(csv_file)
-    data = []
-
-    try:
-        with open(full_path_file, "r", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                data.append(row)
-        return data
-    except Exception as e:
-        print(f"\n{current_time()} ERROR: Reading data... {e}\n")
-        return None
 
 # Write data back to a CSV file.
 def write_data(csv_file, data):
@@ -1093,6 +1123,9 @@ global_settings = read_data(csv_settings)
 slm_playlist_manager = None
 if global_settings[10]['settings'] == "On":
     slm_playlist_manager = True
+slm_stream_link_file_manager = None
+if global_settings[23]['settings'] == "On":
+    slm_stream_link_file_manager = True
 
 check_channels_url(None)
 
@@ -1107,6 +1140,7 @@ def main_menu():
         segment = 'index',
         html_slm_version = slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_notifications = notifications
     )
 
@@ -1115,6 +1149,7 @@ def main_menu():
 def settings():
     global channels_url_prior
     global slm_playlist_manager
+    global slm_stream_link_file_manager
     settings_anchor_id = None
     run_empty_row = None
 
@@ -1127,6 +1162,10 @@ def settings():
     language_code = settings[3]["settings"]
     num_results = settings[4]["settings"]
     hide_bookmarked = settings[9]["settings"]
+    gen_backup_schedule = settings[19]["settings"]
+    gen_backup_schedule_time = settings[20]["settings"]
+    gen_backup_schedule_frequency = settings[21]["settings"]
+    gen_backup_max_backups = settings[22]["settings"]
     try:
         auto_update_schedule = settings[8]["settings"]
     except (IndexError, KeyError):
@@ -1159,18 +1198,21 @@ def settings():
     channels_directory_message = ""
     search_defaults_message = ""
     advanced_experimental_message = ""
+    scheduler_message = ""
 
     action_to_anchor = {
         'streaming_services': 'streaming_services_anchor',
         'search_defaults': 'search_defaults_anchor',
         'slmapping': 'slmapping_anchor',
+        'gen_backup_process': 'scheduler_anchor',
         'end_to_end_process': 'scheduler_anchor',
         'plm_update_stations_process': 'scheduler_anchor',
         'plm_update_m3us_epgs_process': 'scheduler_anchor',
         'channels_url': 'channels_url_anchor',
         'channels_directory': 'channels_directory_anchor',
         'channels_prune': 'advanced_experimental_anchor',
-        'playlist_manager': 'advanced_experimental_anchor'
+        'playlist_manager': 'advanced_experimental_anchor',
+        'stream_link_file_manager': 'advanced_experimental_anchor'
     }
 
     if not os.path.exists(channels_directory):
@@ -1187,6 +1229,7 @@ def settings():
         channels_directory_manual_path = request.form.get('channels_directory_manual_path')
         channels_prune_input = request.form.get('channels_prune')
         playlist_manager_input = request.form.get('playlist_manager')
+        stream_link_file_manager_input = request.form.get('stream_link_file_manager')
         station_start_number_input = request.form.get('station_start_number')
         max_stations_input = request.form.get('max_stations')
         country_code_input = request.form.get('country_code')
@@ -1194,6 +1237,10 @@ def settings():
         num_results_input = request.form.get('num_results')
         hide_bookmarked_input = request.form.get('hide_bookmarked')
         streaming_services_input = request.form.get('streaming_services')
+        gen_backup_schedule_input = request.form.get('gen_backup_schedule')
+        gen_backup_schedule_time_input = request.form.get('gen_backup_schedule_time')
+        gen_backup_schedule_frequency_input = request.form.get('gen_backup_schedule_frequency')
+        gen_backup_max_backups_input = request.form.get('gen_backup_max_backups')
         auto_update_schedule_input = request.form.get('auto_update_schedule')
         auto_update_schedule_time_input = request.form.get('auto_update_schedule_time')
         auto_update_schedule_frequency_input = request.form.get('auto_update_schedule_frequency')
@@ -1212,20 +1259,24 @@ def settings():
                                                                            'channels_directory_cancel',
                                                                            'channels_prune_cancel',
                                                                            'playlist_manager_cancel',
+                                                                           'stream_link_file_manager_cancel',
                                                                            'search_defaults_cancel',
                                                                            'streaming_services_cancel',
                                                                            'end_to_end_process_cancel',
                                                                            'plm_update_stations_process_cancel',
                                                                            'plm_update_m3us_epgs_process_cancel',
+                                                                           'gen_backup_process_cancel',
                                                                            'channels_url_save',
                                                                            'channels_directory_save',
                                                                            'channels_prune_save',
                                                                            'playlist_manager_save',
+                                                                           'stream_link_file_manager_save',
                                                                            'search_defaults_save',
                                                                            'streaming_services_save',
                                                                            'end_to_end_process_save',
                                                                            'plm_update_stations_process_save',
                                                                            'plm_update_m3us_epgs_process_save',
+                                                                           'gen_backup_process_save',
                                                                            'streaming_services_update',
                                                                            'channels_url_test',
                                                                            'channels_url_scan'
@@ -1235,11 +1286,13 @@ def settings():
                                                                                       'channels_directory_save',
                                                                                       'channels_prune_save',
                                                                                       'playlist_manager_save',
+                                                                                      'stream_link_file_manager_save',
                                                                                       'search_defaults_save',
                                                                                       'streaming_services_save',
                                                                                       'end_to_end_process_save',
                                                                                       'plm_update_stations_process_save',
                                                                                       'plm_update_m3us_epgs_process_save',
+                                                                                      'gen_backup_process_save',
                                                                                       'channels_url_scan'
                                                                                     ]:
 
@@ -1247,10 +1300,12 @@ def settings():
                                     'channels_directory_save',
                                     'channels_prune_save',
                                     'playlist_manager_save',
+                                    'stream_link_file_manager_save',
                                     'search_defaults_save',
                                     'end_to_end_process_save',
                                     'plm_update_stations_process_save',
                                     'plm_update_m3us_epgs_process_save',
+                                    'gen_backup_process_save',
                                     'channels_url_scan'
                                     ]:
 
@@ -1277,6 +1332,19 @@ def settings():
                             except ValueError:
                                 search_defaults_message = f"{current_time()} ERROR: 'Number of Results' must be a number."
                             settings[9]["settings"] = "On" if hide_bookmarked_input == 'on' else "Off"
+
+                    elif settings_action == 'gen_backup_process_save':
+                        settings[19]["settings"] = "On" if gen_backup_schedule_input == 'on' else "Off"
+                        settings[20]["settings"] = gen_backup_schedule_time_input
+                        settings[21]["settings"] = gen_backup_schedule_frequency_input
+                        try:
+                            if int(gen_backup_max_backups_input) > 0:
+                                settings[22]["settings"] = int(gen_backup_max_backups_input)
+                            else:
+                                scheduler_message = f"{current_time()} ERROR: For 'Max Backups', please enter a positive integer."
+                        except ValueError:
+                            scheduler_message = f"{current_time()} ERROR: 'Max Backups' must be a number."
+                        
 
                     elif settings_action == 'end_to_end_process_save':
                         try:
@@ -1326,6 +1394,14 @@ def settings():
                                 advanced_experimental_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
                         except ValueError:
                             advanced_experimental_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be numbers."
+
+                    elif settings_action == 'stream_link_file_manager_save':
+                        settings[23]["settings"] = "On" if stream_link_file_manager_input == 'on' else "Off"
+
+                        if stream_link_file_manager_input == 'on':
+                            slm_stream_link_file_manager = True
+                        else:
+                            slm_stream_link_file_manager = None
 
                     csv_to_write = csv_settings
                     data_to_write = settings
@@ -1471,6 +1547,10 @@ def settings():
         language_code = settings[3]["settings"]
         num_results = settings[4]["settings"]
         hide_bookmarked = settings[9]["settings"]
+        gen_backup_schedule = settings[19]["settings"]
+        gen_backup_schedule_time = settings[20]["settings"]
+        gen_backup_schedule_frequency = settings[21]["settings"]
+        gen_backup_max_backups = settings[22]["settings"]
         try:
             auto_update_schedule = settings[8]["settings"]
         except (IndexError, KeyError):
@@ -1495,6 +1575,7 @@ def settings():
         segment='settings',
         html_slm_version=slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_settings_anchor_id = settings_anchor_id,
         html_channels_url=channels_url,
         html_channels_url_prior = channels_url_prior,
@@ -1527,7 +1608,13 @@ def settings():
         html_hide_bookmarked = hide_bookmarked,
         html_station_start_number = station_start_number,
         html_max_stations = max_stations,
-        html_advanced_experimental_message = advanced_experimental_message
+        html_advanced_experimental_message = advanced_experimental_message,
+        html_gen_backup_frequencies = gen_backup_frequencies,
+        html_gen_backup_schedule = gen_backup_schedule,
+        html_gen_backup_schedule_time = gen_backup_schedule_time,
+        html_gen_backup_schedule_frequency = gen_backup_schedule_frequency,
+        html_gen_backup_max_backups = gen_backup_max_backups,
+        html_scheduler_message = scheduler_message
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -1946,6 +2033,7 @@ def add_programs():
         segment='addprograms',
         html_slm_version = slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_valid_country_codes = valid_country_codes,
         html_country_code = country_code,
         html_valid_language_codes = valid_language_codes,
@@ -3551,6 +3639,7 @@ def modify_programs():
         segment = 'modifyprograms',
         html_slm_version = slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_sorted_bookmarks = sorted_bookmarks,
         html_entry_id_selected = entry_id_prior,
         html_program_modify_message = program_modify_message,
@@ -4204,6 +4293,7 @@ def playlists_webpage(sub_page):
         segment='playlists',
         html_slm_version = slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_playlists_anchor_id = playlists_anchor_id,
         html_playlists = playlists,
         html_preferred_playlists = preferred_playlists,
@@ -4976,6 +5066,7 @@ def search_directory_for_files_with_extensions(search_directory, base_extension)
 
     return result
 
+# Removes all rows in a file except the header
 def delete_all_rows_except_header(csv_file):
     full_path_file = full_path(csv_file)
     
@@ -5064,7 +5155,7 @@ def get_epgs_for_m3us():
                 epg_file.write("</tv>\n")
 
     # Delete temp.txt after processing
-    os.remove(temp_file_path)
+    reliable_remove(temp_file_path)
 
     extensions = ['xml']
     all_prior_files = []
@@ -5130,6 +5221,7 @@ def webpage_reports_queries():
         segment='reports_queries',
         html_slm_version=slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_query = slm_query,
         html_slm_query_name = slm_query_name
     )
@@ -5291,7 +5383,10 @@ def webpage_files():
     replace_message = None
 
     file_lists = [
-        {'file_name': 'Settings', 'file': csv_settings },
+        {'file_name': 'Settings', 'file': csv_settings }
+    ]
+
+    stream_link_file_manager_file_lists = [
         {'file_name': 'Streaming Services', 'file': csv_streaming_services },
         {'file_name': 'Stream Link Mappings', 'file': csv_slmappings },
         {'file_name': 'Bookmarks', 'file': csv_bookmarks },
@@ -5304,6 +5399,10 @@ def webpage_files():
         {'file_name': 'Child to Parent Station Map', 'file': csv_playlistmanager_child_to_parent },
         {'file_name': 'All Stations', 'file': csv_playlistmanager_combined_m3us }
     ]
+
+    if slm_stream_link_file_manager:
+        for stream_link_file_manager_file_list in stream_link_file_manager_file_lists:
+            file_lists.append({'file_name': stream_link_file_manager_file_list['file_name'], 'file': stream_link_file_manager_file_list['file']})
 
     if slm_playlist_manager:
         for plm_file_list in plm_file_lists:
@@ -5332,6 +5431,7 @@ def webpage_files():
         segment='files',
         html_slm_version=slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         table_html=table_html,
         replace_message=replace_message,
         html_file_lists = file_lists,
@@ -5442,6 +5542,7 @@ def webpage_logs():
         segment='logs',
         html_slm_version=slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_log_filename_fullpath=log_filename_fullpath,
         html_page_lines=page_lines,
         html_page=page,
@@ -5461,7 +5562,7 @@ def webpage_runprocess():
             end_to_end()
         elif action == 'backup_now':
             if os.path.exists(program_files_dir):
-                create_backup(program_files_dir, backup_dir, max_backups)
+                create_backup()
         elif action == 'update_streaming_services':
             update_streaming_services()
         elif action == 'get_new_episodes':
@@ -5477,7 +5578,8 @@ def webpage_runprocess():
         'main/runprocess.html',
         segment = 'runprocess',
         html_slm_version = slm_version,
-        html_slm_playlist_manager = slm_playlist_manager
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager
     )
 
 # Create a continous stream of the log file
@@ -7883,6 +7985,25 @@ def directory_delete(base_directory):
                 except OSError as e:
                     notification_add(f"    Second error removing directory {dir_path}: {e}")
 
+# Tries to remove a file, verifies its deletion, and retries if necessary.
+def reliable_remove(filepath):
+    max_retries=5
+    wait_time=10
+
+    for attempt in range(max_retries):
+        try:
+            os.remove(filepath)
+            if not os.path.exists(filepath):
+                return True
+        except Exception as e:
+            print(f"\n{current_time()} WARNING: After {attempt + 1} attempt, failed to remove {filepath} due to: {e}")
+        
+        print(f"{current_time()} INFO: Waiting for {wait_time} seconds before next attempt...")
+        time.sleep(wait_time)
+    
+    notification_add(f"{current_time()} ERROR: Failed to delete file '{filepath}' after {max_retries} attempts. Please manually delete and report this error along with other warnings and info in the logs.")
+    return False
+
 # Runs a prune/scan in Channels
 def prune_scan_channels():
     print("\n==========================================================")
@@ -7960,17 +8081,14 @@ async def send_reprocess_requests(reprocess_session, reprocess_url):
 def end_to_end():
     print("\n==========================================================")
     print("|                                                        |")
-    print("|               End-to-End Update Process                |")
+    print("|             SLM: End-to-End Update Process             |")
     print("|                                                        |")
     print("==========================================================")
 
-    notification_add(f"\n{current_time()} Beginning end-to-end update process...\n")
+    notification_add(f"\n{current_time()} Beginning SLM end-to-end update process...\n")
 
     start_time = time.time()
 
-    if os.path.exists(program_files_dir):
-        create_backup(program_files_dir, backup_dir, max_backups)
-    time.sleep(2)
     update_streaming_services()
     time.sleep(2)
     get_new_episodes(None)
@@ -7991,7 +8109,7 @@ def end_to_end():
 
     notification_add(f"\n{current_time()} Total Elapsed Time: {int(hours)} hours | {int(minutes)} minutes | {int(seconds)} seconds")
 
-    notification_add(f"\n{current_time()} End-to-end update process complete\n")
+    notification_add(f"\n{current_time()} SLM End-to-end update process complete\n")
 
 # Background process to check the schedule
 def check_schedule():
@@ -8001,12 +8119,15 @@ def check_schedule():
         current_time = datetime.datetime.now().strftime('%H:%M')
         current_hour = datetime.datetime.now().hour
         current_minute = datetime.datetime.now().minute
-        
+
+        gen_backup_schedule = settings[19]["settings"]
+        gen_backup_schedule_time = settings[20]["settings"]
+        gen_backup_schedule_frequency = settings[21]["settings"]
+        gen_backup_schedule_frequency_parsed = int(re.search(r'\d+', gen_backup_schedule_frequency).group())
         try:
             auto_update_schedule = settings[8]["settings"]
         except (IndexError, KeyError):
-            auto_update_schedule = 'Off'
-            
+            auto_update_schedule = 'Off'           
         auto_update_schedule_time = settings[6]["settings"]
         auto_update_schedule_frequency = settings[18]["settings"]
         auto_update_schedule_frequency_parsed = int(re.search(r'\d+', auto_update_schedule_frequency).group())
@@ -8017,6 +8138,13 @@ def check_schedule():
         plm_m3us_epgs_schedule_frequency = settings[17]["settings"]
         plm_m3us_epgs_schedule_frequency_parsed = int(re.search(r'\d+', plm_m3us_epgs_schedule_frequency).group())
         
+        if  gen_backup_schedule == 'On' and  gen_backup_schedule_time:
+            gen_backup_schedule_hour, gen_backup_schedule_minute = map(int, gen_backup_schedule_time.split(':'))
+
+            if current_minute == gen_backup_schedule_minute and (current_hour - gen_backup_schedule_hour) % gen_backup_schedule_frequency_parsed == 0:
+                threading.Thread(target=create_backup).start()
+                wait_trigger = True
+
         if auto_update_schedule == 'On' and auto_update_schedule_time:
             auto_update_schedule_hour, auto_update_schedule_minute = map(int, auto_update_schedule_time.split(':'))
 
@@ -8063,6 +8191,7 @@ def get_segment(request):
     
     return segment
 
+# Catch-all for non-named pages
 @app.route('/<template>')
 def route_template(template):
 
@@ -8079,21 +8208,24 @@ def route_template(template):
             "main/" + template,
             segment = segment,
             html_slm_version = slm_version,
-            html_slm_playlist_manager = slm_playlist_manager
+            html_slm_playlist_manager = slm_playlist_manager,
+            html_slm_stream_link_file_manager = slm_stream_link_file_manager
         )
 
     except TemplateNotFound:
         return render_template(
             'main/page-404.html',
             html_slm_version = slm_version,
-            html_slm_playlist_manager = slm_playlist_manager
+            html_slm_playlist_manager = slm_playlist_manager,
+            html_slm_stream_link_file_manager = slm_stream_link_file_manager
         ), 404
 
     except:
         return render_template(
             'main/page-500.html',
             html_slm_version = slm_version,
-            html_slm_playlist_manager = slm_playlist_manager
+            html_slm_playlist_manager = slm_playlist_manager,
+            html_slm_stream_link_file_manager = slm_stream_link_file_manager
         ), 500
 
 # Start-up Check
