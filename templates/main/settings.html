@@ -53,229 +53,260 @@
     <div class="row min-vh-80 h-100">
       <div class="col-12">
         <form method="POST" action="/settings">
-          <!-- Streaming Services -->
-          <h4 id="streaming_services_anchor">Streaming Services</h4>
-          <div class="container">
-            <style>
-              .listbox {
-                width: 400px;
-                height: 300px;
-                overflow-y: scroll;
-                border: 1px solid #ccc;
-              }
-              .container {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-              }
-              .buttons {
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-              }
-              .right-container {
-                display: flex;
-                align-items: center;
-              }
-              .centered-button {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-              }
-              .box-container {
-                border: 1px solid #ccc;
-                padding: 10px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                position: relative;
-                width: 100%;
-                max-width: 975px;
-              }
-              .form-buttons {
-                display: flex;
-                justify-content: center;
-                margin-top: 5px;
-                width: 100%;
-                margin-left: -72px;
-              }
-            </style>
-            <div class="box-container">
-              <div>
-                <h6 style="text-align: center;">Available</h6>
-                <select id="leftList" class="listbox" multiple>
-                  <!-- Left list options will be populated by JavaScript -->
-                </select>
-              </div>
-              <div class="buttons">
-                <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveRight()">
-                  <i class="material-icons opacity-10">keyboard_arrow_right</i>
-                </button>
-                <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveLeft()">
-                  <i class="material-icons opacity-10">keyboard_arrow_left</i>
-                </button>
-              </div>
-              <div class="right-container">
+          {% if html_slm_stream_link_file_manager %}
+            <!-- Streaming Services -->
+            <h4 id="streaming_services_anchor">Streaming Services</h4>
+            <div class="container">
+              <style>
+                .listbox {
+                  width: 400px;
+                  height: 300px;
+                  overflow-y: scroll;
+                  border: 1px solid #ccc;
+                }
+                .container {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                }
+                .buttons {
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                }
+                .right-container {
+                  display: flex;
+                  align-items: center;
+                }
+                .centered-button {
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                }
+                .box-container {
+                  border: 1px solid #ccc;
+                  padding: 10px;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  position: relative;
+                  width: 100%;
+                  max-width: 975px;
+                }
+                .form-buttons {
+                  display: flex;
+                  justify-content: center;
+                  margin-top: 5px;
+                  width: 100%;
+                  margin-left: -72px;
+                }
+              </style>
+              <div class="box-container">
                 <div>
-                  <h6 style="text-align: center;">Subscribed by Priority</h6>
-                  <select id="rightList" class="listbox" multiple>
-                    <!-- Right list options will be populated by JavaScript -->
+                  <h6 style="text-align: center;">Available</h6>
+                  <select id="leftList" class="listbox" multiple>
+                    <!-- Left list options will be populated by JavaScript -->
                   </select>
                 </div>
                 <div class="buttons">
-                  <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveUp()">
-                    <i class="material-icons opacity-10">keyboard_arrow_up</i>
+                  <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveRight()">
+                    <i class="material-icons opacity-10">keyboard_arrow_right</i>
                   </button>
-                  <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveDown()">
-                    <i class="material-icons opacity-10">keyboard_arrow_down</i>
+                  <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveLeft()">
+                    <i class="material-icons opacity-10">keyboard_arrow_left</i>
                   </button>
                 </div>
+                <div class="right-container">
+                  <div>
+                    <h6 style="text-align: center;">Subscribed by Priority</h6>
+                    <select id="rightList" class="listbox" multiple>
+                      <!-- Right list options will be populated by JavaScript -->
+                    </select>
+                  </div>
+                  <div class="buttons">
+                    <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveUp()">
+                      <i class="material-icons opacity-10">keyboard_arrow_up</i>
+                    </button>
+                    <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveDown()">
+                      <i class="material-icons opacity-10">keyboard_arrow_down</i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-buttons">
+                <button type="submit" name="action" value="streaming_services_update" class="btn bg-gradient-primary w-10 my-2 mb-2" style="margin-right: 2px;">Update</button>
+                <button type="submit" name="action" value="streaming_services_save" class="btn bg-gradient-primary w-10 my-2 mb-2" style="margin-left: 2px; margin-right: 2px;">Save</button>
+                <button type="submit" name="action" value="streaming_services_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2" style="margin-left: 2px;">Cancel</button>
               </div>
             </div>
-            <div class="form-buttons">
-              <button type="submit" name="action" value="streaming_services_update" class="btn bg-gradient-primary w-10 my-2 mb-2" style="margin-right: 2px;">Update</button>
-              <button type="submit" name="action" value="streaming_services_save" class="btn bg-gradient-primary w-10 my-2 mb-2" style="margin-left: 2px; margin-right: 2px;">Save</button>
-              <button type="submit" name="action" value="streaming_services_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2" style="margin-left: 2px;">Cancel</button>
+            <input type="hidden" id="streaming_services" name="streaming_services">
+            <hr>
+            <!-- Search Defaults -->
+            <div class="search-defaults-container" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px;">
+              <h4 id="search_defaults_anchor" style="flex-basis: 100%;">Search Defaults</h4>
+              <label for="country_code" style="margin-top: 8px;">Country Code:</label>
+              <select name="country_code" id="country_code" style="width: calc(13%);">
+                {% for country_code_item in html_valid_country_codes %}
+                  <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %} style="width: auto; min-width: 100%;">{{ country_code_item }}</option>
+                {% endfor %}
+              </select>
+              <label for="language_code" style="margin-left: 15px; margin-top: 8px;">Language Code:</label>
+              <select name="language_code" id="language_code" style="width: calc(13%);">
+                {% for language_code_item in html_valid_language_codes %}
+                  <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %} style="width: auto; min-width: 100%;">{{ language_code_item }}</option>
+                {% endfor %}
+              </select>
+              <label for="num_results" style="margin-left: 15px; margin-top: 8px;">Number of Results:</label>
+              <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(13%);" title="{{ html_num_results }}">
+              <span class="form-check form-switch ps-0 is-filled" style="display: flex; align-items: center; width: calc(13%);">
+                <label class="form-check-label text-body text-truncate w-80 mb-0" for="hide_bookmarked" style="margin-right: 5px; margin-left: 15px;">Hide Bookmarked</label>
+                <input type="checkbox" class="form-check-input" id="hide_bookmarked" name="hide_bookmarked" {% if html_hide_bookmarked == "On" %}checked{% endif %}>
+              </span>
+              <button type="submit" name="action" value="search_defaults_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
+              <button type="submit" name="action" value="search_defaults_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
+              <p><div id="search_defaults_message">{{ html_search_defaults_message }}</div></p>
             </div>
-          </div>
-          <input type="hidden" id="streaming_services" name="streaming_services">
-          <hr>
-          <!-- Search Defaults -->
-          <div class="search-defaults-container" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px;">
-            <h4 id="search_defaults_anchor" style="flex-basis: 100%;">Search Defaults</h4>
-            <label for="country_code" style="margin-top: 8px;">Country Code:</label>
-            <select name="country_code" id="country_code" style="width: calc(13%);">
-              {% for country_code_item in html_valid_country_codes %}
-                <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %} style="width: auto; min-width: 100%;">{{ country_code_item }}</option>
-              {% endfor %}
-            </select>
-            <label for="language_code" style="margin-left: 15px; margin-top: 8px;">Language Code:</label>
-            <select name="language_code" id="language_code" style="width: calc(13%);">
-              {% for language_code_item in html_valid_language_codes %}
-                <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %} style="width: auto; min-width: 100%;">{{ language_code_item }}</option>
-              {% endfor %}
-            </select>
-            <label for="num_results" style="margin-left: 15px; margin-top: 8px;">Number of Results:</label>
-            <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(13%);" title="{{ html_num_results }}">
-            <span class="form-check form-switch ps-0 is-filled" style="display: flex; align-items: center; width: calc(13%);">
-              <label class="form-check-label text-body text-truncate w-80 mb-0" for="hide_bookmarked" style="margin-right: 5px; margin-left: 15px;">Hide Bookmarked</label>
-              <input type="checkbox" class="form-check-input" id="hide_bookmarked" name="hide_bookmarked" {% if html_hide_bookmarked == "On" %}checked{% endif %}>
-            </span>
-            <button type="submit" name="action" value="search_defaults_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
-            <button type="submit" name="action" value="search_defaults_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
-            <p><div id="search_defaults_message">{{ html_search_defaults_message }}</div></p>
-          </div>
-          <hr>
-          <!-- Stream Link Mappings -->
-          <h4 id="slmapping_anchor">Stream Link Mappings</h4>
-          <div class="stream-link-mappings container-fluid">
-            <div class="grid-container" style="text-align: center;">
-              <div class="grid-item"><h6>Active</h6></div>
-              <div class="grid-item"><h6>If 'Stream Link' contains the string</h6></div>
-              <div class="grid-item"><h6>For 'Object Type'</h6></div>
-              <div class="grid-item"><h6>Do this activity</h6></div>
-              <div class="grid-item"><h6>Using this string</h6></div>
-              <div class="grid-item"><h6>Action</h6></div>
-            </div>
-            {% for item in html_slmappings %}
-              {% set object_type = item.object_type %}
-              {% set replace_type = item.replace_type %}
+            <hr>
+            <!-- Stream Link Mappings -->
+            <h4 id="slmapping_anchor">Stream Link Mappings</h4>
+            <div class="stream-link-mappings container-fluid">
+              <div class="grid-container" style="text-align: center;">
+                <div class="grid-item"><h6>Active</h6></div>
+                <div class="grid-item"><h6>If 'Stream Link' contains the string</h6></div>
+                <div class="grid-item"><h6>For 'Object Type'</h6></div>
+                <div class="grid-item"><h6>Do this activity</h6></div>
+                <div class="grid-item"><h6>Using this string</h6></div>
+                <div class="grid-item"><h6>Action</h6></div>
+              </div>
+              {% for item in html_slmappings %}
+                {% set object_type = item.object_type %}
+                {% set replace_type = item.replace_type %}
+                <div class="grid-container">
+                  <div class="grid-item">
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" id="slmapping_active_existing_{{ loop.index }}" name="slmapping_active_existing_{{ loop.index }}" class="form-check-input" 
+                        {% if item.active|lower == 'on' %}checked{% endif %} 
+                        onchange="this.value = this.checked ? 'On' : 'Off'" 
+                        value="On">
+                    </div>
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="slmapping_contains_string_existing_{{ loop.index }}" name="slmapping_contains_string_existing_{{ loop.index }}" value="{{ item.contains_string }}" title="{{ item.contains_string }}">
+                  </div>
+                  <div class="grid-item">
+                    <select name="slmapping_object_type_existing_{{ loop.index }}" id="slmapping_object_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                      {% for object_type_item in html_slmappings_object_type %}
+                        <option value="{{ object_type_item }}" {% if object_type_item == object_type %}selected{% endif %} style="width: auto; min-width: 100%;">{{ object_type_item }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="grid-item">
+                    <select name="slmapping_replace_type_existing_{{ loop.index }}" id="slmapping_replace_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                      {% for replace_type_item in html_slmappings_replace_type %}
+                        <option value="{{ replace_type_item }}" {% if replace_type_item == replace_type %}selected{% endif %} style="width: auto; min-width: 100%;">{{ replace_type_item }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="slmapping_replace_string_existing_{{ loop.index }}" name="slmapping_replace_string_existing_{{ loop.index }}" value="{{ item.replace_string }}" title="{{ item.replace_string }}">
+                  </div>
+                  <div class="grid-item">
+                    <button type="submit" name="action" value="slmapping_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
+                  </div>
+                </div>
+              {% endfor %}                                 
               <div class="grid-container">
                 <div class="grid-item">
                   <div class="form-check form-switch ps-0 is-filled">
-                    <input type="checkbox" id="slmapping_active_existing_{{ loop.index }}" name="slmapping_active_existing_{{ loop.index }}" class="form-check-input" 
-                      {% if item.active|lower == 'on' %}checked{% endif %} 
-                      onchange="this.value = this.checked ? 'On' : 'Off'" 
-                      value="On">
+                    <input type="checkbox" id="slmapping_active_new" name="slmapping_active_new" class="form-check-input" checked>
                   </div>
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="slmapping_contains_string_existing_{{ loop.index }}" name="slmapping_contains_string_existing_{{ loop.index }}" value="{{ item.contains_string }}" title="{{ item.contains_string }}">
+                  <input type="text" id="slmapping_contains_string_new" name="slmapping_contains_string_new">
                 </div>
                 <div class="grid-item">
-                  <select name="slmapping_object_type_existing_{{ loop.index }}" id="slmapping_object_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                  <select name="slmapping_object_type_new" id="slmapping_object_type_new" style="width: 100%; max-width: 100%;">
                     {% for object_type_item in html_slmappings_object_type %}
-                      <option value="{{ object_type_item }}" {% if object_type_item == object_type %}selected{% endif %} style="width: auto; min-width: 100%;">{{ object_type_item }}</option>
+                      <option value="{{ object_type_item }}" style="width: auto; min-width: 100%;">{{ object_type_item }}</option>
                     {% endfor %}
                   </select>
                 </div>
                 <div class="grid-item">
-                  <select name="slmapping_replace_type_existing_{{ loop.index }}" id="slmapping_replace_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                  <select name="slmapping_replace_type_new" id="slmapping_replace_type_new" style="width: 100%; max-width: 100%;">
                     {% for replace_type_item in html_slmappings_replace_type %}
-                      <option value="{{ replace_type_item }}" {% if replace_type_item == replace_type %}selected{% endif %} style="width: auto; min-width: 100%;">{{ replace_type_item }}</option>
+                      <option value="{{ replace_type_item }}" style="width: auto; min-width: 100%;">{{ replace_type_item }}</option>
                     {% endfor %}
                   </select>
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="slmapping_replace_string_existing_{{ loop.index }}" name="slmapping_replace_string_existing_{{ loop.index }}" value="{{ item.replace_string }}" title="{{ item.replace_string }}">
+                  <input type="text" id="slmapping_replace_string_new" name="slmapping_replace_string_new">
                 </div>
                 <div class="grid-item">
-                  <button type="submit" name="action" value="slmapping_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
+                  <button type="submit" name="action" value="slmapping_action_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
                 </div>
               </div>
-            {% endfor %}                                 
-            <div class="grid-container">
-              <div class="grid-item">
-                <div class="form-check form-switch ps-0 is-filled">
-                  <input type="checkbox" id="slmapping_active_new" name="slmapping_active_new" class="form-check-input" checked>
-                </div>
-              </div>
-              <div class="grid-item">
-                <input type="text" id="slmapping_contains_string_new" name="slmapping_contains_string_new">
-              </div>
-              <div class="grid-item">
-                <select name="slmapping_object_type_new" id="slmapping_object_type_new" style="width: 100%; max-width: 100%;">
-                  {% for object_type_item in html_slmappings_object_type %}
-                    <option value="{{ object_type_item }}" style="width: auto; min-width: 100%;">{{ object_type_item }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="grid-item">
-                <select name="slmapping_replace_type_new" id="slmapping_replace_type_new" style="width: 100%; max-width: 100%;">
-                  {% for replace_type_item in html_slmappings_replace_type %}
-                    <option value="{{ replace_type_item }}" style="width: auto; min-width: 100%;">{{ replace_type_item }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="grid-item">
-                <input type="text" id="slmapping_replace_string_new" name="slmapping_replace_string_new">
-              </div>
-              <div class="grid-item">
-                <button type="submit" name="action" value="slmapping_action_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
-              </div>
+              <button type="submit" name="action" value="slmapping_action_save" class="btn bg-gradient-primary w-25 my-2 mb-2" disabled>Save</button>
+              <button type="submit" name="action" value="slmapping_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
             </div>
-            <button type="submit" name="action" value="slmapping_action_save" class="btn bg-gradient-primary w-25 my-2 mb-2" disabled>Save</button>
-            <button type="submit" name="action" value="slmapping_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
-          </div>
-          <hr>
+            <hr>
+          {% endif %}
           <!-- Scheduler -->
           <h4 id="scheduler_anchor">Scheduler</h4>
           <p><em>WARNING: A buffer of at least 1 minute is required between automated processes, otherwise they may not run</em></p>
-          <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
+          <p><div id="html_scheduler_message">{{ html_scheduler_message }}</div></p>
+          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
             <div class="form-check form-switch ps-0 is-filled">
-              <input type="checkbox" class="form-check-input ms-auto" id="auto_update_schedule" name="auto_update_schedule" {% if html_auto_update_schedule == "On" %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule">Stream Links/Files: End-to-End Process</label>
+              <input type="checkbox" class="form-check-input ms-auto" id="gen_backup_schedule" name="gen_backup_schedule" {% if html_gen_backup_schedule == "On" %}checked{% endif %}>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_backup_schedule">Backup Process</label>
             </div>
             <div>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule_time">Start at:</label>
-              <input type="time" id="auto_update_schedule_time" name="auto_update_schedule_time" value="{{ html_auto_update_schedule_time }}" class="ms-3">
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_backup_schedule_time">Start at:</label>
+              <input type="time" id="gen_backup_schedule_time" name="gen_backup_schedule_time" value="{{ html_gen_backup_schedule_time }}" class="ms-3">
             </div>
             <div style="margin-top: 10px;">
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule_frequency">And run:</label>
-              <select name="auto_update_schedule_frequency" id="auto_update_schedule_frequency" style="margin-left: 15px;">
-                {% for html_slm_end_to_end_frequency in html_slm_end_to_end_frequencies %}
-                  <option value="{{ html_slm_end_to_end_frequency }}" {% if html_slm_end_to_end_frequency == html_auto_update_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_slm_end_to_end_frequency }}</option>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_backup_schedule_frequency">And run:</label>
+              <select name="gen_backup_schedule_frequency" id="gen_backup_schedule_frequency" style="margin-left: 15px;">
+                {% for html_gen_backup_frequency in html_gen_backup_frequencies %}
+                  <option value="{{ html_gen_backup_frequency }}" {% if html_gen_backup_frequency == html_gen_backup_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_gen_backup_frequency }}</option>
                 {% endfor %}
               </select>
             </div>
+            <div>
+              <label for="gen_backup_max_backups" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Max Backups:</label>
+              <input type="text" id="gen_backup_max_backups" name="gen_backup_max_backups" value="{{ html_gen_backup_max_backups }}" style="display: block; margin-left: 15px; width: 25%;">
+            </div>
             <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-              <button type="submit" name="action" value="end_to_end_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-              <button type="submit" name="action" value="end_to_end_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
+              <button type="submit" name="action" value="gen_backup_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+              <button type="submit" name="action" value="gen_backup_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
             </div>
           </div>
+          {% if html_slm_stream_link_file_manager %}
+            <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+              <div class="form-check form-switch ps-0 is-filled">
+                <input type="checkbox" class="form-check-input ms-auto" id="auto_update_schedule" name="auto_update_schedule" {% if html_auto_update_schedule == "On" %}checked{% endif %}>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule">Stream Links/Files: End-to-End Process</label>
+              </div>
+              <div>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule_time">Start at:</label>
+                <input type="time" id="auto_update_schedule_time" name="auto_update_schedule_time" value="{{ html_auto_update_schedule_time }}" class="ms-3">
+              </div>
+              <div style="margin-top: 10px;">
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule_frequency">And run:</label>
+                <select name="auto_update_schedule_frequency" id="auto_update_schedule_frequency" style="margin-left: 15px;">
+                  {% for html_slm_end_to_end_frequency in html_slm_end_to_end_frequencies %}
+                    <option value="{{ html_slm_end_to_end_frequency }}" {% if html_slm_end_to_end_frequency == html_auto_update_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_slm_end_to_end_frequency }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                <button type="submit" name="action" value="end_to_end_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+                <button type="submit" name="action" value="end_to_end_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
+              </div>
+            </div>
+          {% endif %}
           {% if html_slm_playlist_manager %}
-            <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top;">
+            <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; vertical-align: top; margin-bottom: 5px;">
               <div class="form-check form-switch ps-0 is-filled">
                 <input type="checkbox" class="form-check-input ms-auto" id="plm_update_stations_schedule" name="plm_update_stations_schedule" {% if html_plm_update_stations_schedule == "On" %}checked{% endif %}>
                 <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_stations_schedule">Playlist Manager: Update Station List</label>
@@ -289,7 +320,7 @@
                 <button type="submit" name="action" value="plm_update_stations_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
               </div>
             </div>
-            <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top;">
+            <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; vertical-align: top; margin-bottom: 5px;">
               <div class="form-check form-switch ps-0 is-filled">
                 <input type="checkbox" class="form-check-input ms-auto" id="plm_update_m3us_epgs_schedule" name="plm_update_m3us_epgs_schedule" {% if html_plm_update_m3us_epgs_schedule == "On" %}checked{% endif %}>
                 <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_m3us_epgs_schedule">Playlist Manager: Update m3u(s) & XML EPG(s)</label>
@@ -345,17 +376,17 @@
           <!-- Advanced / Experimental -->
           <h4 id="advanced_experimental_anchor">Advanced / Experimental</h4>
           <p><div id="html_advanced_experimental_message">{{ html_advanced_experimental_message }}</div></p>
-          <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top;">
+          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
             <div class="form-check form-switch ps-0 is-filled">
-              <input type="checkbox" class="form-check-input ms-auto" id="channels_prune" name="channels_prune" {% if html_channels_prune == "On" %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_prune">Run 'Prune' function in Channels</label>
+              <input type="checkbox" class="form-check-input ms-auto" id="stream_link_file_manager" name="stream_link_file_manager" {% if html_slm_stream_link_file_manager %}checked{% endif %}>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="stream_link_file_manager">Use Stream Link/File Manager</label>
             </div>
             <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-              <button type="submit" name="action" value="channels_prune_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-              <button type="submit" name="action" value="channels_prune_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
+              <button type="submit" name="action" value="stream_link_file_manager_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+              <button type="submit" name="action" value="stream_link_file_manager_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
             </div>
           </div>
-          <div class="settings-box" style="width: 25%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top;">
+          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
             <div class="form-check form-switch ps-0 is-filled">
               <input type="checkbox" class="form-check-input ms-auto" id="playlist_manager" name="playlist_manager" {% if html_slm_playlist_manager %}checked{% endif %}>
               <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="playlist_manager">Use Playlist Manager</label>
@@ -371,6 +402,16 @@
             <div style="display: flex; justify-content: space-between; margin-top: 10px;">
               <button type="submit" name="action" value="playlist_manager_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
               <button type="submit" name="action" value="playlist_manager_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
+            </div>
+          </div>
+          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+            <div class="form-check form-switch ps-0 is-filled">
+              <input type="checkbox" class="form-check-input ms-auto" id="channels_prune" name="channels_prune" {% if html_channels_prune == "On" %}checked{% endif %}>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_prune">Run 'Prune' function in Channels</label>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+              <button type="submit" name="action" value="channels_prune_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+              <button type="submit" name="action" value="channels_prune_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
             </div>
           </div>
           <hr>

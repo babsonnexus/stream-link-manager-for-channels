@@ -191,11 +191,13 @@
     <div class="row min-vh-80 h-100 justify-content-center">
       <form method="POST" action="/reports_queries" id="process-form" enctype="multipart/form-data">
         <div class="row min-vh-25 h-100 justify-content-center">
-          <div style="width: 20%">
-            <h4 class="file_header">Movies / Shows</h4>
-            <button type="submit" name="action" value="query_currently_unavailable" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Currently Unavailable</button>
-            <button type="submit" name="action" value="query_previously_watched" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Previously Watched</button>
-          </div>
+          {% if html_slm_stream_link_file_manager %}
+            <div style="width: 20%">
+              <h4 class="file_header">Movies / Shows</h4>
+              <button type="submit" name="action" value="query_currently_unavailable" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Currently Unavailable</button>
+              <button type="submit" name="action" value="query_previously_watched" class="btn bg-gradient-primary w-100 h-15 my-2 mb-2">Previously Watched</button>
+            </div>
+          {% endif %}
           {% if html_slm_playlist_manager %}
             <div style="width: 20%">
               <h4 class="file_header">Playlists / Stations</h4>
