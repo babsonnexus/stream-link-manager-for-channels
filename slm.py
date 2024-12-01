@@ -29,7 +29,7 @@ class CustomRequest(Request):
         self.max_form_parts = 100000 # Modify value higher if continual 413 issues
 
 # Global Variables
-slm_version = "v2024.11.30.1816"
+slm_version = "v2024.12.01.1148"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -700,6 +700,25 @@ def check_and_add_column(csv_file, column_name, default_value):
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+# Tries to remove a file, verifies its deletion, and retries if necessary.
+def reliable_remove(filepath):
+    max_retries=5
+    wait_time=10
+
+    for attempt in range(max_retries):
+        try:
+            os.remove(filepath)
+            if not os.path.exists(filepath):
+                return True
+        except Exception as e:
+            print(f"\n{current_time()} WARNING: After {attempt + 1} attempt, failed to remove {filepath} due to: {e}")
+        
+        print(f"{current_time()} INFO: Waiting for {wait_time} seconds before next attempt...")
+        time.sleep(wait_time)
+    
+    notification_add(f"{current_time()} ERROR: Failed to delete file '{filepath}' after {max_retries} attempts. Please manually delete and report this error along with other warnings and info in the logs.")
+    return False
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -7984,25 +8003,6 @@ def directory_delete(base_directory):
                     notification_add(f"    On second attempt, removed empty directory: {dir_path}")
                 except OSError as e:
                     notification_add(f"    Second error removing directory {dir_path}: {e}")
-
-# Tries to remove a file, verifies its deletion, and retries if necessary.
-def reliable_remove(filepath):
-    max_retries=5
-    wait_time=10
-
-    for attempt in range(max_retries):
-        try:
-            os.remove(filepath)
-            if not os.path.exists(filepath):
-                return True
-        except Exception as e:
-            print(f"\n{current_time()} WARNING: After {attempt + 1} attempt, failed to remove {filepath} due to: {e}")
-        
-        print(f"{current_time()} INFO: Waiting for {wait_time} seconds before next attempt...")
-        time.sleep(wait_time)
-    
-    notification_add(f"{current_time()} ERROR: Failed to delete file '{filepath}' after {max_retries} attempts. Please manually delete and report this error along with other warnings and info in the logs.")
-    return False
 
 # Runs a prune/scan in Channels
 def prune_scan_channels():
