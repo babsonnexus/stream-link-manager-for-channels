@@ -22,14 +22,9 @@ import io
 from flask import Flask, render_template, render_template_string, request, redirect, url_for, Response, send_file, Request, make_response
 from jinja2 import TemplateNotFound
 
-# Control how many data elements can be saved at a time from the webpage to the code
-class CustomRequest(Request):
-    def __init__(self, *args, **kwargs):
-        super(CustomRequest, self).__init__(*args, **kwargs)
-        self.max_form_parts = 100000 # Modify value higher if continual 413 issues
+# Top Controls
+slm_version = "v2024.12.07.1618"
 
-# Global Variables
-slm_version = "v2024.12.01.1148"
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
     slm_port = 5000
@@ -38,256 +33,30 @@ else:
         slm_port = int(slm_port)
     except:
         slm_port = 5000
+
 app = Flask(__name__)
+
+# Control how many data elements can be saved at a time from the webpage to the code
+class CustomRequest(Request):
+    def __init__(self, *args, **kwargs):
+        super(CustomRequest, self).__init__(*args, **kwargs)
+        self.max_form_parts = 1000000 # Modify value higher if continual 413 issues
+
 app.request_class = CustomRequest
-script_dir = os.path.dirname(os.path.abspath(__file__))
-script_filename = os.path.basename(__file__)
-log_filename = os.path.splitext(script_filename)[0] + '.log'
-docker_channels_dir = os.path.join(script_dir, "channels_folder")
-program_files_dir = os.path.join(script_dir, "program_files")
-backup_dir = os.path.join(program_files_dir, "backups")
-playlists_uploads_dir_name = "playlists_uploads"
-playlists_uploads_dir = os.path.join(program_files_dir, playlists_uploads_dir_name)
-csv_settings = "StreamLinkManager_Settings.csv"
-csv_streaming_services = "StreamLinkManager_StreamingServices.csv"
-csv_bookmarks = "StreamLinkManager_Bookmarks.csv"
-csv_bookmarks_status = "StreamLinkManager_BookmarksStatus.csv"
-csv_slmappings = "StreamLinkManager_SLMappings.csv"
-# Playlist Manager files only get created when turned on in Settings
-csv_playlistmanager_playlists = "PlaylistManager_Playlists.csv"
-csv_playlistmanager_combined_m3us = "PlaylistManager_Combinedm3us.csv"
-csv_playlistmanager_parents = "PlaylistManager_Parents.csv"
-csv_playlistmanager_child_to_parent = "PlaylistManager_ChildToParent.csv"
-csv_files = [
-    csv_settings,
-    csv_streaming_services,
-    csv_bookmarks,
-    csv_bookmarks_status,
-    csv_slmappings  #,
-    # Add more rows as needed
-]
-program_files = csv_files + [log_filename]
-engine_url = "https://www.justwatch.com"
-url_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36'}
-_GRAPHQL_API_URL = "https://apis.justwatch.com/graphql"
-engine_image_url = "https://images.justwatch.com"
-engine_image_profile_poster = "s718"
-engine_image_profile_backdrop = "s1920"
-engine_image_profile_icon = "s100"
-valid_country_codes = [
-    "AD",
-    "AE",
-    "AG",
-    "AL",
-    "AR",
-    "AT",
-    "AU",
-    "BA",
-    "BB",
-    "BE",
-    "BG",
-    "BH",
-    "BM",
-    "BO",
-    "BR",
-    "BS",
-    "CA",
-    "CH",
-    "CI",
-    "CL",
-    "CO",
-    "CR",
-    "CU",
-    "CV",
-    "CZ",
-    "DE",
-    "DK",
-    "DO",
-    "DZ",
-    "EC",
-    "EE",
-    "EG",
-    "ES",
-    "FI",
-    "FJ",
-    "FR",
-    "GB",
-    "GF",
-    "GG",
-    "GH",
-    "GI",
-    "GQ",
-    "GR",
-    "GT",
-    "HK",
-    "HN",
-    "HR",
-    "HU",
-    "ID",
-    "IE",
-    "IL",
-    "IN",
-    "IQ",
-    "IS",
-    "IT",
-    "JM",
-    "JO",
-    "JP",
-    "KE",
-    "KR",
-    "KW",
-    "LB",
-    "LI",
-    "LT",
-    "LV",
-    "LY",
-    "MA",
-    "MC",
-    "MD",
-    "MK",
-    "MT",
-    "MU",
-    "MX",
-    "MY",
-    "MZ",
-    "NE",
-    "NG",
-    "NL",
-    "NO",
-    "NZ",
-    "OM",
-    "PA",
-    "PE",
-    "PF",
-    "PH",
-    "PK",
-    "PL",
-    "PS",
-    "PT",
-    "PY",
-    "QA",
-    "RO",
-    "RS",
-    "RU",
-    "SA",
-    "SC",
-    "SE",
-    "SG",
-    "SI",
-    "SK",
-    "SM",
-    "SN",
-    "SV",
-    "TC",
-    "TH",
-    "TN",
-    "TR",
-    "TT",
-    "TW",
-    "TZ",
-    "UG",
-    "US",
-    "UY",
-    "VA",
-    "VE",
-    "XK",
-    "YE",
-    "ZA",
-    "ZM" #, Add more as needed
-]
-valid_language_codes = [
-    "ar",
-    "bg",
-    "bs",
-    "ca",
-    "cs",
-    "de",
-    "el",
-    "en",
-    "es",
-    "fi",
-    "fr",
-    "he",
-    "hr",
-    "hu",
-    "is",
-    "it",
-    "ja",
-    "ko",
-    "mk",
-    "mt",
-    "pl",
-    "pt",
-    "ro",
-    "ru",
-    "sk",
-    "sl",
-    "sq",
-    "sr",
-    "sw",
-    "tr",
-    "ur",
-    "zh" #, Add more as needed
-]
-special_actions_default = [
-    "None",
-    "Make STRM" #, Add more as needed
-]
-notifications = []
-stream_link_ids_changed = []
-program_search_results_prior = []
-country_code_input_prior = None
-language_code_input_prior = None
-entry_id_prior = None
-title_selected_prior = None
-release_year_selected_prior = None
-object_type_selected_prior = None
-bookmark_action_prior = None
-season_episodes_prior = []
-bookmarks_statuses_selected_prior = []
-edit_flag = None
-channels_url_prior = None
-date_new_default_prior = None
-program_add_prior = ''
-program_add_resort_panel = ''
-program_add_filter_panel = ''
-slm_query = None
-slm_query_name = None
-offer_icons = []
-offer_icons_flag = None
-select_file_prior = None
-bookmark_actions_default = [
-    "None",
-    "Hide" #, Add more as needed
-]
-bookmark_actions_default_show_only = [
-    "Disable Get New Episodes" #, Add more as needed
-]
-plm_m3us_epgs_schedule_frequencies = [
-    "Every 1 hour",
-    "Every 3 hours",
-    "Every 6 hours",
-    "Every 12 hours",
-    "Every 24 hours"
-]
-slm_end_to_end_frequencies = [
-    "Every 8 hours",
-    "Every 12 hours",
-    "Every 24 hours"
-]
-gen_backup_frequencies = [
-    "Every 1 hour",
-    "Every 2 hours",
-    "Every 4 hours",
-    "Every 8 hours",
-    "Every 12 hours",
-    "Every 24 hours"
-]
-stream_formats = [
-    "HLS",
-    "MPEG-TS"
-]
-select_program_to_bookmarks = []
+
+# Home webpage
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/home', methods=['GET', 'POST'])
+def webpage_home():
+    return render_template(
+        'main/index.html',
+        segment = 'index',
+        html_slm_version = slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_notifications = notifications
+    )
 
 # Adds a notification
 def notification_add(notification):
@@ -295,1362 +64,9 @@ def notification_add(notification):
     notifications.insert(0, notification)
     print(notification)
 
-# Get the full path for a file
-def full_path(file):
-    full_path = os.path.join(program_files_dir, file)
-    return full_path
-
-# Normalize the file path for systems that can't handle certain characters like 'é'
-def normalize_path(path):
-    return unicodedata.normalize('NFKC', path)
-
-# Create a directory if it doesn't exist.
-def create_directory(directory_path):
-    directory_path = normalize_path(directory_path)
-
-    try:
-        if not os.path.exists(directory_path):
-            os.makedirs(directory_path)
-    except OSError as e:
-        print(f"    Error creating directory {directory_path}: {e}")
-
-# Read data from a CSV file.
-def read_data(csv_file):
-    full_path_file = full_path(csv_file)
-    data = []
-
-    try:
-        with open(full_path_file, "r", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                data.append(row)
-        return data
-    except Exception as e:
-        print(f"\n{current_time()} ERROR: Reading data... {e}\n")
-        return None
-
-# Create a backup of program files and remove old backups
-def create_backup():
-    src_dir = program_files_dir
-    dst_dir = backup_dir
-    
-    # Determine the max number of backups to keep
-    max_backups = 3
-    try:
-        if os.path.exists(full_path(csv_settings)):
-            settings = read_data(csv_settings)
-            if len(settings) > 22:
-                max_backups = int(settings[22]["settings"])
-    except (FileNotFoundError, KeyError, IndexError) as e:
-        pass
-
-    # Copy the contents of src_dir to the backup subdirectory
-    timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    backup_subdir = os.path.join(dst_dir, timestamp)
-    os.makedirs(backup_subdir, exist_ok=True)
-    for item in os.listdir(src_dir):
-        src_item = os.path.join(src_dir, item)
-        if os.path.isfile(src_item):
-            shutil.copy2(src_item, backup_subdir)
-
-    # Clean up old backups if there are more than max_backups
-    backups = sorted(os.listdir(dst_dir))
-    if len(backups) > max_backups:
-        oldest_backups = backups[:len(backups) - max_backups]
-        for old_backup in oldest_backups:
-            shutil.rmtree(os.path.join(dst_dir, old_backup))
-
-# Make sure all files and directories are in the correct place
-### Program directories
-create_directory(program_files_dir)
-create_directory(backup_dir)
-
-### Make a backup and remove old backups
-if os.path.exists(program_files_dir):
-    create_backup()
-
-# Set up session logging
-log_filename_fullpath = full_path(log_filename)
-open(log_filename_fullpath, 'w', encoding="utf-8").close()
-class logger(object):
-    def __init__(self, filename=log_filename_fullpath, mode="ab", buff=0):
-        self.stdout = sys.stdout
-        self.stdin = sys.stdin
-        self.file = open(filename, mode, buff)
-        sys.stdout = self
-        sys.stdin = self
-    def readline(self):
-        user_input = self.stdin.readline()
-        self.file.write(user_input.encode("utf-8"))
-        return user_input
-    def __del__(self):
-        self.close()
-    def __enter__(self):
-        pass
-    def __exit__(self, *args):
-        self.close()
-    def write(self, message):
-        self.stdout.write(message)
-        self.file.write(message.encode("utf-8"))
-    def flush(self):
-        self.stdout.flush()
-        self.file.flush()
-        os.fsync(self.file.fileno())
-    def close(self):
-        if self.stdout != None:
-            sys.stdout = self.stdout
-            self.stdout = None
-        if self.stdin != None:
-            sys.stdin = self.stdin
-            self.stdin = None
-        if self.file != None:
-            self.file.close()
-            self.file = None
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="[%(levelname)s | %(asctime)s] - %(message)s",
-    filename=log_filename_fullpath,
-    filemode="a",
-)
-log = logger()
-
-# Current date/time for logging
-def current_time():
-    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f") + ": "
-
-notification_add(f"\n{current_time()} Beginning Initialization Process (see log for details)...\n")
-
-# Start-up process and safety checks
-def check_website(url):
-    while True:
-        try:
-            response = requests.get(url, headers=url_headers)
-            if response.status_code == 200:
-                print(f"\n{current_time()} SUCCESS: {url} is accessible. Continuing...")
-                break
-            else:
-                print(f"\n{current_time()} ERROR: {url} reports {response.status_code}")
-        except requests.RequestException as e:
-            print(f"\n{current_time()} ERROR: {url} reports {e}")
-        
-        print(f"\n{current_time()} INFO: Retrying in 1 minute...")
-        time.sleep(60)
-
-check_website(engine_url)
-
-# Create missing data files, update data as needed
-def check_and_create_csv(csv_file):
-    full_path_file = full_path(csv_file)
-
-    data = initial_data(csv_file)
-
-    # Check if the file is empty or only contains blank lines; if so, delete it to start over
-    if os.path.exists(full_path_file):
-        with open(full_path_file, 'r', encoding="utf-8") as file:
-            content = file.readlines()
-        
-        if all(line.strip() == '' for line in content):
-            reliable_remove(full_path_file)
-
-    # Check if the file exists, if not create it
-    if not os.path.exists(full_path_file):
-        # Write data to the file
-        write_data(csv_file, data)
-        remove_empty_row(csv_file)
-
-        if csv_file == csv_settings:
-            print(f"\n*** First Time Setup ***")
-            settings = read_data(csv_settings)
-
-            settings[0]['settings'], channels_url_message = get_channels_url()
-
-            settings[1]['settings'] = find_channels_dvr_path()
-            
-            settings[2]['settings'] = get_country_code()
-            
-            write_data(csv_settings, settings)
-
-    # Append/Remove rows to data that may update
-    if csv_file == csv_streaming_services:
-        id_field = "streaming_service_name"
-        update_rows(csv_file, data, id_field, None)
-
-    # Add columns for new functionality
-    if csv_file == csv_bookmarks_status:
-        check_and_add_column(csv_file, 'special_action', 'None')
-
-    if csv_file == csv_bookmarks:
-        check_and_add_column(csv_file, 'bookmark_action', 'None')
-
-    # Add rows for new functionality
-    if csv_file == csv_settings:
-        check_and_append(csv_file, {"settings": "Off"}, 11, "Search Defaults: Filter out already bookmarked")
-        check_and_append(csv_file, {"settings": "Off"}, 12, "Playlist Manager: On/Off")
-        check_and_append(csv_file, {"settings": 10000}, 13, "Playlist Manager: Starting station number")
-        check_and_append(csv_file, {"settings": 750}, 14, "Playlist Manager: Max number of stations per m3u")
-        check_and_append(csv_file, {"settings": "Off"}, 15, "Playlist Manager: Update Stations Process Schedule On/Off")
-        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 16, "Playlist Manager: Update Stations Process Schedule Time")
-        check_and_append(csv_file, {"settings": "Off"}, 17, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule On/Off")
-        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 18, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time")
-        check_and_append(csv_file, {"settings": "Every 24 hours"}, 19, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency")
-        check_and_append(csv_file, {"settings": "Every 24 hours"}, 20, "SLM: End-to-End Process Schedule Frequency")
-        check_and_append(csv_file, {"settings": "On"}, 21, "GEN: Backup Process On/Off")
-        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 22, "GEN: Backup Process Schedule Start Time")
-        check_and_append(csv_file, {"settings": "Every 24 hours"}, 23, "GEN: Backup Process Schedule Frequency")
-        check_and_append(csv_file, {"settings": 3}, 24, "GEN: Backup Process Max number of backups to keep")
-        check_and_append(csv_file, {"settings": "On"}, 25, "Stream Link/Files Manager: On/Off")
-
-# Clean up empty data files
-def remove_empty_row(csv_file):
-    # Create a temporary file to write non-empty rows
-    temp_file = full_path("temp.csv")
-    full_path_file = full_path(csv_file)
-
-    with open(full_path_file, "r", encoding="utf-8") as infile, open(temp_file, "w", newline="", encoding="utf-8") as outfile:
-        reader = csv.reader(infile)
-        writer = csv.writer(outfile)
-
-        # Write the header (first row) to the new file
-        header = next(reader)
-        writer.writerow(header)
-
-        # Process each row
-        for row in reader:
-            # Check if the row contains any data (non-empty)
-            if any(cell.strip() for cell in row):
-                writer.writerow(row)
-
-    # Replace the original file with the temporary file
-    os.replace(temp_file, full_path_file)
-
-# Appends new rows. removes old rows, and updates modified rows from initialization data to be written to data files
-def update_rows(csv_file, data, id_field, modify_flag):
-    if data:
-        new_rows = extract_new_rows(csv_file, data, id_field)
-        if new_rows:
-            print(f"\n{current_time()} INFO: Adding new rows to {csv_file}...\n")
-            for new_row in new_rows:
-                append_data(csv_file, new_row)
-                notification_add(f"    ADDED: {new_row[id_field]}")
-            print(f"\n{current_time()} INFO: Finished adding new rows.\n")
-
-        old_rows = extract_old_rows(csv_file, data, id_field)
-        if old_rows:
-            print(f"\n{current_time()} INFO: Removing old rows from {csv_file}...\n")
-            for old_row in old_rows:
-                notification_add(f"    REMOVED: {old_row[id_field]}")
-            remove_data(csv_file, old_rows, id_field)
-            print(f"\n{current_time()} INFO: Finished removing old rows.\n")
-
-        if modify_flag:
-            modified_rows, no_notify_rows = extract_modified_rows(csv_file, data, id_field)
-            if modified_rows:
-                print(f"\n{current_time()} INFO: Updating modified rows in {csv_file}...\n")
-                for modified_row in modified_rows:
-                    if modified_row not in no_notify_rows:
-                        notification_add(f"    MODIFIED: {modified_row[id_field]}")
-                update_data(csv_file, modified_rows, id_field)
-                print(f"\n{current_time()} INFO: Finished updating modified rows.\n")
-
-            remove_duplicate_rows(csv_file)
-            
-    else:
-        print(f"\n{current_time()} WARNING: No data to compare, skipping adding and removing rows in {csv_file}.\n")
-
-# Extracts new rows from the library data that are not already present in the CSV file
-def extract_new_rows(csv_file, data, id_field):
-    full_path_file = full_path(csv_file)
-
-    # Read existing data (if any)
-    existing_data = []
-    if os.path.exists(full_path_file):
-        with open(full_path_file, "r", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            existing_data = [row for row in reader]
-    
-    # Check for duplicate IDs
-    existing_ids = {row[id_field] for row in existing_data}
-
-    # Extract new rows
-    new_rows = []
-    for row in data:
-        if row[id_field] not in existing_ids:
-            new_rows.append(row)
-    
-    return new_rows
-
-# Extracts old rows from the CSV File that are no longer present in the library data
-def extract_old_rows(csv_file, data, id_field):
-    full_path_file = full_path(csv_file)
-
-    # Read existing data (if any)
-    existing_data = []
-    if os.path.exists(full_path_file):
-        with open(full_path_file, "r", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            existing_data = [row for row in reader]
-    
-    # Check for duplicate IDs
-    existing_ids = {row[id_field] for row in data}
-
-    # Extract old rows
-    old_rows = []
-    for row in existing_data:
-        if row[id_field] not in existing_ids:
-            old_rows.append(row)
-    
-    return old_rows
-
-# Extracts modified rows from the library data that are present in the CSV file but have different content
-def extract_modified_rows(csv_file, data, id_field):
-    full_path_file = full_path(csv_file)
-
-    # Read existing data (if any)
-    existing_data = []
-    if os.path.exists(full_path_file):
-        with open(full_path_file, "r", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            existing_data = [row for row in reader]
-    
-    # Create a dictionary for quick lookup of existing rows by id_field
-    existing_data_dict = {row[id_field]: row for row in existing_data}
-
-    # Extract modified rows and rows to not notify
-    modified_rows = []
-    no_notify_rows = []
-
-    for row in data:
-        if row[id_field] in existing_data_dict:
-            existing_row = existing_data_dict[row[id_field]]
-            if any(row[key] != existing_row[key] for key in row.keys() if key != id_field):
-                modified_rows.append(row)
-                # Check for ?X-Plex-Token= difference 
-                differing_keys = [key for key in row.keys() if key != id_field and row[key] != existing_row[key]]
-                if all('X-Plex-Token' in key or row[key].startswith(existing_row[key].split('?X-Plex-Token=')[0]) for key in differing_keys):
-                    no_notify_rows.append(row)
-
-    return modified_rows, no_notify_rows
-
-# Updates rows in the CSV file with modified content
-def update_data(csv_file, modified_rows, id_field):
-    full_path_file = full_path(csv_file)
-
-    # Read existing data (if any)
-    existing_data = []
-    if os.path.exists(full_path_file):
-        with open(full_path_file, "r", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            existing_data = [row for row in reader]
-
-    # Create a dictionary for quick lookup of modified rows by id_field
-    modified_data_dict = {row[id_field]: row for row in modified_rows}
-
-    # Update the existing data with modified rows
-    updated_data = [
-        modified_data_dict[row[id_field]] if row[id_field] in modified_data_dict else row
-        for row in existing_data
-    ]
-
-    # Write the updated data back to the CSV file
-    fieldnames = updated_data[0].keys() if updated_data else []
-    with open(full_path_file, "w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(updated_data)
-
-# Removes duplicate rows from the CSV file
-def remove_duplicate_rows(csv_file):
-    full_path_file = full_path(csv_file)
-    
-    if os.path.exists(full_path_file):
-        with open(full_path_file, "r", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            existing_data = [row for row in reader]
-
-        # Remove duplicates
-        unique_data = {tuple(row.items()): row for row in existing_data}.values()
-
-        # Write the deduplicated data back to the CSV file
-        fieldnames = existing_data[0].keys() if existing_data else []
-        with open(full_path_file, "w", newline="", encoding="utf-8") as file:
-            writer = csv.DictWriter(file, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(unique_data)
-        
-        print(f"\n{current_time()} INFO: Removed duplicate rows from {csv_file}.\n")
-
-# Add new columns during upgrades
-def check_and_add_column(csv_file, column_name, default_value):
-    full_path_file = full_path(csv_file)
-    
-    # Read the CSV file
-    with open(full_path_file, mode='r', newline='', encoding="utf-8") as infile:
-        reader = csv.DictReader(infile)
-        fieldnames = reader.fieldnames
-        rows = list(reader)
-    
-    # Check if the column exists
-    if column_name not in fieldnames:
-        fieldnames.append(column_name)
-        for row in rows:
-            row[column_name] = default_value
-    
-    # Write the updated data back to the CSV file
-    with open(full_path_file, mode='w', newline='', encoding="utf-8") as outfile:
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
-
-# Tries to remove a file, verifies its deletion, and retries if necessary.
-def reliable_remove(filepath):
-    max_retries=5
-    wait_time=10
-
-    for attempt in range(max_retries):
-        try:
-            os.remove(filepath)
-            if not os.path.exists(filepath):
-                return True
-        except Exception as e:
-            print(f"\n{current_time()} WARNING: After {attempt + 1} attempt, failed to remove {filepath} due to: {e}")
-        
-        print(f"{current_time()} INFO: Waiting for {wait_time} seconds before next attempt...")
-        time.sleep(wait_time)
-    
-    notification_add(f"{current_time()} ERROR: Failed to delete file '{filepath}' after {max_retries} attempts. Please manually delete and report this error along with other warnings and info in the logs.")
-    return False
-
-# Data records for initialization files
-def initial_data(csv_file):
-    if csv_file == csv_settings:
-        data = [
-                    {"settings": f"http://dvr-{socket.gethostname().lower()}.local:8089"},     # [0]  Channels URL
-                    {"settings": script_dir},                                                  # [1]  Channels Folder
-                    {"settings": "US"},                                                        # [2]  Search Defaults: Country Code
-                    {"settings": "en"},                                                        # [3]  Search Defaults: Language Code
-                    {"settings": "9"},                                                         # [4]  Search Defaults: Number of Results
-                    {"settings": "Off"},                                                       # DEPRECATED: [5] Hulu to Disney+ Automatic Conversion
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [6]  SLM: End-to-End Process Schedule Time
-                    {"settings": "On"},                                                        # [7]  Channels Prune
-                    {"settings": "Off"},                                                       # [8]  SLM: End-to-End Process Schedule On/Off
-                    {"settings": "Off"},                                                       # [9]  Search Defaults: Filter out already bookmarked
-                    {"settings": "Off"},                                                       # [10] Playlist Manager: On/Off
-                    {"settings": 10000},                                                       # [11] Playlist Manager: Starting station number
-                    {"settings": 750},                                                         # [12] Playlist Manager: Max number of stations per m3u
-                    {"settings": "Off"},                                                       # [13] Playlist Manager: Update Stations Process Schedule On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [14] Playlist Manager: Update Stations Process Schedule Time
-                    {"settings": "Off"},                                                       # [15] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [16] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time
-                    {"settings": "Every 24 hours"},                                            # [17] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency
-                    {"settings": "Every 24 hours"},                                            # [18] SLM: End-to-End Process Schedule Frequency
-                    {"settings": "On"},                                                        # [19] GEN: Backup Process On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [20] GEN: Backup Process Schedule Start Time
-                    {"settings": "Every 24 hours"},                                            # [21] GEN: Backup Process Schedule Frequency
-                    {"settings": 3},                                                           # [22] GEN: Backup Process Max number of backups to keep
-                    {"settings": "On"} #,                                                      # [23] Stream Link/Files Manager: On/Off
-                    # Add more rows as needed
-        ]        
-    elif csv_file == csv_streaming_services:
-        data = get_streaming_services()
-    elif csv_file == csv_bookmarks:
-        data = [
-            {"entry_id": None,"title": None, "release_year": None, "object_type": None, "url": None, "country_code": None, "language_code": None, "bookmark_action": None}
-        ]
-    elif csv_file == csv_bookmarks_status:
-        data = [
-            {"entry_id": None, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": None, "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None}
-        ]
-    elif csv_file == csv_slmappings:
-        data = [
-            {"active": "Off", "contains_string": "hulu.com/watch", "object_type": "MOVIE or SHOW", "replace_type": "Replace string with...", "replace_string": "disneyplus.com/play"},
-            {"active": "On", "contains_string": "netflix.com/title", "object_type": "MOVIE", "replace_type": "Replace string with...", "replace_string": "netflix.com/watch"},
-            {"active": "On", "contains_string": "watch.amazon.com/detail?gti=", "object_type": "MOVIE or SHOW", "replace_type": "Replace string with...", "replace_string": "www.amazon.com/gp/video/detail/"},
-            {"active": "Off", "contains_string": "vudu.com", "object_type": "MOVIE or SHOW", "replace_type": "Replace entire Stream Link with...", "replace_string": "fandangonow://"} #,
-            # Add more rows as needed
-        ]
-    # Playlist Manager
-    elif csv_file == csv_playlistmanager_playlists:
-        data = [
-            {"m3u_id": None, "m3u_name": None, "m3u_url": None, "epg_xml": None, "stream_format": None, "m3u_priority": None}
-        ]
-    elif csv_file == csv_playlistmanager_parents:
-        data = [
-            {"parent_channel_id": None, "parent_title": None, "parent_tvg_id_override": None, "parent_tvg_logo_override": None, "parent_channel_number_override": None, "parent_tvc_guide_stationid_override": None, "parent_tvc_guide_art_override": None, "parent_tvc_guide_tags_override": None, "parent_tvc_guide_genres_override": None, "parent_tvc_guide_categories_override": None, "parent_tvc_guide_placeholders_override": None, "parent_tvc_stream_vcodec_override": None, "parent_tvc_stream_acodec_override": None, "parent_preferred_playlist": None}
-        ]
-    elif csv_file == csv_playlistmanager_child_to_parent:
-        data = [
-            {"child_m3u_id_channel_id": None, "parent_channel_id": None}
-        ]    
-    elif csv_file == csv_playlistmanager_combined_m3us:
-        data = [
-            {"station_playlist": None, "m3u_id": None, "title": None, "tvc_guide_title": None, "channel_id": None, "tvg_id": None, "tvg_name": None, "tvg_logo": None, "tvg_chno": None, "channel_number": None, "tvg_description": None, "tvc_guide_description": None, "group_title": None, "tvc_guide_stationid": None, "tvc_guide_art": None, "tvc_guide_tags": None, "tvc_guide_genres": None, "tvc_guide_categories": None, "tvc_guide_placeholders": None, "tvc_stream_vcodec": None, "tvc_stream_acodec": None, "url": None}
-        ]
-
-    return data
-
-# Handler for timeout errors
-def timeout_handler():
-    global timeout_occurred
-    timeout_occurred = True
-
-# Attempts to find the Channels DVR path
-def find_channels_dvr_path():
-    global timeout_occurred
-    timeout_occurred = False
-    channels_dvr_path = script_dir
-    channels_dvr_path_search = None
-    root_path = os.path.abspath(os.sep)
-    search_directory = "Imports"
-
-    print(f"\n{current_time()} Searching for Channels DVR folder...")
-    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
-
-    # Search times out after 60 seconds
-    timer = threading.Timer(60, timeout_handler)
-    timer.start()
-
-    try:
-        for root, dirs, _ in os.walk(root_path):
-            if timeout_occurred:
-                raise TimeoutError # Timeout if serach going for too long
-            if search_directory in dirs or search_directory.lower() in dirs:
-                if os.path.abspath(os.path.join(root)).lower().endswith("dvr") or os.path.abspath(os.path.join(root)).lower().endswith("channels_folder"):
-                    channels_dvr_path_search = os.path.abspath(os.path.join(root))
-                    break  # Stop searching once found
-    except TimeoutError:
-        print(f"{current_time()} INFO: Search timed out. Continuing to next step...\n")
-    except KeyboardInterrupt:
-        print(f"{current_time()} INFO: Search interrupted by user. Continuing to next step...\n")
-    finally:
-        timer.cancel()  # Disable the timer
-
-    if channels_dvr_path_search:
-        print(f"{current_time()} INFO: Channels DVR folder found!")
-        channels_dvr_path = channels_dvr_path_search
-    else:
-        if os.path.exists(docker_channels_dir):
-            print(f"{current_time()} INFO: Channels DVR folder not found, setting to Docker default...")
-            channels_dvr_path = docker_channels_dir
-        else:
-            print(f"{current_time()} INFO: Channels DVR folder not found, defaulting to current directory. Please set your Channels DVR folder in 'Settings'.")
-
-    print(f"{current_time()} INFO: Channels DVR folder set to '{channels_dvr_path}'\n")
-
-    return channels_dvr_path
-
-# Find all available streaming services for the country
-def get_streaming_services():
-    settings = read_data(csv_settings)
-    country_code = settings[2]['settings']
-    
-    provider_results = []
-    provider_results_json = []
-    provider_results_json_array = []
-    provider_results_json_array_results = []
-
-    _GRAPHQL_GetProviders = """
-    query GetProviders($country: Country!, $platform: Platform!) {
-      packages(country: $country, platform: $platform) {
-        clearName
-        addons(country: $country, platform: $platform) {
-          clearName
-        }
-      }
-    }
-    """
-
-    json_data = {
-        'query': _GRAPHQL_GetProviders,
-        'variables': {
-            "country": country_code,
-            "platform": "WEB"
-        },
-        'operationName': 'GetProviders',
-    }
-
-    try:
-        provider_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
-    except requests.RequestException as e:
-        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
-
-    if provider_results:
-        provider_results_json = provider_results.json()
-        provider_results_json_array = provider_results_json["data"]["packages"]
-
-        for provider in provider_results_json_array :
-            provider_addons = []
-
-            entry = {
-                "streaming_service_name": provider["clearName"],
-                "streaming_service_subscribe": False,
-                "streaming_service_priority": None
-            }
-            provider_results_json_array_results.append(entry)
-
-            provider_addons = provider["addons"]
-
-            if provider_addons:
-                for provider_addon in provider_addons:
-                    entry = {
-                        "streaming_service_name": provider_addon["clearName"],
-                        "streaming_service_subscribe": False,
-                        "streaming_service_priority": None
-                    }
-                    provider_results_json_array_results.append(entry)
-
-    return provider_results_json_array_results
-
-# Update Streaming Services
-def update_streaming_services():
-    data = get_streaming_services()
-    update_rows(csv_streaming_services, data, "streaming_service_name", None)
-
-# Write data back to a CSV file.
-def write_data(csv_file, data):
-    full_path_file = full_path(csv_file)
-
-    try:
-        with open(full_path_file, "w", newline="", encoding="utf-8") as file:
-            writer = csv.DictWriter(file, fieldnames=data[0].keys())
-            writer.writeheader()  # Write the header row
-
-            # Write each row from the data list
-            writer.writerows(data)
-    except Exception as e:
-        print(f"\n{current_time()} ERROR: Writing data... {e}\n")
-
-# Appends a new row to an existing CSV file.
-def append_data(csv_file, new_row):
-    # Get the full path to the CSV file
-    full_path_file = full_path(csv_file)
-    
-    # Check if the file is empty (contains only the header row)
-    is_empty = os.path.getsize(full_path_file) == 0
-    
-    try:
-        # Open the file in append mode with UTF-8 encoding
-        with open(full_path_file, "a", newline="", encoding="utf-8") as file:
-            writer = csv.DictWriter(file, fieldnames=new_row.keys())
-            
-            # Write the header row if the file is empty
-            if is_empty:
-                writer.writeheader()
-            
-            # Append the new row
-            writer.writerow(new_row)
-    except Exception as e:
-        print(f"\n{current_time()} ERROR: Appending data... {e}\n")
-
-# Function to count rows in the CSV file
-def count_rows(csv_file):
-    full_path_file = full_path(csv_file)
-    with open(full_path_file, "r", encoding="utf-8") as file:
-        reader = csv.reader(file)
-        return sum(1 for row in reader)
-
-# Function to add a new row if the row count is less than a certain number
-def check_and_append(csv_file, new_row, threshold, purpose):
-    row_count = count_rows(csv_file)
-    
-    if row_count < threshold:
-        append_data(csv_file, new_row)
-        notification_add(f"\n{current_time()} INFO: New row added to {csv_file}... it was for '{purpose}'.")
-
-# Removes rows from the CSV file
-def remove_data(csv_file, old_rows, id_field):
-    full_path_file = full_path(csv_file)
-
-    # Read existing data (if any)
-    existing_data = []
-    if os.path.exists(full_path_file):
-        with open(full_path_file, "r", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            existing_data = [row for row in reader]
-
-    # Check for duplicate IDs
-    existing_ids = set()
-    if old_rows:
-        existing_ids = {row[id_field] for row in old_rows}
-
-    # Filter out matching rows
-    new_rows = [row for row in existing_data if row[id_field] not in existing_ids]
-
-    # Write the new rows back to the CSV file
-    write_data(csv_file, new_rows)
-
-# Search for country code
-def get_country_code():
-    settings = read_data(csv_settings)
-    country_code = settings[2]["settings"]
-    country_code_input = None
-    country_code_new = None
-
-    global timeout_occurred
-    timeout_occurred = False
-    print(f"\n{current_time()} Searching for country code for Streaming Services...")
-    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
-
-    # Search times out after 30 seconds
-    timer = threading.Timer(30, timeout_handler)
-    timer.start()
-
-    try:
-        response = requests.get('https://ipinfo.io', headers=url_headers)
-        data = response.json()
-        user_country_code = data.get('country').upper()
-        
-        if user_country_code in valid_country_codes:
-            country_code_input = user_country_code
-    except TimeoutError:
-        print(f"{current_time()} INFO: Search timed out. Continuing to next step...\n")
-    except KeyboardInterrupt:
-        print(f"{current_time()} INFO: Search interrupted by user. Continuing to next step...\n")
-    except Exception as e:
-        print(f"{current_time()} INFO: Error getting geolocation: {e}. Continuing to next step...\n")
-    finally:
-        timer.cancel()  # Disable the timer
-
-    if country_code_input:
-        print(f"{current_time()} INFO: Country found!")
-        country_code_new = country_code_input.upper()
-    else:
-        print(f"{current_time()} INFO: Country not found, using default value. Please set your Country in 'Settings'.")
-        country_code_new = country_code
-
-    print(f"{current_time()} INFO: Country Code set to '{country_code_new}'\n")
-
-    return country_code_new
-
-# Check if Channels URL is correct
-def check_channels_url(channels_url_input):
-    if channels_url_input:
-        channels_url = channels_url_input
-    else:
-        settings = read_data(csv_settings)
-        channels_url = settings[0]["settings"]
-    
-    channels_url_okay = None
-    
-    try:
-        response = requests.get(channels_url, headers=url_headers)
-        if response:
-            channels_url_okay = True
-    except requests.RequestException:
-        print(f"\n{current_time()} WARNING: Channels URL not found at {channels_url}")
-        print(f"{current_time()} WARNING: Please change Channels URL in settings")
-
-    return channels_url_okay
-
-# Searches for an IP Address on the LAN that responds to Port 8089
-def get_channels_url():
-    local_ip = socket.gethostbyname(socket.gethostname())
-    ip_parts = local_ip.split('.')
-    base_ip = '.'.join(ip_parts[:-1]) + '.'
-    start_ip = int(ip_parts[-1])
-    port = 8089
-    machine_name = None
-    machine_name_flag = None
-    docker_test = None
-    docker_test_url = f"http://host.docker.internal:8089"
-    channels_url = None
-    channels_url_message = None
-    bad_urls = [
-        "docker",
-        "tailscale"
-    ]
-
-    print(f"\n{current_time()} Searching for Channels URL...")
-    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
-
-    # Search times out after 60 seconds
-    timer = threading.Timer(60, timeout_handler)
-    timer.start()
-
-    try:
-        machine_name = check_ip_range(start_ip, start_ip + 1, base_ip, port)
-        if machine_name:
-            machine_name = socket.gethostname().lower()
-
-        if machine_name is None or machine_name == '':
-            machine_name = check_ip_range(start_ip + 1, 256, base_ip, port)
-
-        if machine_name is None or machine_name == '':
-            machine_name = check_ip_range(1, start_ip, base_ip, port)
-
-        if machine_name:
-            for bad_url in bad_urls:
-                if machine_name.__contains__(bad_url):
-                    machine_name = "[ERROR_READ_WRONG_NAME_UPDATE_SETTINGS]"
-                    machine_name_flag = True
-                    break
-
-        if machine_name is None or machine_name == '':
-            docker_test = check_channels_url(docker_test_url)
-
-        if docker_test:
-            channels_url_message = f"{current_time()} INFO: External Channels URL not found, but was discovered with the Docker link! Please verify in Settings and change there, if desired."
-            channels_url = docker_test_url
-        elif machine_name:
-            if machine_name_flag:
-                channels_url_message = f"{current_time()} INFO: Error in discovering Channels URL. Please manually update in Settings."
-            else:
-                channels_url_message = f"{current_time()} INFO: Potential Channels URL found! Please verify in Settings."
-            channels_url = f"http://dvr-{machine_name}.local:8089"
-        else:
-            channels_url_message = f"{current_time()} INFO: Channels URL not found. Please manually update in Settings."
-            channels_url = f"http://[CHANNELS_URL_NOT_FOUND_UPDATE_SETTINGS]:8089"
-    except TimeoutError:
-        channels_url_message = f"{current_time()} INFO: Search timed out. Continuing to next step..."
-    except KeyboardInterrupt:
-        channels_url_message = f"{current_time()} INFO: Search interrupted by user. Continuing to next step..."
-    finally:
-        timer.cancel()  # Disable the timer
-
-    if channels_url:
-        pass
-    else:
-        channels_url_message = f"{current_time()} INFO: Channels URL not found. Please manually update in Settings."
-        channels_url = f"http://[CHANNELS_URL_NOT_FOUND_UPDATE_SETTINGS]:8089"
-
-    print(f"\n{channels_url_message}")
-    print(f"{current_time()} INFO: Channels URL set to '{channels_url}'\n")
-
-    return channels_url, channels_url_message
-
-# Loops through the IP Addresses as part of the check for the open Port 8089
-def check_ip_range(start, end, base_ip, port):
-    machine_name = None
-    port_test = None
-
-    for i in range(start, end):
-        ip = base_ip + str(i)
-        print(f"    Checking IP: {ip}")
-        try:
-            port_test = socket.create_connection((ip, port), timeout=0.1)
-        except (socket.timeout, ConnectionRefusedError, OSError):
-            pass
-        if port_test:
-            machine_name = socket.gethostbyaddr(ip)[0].lower()
-            break
-
-    return machine_name
-
-for csv_file in csv_files:
-    check_and_create_csv(csv_file)
-
-global_settings = read_data(csv_settings)
-slm_playlist_manager = None
-if global_settings[10]['settings'] == "On":
-    slm_playlist_manager = True
-slm_stream_link_file_manager = None
-if global_settings[23]['settings'] == "On":
-    slm_stream_link_file_manager = True
-
-check_channels_url(None)
-
-notification_add(f"\n{current_time()} Initialization Complete. Starting Stream Link Manager for Channels...\n")
-
-# Home webpage and actions
-@app.route('/', methods=['GET', 'POST'])
-@app.route('/home', methods=['GET', 'POST'])
-def main_menu():
-    return render_template(
-        'main/index.html',
-        segment = 'index',
-        html_slm_version = slm_version,
-        html_slm_playlist_manager = slm_playlist_manager,
-        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
-        html_notifications = notifications
-    )
-
-# Settings webpage and actions
-@app.route('/settings', methods=['GET', 'POST'])
-def settings():
-    global channels_url_prior
-    global slm_playlist_manager
-    global slm_stream_link_file_manager
-    settings_anchor_id = None
-    run_empty_row = None
-
-    settings = read_data(csv_settings)
-    channels_url = settings[0]["settings"]
-    channels_directory = settings[1]["settings"]
-    if channels_url_prior is None or channels_url_prior == '':
-        channels_url_prior = channels_url
-    country_code = settings[2]["settings"]
-    language_code = settings[3]["settings"]
-    num_results = settings[4]["settings"]
-    hide_bookmarked = settings[9]["settings"]
-    gen_backup_schedule = settings[19]["settings"]
-    gen_backup_schedule_time = settings[20]["settings"]
-    gen_backup_schedule_frequency = settings[21]["settings"]
-    gen_backup_max_backups = settings[22]["settings"]
-    try:
-        auto_update_schedule = settings[8]["settings"]
-    except (IndexError, KeyError):
-        auto_update_schedule = 'Off'
-    auto_update_schedule_time = settings[6]["settings"]
-    auto_update_schedule_frequency = settings[18]["settings"]
-    plm_update_stations_schedule = settings[13]["settings"]
-    plm_update_stations_schedule_time = settings[14]["settings"]
-    plm_update_m3us_epgs_schedule = settings[15]["settings"]
-    plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
-    plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
-    channels_prune = settings[7]["settings"]
-    station_start_number = settings[11]['settings']
-    max_stations = settings[12]['settings']
-
-    streaming_services = read_data(csv_streaming_services)
-
-    slmappings = read_data(csv_slmappings)
-    slmappings_object_type = [
-        "MOVIE or SHOW",
-        "MOVIE",
-        "SHOW"
-    ]
-    slmappings_replace_type = [
-        "Replace string with...",
-        "Replace entire Stream Link with..."
-    ]
-
-    channels_url_message = ""
-    channels_directory_message = ""
-    search_defaults_message = ""
-    advanced_experimental_message = ""
-    scheduler_message = ""
-
-    action_to_anchor = {
-        'streaming_services': 'streaming_services_anchor',
-        'search_defaults': 'search_defaults_anchor',
-        'slmapping': 'slmapping_anchor',
-        'gen_backup_process': 'scheduler_anchor',
-        'end_to_end_process': 'scheduler_anchor',
-        'plm_update_stations_process': 'scheduler_anchor',
-        'plm_update_m3us_epgs_process': 'scheduler_anchor',
-        'channels_url': 'channels_url_anchor',
-        'channels_directory': 'channels_directory_anchor',
-        'channels_prune': 'advanced_experimental_anchor',
-        'playlist_manager': 'advanced_experimental_anchor',
-        'stream_link_file_manager': 'advanced_experimental_anchor'
-    }
-
-    if not os.path.exists(channels_directory):
-        channels_directory_message = f"{current_time()} WARNING: '{channels_directory}' does not exist. Please select a new directory!"
-        current_directory = script_dir
-    else:
-        channels_directory_message = ""
-        current_directory = channels_directory
-
-    if request.method == 'POST':
-        settings_action = request.form['action']
-        channels_url_input = request.form.get('channels_url')
-        channels_directory_input = request.form.get('current_directory')
-        channels_directory_manual_path = request.form.get('channels_directory_manual_path')
-        channels_prune_input = request.form.get('channels_prune')
-        playlist_manager_input = request.form.get('playlist_manager')
-        stream_link_file_manager_input = request.form.get('stream_link_file_manager')
-        station_start_number_input = request.form.get('station_start_number')
-        max_stations_input = request.form.get('max_stations')
-        country_code_input = request.form.get('country_code')
-        language_code_input = request.form.get('language_code')
-        num_results_input = request.form.get('num_results')
-        hide_bookmarked_input = request.form.get('hide_bookmarked')
-        streaming_services_input = request.form.get('streaming_services')
-        gen_backup_schedule_input = request.form.get('gen_backup_schedule')
-        gen_backup_schedule_time_input = request.form.get('gen_backup_schedule_time')
-        gen_backup_schedule_frequency_input = request.form.get('gen_backup_schedule_frequency')
-        gen_backup_max_backups_input = request.form.get('gen_backup_max_backups')
-        auto_update_schedule_input = request.form.get('auto_update_schedule')
-        auto_update_schedule_time_input = request.form.get('auto_update_schedule_time')
-        auto_update_schedule_frequency_input = request.form.get('auto_update_schedule_frequency')
-        plm_update_stations_schedule_input = request.form.get('plm_update_stations_schedule')
-        plm_update_stations_schedule_time_input = request.form.get('plm_update_stations_schedule_time')
-        plm_update_m3us_epgs_schedule_input = request.form.get('plm_update_m3us_epgs_schedule')
-        plm_update_m3us_epgs_schedule_time_input = request.form.get('plm_update_m3us_epgs_schedule_time')
-        plm_update_m3us_epgs_schedule_frequency_input = request.form.get('plm_update_m3us_epgs_schedule_frequency')
-
-        for prefix, anchor_id in action_to_anchor.items():
-            if settings_action.startswith(prefix):
-                settings_anchor_id = anchor_id
-                break
-
-        if settings_action.startswith('slmapping_') or settings_action in ['channels_url_cancel',
-                                                                           'channels_directory_cancel',
-                                                                           'channels_prune_cancel',
-                                                                           'playlist_manager_cancel',
-                                                                           'stream_link_file_manager_cancel',
-                                                                           'search_defaults_cancel',
-                                                                           'streaming_services_cancel',
-                                                                           'end_to_end_process_cancel',
-                                                                           'plm_update_stations_process_cancel',
-                                                                           'plm_update_m3us_epgs_process_cancel',
-                                                                           'gen_backup_process_cancel',
-                                                                           'channels_url_save',
-                                                                           'channels_directory_save',
-                                                                           'channels_prune_save',
-                                                                           'playlist_manager_save',
-                                                                           'stream_link_file_manager_save',
-                                                                           'search_defaults_save',
-                                                                           'streaming_services_save',
-                                                                           'end_to_end_process_save',
-                                                                           'plm_update_stations_process_save',
-                                                                           'plm_update_m3us_epgs_process_save',
-                                                                           'gen_backup_process_save',
-                                                                           'streaming_services_update',
-                                                                           'channels_url_test',
-                                                                           'channels_url_scan'
-                                                                        ]:
-
-            if settings_action.startswith('slmapping_action_') or settings_action in ['channels_url_save',
-                                                                                      'channels_directory_save',
-                                                                                      'channels_prune_save',
-                                                                                      'playlist_manager_save',
-                                                                                      'stream_link_file_manager_save',
-                                                                                      'search_defaults_save',
-                                                                                      'streaming_services_save',
-                                                                                      'end_to_end_process_save',
-                                                                                      'plm_update_stations_process_save',
-                                                                                      'plm_update_m3us_epgs_process_save',
-                                                                                      'gen_backup_process_save',
-                                                                                      'channels_url_scan'
-                                                                                    ]:
-
-                if settings_action in ['channels_url_save',
-                                    'channels_directory_save',
-                                    'channels_prune_save',
-                                    'playlist_manager_save',
-                                    'stream_link_file_manager_save',
-                                    'search_defaults_save',
-                                    'end_to_end_process_save',
-                                    'plm_update_stations_process_save',
-                                    'plm_update_m3us_epgs_process_save',
-                                    'gen_backup_process_save',
-                                    'channels_url_scan'
-                                    ]:
-
-                    if settings_action == 'channels_url_save':
-                        settings[0]["settings"] = channels_url_input
-                        channels_url_prior = channels_url_input
-
-                    elif settings_action == 'channels_url_scan':
-                        settings[0]["settings"], channels_url_message = get_channels_url()
-                        channels_url_prior = settings[0]["settings"]
-
-                    elif settings_action == 'channels_directory_save':
-                        settings[1]["settings"] = channels_directory_input
-                        current_directory = channels_directory_input
-
-                    elif settings_action == 'search_defaults_save':
-                            settings[2]["settings"] = country_code_input
-                            settings[3]["settings"] = language_code_input
-                            try:
-                                if int(num_results_input) > 0:
-                                    settings[4]["settings"] = int(num_results_input)
-                                else:
-                                    search_defaults_message = f"{current_time()} ERROR: For 'Number of Results', please enter a positive integer."
-                            except ValueError:
-                                search_defaults_message = f"{current_time()} ERROR: 'Number of Results' must be a number."
-                            settings[9]["settings"] = "On" if hide_bookmarked_input == 'on' else "Off"
-
-                    elif settings_action == 'gen_backup_process_save':
-                        settings[19]["settings"] = "On" if gen_backup_schedule_input == 'on' else "Off"
-                        settings[20]["settings"] = gen_backup_schedule_time_input
-                        settings[21]["settings"] = gen_backup_schedule_frequency_input
-                        try:
-                            if int(gen_backup_max_backups_input) > 0:
-                                settings[22]["settings"] = int(gen_backup_max_backups_input)
-                            else:
-                                scheduler_message = f"{current_time()} ERROR: For 'Max Backups', please enter a positive integer."
-                        except ValueError:
-                            scheduler_message = f"{current_time()} ERROR: 'Max Backups' must be a number."
-                        
-
-                    elif settings_action == 'end_to_end_process_save':
-                        try:
-                            settings[8]["settings"] = "On" if auto_update_schedule_input == 'on' else "Off"
-                        except (IndexError, KeyError):
-                            settings.append({"settings": "On" if auto_update_schedule_input == 'on' else "Off"})
-                        settings[6]["settings"] = auto_update_schedule_time_input
-                        settings[18]["settings"] = auto_update_schedule_frequency_input
-
-                    elif settings_action == 'plm_update_stations_process_save':
-                        settings[13]["settings"] = "On" if plm_update_stations_schedule_input == 'on' else "Off"
-                        settings[14]["settings"] = plm_update_stations_schedule_time_input
-
-                    elif settings_action == 'plm_update_m3us_epgs_process_save':
-                        settings[15]["settings"] = "On" if plm_update_m3us_epgs_schedule_input == 'on' else "Off"
-                        settings[16]["settings"] = plm_update_m3us_epgs_schedule_time_input
-                        settings[17]["settings"] = plm_update_m3us_epgs_schedule_frequency_input
-
-                    elif settings_action == 'channels_prune_save':
-                        settings[7]["settings"] = "On" if channels_prune_input == 'on' else "Off"
-
-                    elif settings_action == 'playlist_manager_save':
-                        try:
-                            if int(station_start_number_input) > 0 and int(max_stations_input) > 0:
-                                settings[10]["settings"] = "On" if playlist_manager_input == 'on' else "Off"
-                                settings[11]['settings'] = int(station_start_number_input)
-                                settings[12]['settings'] = int(max_stations_input)
-
-                                if playlist_manager_input == 'on':
-                                    slm_playlist_manager = True
-                                    plm_csv_files = [
-                                        csv_playlistmanager_playlists,
-                                        csv_playlistmanager_parents,
-                                        csv_playlistmanager_child_to_parent,
-                                        csv_playlistmanager_combined_m3us
-                                    ]
-
-                                    for plm_csv_file in plm_csv_files:
-                                        check_and_create_csv(plm_csv_file)
-                                    
-                                    create_directory(playlists_uploads_dir)
-                                
-                                else:
-                                    slm_playlist_manager = None
-
-                            else:
-                                advanced_experimental_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
-                        except ValueError:
-                            advanced_experimental_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be numbers."
-
-                    elif settings_action == 'stream_link_file_manager_save':
-                        settings[23]["settings"] = "On" if stream_link_file_manager_input == 'on' else "Off"
-
-                        if stream_link_file_manager_input == 'on':
-                            slm_stream_link_file_manager = True
-                        else:
-                            slm_stream_link_file_manager = None
-
-                    csv_to_write = csv_settings
-                    data_to_write = settings
-
-                elif settings_action == 'streaming_services_save':
-                    streaming_services_input_json = json.loads(streaming_services_input)
-                    csv_to_write = csv_streaming_services
-                    data_to_write = streaming_services_input_json
-
-                elif settings_action.startswith('slmapping_action_'):
-
-                    # Add a map
-                    if settings_action == 'slmapping_action_new':
-                        slmapping_active_new_input = 'On' if request.form.get('slmapping_active_new') == 'on' else 'Off'
-                        slmapping_contains_string_new_input = request.form.get('slmapping_contains_string_new')
-                        slmapping_object_type_new_input = request.form.get('slmapping_object_type_new')
-                        slmapping_replace_type_new_input = request.form.get('slmapping_replace_type_new')
-                        slmapping_replace_string_new_input = request.form.get('slmapping_replace_string_new')
-
-                        slmappings.append({
-                            "active": slmapping_active_new_input,
-                            "contains_string": slmapping_contains_string_new_input,
-                            "object_type": slmapping_object_type_new_input,
-                            "replace_type": slmapping_replace_type_new_input,
-                            "replace_string": slmapping_replace_string_new_input
-                        })
-
-                    # Delete a map
-                    elif settings_action.startswith('slmapping_action_delete_'):
-                        slmapping_action_delete_index = int(settings_action.split('_')[-1]) - 1
-
-                        # Create a temporary record with fields set to None
-                        temp_record = create_temp_record(slmappings[0].keys())
-
-                        if 0 <= slmapping_action_delete_index < len(slmappings):
-                            slmappings.pop(slmapping_action_delete_index)
-
-                            # If the list is now empty, add the temp record to keep headers
-                            if not slmappings:
-                                slmappings.append(temp_record)
-                                run_empty_row = True
-
-                    # Save map modifications
-                    elif settings_action == 'slmapping_action_save':
-                        slmapping_active_existing_inputs = {}
-                        slmapping_contains_string_existing_inputs = {}
-                        slmapping_object_type_existing_inputs = {}
-                        slmapping_replace_type_existing_inputs = {}
-                        slmapping_replace_string_existing_inputs = {}
-
-                        total_number_of_checkboxes = len(slmappings)
-                        slmapping_active_existing_inputs = {str(i): 'Off' for i in range(1, total_number_of_checkboxes + 1)}
-
-                        for key in request.form.keys():
-                            if key.startswith('slmapping_active_existing_'):
-                                index = key.split('_')[-1]
-                                slmapping_active_existing_inputs[index] = request.form.get(key)
-
-                            if key.startswith('slmapping_contains_string_existing_'):
-                                index = key.split('_')[-1]
-                                slmapping_contains_string_existing_inputs[index] = request.form.get(key)
-
-                            if key.startswith('slmapping_object_type_existing_'):
-                                index = key.split('_')[-1]
-                                slmapping_object_type_existing_inputs[index] = request.form.get(key)
-
-                            if key.startswith('slmapping_replace_type_existing_'):
-                                index = key.split('_')[-1]
-                                slmapping_replace_type_existing_inputs[index] = request.form.get(key)
-
-                            if key.startswith('slmapping_replace_string_existing_'):
-                                index = key.split('_')[-1]
-                                slmapping_replace_string_existing_inputs[index] = request.form.get(key)
-
-                        for row in slmapping_active_existing_inputs:
-                            slmapping_active_existing_input = slmapping_active_existing_inputs.get(row)
-                            slmapping_contains_string_existing_input = slmapping_contains_string_existing_inputs.get(row)
-                            slmapping_object_type_existing_input = slmapping_object_type_existing_inputs.get(row)
-                            slmapping_replace_type_existing_input = slmapping_replace_type_existing_inputs.get(row)
-                            slmapping_replace_string_existing_input = slmapping_replace_string_existing_inputs.get(row)
-
-                            for idx, slmapping in enumerate(slmappings):
-                                if idx == int(row) - 1:
-                                    slmapping['active'] = slmapping_active_existing_input
-                                    slmapping['contains_string'] = slmapping_contains_string_existing_input
-                                    slmapping['object_type'] = slmapping_object_type_existing_input
-                                    slmapping['replace_type'] = slmapping_replace_type_existing_input
-                                    slmapping['replace_string'] = slmapping_replace_string_existing_input
-
-                    csv_to_write = csv_slmappings
-                    data_to_write = slmappings
-
-                write_data(csv_to_write, data_to_write)
-                if run_empty_row:
-                    remove_empty_row(csv_to_write)
-
-                if settings_action == 'search_defaults_save':
-                    update_streaming_services()
-                    time.sleep(5)
-
-            elif settings_action == 'streaming_services_update':
-                update_streaming_services()
-                time.sleep(5)
-
-            elif settings_action == 'channels_url_cancel':
-                channels_url_prior = channels_url
-
-            elif settings_action == 'channels_url_test':
-                channels_url_prior = channels_url_input
-                channels_url_okay = check_channels_url(channels_url_input)
-                if channels_url_okay:
-                    channels_url_message = f"{current_time()} INFO: '{channels_url_input}' responded as expected!"
-                else:
-                    channels_url_message = f"{current_time()} WARNING: Channels URL not found at '{channels_url_input}'. Please update!"
-
-        elif settings_action == 'channels_directory_nav_up':
-            current_directory = os.path.dirname(channels_directory_input)
-        
-        elif settings_action == 'channels_directory_manual_go':
-            if os.path.isdir(channels_directory_manual_path):
-                current_directory = channels_directory_manual_path
-            else:
-                channels_directory_message = f"{current_time()} ERROR: Invalid path. Try again."
-        
-        elif settings_action.startswith('channels_directory_nav_'):
-            # Navigate directories
-            try:
-                selected_index = int(settings_action.split('_')[-1]) - 1
-                subdirectories = get_subdirectories(channels_directory_input)
-                if 0 <= selected_index < len(subdirectories):
-                    current_directory = os.path.join(channels_directory_input, subdirectories[selected_index])
-                else:
-                    channels_directory_message = f"{current_time()} ERROR: Invalid selection. Try again."
-            except ValueError:
-                channels_directory_message = f"{current_time()} ERROR: Invalid input. Try again."
-
-        settings = read_data(csv_settings)
-        channels_url = settings[0]["settings"]
-        channels_directory = settings[1]["settings"]
-        if channels_url_prior is None or channels_url_prior == '':
-            channels_url_prior = channels_url
-        country_code = settings[2]["settings"]
-        language_code = settings[3]["settings"]
-        num_results = settings[4]["settings"]
-        hide_bookmarked = settings[9]["settings"]
-        gen_backup_schedule = settings[19]["settings"]
-        gen_backup_schedule_time = settings[20]["settings"]
-        gen_backup_schedule_frequency = settings[21]["settings"]
-        gen_backup_max_backups = settings[22]["settings"]
-        try:
-            auto_update_schedule = settings[8]["settings"]
-        except (IndexError, KeyError):
-            auto_update_schedule = 'Off'
-        auto_update_schedule_time = settings[6]["settings"]
-        auto_update_schedule_frequency = settings[18]["settings"]
-        plm_update_stations_schedule = settings[13]["settings"]
-        plm_update_stations_schedule_time = settings[14]["settings"]
-        plm_update_m3us_epgs_schedule = settings[15]["settings"]
-        plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
-        plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
-        channels_prune = settings[7]["settings"]
-        station_start_number = settings[11]['settings']
-        max_stations = settings[12]['settings']
-
-        streaming_services = read_data(csv_streaming_services)
-
-        slmappings = read_data(csv_slmappings)
-
-    response = make_response(render_template(
-        'main/settings.html',
-        segment='settings',
-        html_slm_version=slm_version,
-        html_slm_playlist_manager = slm_playlist_manager,
-        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
-        html_settings_anchor_id = settings_anchor_id,
-        html_channels_url=channels_url,
-        html_channels_url_prior = channels_url_prior,
-        html_channels_directory = channels_directory,
-        html_valid_country_codes = valid_country_codes,
-        html_country_code = country_code,
-        html_valid_language_codes = valid_language_codes,
-        html_language_code = language_code,
-        html_num_results = num_results,
-        html_auto_update_schedule = auto_update_schedule,
-        html_auto_update_schedule_time = auto_update_schedule_time,
-        html_plm_update_stations_schedule = plm_update_stations_schedule,
-        html_plm_update_stations_schedule_time = plm_update_stations_schedule_time,
-        html_slm_end_to_end_frequencies = slm_end_to_end_frequencies,
-        html_auto_update_schedule_frequency = auto_update_schedule_frequency,
-        html_plm_update_m3us_epgs_schedule = plm_update_m3us_epgs_schedule,
-        html_plm_update_m3us_epgs_schedule_time = plm_update_m3us_epgs_schedule_time,
-        html_plm_m3us_epgs_schedule_frequencies = plm_m3us_epgs_schedule_frequencies,
-        html_plm_update_m3us_epgs_schedule_frequency = plm_update_m3us_epgs_schedule_frequency,
-        html_channels_prune = channels_prune,
-        html_streaming_services = streaming_services,
-        html_channels_url_message = channels_url_message,
-        html_current_directory = current_directory,
-        html_subdirectories = get_subdirectories(current_directory),
-        html_channels_directory_message = channels_directory_message,
-        html_search_defaults_message = search_defaults_message,
-        html_slmappings = slmappings,
-        html_slmappings_object_type = slmappings_object_type,
-        html_slmappings_replace_type = slmappings_replace_type,
-        html_hide_bookmarked = hide_bookmarked,
-        html_station_start_number = station_start_number,
-        html_max_stations = max_stations,
-        html_advanced_experimental_message = advanced_experimental_message,
-        html_gen_backup_frequencies = gen_backup_frequencies,
-        html_gen_backup_schedule = gen_backup_schedule,
-        html_gen_backup_schedule_time = gen_backup_schedule_time,
-        html_gen_backup_schedule_frequency = gen_backup_schedule_frequency,
-        html_gen_backup_max_backups = gen_backup_max_backups,
-        html_scheduler_message = scheduler_message
-    ))
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '-1'
-
-    if settings_anchor_id:
-        response.headers['Location'] = f'/settings#{settings_anchor_id}'
-
-    return response
-
-# Displays the list of subdirectories in the given directory.
-def get_subdirectories(directory):
-    return [item for item in os.listdir(directory) if os.path.isdir(os.path.join(directory, item))]
-
 # Seach for and bookmark programs, or add manual ones
 @app.route('/addprograms', methods=['GET', 'POST'])
-def add_programs():
+def webpage_add_programs():
     global program_search_results_prior
     global country_code_input_prior 
     global language_code_input_prior
@@ -1705,7 +121,6 @@ def add_programs():
             program_add_prior = ''
             program_add_resort_panel = ''
             program_add_filter_panel = ''
-            return redirect(url_for('add_programs'))
         
         # Search for a program
         elif add_programs_action in ['program_add_search', 'program_new_search', 'program_new_today']:
@@ -2053,6 +468,7 @@ def add_programs():
         html_slm_version = slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_valid_country_codes = valid_country_codes,
         html_country_code = country_code,
         html_valid_language_codes = valid_language_codes,
@@ -3252,33 +1668,9 @@ def set_bookmarks(entry_id, title, release_year, object_type, url, country_code,
     if type == "search":
         return season_episodes
 
-# Run Stream Link Generation and File Creation on one program
-def generate_stream_links_single(entry_id):
-    settings = read_data(csv_settings)
-    channels_directory = settings[1]["settings"]
-
-    bookmarks = read_data(csv_bookmarks)
-    modify_bookmarks = [bookmark for bookmark in bookmarks if bookmark['entry_id'] == entry_id]
-
-    generate_stream_links_single_message = None
-    run_generation = None
-
-    if not os.path.exists(channels_directory):
-        generate_stream_links_single_message = f"{current_time()} WARNING: {channels_directory} does not exist, skipping generation. Please change the Channels directory in the Settings menu."
-    else:
-        run_generation = True
-        
-    if run_generation:
-        if not entry_id.startswith('slm'):
-            find_stream_links(modify_bookmarks)
-        create_stream_link_files(modify_bookmarks, None)
-        generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links! Please execute process 'Run Updates in Channels' in order to see this program."
-
-    return generate_stream_links_single_message
-
 # Modify existing programs
 @app.route('/modifyprograms', methods=['GET', 'POST'])
-def modify_programs():
+def webpage_modify_programs():
     global entry_id_prior
     global title_selected_prior
     global release_year_selected_prior
@@ -3659,6 +2051,7 @@ def modify_programs():
         html_slm_version = slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_sorted_bookmarks = sorted_bookmarks,
         html_entry_id_selected = entry_id_prior,
         html_program_modify_message = program_modify_message,
@@ -3674,75 +2067,16 @@ def modify_programs():
         html_bookmark_action_selected = bookmark_action_prior
     )
 
-# Alphabetic sort ignoring common articles in various Latin script languages
-def sort_key(title):
-    articles = {
-        "english": ["the", "a", "an"],
-        "spanish": ["el", "la", "los", "las", "un", "una", "unos", "unas"],
-        "portuguese": ["o", "a", "os", "as", "um", "uma", "uns", "umas"],
-        "french": ["le", "la", "les", "un", "une", "des"],
-        "german": ["der", "die", "das", "ein", "eine", "einen"],
-        "italian": ["il", "lo", "la", "i", "gli", "le", "un", "una", "uno"],
-        "bosnian": ["taj", "ta", "to", "jedan", "jedna", "jedno"],
-        "catalan": ["el", "la", "els", "les", "un", "una", "uns", "unes"],
-        "czech": ["ten", "ta", "to", "jeden", "jedna", "jedno"],
-        "finnish": ["se", "yksi"],
-        "croatian": ["taj", "ta", "to", "jedan", "jedna", "jedno"],
-        "hungarian": ["a", "az", "egy"],
-        "icelandic": ["það", "þessi", "einn", "ein", "eitt"],
-        "maltese": ["il", "l-", "xi", "wieħed", "waħda"],
-        "polish": ["ten", "ta", "to", "jeden", "jedna", "jedno"],
-        "romanian": ["cel", "cea", "cei", "cele", "un", "o", "niște"],
-        "slovak": ["ten", "tá", "to", "jeden", "jedna", "jedno"],
-        "slovenian": ["ta", "ta", "to", "en", "ena", "eno"],
-        "albanian": ["një", "një", "një"],
-        "swahili": ["huyu", "hii", "hiki", "moja"],
-        "turkish": ["bir"]
-    }
-    
-    words = title.casefold().split()
-    for lang, art_list in articles.items():
-        if words[0] in art_list:
-            return " ".join(words[1:])
-    return title.casefold()
-
-# Removes rows in a CSV file based upon a value in the first column
-def remove_row_csv(csv_file, field_value):
-    full_path_file = full_path(csv_file)
-
-    try:
-        # Read the CSV file
-        with open(full_path_file, 'r', encoding='utf-8') as inp:
-            reader = csv.reader(inp)
-            print(f"\nIn {csv_file}, removed row:\n")
-
-            rows_to_keep = []
-            for row in reader:
-                if row[0] == field_value:  # Assuming field_value is in the first column
-                    print(f"    {row}")
-                else:
-                    rows_to_keep.append(row)
-
-        # Write the non-matching rows back to the same file
-        with open(full_path_file, 'w', encoding='utf-8', newline='') as out:
-            writer = csv.writer(out)
-            writer.writerows(rows_to_keep)
-
-    except FileNotFoundError:
-        print(f"Error: {csv_file} not found.")
-    except Exception as e:
-        print(f"Error: {e}")
-
 # Playlists webpage and actions
 @app.route('/playlists', defaults={'sub_page': 'main'}, methods=['GET', 'POST'])
 @app.route('/playlists/<sub_page>', methods=['GET', 'POST'])
-def playlists_webpage(sub_page):
+def webpage_playlists(sub_page):
 
     templates = {
-        'main': 'main/playlists.html',
-        'modify_assigned_stations': 'main/playlists_modify_assigned_stations.html',
-        'parent_stations': 'main/playlists_parent_stations.html',
-        'manage': 'main/playlists_manage.html'
+        'plm_main': 'main/playlists.html',
+        'plm_modify_assigned_stations': 'main/playlists_modify_assigned_stations.html',
+        'plm_parent_stations': 'main/playlists_parent_stations.html',
+        'plm_manage': 'main/playlists_manage.html'
     }
 
     template = templates.get(sub_page, 'main/playlists.html')
@@ -4307,12 +2641,12 @@ def playlists_webpage(sub_page):
                     playlist_files = get_playlist_files()
 
     response = make_response(render_template(
-        #'main/playlists.html',
         template,
-        segment='playlists',
+        segment = sub_page,
         html_slm_version = slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_playlists_anchor_id = playlists_anchor_id,
         html_playlists = playlists,
         html_preferred_playlists = preferred_playlists,
@@ -4333,7 +2667,7 @@ def playlists_webpage(sub_page):
     response.headers['Expires'] = '-1'
 
     if playlists_anchor_id:
-        response.headers['Location'] = f'/playlists#{playlists_anchor_id}'
+        response.headers['Location'] = f'/playlists/{sub_page}#{playlists_anchor_id}'
 
     return response
 
@@ -4347,10 +2681,6 @@ def download_m3u_epg(filename):
 def download_uploads(filename):
     filename = os.path.join(playlists_uploads_dir_name, filename)
     return export_csv(filename)
-
-# Used to manage the potential of deleting all records
-def create_temp_record(fields):
-    return {field: None for field in fields}
 
 # Goes through each of the playlists and combines all m3us together into a single list
 def get_combined_m3us():
@@ -4378,24 +2708,6 @@ def get_combined_m3us():
             append_data(csv_playlistmanager_child_to_parent, new_row)
 
     print(f"\n{current_time()} Finished combination of playlists.")
-
-# Used to loop through a URL that might error
-def fetch_url(url, retries, delay):
-    timeout_duration = 60
-
-    for attempt in range(retries):
-        try:
-            response = requests.get(url, headers=url_headers, timeout=timeout_duration)
-            if response.status_code == 200:
-                return response
-            else:
-                raise Exception(f"HTTP Status Code {response.status_code}")
-        except Exception as e:
-            if attempt < retries - 1:
-                print(f"\n{current_time()} WARNING: For '{url}', encountered an error ({e}). Retrying in {delay} seconds...")
-                time.sleep(delay)
-            else:
-                notification_add(f"\n{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...")
 
 # Parse the m3u Playlist to get all the details
 def parse_m3u(m3u_id, m3u_name, response):
@@ -4578,6 +2890,11 @@ def get_child_to_parents():
                 for playlist in playlists:
                     if playlist['m3u_id'] == combined_m3u['m3u_id']:
                         child_to_parent_m3u_name = f"{playlist['m3u_name']} [{child_to_parent_channel_id}]"
+                        if playlist['m3u_active'] == "On":
+                            all_child_to_parents_append = True
+                        else:
+                            all_child_to_parents_append = None
+                        break
 
                 if combined_m3u['tvc_guide_description'] is not None and combined_m3u['tvc_guide_description'] != '':
                     child_to_parent_description = combined_m3u['tvc_guide_description']
@@ -4588,13 +2905,14 @@ def get_child_to_parents():
         
                 child_to_parent_parent_channel_id = child_to_parent['parent_channel_id']
 
-                all_child_to_parents.append({
-                    'channel_id': child_to_parent_channel_id,
-                    'title': child_to_parent_title,
-                    'm3u_name': child_to_parent_m3u_name,
-                    'description': child_to_parent_description,
-                    'parent_channel_id': child_to_parent_parent_channel_id
-                })
+                if all_child_to_parents_append:
+                    all_child_to_parents.append({
+                        'channel_id': child_to_parent_channel_id,
+                        'title': child_to_parent_title,
+                        'm3u_name': child_to_parent_m3u_name,
+                        'description': child_to_parent_description,
+                        'parent_channel_id': child_to_parent_parent_channel_id
+                    })
 
     # Create statistics
     total_records = len(all_child_to_parents)
@@ -4640,10 +2958,6 @@ def get_child_to_parents():
             })
 
     return unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count
-
-# Calculate percentages or set to zero if total_records is zero
-def calc_percentage(count, total):
-    return f"{round((count / total) * 100, 1)}%" if total > 0 else "0.0%"
 
 # Sets a child to a parent for a station
 def set_child_to_parent(child_m3u_id_channel_id, parent_channel_id):
@@ -4968,36 +3282,6 @@ def generate_m3u_content(data_list):
 
     return m3u_content
 
-# Processes the data list into multiple chunks and saves files
-def create_chunk_files(data_list, base_filename, extension, max):
-    for index, chunk in enumerate(split_list(data_list, max)):
-        if extension == "m3u":
-            content = generate_m3u_content(chunk)
-
-        filename = f"{base_filename}_{index+1:02d}.{extension}"
-
-        create_program_file(filename, content)
-
-# Splits a data list into chunks of a specified size
-def split_list(data_list, max):
-    for i in range(0, len(data_list), max):
-        yield data_list[i:i + max]
-
-# Create a file in the Program Files directory
-def create_program_file(filename, content):
-    file_path = full_path(filename)
-
-    try:
-        with open(file_path, 'w', encoding="utf-8") as file:
-            try:
-                file.write(content)
-                notification_add(f"    Created: {filename}")
-            except OSError as e:
-                notification_add(f"    Error creating file {filename}: {e}")
-
-    except FileNotFoundError as fnf_error:
-        notification_add(f"    Error with original path: {fnf_error}")
-
 # Wrapper for getting m3u and XML EPG files
 def get_playlist_files():
     extensions = ['m3u', 'xml']
@@ -5059,48 +3343,6 @@ def get_uploaded_playlist_files():
     
     playlist_files.sort()
     return playlist_files
-
-# Wrapper for searching for files with multiple extensions
-def get_all_prior_files(search_directory, extensions):
-    all_prior_files = []
-
-    for extension in extensions:
-        prior_files = search_directory_for_files_with_extensions(search_directory, extension)
-        for prior_file in prior_files:
-            all_prior_files.append({'filename': prior_file['filename'], 'extension': prior_file['extension']})
-
-    return all_prior_files
-
-# Finds files in a directory with a certain extension
-def search_directory_for_files_with_extensions(search_directory, base_extension):
-    result = []
-    seen_files = set()  # Track seen files to avoid duplicates
-
-    for file in os.listdir(search_directory):
-        if file.endswith(base_extension):
-            filename, extension = os.path.splitext(file)
-            if filename not in seen_files:
-                result.append({'filename': filename, 'extension': base_extension})
-                seen_files.add(filename)  # Mark file as seen
-
-    return result
-
-# Removes all rows in a file except the header
-def delete_all_rows_except_header(csv_file):
-    full_path_file = full_path(csv_file)
-    
-    # Ensure the file exists
-    if os.path.exists(full_path_file):
-        with open(full_path_file, "r", encoding="utf-8") as file:
-            reader = csv.reader(file)
-            header = next(reader)  # Read the header
-
-        with open(full_path_file, "w", newline="", encoding="utf-8") as file:
-            writer = csv.writer(file)
-            writer.writerow(header)  # Write the header back
-
-    else:
-        print(f"{current_time()} ERROR: File {csv_file} does not exist.")
 
 # Gets the XML EPG for each m3u that needs one
 def get_epgs_for_m3us():
@@ -5184,392 +3426,6 @@ def get_epgs_for_m3us():
 
     rename_files_suffix(program_files_dir, ".xml.tmp", ".xml")
 
-# Loops through all the files in a directory and changes one suffix to another
-def rename_files_suffix(directory, old_suffix, new_suffix):
-    for filename in os.listdir(directory):
-        if filename.endswith(old_suffix):
-            old_file = os.path.join(directory, filename)
-            new_filename = filename[:-len(old_suffix)] + new_suffix
-            new_file = os.path.join(directory, new_filename)
-            
-            os.rename(old_file, new_file)
-
-            notification_add(f"    Created: {new_filename}")
-
-# Reports / Queries webpage
-@app.route('/reports_queries', methods=['GET', 'POST'])
-def webpage_reports_queries():
-    global slm_query
-    global slm_query_name
-    slm_query_raw = []
-
-    if request.method == 'POST':
-        action = request.form['action']
-
-        if action == "reports_queries_cancel":
-            slm_query_raw = []
-            slm_query = None
-            slm_query_name = None
-
-        else:
-            slm_query_raw = run_query(action)
-
-            if action in [
-                            "query_currently_unavailable",
-                            "query_previously_watched"
-                         ]:
-                slm_query_raw = sorted(slm_query_raw, key=lambda x: (x["Type"], sort_key(x["Name"].casefold())))
-
-                if action == "query_currently_unavailable":
-                    slm_query_name = "Currently Unavailable"
-                elif action == "query_previously_watched":
-                    slm_query_name = "Previously Watched"
-                
-                
-            elif action in [
-                                "query_plm_parent_children"
-                           ]:
-                
-                if action == "query_plm_parent_children":
-                    slm_query_name = "Stations: Parents and Children"
-
-            slm_query = view_csv(slm_query_raw, "library")
-
-    return render_template(
-        'main/reports_queries.html',
-        segment='reports_queries',
-        html_slm_version=slm_version,
-        html_slm_playlist_manager = slm_playlist_manager,
-        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
-        html_slm_query = slm_query,
-        html_slm_query_name = slm_query_name
-    )
-
-# Run a SQL-like Query
-def run_query(query_name):
-    run_query = None
-
-    bookmarks_data = read_data(csv_bookmarks)
-    bookmarks_status_data = read_data(csv_bookmarks_status)
-    settings_data = read_data(csv_settings)
-    slmappings_data = read_data(csv_slmappings)
-    streaming_services_data = read_data(csv_streaming_services)
-    plm_child_to_parent_maps_data = read_data(csv_playlistmanager_child_to_parent)
-    plm_all_stations_data = read_data(csv_playlistmanager_combined_m3us)
-    plm_parents_data = read_data(csv_playlistmanager_parents)
-    plm_playlists_data = read_data(csv_playlistmanager_playlists)
-
-    # Convert the data into pandas DataFrames
-    bookmarks = pd.DataFrame(bookmarks_data)
-    bookmarks_status = pd.DataFrame(bookmarks_status_data)
-    settings = pd.DataFrame(settings_data)
-    slmappings = pd.DataFrame(slmappings_data)
-    streaming_services = pd.DataFrame(streaming_services_data)
-    plm_child_to_parent_maps = pd.DataFrame(plm_child_to_parent_maps_data)
-    plm_all_stations = pd.DataFrame(plm_all_stations_data)
-    plm_parents = pd.DataFrame(plm_parents_data)
-    plm_playlists = pd.DataFrame(plm_playlists_data)
-
-    if query_name in [
-                        'query_currently_unavailable',
-                        'query_previously_watched'
-                     ]:
-
-        if bookmarks.empty or bookmarks_status.empty:
-            results = []
-
-        else:
-
-            run_query = True
-
-            if query_name == 'query_currently_unavailable':
-                # Add a new column for the season using string slicing
-                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
-
-                query = """
-                SELECT 
-                    bookmarks.object_type AS "Type", 
-                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
-                    bookmarks_status.Season, 
-                    CASE 
-                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
-                        ELSE ''
-                    END AS "# Episodes"
-                FROM 
-                    bookmarks 
-                INNER JOIN 
-                    bookmarks_status 
-                ON 
-                    bookmarks.entry_id = bookmarks_status.entry_id
-                WHERE 
-                    bookmarks_status.status = 'unwatched' 
-                    AND bookmarks_status.stream_link_file = ''
-                GROUP BY 
-                    bookmarks.object_type, 
-                    bookmarks.title || " (" || bookmarks.release_year || ")", 
-                    bookmarks_status.Season
-                ORDER BY 
-                    bookmarks.object_type, 
-                    bookmarks.title || " (" || bookmarks.release_year || ")"
-                """
-
-            elif query_name == 'query_previously_watched':
-                # Add a new column for the season using string slicing
-                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
-
-                query = """
-                SELECT 
-                    bookmarks.object_type AS "Type", 
-                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
-                    bookmarks_status.Season, 
-                    CASE 
-                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
-                        ELSE ''
-                    END AS "# Episodes"
-                FROM 
-                    bookmarks 
-                INNER JOIN 
-                    bookmarks_status 
-                ON 
-                    bookmarks.entry_id = bookmarks_status.entry_id
-                WHERE 
-                    bookmarks_status.status = 'watched'
-                GROUP BY 
-                    bookmarks.object_type, 
-                    bookmarks.title || " (" || bookmarks.release_year || ")", 
-                    bookmarks_status.Season
-                ORDER BY 
-                    bookmarks.object_type, 
-                    bookmarks.title || " (" || bookmarks.release_year || ")"
-                """
-
-    elif query_name in [
-                            'query_plm_parent_children'
-                       ]:
-
-        if plm_playlists.empty or plm_all_stations.empty or plm_parents.empty:
-            results = []
-
-        else:
-
-            run_query = True
-
-            if query_name == 'query_plm_parent_children':
-
-                query = """
-                SELECT
-                    CASE
-                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN plm_child_to_parent_maps.parent_channel_id
-                        ELSE plm_parents.parent_title
-                    END AS "Parent Station",
-                    plm_all_stations.station_playlist AS "Child Station",
-                    COALESCE(plm_parents.parent_tvc_guide_stationid_override, '') AS "Gracenote ID (Override)",
-                    COALESCE(plm_all_stations.tvc_guide_stationid, '') AS "Gracenote ID (Imported)"
-                FROM plm_child_to_parent_maps
-                LEFT JOIN plm_parents ON plm_child_to_parent_maps.parent_channel_id = plm_parents.parent_channel_id
-                LEFT JOIN plm_all_stations ON plm_child_to_parent_maps.child_m3u_id_channel_id = plm_all_stations.m3u_id || '_' || plm_all_stations.channel_id
-                LEFT JOIN plm_playlists ON plm_all_stations.m3u_id = plm_playlists.m3u_id
-                WHERE plm_all_stations.station_playlist IS NOT NULL
-                ORDER BY
-                    CASE
-                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN 2
-                        ELSE 1
-                    END,
-                    "Parent Station",
-                    CASE
-                        WHEN plm_parents.parent_preferred_playlist IS NOT NULL AND plm_parents.parent_preferred_playlist != '' THEN 
-                            CASE 
-                                WHEN plm_all_stations.m3u_id = plm_parents.parent_preferred_playlist THEN 0
-                                ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
-                            END
-                        ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
-                    END,
-                    "Child Station"
-                """
-
-    # Execute the query
-    if run_query:
-        results = psql.sqldf(query, locals()).to_dict(orient='records')
-
-    return results
-
-# Files webpage
-@app.route('/files', methods=['GET', 'POST'])
-def webpage_files():
-    global select_file_prior
-
-    table_html = None
-    replace_message = None
-
-    file_lists = [
-        {'file_name': 'Settings', 'file': csv_settings }
-    ]
-
-    stream_link_file_manager_file_lists = [
-        {'file_name': 'Streaming Services', 'file': csv_streaming_services },
-        {'file_name': 'Stream Link Mappings', 'file': csv_slmappings },
-        {'file_name': 'Bookmarks', 'file': csv_bookmarks },
-        {'file_name': 'Bookmarks Statuses', 'file': csv_bookmarks_status }
-    ]
-
-    plm_file_lists = [
-        {'file_name': 'Playlists', 'file': csv_playlistmanager_playlists },
-        {'file_name': 'Parent Station', 'file': csv_playlistmanager_parents },
-        {'file_name': 'Child to Parent Station Map', 'file': csv_playlistmanager_child_to_parent },
-        {'file_name': 'All Stations', 'file': csv_playlistmanager_combined_m3us }
-    ]
-
-    if slm_stream_link_file_manager:
-        for stream_link_file_manager_file_list in stream_link_file_manager_file_lists:
-            file_lists.append({'file_name': stream_link_file_manager_file_list['file_name'], 'file': stream_link_file_manager_file_list['file']})
-
-    if slm_playlist_manager:
-        for plm_file_list in plm_file_lists:
-            file_lists.append({'file_name': plm_file_list['file_name'], 'file': plm_file_list['file']})
-
-    if request.method == 'POST':
-        action = request.form['action']
-
-        select_file_input = request.form.get('select_file')
-        select_file_prior = select_file_input
-        select_file_input_csv = None
-        for file_list in file_lists:
-            if file_list['file_name'] == select_file_input:
-                select_file_input_csv = file_list['file']
-                break
-
-        if action == 'view_file':
-            table_html = view_csv(select_file_input_csv, "csv")
-        elif action == 'export_file':
-            return export_csv(select_file_input_csv)
-        elif action == 'replace_file':
-            replace_message = replace_csv(select_file_input_csv, 'file_file')
-
-    return render_template(
-        'main/files.html',
-        segment='files',
-        html_slm_version=slm_version,
-        html_slm_playlist_manager = slm_playlist_manager,
-        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
-        table_html=table_html,
-        replace_message=replace_message,
-        html_file_lists = file_lists,
-        html_select_file_prior = select_file_prior
-    )
-
-# Makes CSV file able to be viewable in HTML
-def view_csv(csv_file, type):
-    if type == "csv":
-        data = read_data(csv_file)
-    elif type == "library":
-        data = csv_file
-
-    if data is None:
-        return "Error reading data"
-    
-    if not data:
-        return "No Data"
-    
-    headers = data[0].keys()
-    table_html = '<thead><tr>'
-    for header in headers:
-        table_html += f'<th>{header}<br><input type="text" class="filter-input" placeholder="Filter {header}"></th>'
-    table_html += '</tr></thead><tbody>'
-    
-    for row in data:
-        table_html += '<tr>'
-        for header in headers:
-            table_html += f'<td>{row[header]}</td>'
-        table_html += '</tr>'
-    
-    table_html += '</tbody>'
-    
-    return render_template_string(table_html)
-
-# Exports a CSV file to the user's local disk
-def export_csv(csv_file):
-    return send_file(full_path(csv_file), as_attachment=True)
-
-# Imports a file as a replacement
-def replace_csv(csv_file, file_key):
-    replace_message = None
-    temp_upload = "temp_upload.csv"
-
-    if file_key not in request.files:
-        replace_message = "No file part"
- 
-    else:
-        file = request.files[file_key]
-
-        if file:
-            file.save(full_path(temp_upload))
-            os.replace(full_path(temp_upload), full_path(csv_file))
-            replace_message = "File replaced successfully"
-
-        else:
-            replace_message = "No selected file"
-
-    return replace_message
-
-# Log file webpage
-@app.route('/logs', methods=['GET', 'POST'])
-def webpage_logs():
-    lines_per_page = 10000
-
-    # Read the file and get the total number of lines
-    with open(log_filename_fullpath, 'r', encoding="utf-8", errors='ignore') as file:
-        lines = [line.rstrip('\n') for line in file]
-    total_lines = len(lines)
-    total_pages = (total_lines - 1) // lines_per_page + 1
-
-    # Determine the current page
-    if request.method == 'POST':
-        page = int(request.form.get('page', 1))
-    else:
-        page = int(request.args.get('page', total_pages))
-
-    action = request.form.get('action')
-
-    if action == 'first':
-        page = 1
-    elif action == 'previous':
-        page = max(1, page - 1)
-    elif action == 'next':
-        page = min(total_pages, page + 1)
-    elif action == 'last':
-        page = total_pages
-    elif action == 'go':
-        try:
-            go_page = int(request.form.get('go_page'))
-            page = max(1, min(total_pages, go_page))
-        except (ValueError, TypeError):
-            pass  # Ignore invalid input
-
-    # Recalculate the start and end indices for the current page
-    start_idx = (page - 1) * lines_per_page
-    end_idx = start_idx + lines_per_page
-
-    # Get the lines for the current page
-    page_lines = lines[start_idx:end_idx]
-
-    # Determine if there are previous or next pages
-    has_previous = start_idx > 0
-    has_next = end_idx < total_lines
-
-    return render_template(
-        'main/logs.html',
-        segment='logs',
-        html_slm_version=slm_version,
-        html_slm_playlist_manager = slm_playlist_manager,
-        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
-        html_log_filename_fullpath=log_filename_fullpath,
-        html_page_lines=page_lines,
-        html_page=page,
-        html_has_previous=has_previous,
-        html_has_next=has_next,
-        total_pages=total_pages
-    )
-
 # Run Processes Webpage
 @app.route('/runprocess', methods=['GET', 'POST'])
 def webpage_runprocess():
@@ -5598,7 +3454,8 @@ def webpage_runprocess():
         segment = 'runprocess',
         html_slm_version = slm_version,
         html_slm_playlist_manager = slm_playlist_manager,
-        html_slm_stream_link_file_manager = slm_stream_link_file_manager
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration
     )
 
 # Create a continous stream of the log file
@@ -5614,6 +3471,73 @@ def stream_log():
                     continue
                 yield f"data:{line}\n\n"
     return Response(generate(), mimetype='text/event-stream')
+
+# Create a backup of program files and remove old backups
+def create_backup():
+    src_dir = program_files_dir
+    dst_dir = backup_dir
+    
+    # Determine the max number of backups to keep
+    max_backups = 3
+    try:
+        if os.path.exists(full_path(csv_settings)):
+            settings = read_data(csv_settings)
+            if len(settings) > 22:
+                max_backups = int(settings[22]["settings"])
+    except (FileNotFoundError, KeyError, IndexError) as e:
+        pass
+
+    # Copy the contents of src_dir to the backup subdirectory
+    timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    backup_subdir = os.path.join(dst_dir, timestamp)
+    os.makedirs(backup_subdir, exist_ok=True)
+    for item in os.listdir(src_dir):
+        src_item = os.path.join(src_dir, item)
+        if os.path.isfile(src_item):
+            shutil.copy2(src_item, backup_subdir)
+
+    # Clean up old backups if there are more than max_backups
+    backups = sorted(os.listdir(dst_dir))
+    if len(backups) > max_backups:
+        oldest_backups = backups[:len(backups) - max_backups]
+        for old_backup in oldest_backups:
+            shutil.rmtree(os.path.join(dst_dir, old_backup))
+
+# SLM: End-to-End Update Process
+def end_to_end():
+    print("\n==========================================================")
+    print("|                                                        |")
+    print("|             SLM: End-to-End Update Process             |")
+    print("|                                                        |")
+    print("==========================================================")
+
+    notification_add(f"\n{current_time()} Beginning SLM end-to-end update process...\n")
+
+    start_time = time.time()
+
+    update_streaming_services()
+    time.sleep(2)
+    get_new_episodes(None)
+    time.sleep(2)
+    if slm_channels_dvr_integration:
+        import_program_updates()
+        time.sleep(2)
+    generate_stream_links()
+    time.sleep(2)
+    if slm_channels_dvr_integration:
+        prune_scan_channels()
+        time.sleep(2)
+
+    end_time = time.time()
+
+    elapsed_seconds = end_time - start_time
+
+    hours, remainder = divmod(elapsed_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    notification_add(f"\n{current_time()} Total Elapsed Time: {int(hours)} hours | {int(minutes)} minutes | {int(seconds)} seconds")
+
+    notification_add(f"\n{current_time()} SLM End-to-end update process complete\n")
 
 # Check for new episodes
 def get_new_episodes(entry_id_filter):
@@ -5638,7 +3562,6 @@ def get_new_episodes(entry_id_filter):
             show_bookmark for show_bookmark in show_bookmarks
             if show_bookmark['entry_id'] == entry_id_filter
         ]
-
 
     episodes = read_data(csv_bookmarks_status)
 
@@ -7398,7 +5321,7 @@ def generate_stream_links():
 
     run_generation = None
 
-    if not os.path.exists(channels_directory):
+    if slm_channels_dvr_integration and not os.path.exists(channels_directory):
         notification_add(f"\n{current_time()} WARNING: {channels_directory} does not exist, skipping generation. Please change the Channels directory in the Settings menu.\n")
     else:
         run_generation = True
@@ -7410,15 +5333,45 @@ def generate_stream_links():
         find_stream_links(auto_bookmarks)
         print(f"\n{current_time()} Finished getting Stream Links.")
 
-        print(f"\n{current_time()} Checking for changes from last run...\n")
-        get_stream_link_ids()
-        print(f"\n{current_time()} Finished checking for changes from last run.\n")
+        if slm_channels_dvr_integration:
+            print(f"\n{current_time()} Checking for changes from last run...\n")
+            get_stream_link_ids()
+            print(f"\n{current_time()} Finished checking for changes from last run.\n")
 
-        print(f"\n{current_time()} Creating and removing Stream Link files and directories...\n")
-        create_stream_link_files(bookmarks, True)
-        print(f"\n{current_time()} Finished creating and removing Stream Link files and directories.")
+            print(f"\n{current_time()} Creating and removing Stream Link files and directories...\n")
+            create_stream_link_files(bookmarks, True)
+            print(f"\n{current_time()} Finished creating and removing Stream Link files and directories.")
 
         print(f"\n{current_time()} END: Finished Generating Stream Links.\n")
+
+# Run Stream Link Generation and File Creation on one program
+def generate_stream_links_single(entry_id):
+    settings = read_data(csv_settings)
+    channels_directory = settings[1]["settings"]
+
+    bookmarks = read_data(csv_bookmarks)
+    modify_bookmarks = [bookmark for bookmark in bookmarks if bookmark['entry_id'] == entry_id]
+
+    generate_stream_links_single_message = None
+    run_generation = None
+
+    if slm_channels_dvr_integration and not os.path.exists(channels_directory):
+        generate_stream_links_single_message = f"{current_time()} WARNING: {channels_directory} does not exist, skipping generation. Please change the Channels directory in the Settings menu."
+    else:
+        run_generation = True
+        
+    if run_generation:
+        if not entry_id.startswith('slm'):
+            find_stream_links(modify_bookmarks)
+
+        if slm_channels_dvr_integration:
+            create_stream_link_files(modify_bookmarks, None)
+            generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links! Please execute process 'Run Updates in Channels' in order to see this program."
+        else:
+            generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links! Please use 'Modify Programs' to see values."
+
+
+    return generate_stream_links_single_message
 
 # Get the valid Stream Links (if available) and write to the appropriate table
 def find_stream_links(auto_bookmarks):
@@ -7432,6 +5385,11 @@ def find_stream_links(auto_bookmarks):
 
                 stream_link_dirty = None
                 stream_link_reason = None
+
+                if slm_channels_dvr_integration:
+                    pass
+                else:
+                    bookmarks_status['stream_link_file'] = ''
         
                 if bookmarks_status['status'].lower() == "unwatched":
 
@@ -7892,118 +5850,6 @@ def create_stream_link_files(base_bookmarks, remove_choice):
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
-# Get the path for Movies and TV Shows
-def get_movie_tv_path():
-    settings = read_data(csv_settings)
-    channels_path = settings[1]["settings"]
-
-    movie_path = os.path.join(channels_path, "Imports", "Movies", "slm")
-    tv_path = os.path.join(channels_path, "Imports", "TV", "slm")
-
-    return movie_path, tv_path
-
-# Remove rogue files and empty directories
-def remove_rogue_empty(movie_path, tv_path, bookmarks_statuses):
-    all_files = []
-    for path in [movie_path, tv_path]:
-        for dirpath, dirnames, filenames in os.walk(path):
-            all_files.extend([normalize_path(os.path.join(dirpath, filename)) for filename in filenames])
-
-    slm_files = []
-    for bookmark_status in bookmarks_statuses:
-        if bookmark_status['stream_link_file']:
-            slm_files.append(normalize_path(bookmark_status['stream_link_file']))
-
-    rogue_files = [file_path for file_path in all_files if file_path not in slm_files]
-
-    for rogue_file in rogue_files:
-        try:
-            os.remove(rogue_file)
-            notification_add(f"    Deleted Rogue File: {rogue_file}")
-        except OSError as e:
-            notification_add(f"    Error removing Rogue File {rogue_file}: {e}")
-
-    # Remove empty directories
-    directory_delete(tv_path)
-
-# Remove invalid characters (e.g., colons, slashes, etc.)
-def sanitize_name(name):
-    sanitized = re.sub(r'[\\/:*?"<>|]', '', name)
-    return sanitized
-
-# Create Stream Link file
-def create_file(path, name, url, special_action):
-    file_path = get_file_path(path, name, special_action)
-    file_path = normalize_path(file_path)
-    file_path_return = None
-
-    try:
-        with open(file_path, 'w', encoding="utf-8") as file:
-            try:
-                file.write(url)
-                print(f"    Created: {file_path}")
-                file_path_return = file_path
-            except OSError as e:
-                print(f"    Error creating file {file_path}: {e}")
-
-    except FileNotFoundError as fnf_error:
-        print(f"    Error with original path: {fnf_error}")
-
-    return file_path_return
-
-# Delete Stream Link file if it exists
-def file_delete(path, name, special_action):
-    file_path = get_file_path(path, name, special_action)
-    file_path = normalize_path(file_path)
-
-    try:
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                if special_action in ['m3u', 'xml']:
-                    notification_add(f"    Deleted: {name}.{special_action}")
-                else:
-                    notification_add(f"    Deleted: {file_path}")
-        except OSError as e:
-            notification_add(f"    Error removing file {file_path}: {e}")
-    except FileNotFoundError as fnf_error:
-        print(f"    Error removing file: {fnf_error}")
-
-# Get complete file path and name
-def get_file_path(path, name, special_action):
-    file_name_base = f"{name}"
-
-    if special_action == "Make STRM":
-        file_name_extension = "strm"
-    elif special_action in ['m3u', 'xml']:
-        file_name_extension = special_action
-    else:
-        file_name_extension = "strmlnk"
-
-    file_name = f"{file_name_base}.{file_name_extension}"
-    file_path = os.path.join(path, file_name)
-    file_path = normalize_path(file_path)
-    return file_path
-
-# Remove empty subdirectories without prompting
-def directory_delete(base_directory):
-    for root, dirs, _ in os.walk(base_directory, topdown=False):
-        for dir_name in dirs:
-            dir_path = os.path.join(root, dir_name)
-            try:
-                if not os.listdir(dir_path):
-                    os.rmdir(dir_path)
-                    notification_add(f"    Removed empty directory: {dir_path}")
-            except OSError as e:
-                print(f"    Error removing directory {dir_path}: {e}")
-                print(f"    Attempting to remove via read-only handle...")
-                try:
-                    os.chmod(dir_path, stat.S_IWRITE)  # Mark the folder as writable
-                    os.rmdir(dir_path)
-                    notification_add(f"    On second attempt, removed empty directory: {dir_path}")
-                except OSError as e:
-                    notification_add(f"    Second error removing directory {dir_path}: {e}")
-
 # Runs a prune/scan in Channels
 def prune_scan_channels():
     print("\n==========================================================")
@@ -8077,39 +5923,989 @@ async def send_reprocess_requests(reprocess_session, reprocess_url):
     except asyncio.TimeoutError:
         notification_add(f"\n{current_time()} ERROR: Request for {reprocess_url} timed out.")
 
-# End-to-End Update Process
-def end_to_end():
-    print("\n==========================================================")
-    print("|                                                        |")
-    print("|             SLM: End-to-End Update Process             |")
-    print("|                                                        |")
-    print("==========================================================")
+# Reports / Queries webpage
+@app.route('/reports_queries', methods=['GET', 'POST'])
+def webpage_reports_queries():
+    global slm_query
+    global slm_query_name
+    slm_query_raw = []
 
-    notification_add(f"\n{current_time()} Beginning SLM end-to-end update process...\n")
+    if request.method == 'POST':
+        action = request.form['action']
 
-    start_time = time.time()
+        if action == "reports_queries_cancel":
+            slm_query_raw = []
+            slm_query = None
+            slm_query_name = None
 
-    update_streaming_services()
-    time.sleep(2)
-    get_new_episodes(None)
-    time.sleep(2)
-    import_program_updates()
-    time.sleep(2)
-    generate_stream_links()
-    time.sleep(2)
-    prune_scan_channels()
-    time.sleep(2)
+        else:
+            slm_query_raw = run_query(action)
 
-    end_time = time.time()
+            if action in [
+                            "query_currently_unavailable",
+                            "query_previously_watched"
+                         ]:
+                slm_query_raw = sorted(slm_query_raw, key=lambda x: (x["Type"], sort_key(x["Name"].casefold())))
 
-    elapsed_seconds = end_time - start_time
+                if action == "query_currently_unavailable":
+                    slm_query_name = "Currently Unavailable"
+                elif action == "query_previously_watched":
+                    slm_query_name = "Previously Watched"
+                
+                
+            elif action in [
+                                "query_plm_parent_children"
+                           ]:
+                
+                if action == "query_plm_parent_children":
+                    slm_query_name = "Stations: Parents and Children"
 
-    hours, remainder = divmod(elapsed_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
+            slm_query = view_csv(slm_query_raw, "library")
 
-    notification_add(f"\n{current_time()} Total Elapsed Time: {int(hours)} hours | {int(minutes)} minutes | {int(seconds)} seconds")
+    return render_template(
+        'main/reports_queries.html',
+        segment='reports_queries',
+        html_slm_version=slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_query = slm_query,
+        html_slm_query_name = slm_query_name
+    )
 
-    notification_add(f"\n{current_time()} SLM End-to-end update process complete\n")
+# Run a SQL-like Query
+def run_query(query_name):
+    run_query = None
+
+    bookmarks_data = read_data(csv_bookmarks)
+    bookmarks_status_data = read_data(csv_bookmarks_status)
+    settings_data = read_data(csv_settings)
+    slmappings_data = read_data(csv_slmappings)
+    streaming_services_data = read_data(csv_streaming_services)
+    plm_child_to_parent_maps_data = read_data(csv_playlistmanager_child_to_parent)
+    plm_all_stations_data = read_data(csv_playlistmanager_combined_m3us)
+    plm_parents_data = read_data(csv_playlistmanager_parents)
+    plm_playlists_data = read_data(csv_playlistmanager_playlists)
+
+    # Convert the data into pandas DataFrames
+    bookmarks = pd.DataFrame(bookmarks_data)
+    bookmarks_status = pd.DataFrame(bookmarks_status_data)
+    settings = pd.DataFrame(settings_data)
+    slmappings = pd.DataFrame(slmappings_data)
+    streaming_services = pd.DataFrame(streaming_services_data)
+    plm_child_to_parent_maps = pd.DataFrame(plm_child_to_parent_maps_data)
+    plm_all_stations = pd.DataFrame(plm_all_stations_data)
+    plm_parents = pd.DataFrame(plm_parents_data)
+    plm_playlists = pd.DataFrame(plm_playlists_data)
+
+    if query_name in [
+                        'query_currently_unavailable',
+                        'query_previously_watched'
+                     ]:
+
+        if bookmarks.empty or bookmarks_status.empty:
+            results = []
+
+        else:
+
+            run_query = True
+
+            if query_name == 'query_currently_unavailable':
+                # Add a new column for the season using string slicing
+                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
+
+                query = """
+                SELECT 
+                    bookmarks.object_type AS "Type", 
+                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
+                    bookmarks_status.Season, 
+                    CASE 
+                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                        ELSE ''
+                    END AS "# Episodes"
+                FROM 
+                    bookmarks 
+                INNER JOIN 
+                    bookmarks_status 
+                ON 
+                    bookmarks.entry_id = bookmarks_status.entry_id
+                WHERE 
+                    bookmarks_status.status = 'unwatched' 
+                    AND bookmarks_status.stream_link_file = ''
+                GROUP BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")", 
+                    bookmarks_status.Season
+                ORDER BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")"
+                """
+
+            elif query_name == 'query_previously_watched':
+                # Add a new column for the season using string slicing
+                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
+
+                query = """
+                SELECT 
+                    bookmarks.object_type AS "Type", 
+                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
+                    bookmarks_status.Season, 
+                    CASE 
+                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                        ELSE ''
+                    END AS "# Episodes"
+                FROM 
+                    bookmarks 
+                INNER JOIN 
+                    bookmarks_status 
+                ON 
+                    bookmarks.entry_id = bookmarks_status.entry_id
+                WHERE 
+                    bookmarks_status.status = 'watched'
+                GROUP BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")", 
+                    bookmarks_status.Season
+                ORDER BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")"
+                """
+
+    elif query_name in [
+                            'query_plm_parent_children'
+                       ]:
+
+        if plm_playlists.empty or plm_all_stations.empty or plm_parents.empty:
+            results = []
+
+        else:
+
+            run_query = True
+
+            if query_name == 'query_plm_parent_children':
+
+                query = """
+                SELECT
+                    CASE
+                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN plm_child_to_parent_maps.parent_channel_id
+                        ELSE plm_parents.parent_title
+                    END AS "Parent Station",
+                    plm_all_stations.station_playlist AS "Child Station",
+                    COALESCE(plm_parents.parent_tvc_guide_stationid_override, '') AS "Gracenote ID (Override)",
+                    COALESCE(plm_all_stations.tvc_guide_stationid, '') AS "Gracenote ID (Imported)"
+                FROM plm_child_to_parent_maps
+                LEFT JOIN plm_parents ON plm_child_to_parent_maps.parent_channel_id = plm_parents.parent_channel_id
+                LEFT JOIN plm_all_stations ON plm_child_to_parent_maps.child_m3u_id_channel_id = plm_all_stations.m3u_id || '_' || plm_all_stations.channel_id
+                LEFT JOIN plm_playlists ON plm_all_stations.m3u_id = plm_playlists.m3u_id
+                WHERE plm_all_stations.station_playlist IS NOT NULL
+                ORDER BY
+                    CASE
+                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN 2
+                        ELSE 1
+                    END,
+                    "Parent Station",
+                    CASE
+                        WHEN plm_parents.parent_preferred_playlist IS NOT NULL AND plm_parents.parent_preferred_playlist != '' THEN 
+                            CASE 
+                                WHEN plm_all_stations.m3u_id = plm_parents.parent_preferred_playlist THEN 0
+                                ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
+                            END
+                        ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
+                    END,
+                    "Child Station"
+                """
+
+    # Execute the query
+    if run_query:
+        results = psql.sqldf(query, locals()).to_dict(orient='records')
+
+    return results
+
+# Files webpage
+@app.route('/files', methods=['GET', 'POST'])
+def webpage_files():
+    global select_file_prior
+
+    table_html = None
+    replace_message = None
+
+    file_lists = [
+        {'file_name': 'Settings', 'file': csv_settings }
+    ]
+
+    stream_link_file_manager_file_lists = [
+        {'file_name': 'Streaming Services', 'file': csv_streaming_services },
+        {'file_name': 'Stream Link Mappings', 'file': csv_slmappings },
+        {'file_name': 'Bookmarks', 'file': csv_bookmarks },
+        {'file_name': 'Bookmarks Statuses', 'file': csv_bookmarks_status }
+    ]
+
+    plm_file_lists = [
+        {'file_name': 'Playlists', 'file': csv_playlistmanager_playlists },
+        {'file_name': 'Parent Station', 'file': csv_playlistmanager_parents },
+        {'file_name': 'Child to Parent Station Map', 'file': csv_playlistmanager_child_to_parent },
+        {'file_name': 'All Stations', 'file': csv_playlistmanager_combined_m3us }
+    ]
+
+    if slm_stream_link_file_manager:
+        for stream_link_file_manager_file_list in stream_link_file_manager_file_lists:
+            file_lists.append({'file_name': stream_link_file_manager_file_list['file_name'], 'file': stream_link_file_manager_file_list['file']})
+
+    if slm_playlist_manager:
+        for plm_file_list in plm_file_lists:
+            file_lists.append({'file_name': plm_file_list['file_name'], 'file': plm_file_list['file']})
+
+    if request.method == 'POST':
+        action = request.form['action']
+
+        select_file_input = request.form.get('select_file')
+        select_file_prior = select_file_input
+        select_file_input_csv = None
+        for file_list in file_lists:
+            if file_list['file_name'] == select_file_input:
+                select_file_input_csv = file_list['file']
+                break
+
+        if action == 'view_file':
+            table_html = view_csv(select_file_input_csv, "csv")
+        elif action == 'export_file':
+            return export_csv(select_file_input_csv)
+        elif action == 'replace_file':
+            replace_message = replace_csv(select_file_input_csv, 'file_file')
+
+    return render_template(
+        'main/files.html',
+        segment='files',
+        html_slm_version=slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        table_html=table_html,
+        replace_message=replace_message,
+        html_file_lists = file_lists,
+        html_select_file_prior = select_file_prior
+    )
+
+# Makes CSV file able to be viewable in HTML
+def view_csv(csv_file, type):
+    if type == "csv":
+        data = read_data(csv_file)
+    elif type == "library":
+        data = csv_file
+
+    if data is None:
+        return "Error reading data"
+    
+    if not data:
+        return "No Data"
+    
+    headers = data[0].keys()
+    table_html = '<thead><tr>'
+    for header in headers:
+        table_html += f'<th>{header}<br><input type="text" class="filter-input" placeholder="Filter {header}"></th>'
+    table_html += '</tr></thead><tbody>'
+    
+    for row in data:
+        table_html += '<tr>'
+        for header in headers:
+            table_html += f'<td>{row[header]}</td>'
+        table_html += '</tr>'
+    
+    table_html += '</tbody>'
+    
+    return render_template_string(table_html)
+
+# Exports a CSV file to the user's local disk
+def export_csv(csv_file):
+    return send_file(full_path(csv_file), as_attachment=True)
+
+# Imports a file as a replacement
+def replace_csv(csv_file, file_key):
+    replace_message = None
+    temp_upload = "temp_upload.csv"
+
+    if file_key not in request.files:
+        replace_message = "No file part"
+ 
+    else:
+        file = request.files[file_key]
+
+        if file:
+            file.save(full_path(temp_upload))
+            os.replace(full_path(temp_upload), full_path(csv_file))
+            replace_message = "File replaced successfully"
+
+        else:
+            replace_message = "No selected file"
+
+    return replace_message
+
+# Log file webpage
+@app.route('/logs', methods=['GET', 'POST'])
+def webpage_logs():
+    lines_per_page = 10000
+
+    # Read the file and get the total number of lines
+    with open(log_filename_fullpath, 'r', encoding="utf-8", errors='ignore') as file:
+        lines = [line.rstrip('\n') for line in file]
+    total_lines = len(lines)
+    total_pages = (total_lines - 1) // lines_per_page + 1
+
+    # Determine the current page
+    if request.method == 'POST':
+        page = int(request.form.get('page', 1))
+    else:
+        page = int(request.args.get('page', total_pages))
+
+    action = request.form.get('action')
+
+    if action == 'first':
+        page = 1
+    elif action == 'previous':
+        page = max(1, page - 1)
+    elif action == 'next':
+        page = min(total_pages, page + 1)
+    elif action == 'last':
+        page = total_pages
+    elif action == 'go':
+        try:
+            go_page = int(request.form.get('go_page'))
+            page = max(1, min(total_pages, go_page))
+        except (ValueError, TypeError):
+            pass  # Ignore invalid input
+
+    # Recalculate the start and end indices for the current page
+    start_idx = (page - 1) * lines_per_page
+    end_idx = start_idx + lines_per_page
+
+    # Get the lines for the current page
+    page_lines = lines[start_idx:end_idx]
+
+    # Determine if there are previous or next pages
+    has_previous = start_idx > 0
+    has_next = end_idx < total_lines
+
+    return render_template(
+        'main/logs.html',
+        segment='logs',
+        html_slm_version=slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_log_filename_fullpath=log_filename_fullpath,
+        html_page_lines=page_lines,
+        html_page=page,
+        html_has_previous=has_previous,
+        html_has_next=has_next,
+        total_pages=total_pages
+    )
+
+# Settings webpage and actions
+@app.route('/settings', methods=['GET', 'POST'])
+def webpage_settings():
+    global channels_url_prior
+    global slm_playlist_manager
+    global slm_stream_link_file_manager
+    global slm_channels_dvr_integration
+    settings_anchor_id = None
+    run_empty_row = None
+
+    settings = read_data(csv_settings)
+    channels_url = settings[0]["settings"]
+    channels_directory = settings[1]["settings"]
+    if channels_url_prior is None or channels_url_prior == '':
+        channels_url_prior = channels_url
+    country_code = settings[2]["settings"]
+    language_code = settings[3]["settings"]
+    num_results = settings[4]["settings"]
+    hide_bookmarked = settings[9]["settings"]
+    gen_backup_schedule = settings[19]["settings"]
+    gen_backup_schedule_time = settings[20]["settings"]
+    gen_backup_schedule_frequency = settings[21]["settings"]
+    gen_backup_max_backups = settings[22]["settings"]
+    try:
+        auto_update_schedule = settings[8]["settings"]
+    except (IndexError, KeyError):
+        auto_update_schedule = 'Off'
+    auto_update_schedule_time = settings[6]["settings"]
+    auto_update_schedule_frequency = settings[18]["settings"]
+    plm_update_stations_schedule = settings[13]["settings"]
+    plm_update_stations_schedule_time = settings[14]["settings"]
+    plm_update_m3us_epgs_schedule = settings[15]["settings"]
+    plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
+    plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
+    channels_prune = settings[7]["settings"]
+    station_start_number = settings[11]['settings']
+    max_stations = settings[12]['settings']
+
+    streaming_services = read_data(csv_streaming_services)
+
+    slmappings = read_data(csv_slmappings)
+    slmappings_object_type = [
+        "MOVIE or SHOW",
+        "MOVIE",
+        "SHOW"
+    ]
+    slmappings_replace_type = [
+        "Replace string with...",
+        "Replace entire Stream Link with..."
+    ]
+
+    channels_url_message = ""
+    channels_directory_message = ""
+    search_defaults_message = ""
+    advanced_experimental_message = ""
+    scheduler_message = ""
+
+    action_to_anchor = {
+        'streaming_services': 'streaming_services_anchor',
+        'search_defaults': 'search_defaults_anchor',
+        'slmapping': 'slmapping_anchor',
+        'gen_backup_process': 'scheduler_anchor',
+        'end_to_end_process': 'scheduler_anchor',
+        'plm_update_stations_process': 'scheduler_anchor',
+        'plm_update_m3us_epgs_process': 'scheduler_anchor',
+        'channels_url': 'channels_url_anchor',
+        'channels_directory': 'channels_directory_anchor',
+        'channels_prune': 'advanced_experimental_anchor',
+        'playlist_manager': 'advanced_experimental_anchor',
+        'stream_link_file_manager': 'advanced_experimental_anchor',
+        'channels_dvr_integration': 'advanced_experimental_anchor'
+    }
+
+    if not os.path.exists(channels_directory):
+        channels_directory_message = f"{current_time()} WARNING: '{channels_directory}' does not exist. Please select a new directory!"
+        current_directory = script_dir
+    else:
+        channels_directory_message = ""
+        current_directory = channels_directory
+
+    if request.method == 'POST':
+        settings_action = request.form['action']
+        channels_url_input = request.form.get('channels_url')
+        channels_directory_input = request.form.get('current_directory')
+        channels_directory_manual_path = request.form.get('channels_directory_manual_path')
+        channels_prune_input = request.form.get('channels_prune')
+        playlist_manager_input = request.form.get('playlist_manager')
+        stream_link_file_manager_input = request.form.get('stream_link_file_manager')
+        channels_dvr_integration_input = request.form.get('channels_dvr_integration')
+        station_start_number_input = request.form.get('station_start_number')
+        max_stations_input = request.form.get('max_stations')
+        country_code_input = request.form.get('country_code')
+        language_code_input = request.form.get('language_code')
+        num_results_input = request.form.get('num_results')
+        hide_bookmarked_input = request.form.get('hide_bookmarked')
+        streaming_services_input = request.form.get('streaming_services')
+        gen_backup_schedule_input = request.form.get('gen_backup_schedule')
+        gen_backup_schedule_time_input = request.form.get('gen_backup_schedule_time')
+        gen_backup_schedule_frequency_input = request.form.get('gen_backup_schedule_frequency')
+        gen_backup_max_backups_input = request.form.get('gen_backup_max_backups')
+        auto_update_schedule_input = request.form.get('auto_update_schedule')
+        auto_update_schedule_time_input = request.form.get('auto_update_schedule_time')
+        auto_update_schedule_frequency_input = request.form.get('auto_update_schedule_frequency')
+        plm_update_stations_schedule_input = request.form.get('plm_update_stations_schedule')
+        plm_update_stations_schedule_time_input = request.form.get('plm_update_stations_schedule_time')
+        plm_update_m3us_epgs_schedule_input = request.form.get('plm_update_m3us_epgs_schedule')
+        plm_update_m3us_epgs_schedule_time_input = request.form.get('plm_update_m3us_epgs_schedule_time')
+        plm_update_m3us_epgs_schedule_frequency_input = request.form.get('plm_update_m3us_epgs_schedule_frequency')
+
+        for prefix, anchor_id in action_to_anchor.items():
+            if settings_action.startswith(prefix):
+                settings_anchor_id = anchor_id
+                break
+
+        if settings_action.startswith('slmapping_') or settings_action in ['channels_url_cancel',
+                                                                           'channels_directory_cancel',
+                                                                           'channels_prune_cancel',
+                                                                           'playlist_manager_cancel',
+                                                                           'stream_link_file_manager_cancel',
+                                                                           'channels_dvr_integration_cancel',
+                                                                           'search_defaults_cancel',
+                                                                           'streaming_services_cancel',
+                                                                           'end_to_end_process_cancel',
+                                                                           'plm_update_stations_process_cancel',
+                                                                           'plm_update_m3us_epgs_process_cancel',
+                                                                           'gen_backup_process_cancel',
+                                                                           'channels_url_save',
+                                                                           'channels_directory_save',
+                                                                           'channels_prune_save',
+                                                                           'playlist_manager_save',
+                                                                           'stream_link_file_manager_save',
+                                                                           'channels_dvr_integration_save',
+                                                                           'search_defaults_save',
+                                                                           'streaming_services_save',
+                                                                           'end_to_end_process_save',
+                                                                           'plm_update_stations_process_save',
+                                                                           'plm_update_m3us_epgs_process_save',
+                                                                           'gen_backup_process_save',
+                                                                           'streaming_services_update',
+                                                                           'channels_url_test',
+                                                                           'channels_url_scan'
+                                                                        ]:
+
+            if settings_action.startswith('slmapping_action_') or settings_action in ['channels_url_save',
+                                                                                      'channels_directory_save',
+                                                                                      'channels_prune_save',
+                                                                                      'playlist_manager_save',
+                                                                                      'stream_link_file_manager_save',
+                                                                                      'channels_dvr_integration_save',
+                                                                                      'search_defaults_save',
+                                                                                      'streaming_services_save',
+                                                                                      'end_to_end_process_save',
+                                                                                      'plm_update_stations_process_save',
+                                                                                      'plm_update_m3us_epgs_process_save',
+                                                                                      'gen_backup_process_save',
+                                                                                      'channels_url_scan'
+                                                                                    ]:
+
+                if settings_action in ['channels_url_save',
+                                    'channels_directory_save',
+                                    'channels_prune_save',
+                                    'playlist_manager_save',
+                                    'stream_link_file_manager_save',
+                                    'channels_dvr_integration_save',
+                                    'search_defaults_save',
+                                    'end_to_end_process_save',
+                                    'plm_update_stations_process_save',
+                                    'plm_update_m3us_epgs_process_save',
+                                    'gen_backup_process_save',
+                                    'channels_url_scan'
+                                    ]:
+
+                    if settings_action == 'channels_url_save':
+                        settings[0]["settings"] = channels_url_input
+                        channels_url_prior = channels_url_input
+
+                    elif settings_action == 'channels_url_scan':
+                        settings[0]["settings"], channels_url_message = get_channels_url()
+                        channels_url_prior = settings[0]["settings"]
+
+                    elif settings_action == 'channels_directory_save':
+                        settings[1]["settings"] = channels_directory_input
+                        current_directory = channels_directory_input
+
+                    elif settings_action == 'search_defaults_save':
+                            settings[2]["settings"] = country_code_input
+                            settings[3]["settings"] = language_code_input
+                            try:
+                                if int(num_results_input) > 0:
+                                    settings[4]["settings"] = int(num_results_input)
+                                else:
+                                    search_defaults_message = f"{current_time()} ERROR: For 'Number of Results', please enter a positive integer."
+                            except ValueError:
+                                search_defaults_message = f"{current_time()} ERROR: 'Number of Results' must be a number."
+                            settings[9]["settings"] = "On" if hide_bookmarked_input == 'on' else "Off"
+
+                    elif settings_action == 'gen_backup_process_save':
+                        settings[19]["settings"] = "On" if gen_backup_schedule_input == 'on' else "Off"
+                        settings[20]["settings"] = gen_backup_schedule_time_input
+                        settings[21]["settings"] = gen_backup_schedule_frequency_input
+                        try:
+                            if int(gen_backup_max_backups_input) > 0:
+                                settings[22]["settings"] = int(gen_backup_max_backups_input)
+                            else:
+                                scheduler_message = f"{current_time()} ERROR: For 'Max Backups', please enter a positive integer."
+                        except ValueError:
+                            scheduler_message = f"{current_time()} ERROR: 'Max Backups' must be a number."
+                        
+
+                    elif settings_action == 'end_to_end_process_save':
+                        try:
+                            settings[8]["settings"] = "On" if auto_update_schedule_input == 'on' else "Off"
+                        except (IndexError, KeyError):
+                            settings.append({"settings": "On" if auto_update_schedule_input == 'on' else "Off"})
+                        settings[6]["settings"] = auto_update_schedule_time_input
+                        settings[18]["settings"] = auto_update_schedule_frequency_input
+
+                    elif settings_action == 'plm_update_stations_process_save':
+                        settings[13]["settings"] = "On" if plm_update_stations_schedule_input == 'on' else "Off"
+                        settings[14]["settings"] = plm_update_stations_schedule_time_input
+
+                    elif settings_action == 'plm_update_m3us_epgs_process_save':
+                        settings[15]["settings"] = "On" if plm_update_m3us_epgs_schedule_input == 'on' else "Off"
+                        settings[16]["settings"] = plm_update_m3us_epgs_schedule_time_input
+                        settings[17]["settings"] = plm_update_m3us_epgs_schedule_frequency_input
+
+                    elif settings_action == 'channels_prune_save':
+                        settings[7]["settings"] = "On" if channels_prune_input == 'on' else "Off"
+
+                    elif settings_action == 'playlist_manager_save':
+                        try:
+                            if int(station_start_number_input) > 0 and int(max_stations_input) > 0:
+                                settings[10]["settings"] = "On" if playlist_manager_input == 'on' else "Off"
+                                settings[11]['settings'] = int(station_start_number_input)
+                                settings[12]['settings'] = int(max_stations_input)
+
+                                if playlist_manager_input == 'on':
+                                    slm_playlist_manager = True
+                                    plm_csv_files = [
+                                        csv_playlistmanager_playlists,
+                                        csv_playlistmanager_parents,
+                                        csv_playlistmanager_child_to_parent,
+                                        csv_playlistmanager_combined_m3us
+                                    ]
+
+                                    for plm_csv_file in plm_csv_files:
+                                        check_and_create_csv(plm_csv_file)
+                                    
+                                    create_directory(playlists_uploads_dir)
+                                
+                                else:
+                                    slm_playlist_manager = None
+
+                            else:
+                                advanced_experimental_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
+                        except ValueError:
+                            advanced_experimental_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be numbers."
+
+                    elif settings_action == 'stream_link_file_manager_save':
+                        settings[23]["settings"] = "On" if stream_link_file_manager_input == 'on' else "Off"
+
+                        if stream_link_file_manager_input == 'on':
+                            slm_stream_link_file_manager = True
+                        else:
+                            slm_stream_link_file_manager = None
+
+                    elif settings_action == 'channels_dvr_integration_save':
+                        settings[24]["settings"] = "On" if channels_dvr_integration_input == 'on' else "Off"
+
+                        if channels_dvr_integration_input == 'on':
+                            slm_channels_dvr_integration = True
+                        else:
+                            slm_channels_dvr_integration = None
+
+                    csv_to_write = csv_settings
+                    data_to_write = settings
+
+                elif settings_action == 'streaming_services_save':
+                    streaming_services_input_json = json.loads(streaming_services_input)
+                    csv_to_write = csv_streaming_services
+                    data_to_write = streaming_services_input_json
+
+                elif settings_action.startswith('slmapping_action_'):
+
+                    # Add a map
+                    if settings_action == 'slmapping_action_new':
+                        slmapping_active_new_input = 'On' if request.form.get('slmapping_active_new') == 'on' else 'Off'
+                        slmapping_contains_string_new_input = request.form.get('slmapping_contains_string_new')
+                        slmapping_object_type_new_input = request.form.get('slmapping_object_type_new')
+                        slmapping_replace_type_new_input = request.form.get('slmapping_replace_type_new')
+                        slmapping_replace_string_new_input = request.form.get('slmapping_replace_string_new')
+
+                        slmappings.append({
+                            "active": slmapping_active_new_input,
+                            "contains_string": slmapping_contains_string_new_input,
+                            "object_type": slmapping_object_type_new_input,
+                            "replace_type": slmapping_replace_type_new_input,
+                            "replace_string": slmapping_replace_string_new_input
+                        })
+
+                    # Delete a map
+                    elif settings_action.startswith('slmapping_action_delete_'):
+                        slmapping_action_delete_index = int(settings_action.split('_')[-1]) - 1
+
+                        # Create a temporary record with fields set to None
+                        temp_record = create_temp_record(slmappings[0].keys())
+
+                        if 0 <= slmapping_action_delete_index < len(slmappings):
+                            slmappings.pop(slmapping_action_delete_index)
+
+                            # If the list is now empty, add the temp record to keep headers
+                            if not slmappings:
+                                slmappings.append(temp_record)
+                                run_empty_row = True
+
+                    # Save map modifications
+                    elif settings_action == 'slmapping_action_save':
+                        slmapping_active_existing_inputs = {}
+                        slmapping_contains_string_existing_inputs = {}
+                        slmapping_object_type_existing_inputs = {}
+                        slmapping_replace_type_existing_inputs = {}
+                        slmapping_replace_string_existing_inputs = {}
+
+                        total_number_of_checkboxes = len(slmappings)
+                        slmapping_active_existing_inputs = {str(i): 'Off' for i in range(1, total_number_of_checkboxes + 1)}
+
+                        for key in request.form.keys():
+                            if key.startswith('slmapping_active_existing_'):
+                                index = key.split('_')[-1]
+                                slmapping_active_existing_inputs[index] = request.form.get(key)
+
+                            if key.startswith('slmapping_contains_string_existing_'):
+                                index = key.split('_')[-1]
+                                slmapping_contains_string_existing_inputs[index] = request.form.get(key)
+
+                            if key.startswith('slmapping_object_type_existing_'):
+                                index = key.split('_')[-1]
+                                slmapping_object_type_existing_inputs[index] = request.form.get(key)
+
+                            if key.startswith('slmapping_replace_type_existing_'):
+                                index = key.split('_')[-1]
+                                slmapping_replace_type_existing_inputs[index] = request.form.get(key)
+
+                            if key.startswith('slmapping_replace_string_existing_'):
+                                index = key.split('_')[-1]
+                                slmapping_replace_string_existing_inputs[index] = request.form.get(key)
+
+                        for row in slmapping_active_existing_inputs:
+                            slmapping_active_existing_input = slmapping_active_existing_inputs.get(row)
+                            slmapping_contains_string_existing_input = slmapping_contains_string_existing_inputs.get(row)
+                            slmapping_object_type_existing_input = slmapping_object_type_existing_inputs.get(row)
+                            slmapping_replace_type_existing_input = slmapping_replace_type_existing_inputs.get(row)
+                            slmapping_replace_string_existing_input = slmapping_replace_string_existing_inputs.get(row)
+
+                            for idx, slmapping in enumerate(slmappings):
+                                if idx == int(row) - 1:
+                                    slmapping['active'] = slmapping_active_existing_input
+                                    slmapping['contains_string'] = slmapping_contains_string_existing_input
+                                    slmapping['object_type'] = slmapping_object_type_existing_input
+                                    slmapping['replace_type'] = slmapping_replace_type_existing_input
+                                    slmapping['replace_string'] = slmapping_replace_string_existing_input
+
+                    csv_to_write = csv_slmappings
+                    data_to_write = slmappings
+
+                write_data(csv_to_write, data_to_write)
+                if run_empty_row:
+                    remove_empty_row(csv_to_write)
+
+                if settings_action == 'search_defaults_save':
+                    update_streaming_services()
+                    time.sleep(5)
+
+            elif settings_action == 'streaming_services_update':
+                update_streaming_services()
+                time.sleep(5)
+
+            elif settings_action == 'channels_url_cancel':
+                channels_url_prior = channels_url
+
+            elif settings_action == 'channels_url_test':
+                channels_url_prior = channels_url_input
+                channels_url_okay = check_channels_url(channels_url_input)
+                if channels_url_okay:
+                    channels_url_message = f"{current_time()} INFO: '{channels_url_input}' responded as expected!"
+                else:
+                    channels_url_message = f"{current_time()} WARNING: Channels URL not found at '{channels_url_input}'. Please update!"
+
+        elif settings_action == 'channels_directory_nav_up':
+            current_directory = os.path.dirname(channels_directory_input)
+        
+        elif settings_action == 'channels_directory_manual_go':
+            if os.path.isdir(channels_directory_manual_path):
+                current_directory = channels_directory_manual_path
+            else:
+                channels_directory_message = f"{current_time()} ERROR: Invalid path. Try again."
+        
+        elif settings_action.startswith('channels_directory_nav_'):
+            # Navigate directories
+            try:
+                selected_index = int(settings_action.split('_')[-1]) - 1
+                subdirectories = get_subdirectories(channels_directory_input)
+                if 0 <= selected_index < len(subdirectories):
+                    current_directory = os.path.join(channels_directory_input, subdirectories[selected_index])
+                else:
+                    channels_directory_message = f"{current_time()} ERROR: Invalid selection. Try again."
+            except ValueError:
+                channels_directory_message = f"{current_time()} ERROR: Invalid input. Try again."
+
+        settings = read_data(csv_settings)
+        channels_url = settings[0]["settings"]
+        channels_directory = settings[1]["settings"]
+        if channels_url_prior is None or channels_url_prior == '':
+            channels_url_prior = channels_url
+        country_code = settings[2]["settings"]
+        language_code = settings[3]["settings"]
+        num_results = settings[4]["settings"]
+        hide_bookmarked = settings[9]["settings"]
+        gen_backup_schedule = settings[19]["settings"]
+        gen_backup_schedule_time = settings[20]["settings"]
+        gen_backup_schedule_frequency = settings[21]["settings"]
+        gen_backup_max_backups = settings[22]["settings"]
+        try:
+            auto_update_schedule = settings[8]["settings"]
+        except (IndexError, KeyError):
+            auto_update_schedule = 'Off'
+        auto_update_schedule_time = settings[6]["settings"]
+        auto_update_schedule_frequency = settings[18]["settings"]
+        plm_update_stations_schedule = settings[13]["settings"]
+        plm_update_stations_schedule_time = settings[14]["settings"]
+        plm_update_m3us_epgs_schedule = settings[15]["settings"]
+        plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
+        plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
+        channels_prune = settings[7]["settings"]
+        station_start_number = settings[11]['settings']
+        max_stations = settings[12]['settings']
+
+        streaming_services = read_data(csv_streaming_services)
+
+        slmappings = read_data(csv_slmappings)
+
+    response = make_response(render_template(
+        'main/settings.html',
+        segment='settings',
+        html_slm_version=slm_version,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_settings_anchor_id = settings_anchor_id,
+        html_channels_url=channels_url,
+        html_channels_url_prior = channels_url_prior,
+        html_channels_directory = channels_directory,
+        html_valid_country_codes = valid_country_codes,
+        html_country_code = country_code,
+        html_valid_language_codes = valid_language_codes,
+        html_language_code = language_code,
+        html_num_results = num_results,
+        html_auto_update_schedule = auto_update_schedule,
+        html_auto_update_schedule_time = auto_update_schedule_time,
+        html_plm_update_stations_schedule = plm_update_stations_schedule,
+        html_plm_update_stations_schedule_time = plm_update_stations_schedule_time,
+        html_slm_end_to_end_frequencies = slm_end_to_end_frequencies,
+        html_auto_update_schedule_frequency = auto_update_schedule_frequency,
+        html_plm_update_m3us_epgs_schedule = plm_update_m3us_epgs_schedule,
+        html_plm_update_m3us_epgs_schedule_time = plm_update_m3us_epgs_schedule_time,
+        html_plm_m3us_epgs_schedule_frequencies = plm_m3us_epgs_schedule_frequencies,
+        html_plm_update_m3us_epgs_schedule_frequency = plm_update_m3us_epgs_schedule_frequency,
+        html_channels_prune = channels_prune,
+        html_streaming_services = streaming_services,
+        html_channels_url_message = channels_url_message,
+        html_current_directory = current_directory,
+        html_subdirectories = get_subdirectories(current_directory),
+        html_channels_directory_message = channels_directory_message,
+        html_search_defaults_message = search_defaults_message,
+        html_slmappings = slmappings,
+        html_slmappings_object_type = slmappings_object_type,
+        html_slmappings_replace_type = slmappings_replace_type,
+        html_hide_bookmarked = hide_bookmarked,
+        html_station_start_number = station_start_number,
+        html_max_stations = max_stations,
+        html_advanced_experimental_message = advanced_experimental_message,
+        html_gen_backup_frequencies = gen_backup_frequencies,
+        html_gen_backup_schedule = gen_backup_schedule,
+        html_gen_backup_schedule_time = gen_backup_schedule_time,
+        html_gen_backup_schedule_frequency = gen_backup_schedule_frequency,
+        html_gen_backup_max_backups = gen_backup_max_backups,
+        html_scheduler_message = scheduler_message
+    ))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+
+    if settings_anchor_id:
+        response.headers['Location'] = f'/settings#{settings_anchor_id}'
+
+    return response
+
+# Find all available streaming services for the country
+def get_streaming_services():
+    settings = read_data(csv_settings)
+    country_code = settings[2]['settings']
+    
+    provider_results = []
+    provider_results_json = []
+    provider_results_json_array = []
+    provider_results_json_array_results = []
+
+    _GRAPHQL_GetProviders = """
+    query GetProviders($country: Country!, $platform: Platform!) {
+      packages(country: $country, platform: $platform) {
+        clearName
+        addons(country: $country, platform: $platform) {
+          clearName
+        }
+      }
+    }
+    """
+
+    json_data = {
+        'query': _GRAPHQL_GetProviders,
+        'variables': {
+            "country": country_code,
+            "platform": "WEB"
+        },
+        'operationName': 'GetProviders',
+    }
+
+    try:
+        provider_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+    except requests.RequestException as e:
+        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
+
+    if provider_results:
+        provider_results_json = provider_results.json()
+        provider_results_json_array = provider_results_json["data"]["packages"]
+
+        for provider in provider_results_json_array :
+            provider_addons = []
+
+            entry = {
+                "streaming_service_name": provider["clearName"],
+                "streaming_service_subscribe": False,
+                "streaming_service_priority": None
+            }
+            provider_results_json_array_results.append(entry)
+
+            provider_addons = provider["addons"]
+
+            if provider_addons:
+                for provider_addon in provider_addons:
+                    entry = {
+                        "streaming_service_name": provider_addon["clearName"],
+                        "streaming_service_subscribe": False,
+                        "streaming_service_priority": None
+                    }
+                    provider_results_json_array_results.append(entry)
+
+    return provider_results_json_array_results
+
+# Update Streaming Services
+def update_streaming_services():
+    data = get_streaming_services()
+    update_rows(csv_streaming_services, data, "streaming_service_name", None)
+
+# Search for country code
+def get_country_code():
+    settings = read_data(csv_settings)
+    country_code = settings[2]["settings"]
+    country_code_input = None
+    country_code_new = None
+
+    global timeout_occurred
+    timeout_occurred = False
+    print(f"\n{current_time()} Searching for country code for Streaming Services...")
+    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
+
+    # Search times out after 30 seconds
+    timer = threading.Timer(30, timeout_handler)
+    timer.start()
+
+    try:
+        response = requests.get('https://ipinfo.io', headers=url_headers)
+        data = response.json()
+        user_country_code = data.get('country').upper()
+        
+        if user_country_code in valid_country_codes:
+            country_code_input = user_country_code
+    except TimeoutError:
+        print(f"{current_time()} INFO: Search timed out. Continuing to next step...\n")
+    except KeyboardInterrupt:
+        print(f"{current_time()} INFO: Search interrupted by user. Continuing to next step...\n")
+    except Exception as e:
+        print(f"{current_time()} INFO: Error getting geolocation: {e}. Continuing to next step...\n")
+    finally:
+        timer.cancel()  # Disable the timer
+
+    if country_code_input:
+        print(f"{current_time()} INFO: Country found!")
+        country_code_new = country_code_input.upper()
+    else:
+        print(f"{current_time()} INFO: Country not found, using default value. Please set your Country in 'Settings'.")
+        country_code_new = country_code
+
+    print(f"{current_time()} INFO: Country Code set to '{country_code_new}'\n")
+
+    return country_code_new
 
 # Background process to check the schedule
 def check_schedule():
@@ -8170,10 +6966,114 @@ def check_schedule():
 
         time.sleep(1)  # Check every second
 
-# Start the background thread
-thread = threading.Thread(target=check_schedule)
-thread.daemon = True
-thread.start()
+# Check if Channels URL is correct
+def check_channels_url(channels_url_input):
+    if channels_url_input:
+        channels_url = channels_url_input
+    else:
+        settings = read_data(csv_settings)
+        channels_url = settings[0]["settings"]
+    
+    channels_url_okay = None
+    
+    try:
+        response = requests.get(channels_url, headers=url_headers)
+        if response:
+            channels_url_okay = True
+    except requests.RequestException:
+        print(f"\n{current_time()} WARNING: Channels URL not found at {channels_url}")
+        print(f"{current_time()} WARNING: Please change Channels URL in settings")
+
+    return channels_url_okay
+
+# Attempts to find the Channels DVR path
+def find_channels_dvr_path():
+    global timeout_occurred
+    timeout_occurred = False
+    channels_dvr_path = script_dir
+    channels_dvr_path_search = None
+    root_path = os.path.abspath(os.sep)
+    search_directory = "Imports"
+
+    print(f"\n{current_time()} Searching for Channels DVR folder...")
+    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
+
+    # Search times out after 60 seconds
+    timer = threading.Timer(60, timeout_handler)
+    timer.start()
+
+    try:
+        for root, dirs, _ in os.walk(root_path):
+            if timeout_occurred:
+                raise TimeoutError # Timeout if serach going for too long
+            if search_directory in dirs or search_directory.lower() in dirs:
+                if os.path.abspath(os.path.join(root)).lower().endswith("dvr") or os.path.abspath(os.path.join(root)).lower().endswith("channels_folder"):
+                    channels_dvr_path_search = os.path.abspath(os.path.join(root))
+                    break  # Stop searching once found
+    except TimeoutError:
+        print(f"{current_time()} INFO: Search timed out. Continuing to next step...\n")
+    except KeyboardInterrupt:
+        print(f"{current_time()} INFO: Search interrupted by user. Continuing to next step...\n")
+    finally:
+        timer.cancel()  # Disable the timer
+
+    if channels_dvr_path_search:
+        print(f"{current_time()} INFO: Channels DVR folder found!")
+        channels_dvr_path = channels_dvr_path_search
+    else:
+        if os.path.exists(docker_channels_dir):
+            print(f"{current_time()} INFO: Channels DVR folder not found, setting to Docker default...")
+            channels_dvr_path = docker_channels_dir
+        else:
+            print(f"{current_time()} INFO: Channels DVR folder not found, defaulting to current directory. Please set your Channels DVR folder in 'Settings'.")
+
+    print(f"{current_time()} INFO: Channels DVR folder set to '{channels_dvr_path}'\n")
+
+    return channels_dvr_path
+
+# Displays the list of subdirectories in the given directory.
+def get_subdirectories(directory):
+    return [item for item in os.listdir(directory) if os.path.isdir(os.path.join(directory, item))]
+
+# Catch-all for non-named pages
+@app.route('/<template>')
+def webpage_route_template(template):
+
+    try:
+
+        if not template.endswith('.html'):
+            template += '.html'
+
+        # Detect the current page
+        segment = get_segment(request)
+
+        # Serve the file (if exists) from app/templates/main/FILE.html
+        return render_template(
+            "main/" + template,
+            segment = segment,
+            html_slm_version = slm_version,
+            html_slm_playlist_manager = slm_playlist_manager,
+            html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+            html_slm_channels_dvr_integration = slm_channels_dvr_integration
+        )
+
+    except TemplateNotFound:
+        return render_template(
+            'main/page-404.html',
+            html_slm_version = slm_version,
+            html_slm_playlist_manager = slm_playlist_manager,
+            html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+            html_slm_channels_dvr_integration = slm_channels_dvr_integration
+        ), 404
+
+    except:
+        return render_template(
+            'main/page-500.html',
+            html_slm_version = slm_version,
+            html_slm_playlist_manager = slm_playlist_manager,
+            html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+            html_slm_channels_dvr_integration = slm_channels_dvr_integration
+        ), 500
 
 # Get any webpage not already called out
 def get_segment(request):
@@ -8191,44 +7091,1203 @@ def get_segment(request):
     
     return segment
 
-# Catch-all for non-named pages
-@app.route('/<template>')
-def route_template(template):
+### Administative Functions
+# Current date/time for logging
+def current_time():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f") + ": "
+
+# Handler for timeout errors
+def timeout_handler():
+    global timeout_occurred
+    timeout_occurred = True
+
+# Remove invalid characters (e.g., colons, slashes, etc.)
+def sanitize_name(name):
+    sanitized = re.sub(r'[\\/:*?"<>|]', '', name)
+    return sanitized
+
+# Alphabetic sort ignoring common articles in various Latin script languages
+def sort_key(title):
+    articles = {
+        "english": ["the", "a", "an"],
+        "spanish": ["el", "la", "los", "las", "un", "una", "unos", "unas"],
+        "portuguese": ["o", "a", "os", "as", "um", "uma", "uns", "umas"],
+        "french": ["le", "la", "les", "un", "une", "des"],
+        "german": ["der", "die", "das", "ein", "eine", "einen"],
+        "italian": ["il", "lo", "la", "i", "gli", "le", "un", "una", "uno"],
+        "bosnian": ["taj", "ta", "to", "jedan", "jedna", "jedno"],
+        "catalan": ["el", "la", "els", "les", "un", "una", "uns", "unes"],
+        "czech": ["ten", "ta", "to", "jeden", "jedna", "jedno"],
+        "finnish": ["se", "yksi"],
+        "croatian": ["taj", "ta", "to", "jedan", "jedna", "jedno"],
+        "hungarian": ["a", "az", "egy"],
+        "icelandic": ["það", "þessi", "einn", "ein", "eitt"],
+        "maltese": ["il", "l-", "xi", "wieħed", "waħda"],
+        "polish": ["ten", "ta", "to", "jeden", "jedna", "jedno"],
+        "romanian": ["cel", "cea", "cei", "cele", "un", "o", "niște"],
+        "slovak": ["ten", "tá", "to", "jeden", "jedna", "jedno"],
+        "slovenian": ["ta", "ta", "to", "en", "ena", "eno"],
+        "albanian": ["një", "një", "një"],
+        "swahili": ["huyu", "hii", "hiki", "moja"],
+        "turkish": ["bir"]
+    }
+    
+    words = title.casefold().split()
+    for lang, art_list in articles.items():
+        if words[0] in art_list:
+            return " ".join(words[1:])
+    return title.casefold()
+
+# Normalize the file path for systems that can't handle certain characters like 'é'
+def normalize_path(path):
+    return unicodedata.normalize('NFKC', path)
+
+# Get the full path for a file
+def full_path(file):
+    full_path = os.path.join(program_files_dir, file)
+    return full_path
+
+# Get complete file path and name
+def get_file_path(path, name, special_action):
+    file_name_base = f"{name}"
+
+    if special_action == "Make STRM":
+        file_name_extension = "strm"
+    elif special_action in ['m3u', 'xml']:
+        file_name_extension = special_action
+    else:
+        file_name_extension = "strmlnk"
+
+    file_name = f"{file_name_base}.{file_name_extension}"
+    file_path = os.path.join(path, file_name)
+    file_path = normalize_path(file_path)
+    return file_path
+
+# Wrapper for searching for files with multiple extensions
+def get_all_prior_files(search_directory, extensions):
+    all_prior_files = []
+
+    for extension in extensions:
+        prior_files = search_directory_for_files_with_extensions(search_directory, extension)
+        for prior_file in prior_files:
+            all_prior_files.append({'filename': prior_file['filename'], 'extension': prior_file['extension']})
+
+    return all_prior_files
+
+# Finds files in a directory with a certain extension
+def search_directory_for_files_with_extensions(search_directory, base_extension):
+    result = []
+    seen_files = set()  # Track seen files to avoid duplicates
+
+    for file in os.listdir(search_directory):
+        if file.endswith(base_extension):
+            filename, extension = os.path.splitext(file)
+            if filename not in seen_files:
+                result.append({'filename': filename, 'extension': base_extension})
+                seen_files.add(filename)  # Mark file as seen
+
+    return result
+
+# Get the path for Movies and TV Shows
+def get_movie_tv_path():
+    settings = read_data(csv_settings)
+    channels_path = settings[1]["settings"]
+
+    movie_path = os.path.join(channels_path, "Imports", "Movies", "slm")
+    tv_path = os.path.join(channels_path, "Imports", "TV", "slm")
+
+    return movie_path, tv_path
+
+# Create a directory if it doesn't exist.
+def create_directory(directory_path):
+    directory_path = normalize_path(directory_path)
 
     try:
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+    except OSError as e:
+        print(f"    Error creating directory {directory_path}: {e}")
 
-        if not template.endswith('.html'):
-            template += '.html'
+# Remove empty subdirectories without prompting
+def directory_delete(base_directory):
+    for root, dirs, _ in os.walk(base_directory, topdown=False):
+        for dir_name in dirs:
+            dir_path = os.path.join(root, dir_name)
+            try:
+                if not os.listdir(dir_path):
+                    os.rmdir(dir_path)
+                    notification_add(f"    Removed empty directory: {dir_path}")
+            except OSError as e:
+                print(f"    Error removing directory {dir_path}: {e}")
+                print(f"    Attempting to remove via read-only handle...")
+                try:
+                    os.chmod(dir_path, stat.S_IWRITE)  # Mark the folder as writable
+                    os.rmdir(dir_path)
+                    notification_add(f"    On second attempt, removed empty directory: {dir_path}")
+                except OSError as e:
+                    notification_add(f"    Second error removing directory {dir_path}: {e}")
 
-        # Detect the current page
-        segment = get_segment(request)
+# Create a file
+def create_file(path, name, url, special_action):
+    file_path = get_file_path(path, name, special_action)
+    file_path = normalize_path(file_path)
+    file_path_return = None
 
-        # Serve the file (if exists) from app/templates/main/FILE.html
-        return render_template(
-            "main/" + template,
-            segment = segment,
-            html_slm_version = slm_version,
-            html_slm_playlist_manager = slm_playlist_manager,
-            html_slm_stream_link_file_manager = slm_stream_link_file_manager
-        )
+    try:
+        with open(file_path, 'w', encoding="utf-8") as file:
+            try:
+                file.write(url)
+                print(f"    Created: {file_path}")
+                file_path_return = file_path
+            except OSError as e:
+                print(f"    Error creating file {file_path}: {e}")
 
-    except TemplateNotFound:
-        return render_template(
-            'main/page-404.html',
-            html_slm_version = slm_version,
-            html_slm_playlist_manager = slm_playlist_manager,
-            html_slm_stream_link_file_manager = slm_stream_link_file_manager
-        ), 404
+    except FileNotFoundError as fnf_error:
+        print(f"    Error with original path: {fnf_error}")
 
-    except:
-        return render_template(
-            'main/page-500.html',
-            html_slm_version = slm_version,
-            html_slm_playlist_manager = slm_playlist_manager,
-            html_slm_stream_link_file_manager = slm_stream_link_file_manager
-        ), 500
+    return file_path_return
 
-# Start-up Check
+# Processes the data list into multiple chunks and saves files
+def create_chunk_files(data_list, base_filename, extension, max):
+    for index, chunk in enumerate(split_list(data_list, max)):
+        if extension == "m3u":
+            content = generate_m3u_content(chunk)
+
+        filename = f"{base_filename}_{index+1:02d}.{extension}"
+
+        create_program_file(filename, content)
+
+# Splits a data list into chunks of a specified size
+def split_list(data_list, max):
+    for i in range(0, len(data_list), max):
+        yield data_list[i:i + max]
+
+# Create a file in the Program Files directory
+def create_program_file(filename, content):
+    file_path = full_path(filename)
+
+    try:
+        with open(file_path, 'w', encoding="utf-8") as file:
+            try:
+                file.write(content)
+                notification_add(f"    Created: {filename}")
+            except OSError as e:
+                notification_add(f"    Error creating file {filename}: {e}")
+
+    except FileNotFoundError as fnf_error:
+        notification_add(f"    Error with original path: {fnf_error}")
+
+# Used to manage the potential of deleting all records
+def create_temp_record(fields):
+    return {field: None for field in fields}
+
+# Loops through all the files in a directory and changes one suffix to another
+def rename_files_suffix(directory, old_suffix, new_suffix):
+    for filename in os.listdir(directory):
+        if filename.endswith(old_suffix):
+            old_file = os.path.join(directory, filename)
+            new_filename = filename[:-len(old_suffix)] + new_suffix
+            new_file = os.path.join(directory, new_filename)
+            
+            os.rename(old_file, new_file)
+
+            notification_add(f"    Created: {new_filename}")
+
+# Delete a file if it exists
+def file_delete(path, name, special_action):
+    file_path = get_file_path(path, name, special_action)
+    file_path = normalize_path(file_path)
+
+    try:
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                if special_action in ['m3u', 'xml']:
+                    notification_add(f"    Deleted: {name}.{special_action}")
+                else:
+                    notification_add(f"    Deleted: {file_path}")
+        except OSError as e:
+            notification_add(f"    Error removing file {file_path}: {e}")
+    except FileNotFoundError as fnf_error:
+        print(f"    Error removing file: {fnf_error}")
+
+# Tries to remove a file, verifies its deletion, and retries if necessary.
+def reliable_remove(filepath):
+    max_retries=5
+    wait_time=10
+
+    for attempt in range(max_retries):
+        try:
+            os.remove(filepath)
+            if not os.path.exists(filepath):
+                return True
+        except Exception as e:
+            print(f"\n{current_time()} WARNING: After {attempt + 1} attempt, failed to remove {filepath} due to: {e}")
+        
+        print(f"{current_time()} INFO: Waiting for {wait_time} seconds before next attempt...")
+        time.sleep(wait_time)
+    
+    notification_add(f"{current_time()} ERROR: Failed to delete file '{filepath}' after {max_retries} attempts. Please manually delete and report this error along with other warnings and info in the logs.")
+    return False
+
+# Remove rogue files and empty directories
+def remove_rogue_empty(movie_path, tv_path, bookmarks_statuses):
+    all_files = []
+    for path in [movie_path, tv_path]:
+        for dirpath, dirnames, filenames in os.walk(path):
+            all_files.extend([normalize_path(os.path.join(dirpath, filename)) for filename in filenames])
+
+    slm_files = []
+    for bookmark_status in bookmarks_statuses:
+        if bookmark_status['stream_link_file']:
+            slm_files.append(normalize_path(bookmark_status['stream_link_file']))
+
+    rogue_files = [file_path for file_path in all_files if file_path not in slm_files]
+
+    for rogue_file in rogue_files:
+        try:
+            os.remove(rogue_file)
+            notification_add(f"    Deleted Rogue File: {rogue_file}")
+        except OSError as e:
+            notification_add(f"    Error removing Rogue File {rogue_file}: {e}")
+
+    # Remove empty directories
+    directory_delete(tv_path)
+
+# Read data from a CSV file.
+def read_data(csv_file):
+    full_path_file = full_path(csv_file)
+    data = []
+
+    try:
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                data.append(row)
+        return data
+    except Exception as e:
+        print(f"\n{current_time()} ERROR: Reading data... {e}\n")
+        return None
+
+# Write data back to a CSV file.
+def write_data(csv_file, data):
+    full_path_file = full_path(csv_file)
+
+    try:
+        with open(full_path_file, "w", newline="", encoding="utf-8") as file:
+            writer = csv.DictWriter(file, fieldnames=data[0].keys())
+            writer.writeheader()  # Write the header row
+
+            # Write each row from the data list
+            writer.writerows(data)
+    except Exception as e:
+        print(f"\n{current_time()} ERROR: Writing data... {e}\n")
+
+# Appends a new row to an existing CSV file.
+def append_data(csv_file, new_row):
+    # Get the full path to the CSV file
+    full_path_file = full_path(csv_file)
+    
+    # Check if the file is empty (contains only the header row)
+    is_empty = os.path.getsize(full_path_file) == 0
+    
+    try:
+        # Open the file in append mode with UTF-8 encoding
+        with open(full_path_file, "a", newline="", encoding="utf-8") as file:
+            writer = csv.DictWriter(file, fieldnames=new_row.keys())
+            
+            # Write the header row if the file is empty
+            if is_empty:
+                writer.writeheader()
+            
+            # Append the new row
+            writer.writerow(new_row)
+    except Exception as e:
+        print(f"\n{current_time()} ERROR: Appending data... {e}\n")
+
+# Removes rows in a CSV file based upon a value in the first column
+def remove_row_csv(csv_file, field_value):
+    full_path_file = full_path(csv_file)
+
+    try:
+        # Read the CSV file
+        with open(full_path_file, 'r', encoding='utf-8') as inp:
+            reader = csv.reader(inp)
+            print(f"\nIn {csv_file}, removed row:\n")
+
+            rows_to_keep = []
+            for row in reader:
+                if row[0] == field_value:  # Assuming field_value is in the first column
+                    print(f"    {row}")
+                else:
+                    rows_to_keep.append(row)
+
+        # Write the non-matching rows back to the same file
+        with open(full_path_file, 'w', encoding='utf-8', newline='') as out:
+            writer = csv.writer(out)
+            writer.writerows(rows_to_keep)
+
+    except FileNotFoundError:
+        print(f"Error: {csv_file} not found.")
+    except Exception as e:
+        print(f"Error: {e}")
+
+# Removes all rows in a file except the header
+def delete_all_rows_except_header(csv_file):
+    full_path_file = full_path(csv_file)
+    
+    # Ensure the file exists
+    if os.path.exists(full_path_file):
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            header = next(reader)  # Read the header
+
+        with open(full_path_file, "w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(header)  # Write the header back
+
+    else:
+        print(f"{current_time()} ERROR: File {csv_file} does not exist.")
+
+# Function to add a new row if the row count is less than a certain number
+def check_and_append(csv_file, new_row, threshold, purpose):
+    row_count = count_rows(csv_file)
+    
+    if row_count < threshold:
+        append_data(csv_file, new_row)
+        notification_add(f"\n{current_time()} INFO: New row added to {csv_file}... it was for '{purpose}'.")
+
+# Add new columns during upgrades
+def check_and_add_column(csv_file, column_name, default_value):
+    full_path_file = full_path(csv_file)
+    
+    # Read the CSV file
+    with open(full_path_file, mode='r', newline='', encoding="utf-8") as infile:
+        reader = csv.DictReader(infile)
+        fieldnames = reader.fieldnames
+        rows = list(reader)
+    
+    # Check if the column exists
+    if column_name not in fieldnames:
+        fieldnames.append(column_name)
+        for row in rows:
+            row[column_name] = default_value
+    
+    # Write the updated data back to the CSV file
+    with open(full_path_file, mode='w', newline='', encoding="utf-8") as outfile:
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+# Appends new rows. removes old rows, and updates modified rows from initialization data to be written to data files
+def update_rows(csv_file, data, id_field, modify_flag):
+    if data:
+        new_rows = extract_new_rows(csv_file, data, id_field)
+        if new_rows:
+            print(f"\n{current_time()} INFO: Adding new rows to {csv_file}...\n")
+            for new_row in new_rows:
+                append_data(csv_file, new_row)
+                notification_add(f"    ADDED: {new_row[id_field]}")
+            print(f"\n{current_time()} INFO: Finished adding new rows.\n")
+
+        old_rows = extract_old_rows(csv_file, data, id_field)
+        if old_rows:
+            print(f"\n{current_time()} INFO: Removing old rows from {csv_file}...\n")
+            for old_row in old_rows:
+                notification_add(f"    REMOVED: {old_row[id_field]}")
+            remove_data(csv_file, old_rows, id_field)
+            print(f"\n{current_time()} INFO: Finished removing old rows.\n")
+
+        if modify_flag:
+            modified_rows, no_notify_rows = extract_modified_rows(csv_file, data, id_field)
+            if modified_rows:
+                print(f"\n{current_time()} INFO: Updating modified rows in {csv_file}...\n")
+                for modified_row in modified_rows:
+                    if modified_row not in no_notify_rows:
+                        notification_add(f"    MODIFIED: {modified_row[id_field]}")
+                update_data(csv_file, modified_rows, id_field)
+                print(f"\n{current_time()} INFO: Finished updating modified rows.\n")
+
+            remove_duplicate_rows(csv_file)
+            
+    else:
+        print(f"\n{current_time()} WARNING: No data to compare, skipping adding and removing rows in {csv_file}.\n")
+
+# Extracts new rows from the library data that are not already present in the CSV file
+def extract_new_rows(csv_file, data, id_field):
+    full_path_file = full_path(csv_file)
+
+    # Read existing data (if any)
+    existing_data = []
+    if os.path.exists(full_path_file):
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            existing_data = [row for row in reader]
+    
+    # Check for duplicate IDs
+    existing_ids = {row[id_field] for row in existing_data}
+
+    # Extract new rows
+    new_rows = []
+    for row in data:
+        if row[id_field] not in existing_ids:
+            new_rows.append(row)
+    
+    return new_rows
+
+# Extracts old rows from the CSV File that are no longer present in the library data
+def extract_old_rows(csv_file, data, id_field):
+    full_path_file = full_path(csv_file)
+
+    # Read existing data (if any)
+    existing_data = []
+    if os.path.exists(full_path_file):
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            existing_data = [row for row in reader]
+    
+    # Check for duplicate IDs
+    existing_ids = {row[id_field] for row in data}
+
+    # Extract old rows
+    old_rows = []
+    for row in existing_data:
+        if row[id_field] not in existing_ids:
+            old_rows.append(row)
+    
+    return old_rows
+
+# Extracts modified rows from the library data that are present in the CSV file but have different content
+def extract_modified_rows(csv_file, data, id_field):
+    full_path_file = full_path(csv_file)
+
+    # Read existing data (if any)
+    existing_data = []
+    if os.path.exists(full_path_file):
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            existing_data = [row for row in reader]
+    
+    # Create a dictionary for quick lookup of existing rows by id_field
+    existing_data_dict = {row[id_field]: row for row in existing_data}
+
+    # Extract modified rows and rows to not notify
+    modified_rows = []
+    no_notify_rows = []
+
+    for row in data:
+        if row[id_field] in existing_data_dict:
+            existing_row = existing_data_dict[row[id_field]]
+            if any(row[key] != existing_row[key] for key in row.keys() if key != id_field):
+                modified_rows.append(row)
+                # Check for ?X-Plex-Token= difference 
+                differing_keys = [key for key in row.keys() if key != id_field and row[key] != existing_row[key]]
+                if all('X-Plex-Token' in key or row[key].startswith(existing_row[key].split('?X-Plex-Token=')[0]) for key in differing_keys):
+                    no_notify_rows.append(row)
+
+    return modified_rows, no_notify_rows
+
+# Updates rows in the CSV file with modified content
+def update_data(csv_file, modified_rows, id_field):
+    full_path_file = full_path(csv_file)
+
+    # Read existing data (if any)
+    existing_data = []
+    if os.path.exists(full_path_file):
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            existing_data = [row for row in reader]
+
+    # Create a dictionary for quick lookup of modified rows by id_field
+    modified_data_dict = {row[id_field]: row for row in modified_rows}
+
+    # Update the existing data with modified rows
+    updated_data = [
+        modified_data_dict[row[id_field]] if row[id_field] in modified_data_dict else row
+        for row in existing_data
+    ]
+
+    # Write the updated data back to the CSV file
+    fieldnames = updated_data[0].keys() if updated_data else []
+    with open(full_path_file, "w", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(updated_data)
+
+# Removes rows from the CSV file
+def remove_data(csv_file, old_rows, id_field):
+    full_path_file = full_path(csv_file)
+
+    # Read existing data (if any)
+    existing_data = []
+    if os.path.exists(full_path_file):
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            existing_data = [row for row in reader]
+
+    # Check for duplicate IDs
+    existing_ids = set()
+    if old_rows:
+        existing_ids = {row[id_field] for row in old_rows}
+
+    # Filter out matching rows
+    new_rows = [row for row in existing_data if row[id_field] not in existing_ids]
+
+    # Write the new rows back to the CSV file
+    write_data(csv_file, new_rows)
+
+# Removes duplicate rows from the CSV file
+def remove_duplicate_rows(csv_file):
+    full_path_file = full_path(csv_file)
+    
+    if os.path.exists(full_path_file):
+        with open(full_path_file, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            existing_data = [row for row in reader]
+
+        # Remove duplicates
+        unique_data = {tuple(row.items()): row for row in existing_data}.values()
+
+        # Write the deduplicated data back to the CSV file
+        fieldnames = existing_data[0].keys() if existing_data else []
+        with open(full_path_file, "w", newline="", encoding="utf-8") as file:
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(unique_data)
+        
+        print(f"\n{current_time()} INFO: Removed duplicate rows from {csv_file}.\n")
+
+# Clean up empty data files
+def remove_empty_row(csv_file):
+    # Create a temporary file to write non-empty rows
+    temp_file = full_path("temp.csv")
+    full_path_file = full_path(csv_file)
+
+    with open(full_path_file, "r", encoding="utf-8") as infile, open(temp_file, "w", newline="", encoding="utf-8") as outfile:
+        reader = csv.reader(infile)
+        writer = csv.writer(outfile)
+
+        # Write the header (first row) to the new file
+        header = next(reader)
+        writer.writerow(header)
+
+        # Process each row
+        for row in reader:
+            # Check if the row contains any data (non-empty)
+            if any(cell.strip() for cell in row):
+                writer.writerow(row)
+
+    # Replace the original file with the temporary file
+    os.replace(temp_file, full_path_file)
+
+# Function to count rows in the CSV file
+def count_rows(csv_file):
+    full_path_file = full_path(csv_file)
+    with open(full_path_file, "r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        return sum(1 for row in reader)
+
+# Create missing data files, update data as needed
+def check_and_create_csv(csv_file):
+    full_path_file = full_path(csv_file)
+
+    data = initial_data(csv_file)
+
+    # Check if the file is empty or only contains blank lines; if so, delete it to start over
+    if os.path.exists(full_path_file):
+        with open(full_path_file, 'r', encoding="utf-8") as file:
+            content = file.readlines()
+        
+        if all(line.strip() == '' for line in content):
+            reliable_remove(full_path_file)
+
+    # Check if the file exists, if not create it
+    if not os.path.exists(full_path_file):
+        # Write data to the file
+        write_data(csv_file, data)
+        remove_empty_row(csv_file)
+
+        if csv_file == csv_settings:
+            print(f"\n*** First Time Setup ***")
+            settings = read_data(csv_settings)
+
+            settings[0]['settings'], channels_url_message = get_channels_url()
+
+            settings[1]['settings'] = find_channels_dvr_path()
+            
+            settings[2]['settings'] = get_country_code()
+            
+            write_data(csv_settings, settings)
+
+    # Append/Remove rows to data that may update
+    if csv_file == csv_streaming_services:
+        id_field = "streaming_service_name"
+        update_rows(csv_file, data, id_field, None)
+
+    # Add columns for new functionality
+    if csv_file == csv_bookmarks_status:
+        check_and_add_column(csv_file, 'special_action', 'None')
+
+    if csv_file == csv_bookmarks:
+        check_and_add_column(csv_file, 'bookmark_action', 'None')
+
+    # Add rows for new functionality
+    if csv_file == csv_settings:
+        check_and_append(csv_file, {"settings": "Off"}, 11, "Search Defaults: Filter out already bookmarked")
+        check_and_append(csv_file, {"settings": "Off"}, 12, "Playlist Manager: On/Off")
+        check_and_append(csv_file, {"settings": 10000}, 13, "Playlist Manager: Starting station number")
+        check_and_append(csv_file, {"settings": 750}, 14, "Playlist Manager: Max number of stations per m3u")
+        check_and_append(csv_file, {"settings": "Off"}, 15, "Playlist Manager: Update Stations Process Schedule On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 16, "Playlist Manager: Update Stations Process Schedule Time")
+        check_and_append(csv_file, {"settings": "Off"}, 17, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 18, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 19, "Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 20, "SLM: End-to-End Process Schedule Frequency")
+        check_and_append(csv_file, {"settings": "On"}, 21, "GEN: Backup Process On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 22, "GEN: Backup Process Schedule Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 23, "GEN: Backup Process Schedule Frequency")
+        check_and_append(csv_file, {"settings": 3}, 24, "GEN: Backup Process Max number of backups to keep")
+        check_and_append(csv_file, {"settings": "On"}, 25, "Stream Link/Files Manager: On/Off")
+        check_and_append(csv_file, {"settings": "On"}, 26, "GEN: Channels DVR Integration On/Off")
+
+# Data records for initialization files
+def initial_data(csv_file):
+    if csv_file == csv_settings:
+        data = [
+                    {"settings": f"http://dvr-{socket.gethostname().lower()}.local:8089"},     # [0]  Channels URL
+                    {"settings": script_dir},                                                  # [1]  Channels Folder
+                    {"settings": "US"},                                                        # [2]  Search Defaults: Country Code
+                    {"settings": "en"},                                                        # [3]  Search Defaults: Language Code
+                    {"settings": "9"},                                                         # [4]  Search Defaults: Number of Results
+                    {"settings": "Off"},                                                       # DEPRECATED: [5] Hulu to Disney+ Automatic Conversion
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [6]  SLM: End-to-End Process Schedule Time
+                    {"settings": "On"},                                                        # [7]  Channels Prune
+                    {"settings": "Off"},                                                       # [8]  SLM: End-to-End Process Schedule On/Off
+                    {"settings": "Off"},                                                       # [9]  Search Defaults: Filter out already bookmarked
+                    {"settings": "Off"},                                                       # [10] Playlist Manager: On/Off
+                    {"settings": 10000},                                                       # [11] Playlist Manager: Starting station number
+                    {"settings": 750},                                                         # [12] Playlist Manager: Max number of stations per m3u
+                    {"settings": "Off"},                                                       # [13] Playlist Manager: Update Stations Process Schedule On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [14] Playlist Manager: Update Stations Process Schedule Time
+                    {"settings": "Off"},                                                       # [15] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [16] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time
+                    {"settings": "Every 24 hours"},                                            # [17] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency
+                    {"settings": "Every 24 hours"},                                            # [18] SLM: End-to-End Process Schedule Frequency
+                    {"settings": "On"},                                                        # [19] GEN: Backup Process On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [20] GEN: Backup Process Schedule Start Time
+                    {"settings": "Every 24 hours"},                                            # [21] GEN: Backup Process Schedule Frequency
+                    {"settings": 3},                                                           # [22] GEN: Backup Process Max number of backups to keep
+                    {"settings": "On"},                                                        # [23] Stream Link/Files Manager: On/Off
+                    {"settings": "On"} #,                                                      # [24] GEN: Channels DVR Integration On/Off
+                    # Add more rows as needed
+        ]        
+    elif csv_file == csv_streaming_services:
+        data = get_streaming_services()
+    elif csv_file == csv_bookmarks:
+        data = [
+            {"entry_id": None,"title": None, "release_year": None, "object_type": None, "url": None, "country_code": None, "language_code": None, "bookmark_action": None}
+        ]
+    elif csv_file == csv_bookmarks_status:
+        data = [
+            {"entry_id": None, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": None, "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None}
+        ]
+    elif csv_file == csv_slmappings:
+        data = [
+            {"active": "Off", "contains_string": "hulu.com/watch", "object_type": "MOVIE or SHOW", "replace_type": "Replace string with...", "replace_string": "disneyplus.com/play"},
+            {"active": "On", "contains_string": "netflix.com/title", "object_type": "MOVIE", "replace_type": "Replace string with...", "replace_string": "netflix.com/watch"},
+            {"active": "On", "contains_string": "watch.amazon.com/detail?gti=", "object_type": "MOVIE or SHOW", "replace_type": "Replace string with...", "replace_string": "www.amazon.com/gp/video/detail/"},
+            {"active": "Off", "contains_string": "vudu.com", "object_type": "MOVIE or SHOW", "replace_type": "Replace entire Stream Link with...", "replace_string": "fandangonow://"} #,
+            # Add more rows as needed
+        ]
+    # Playlist Manager
+    elif csv_file == csv_playlistmanager_playlists:
+        data = [
+            {"m3u_id": None, "m3u_name": None, "m3u_url": None, "epg_xml": None, "stream_format": None, "m3u_priority": None}
+        ]
+    elif csv_file == csv_playlistmanager_parents:
+        data = [
+            {"parent_channel_id": None, "parent_title": None, "parent_tvg_id_override": None, "parent_tvg_logo_override": None, "parent_channel_number_override": None, "parent_tvc_guide_stationid_override": None, "parent_tvc_guide_art_override": None, "parent_tvc_guide_tags_override": None, "parent_tvc_guide_genres_override": None, "parent_tvc_guide_categories_override": None, "parent_tvc_guide_placeholders_override": None, "parent_tvc_stream_vcodec_override": None, "parent_tvc_stream_acodec_override": None, "parent_preferred_playlist": None}
+        ]
+    elif csv_file == csv_playlistmanager_child_to_parent:
+        data = [
+            {"child_m3u_id_channel_id": None, "parent_channel_id": None}
+        ]    
+    elif csv_file == csv_playlistmanager_combined_m3us:
+        data = [
+            {"station_playlist": None, "m3u_id": None, "title": None, "tvc_guide_title": None, "channel_id": None, "tvg_id": None, "tvg_name": None, "tvg_logo": None, "tvg_chno": None, "channel_number": None, "tvg_description": None, "tvc_guide_description": None, "group_title": None, "tvc_guide_stationid": None, "tvc_guide_art": None, "tvc_guide_tags": None, "tvc_guide_genres": None, "tvc_guide_categories": None, "tvc_guide_placeholders": None, "tvc_stream_vcodec": None, "tvc_stream_acodec": None, "url": None}
+        ]
+
+    return data
+
+# Website check in loop
+def check_website(url):
+    while True:
+        try:
+            response = requests.get(url, headers=url_headers)
+            if response.status_code == 200:
+                print(f"\n{current_time()} SUCCESS: {url} is accessible. Continuing...")
+                break
+            else:
+                print(f"\n{current_time()} ERROR: {url} reports {response.status_code}")
+        except requests.RequestException as e:
+            print(f"\n{current_time()} ERROR: {url} reports {e}")
+        
+        print(f"\n{current_time()} INFO: Retrying in 1 minute...")
+        time.sleep(60)
+
+# Used to loop through a URL that might error
+def fetch_url(url, retries, delay):
+    timeout_duration = 60
+
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, headers=url_headers, timeout=timeout_duration)
+            if response.status_code == 200:
+                return response
+            else:
+                raise Exception(f"HTTP Status Code {response.status_code}")
+        except Exception as e:
+            if attempt < retries - 1:
+                print(f"\n{current_time()} WARNING: For '{url}', encountered an error ({e}). Retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                notification_add(f"\n{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...")
+
+# Searches for an IP Address on the LAN that responds to Port 8089
+def get_channels_url():
+    local_ip = socket.gethostbyname(socket.gethostname())
+    ip_parts = local_ip.split('.')
+    base_ip = '.'.join(ip_parts[:-1]) + '.'
+    start_ip = int(ip_parts[-1])
+    port = 8089
+    machine_name = None
+    machine_name_flag = None
+    docker_test = None
+    docker_test_url = f"http://host.docker.internal:8089"
+    channels_url = None
+    channels_url_message = None
+    bad_urls = [
+        "docker",
+        "tailscale"
+    ]
+
+    print(f"\n{current_time()} Searching for Channels URL...")
+    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
+
+    # Search times out after 60 seconds
+    timer = threading.Timer(60, timeout_handler)
+    timer.start()
+
+    try:
+        machine_name = check_ip_range(start_ip, start_ip + 1, base_ip, port)
+        if machine_name:
+            machine_name = socket.gethostname().lower()
+
+        if machine_name is None or machine_name == '':
+            machine_name = check_ip_range(start_ip + 1, 256, base_ip, port)
+
+        if machine_name is None or machine_name == '':
+            machine_name = check_ip_range(1, start_ip, base_ip, port)
+
+        if machine_name:
+            for bad_url in bad_urls:
+                if machine_name.__contains__(bad_url):
+                    machine_name = "[ERROR_READ_WRONG_NAME_UPDATE_SETTINGS]"
+                    machine_name_flag = True
+                    break
+
+        if machine_name is None or machine_name == '':
+            docker_test = check_channels_url(docker_test_url)
+
+        if docker_test:
+            channels_url_message = f"{current_time()} INFO: External Channels URL not found, but was discovered with the Docker link! Please verify in Settings and change there, if desired."
+            channels_url = docker_test_url
+        elif machine_name:
+            if machine_name_flag:
+                channels_url_message = f"{current_time()} INFO: Error in discovering Channels URL. Please manually update in Settings."
+            else:
+                channels_url_message = f"{current_time()} INFO: Potential Channels URL found! Please verify in Settings."
+            channels_url = f"http://dvr-{machine_name}.local:8089"
+        else:
+            channels_url_message = f"{current_time()} INFO: Channels URL not found. Please manually update in Settings."
+            channels_url = f"http://[CHANNELS_URL_NOT_FOUND_UPDATE_SETTINGS]:8089"
+    except TimeoutError:
+        channels_url_message = f"{current_time()} INFO: Search timed out. Continuing to next step..."
+    except KeyboardInterrupt:
+        channels_url_message = f"{current_time()} INFO: Search interrupted by user. Continuing to next step..."
+    finally:
+        timer.cancel()  # Disable the timer
+
+    if channels_url:
+        pass
+    else:
+        channels_url_message = f"{current_time()} INFO: Channels URL not found. Please manually update in Settings."
+        channels_url = f"http://[CHANNELS_URL_NOT_FOUND_UPDATE_SETTINGS]:8089"
+
+    print(f"\n{channels_url_message}")
+    print(f"{current_time()} INFO: Channels URL set to '{channels_url}'\n")
+
+    return channels_url, channels_url_message
+
+# Loops through the IP Addresses as part of the check for the open Port 8089
+def check_ip_range(start, end, base_ip, port):
+    machine_name = None
+    port_test = None
+
+    for i in range(start, end):
+        ip = base_ip + str(i)
+        print(f"    Checking IP: {ip}")
+        try:
+            port_test = socket.create_connection((ip, port), timeout=0.1)
+        except (socket.timeout, ConnectionRefusedError, OSError):
+            pass
+        if port_test:
+            machine_name = socket.gethostbyaddr(ip)[0].lower()
+            break
+
+    return machine_name
+
+# Calculate percentages or set to zero if total_records is zero
+def calc_percentage(count, total):
+    return f"{round((count / total) * 100, 1)}%" if total > 0 else "0.0%"
+
+# Global Variables
+script_dir = os.path.dirname(os.path.abspath(__file__))
+script_filename = os.path.basename(__file__)
+log_filename = os.path.splitext(script_filename)[0] + '.log'
+docker_channels_dir = os.path.join(script_dir, "channels_folder")
+program_files_dir = os.path.join(script_dir, "program_files")
+backup_dir = os.path.join(program_files_dir, "backups")
+playlists_uploads_dir_name = "playlists_uploads"
+playlists_uploads_dir = os.path.join(program_files_dir, playlists_uploads_dir_name)
+csv_settings = "StreamLinkManager_Settings.csv"
+csv_streaming_services = "StreamLinkManager_StreamingServices.csv"
+csv_bookmarks = "StreamLinkManager_Bookmarks.csv"
+csv_bookmarks_status = "StreamLinkManager_BookmarksStatus.csv"
+csv_slmappings = "StreamLinkManager_SLMappings.csv"
+# Playlist Manager files only get created when turned on in Settings
+csv_playlistmanager_playlists = "PlaylistManager_Playlists.csv"
+csv_playlistmanager_combined_m3us = "PlaylistManager_Combinedm3us.csv"
+csv_playlistmanager_parents = "PlaylistManager_Parents.csv"
+csv_playlistmanager_child_to_parent = "PlaylistManager_ChildToParent.csv"
+csv_files = [
+    csv_settings,
+    csv_streaming_services,
+    csv_bookmarks,
+    csv_bookmarks_status,
+    csv_slmappings  #,
+    # Add more rows as needed
+]
+program_files = csv_files + [log_filename]
+engine_url = "https://www.justwatch.com"
+url_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36'}
+_GRAPHQL_API_URL = "https://apis.justwatch.com/graphql"
+engine_image_url = "https://images.justwatch.com"
+engine_image_profile_poster = "s718"
+engine_image_profile_backdrop = "s1920"
+engine_image_profile_icon = "s100"
+valid_country_codes = [
+    "AD",
+    "AE",
+    "AG",
+    "AL",
+    "AR",
+    "AT",
+    "AU",
+    "BA",
+    "BB",
+    "BE",
+    "BG",
+    "BH",
+    "BM",
+    "BO",
+    "BR",
+    "BS",
+    "CA",
+    "CH",
+    "CI",
+    "CL",
+    "CO",
+    "CR",
+    "CU",
+    "CV",
+    "CZ",
+    "DE",
+    "DK",
+    "DO",
+    "DZ",
+    "EC",
+    "EE",
+    "EG",
+    "ES",
+    "FI",
+    "FJ",
+    "FR",
+    "GB",
+    "GF",
+    "GG",
+    "GH",
+    "GI",
+    "GQ",
+    "GR",
+    "GT",
+    "HK",
+    "HN",
+    "HR",
+    "HU",
+    "ID",
+    "IE",
+    "IL",
+    "IN",
+    "IQ",
+    "IS",
+    "IT",
+    "JM",
+    "JO",
+    "JP",
+    "KE",
+    "KR",
+    "KW",
+    "LB",
+    "LI",
+    "LT",
+    "LV",
+    "LY",
+    "MA",
+    "MC",
+    "MD",
+    "MK",
+    "MT",
+    "MU",
+    "MX",
+    "MY",
+    "MZ",
+    "NE",
+    "NG",
+    "NL",
+    "NO",
+    "NZ",
+    "OM",
+    "PA",
+    "PE",
+    "PF",
+    "PH",
+    "PK",
+    "PL",
+    "PS",
+    "PT",
+    "PY",
+    "QA",
+    "RO",
+    "RS",
+    "RU",
+    "SA",
+    "SC",
+    "SE",
+    "SG",
+    "SI",
+    "SK",
+    "SM",
+    "SN",
+    "SV",
+    "TC",
+    "TH",
+    "TN",
+    "TR",
+    "TT",
+    "TW",
+    "TZ",
+    "UG",
+    "US",
+    "UY",
+    "VA",
+    "VE",
+    "XK",
+    "YE",
+    "ZA",
+    "ZM" #, Add more as needed
+]
+valid_language_codes = [
+    "ar",
+    "bg",
+    "bs",
+    "ca",
+    "cs",
+    "de",
+    "el",
+    "en",
+    "es",
+    "fi",
+    "fr",
+    "he",
+    "hr",
+    "hu",
+    "is",
+    "it",
+    "ja",
+    "ko",
+    "mk",
+    "mt",
+    "pl",
+    "pt",
+    "ro",
+    "ru",
+    "sk",
+    "sl",
+    "sq",
+    "sr",
+    "sw",
+    "tr",
+    "ur",
+    "zh" #, Add more as needed
+]
+special_actions_default = [
+    "None",
+    "Make STRM" #, Add more as needed
+]
+notifications = []
+timeout_occurred = None
+stream_link_ids_changed = []
+program_search_results_prior = []
+country_code_input_prior = None
+language_code_input_prior = None
+entry_id_prior = None
+title_selected_prior = None
+release_year_selected_prior = None
+object_type_selected_prior = None
+bookmark_action_prior = None
+season_episodes_prior = []
+bookmarks_statuses_selected_prior = []
+edit_flag = None
+channels_url_prior = None
+date_new_default_prior = None
+program_add_prior = ''
+program_add_resort_panel = ''
+program_add_filter_panel = ''
+slm_query = None
+slm_query_name = None
+offer_icons = []
+offer_icons_flag = None
+select_file_prior = None
+bookmark_actions_default = [
+    "None",
+    "Hide" #, Add more as needed
+]
+bookmark_actions_default_show_only = [
+    "Disable Get New Episodes" #, Add more as needed
+]
+plm_m3us_epgs_schedule_frequencies = [
+    "Every 1 hour",
+    "Every 3 hours",
+    "Every 6 hours",
+    "Every 12 hours",
+    "Every 24 hours"
+]
+slm_end_to_end_frequencies = [
+    "Every 8 hours",
+    "Every 12 hours",
+    "Every 24 hours"
+]
+gen_backup_frequencies = [
+    "Every 1 hour",
+    "Every 2 hours",
+    "Every 4 hours",
+    "Every 8 hours",
+    "Every 12 hours",
+    "Every 24 hours"
+]
+stream_formats = [
+    "HLS",
+    "MPEG-TS"
+]
+select_program_to_bookmarks = []
+
+### Start-up process and safety checks
+# Program directories
+create_directory(program_files_dir)
+create_directory(backup_dir)
+
+# Make a backup and remove old backups
+if os.path.exists(program_files_dir):
+    create_backup()
+
+# Set up session logging
+log_filename_fullpath = full_path(log_filename)
+open(log_filename_fullpath, 'w', encoding="utf-8").close()
+class logger(object):
+    def __init__(self, filename=log_filename_fullpath, mode="ab", buff=0):
+        self.stdout = sys.stdout
+        self.stdin = sys.stdin
+        self.file = open(filename, mode, buff)
+        sys.stdout = self
+        sys.stdin = self
+    def readline(self):
+        user_input = self.stdin.readline()
+        self.file.write(user_input.encode("utf-8"))
+        return user_input
+    def __del__(self):
+        self.close()
+    def __enter__(self):
+        pass
+    def __exit__(self, *args):
+        self.close()
+    def write(self, message):
+        self.stdout.write(message)
+        self.file.write(message.encode("utf-8"))
+    def flush(self):
+        self.stdout.flush()
+        self.file.flush()
+        os.fsync(self.file.fileno())
+    def close(self):
+        if self.stdout != None:
+            sys.stdout = self.stdout
+            self.stdout = None
+        if self.stdin != None:
+            sys.stdin = self.stdin
+            self.stdin = None
+        if self.file != None:
+            self.file.close()
+            self.file = None
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="[%(levelname)s | %(asctime)s] - %(message)s",
+    filename=log_filename_fullpath,
+    filemode="a",
+)
+log = logger()
+
+notification_add(f"\n{current_time()} Beginning Initialization Process (see log for details)...\n")
+
+check_website(engine_url)
+
+for csv_file in csv_files:
+    check_and_create_csv(csv_file)
+
+global_settings = read_data(csv_settings)
+slm_playlist_manager = None
+if global_settings[10]['settings'] == "On":
+    slm_playlist_manager = True
+slm_stream_link_file_manager = None
+if global_settings[23]['settings'] == "On":
+    slm_stream_link_file_manager = True
+slm_channels_dvr_integration = None
+if global_settings[24]['settings'] == "On":
+    slm_channels_dvr_integration = True
+
+if slm_channels_dvr_integration:
+    check_channels_url(None)
+
+# Start the background thread
+thread = threading.Thread(target=check_schedule)
+thread.daemon = True
+thread.start()
+
+if slm_channels_dvr_integration:
+    notification_add(f"\n{current_time()} Initialization Complete. Starting Streaming Library Manager for Channels...")
+else:
+    notification_add(f"\n{current_time()} Initialization Complete. Starting Streaming Library Manager...")
+
+# Start Server
 if __name__ == "__main__":
     notification_add(f"\n{current_time()} INFO: Server starting on port {slm_port}\n")
     app.run(host='0.0.0.0', port=slm_port)
