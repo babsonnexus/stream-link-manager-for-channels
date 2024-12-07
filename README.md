@@ -16,7 +16,7 @@ Making these tasks a seamless and simple experience is the purpose of <b>Streami
 
 Enter <b>Stream Link/File Manager</b>!
 
-![image](https://github.com/user-attachments/assets/5bc18966-5c65-40d4-ab45-ef098ed1263e)
+![image](https://github.com/user-attachments/assets/788cb0a7-4b29-4497-aa8a-4a6c6f8c47f8)
 
 SLM is a background service that sets up a web-based graphical user interface (GUI) for interaction. In the GUI, users can search for any Movie or TV Show and bookmark it. If it cannot be found, manual additions are allowed. Assuming a program is found, for "Stream Links", the software will parse through a user-derived list of Streaming Services (i.e., Disney+, Hulu, Netflix, Hoopla, Kanopy, etc...) in priority order—including setting a preferred service for a particular Movie or Episode as an overarching setting—in order to determine the appropriate link. There is also the ability to input user-derived links, especially when dealing with "Stream Files". After this, the necessary folders and files will be created, along with completing all other administrative tasks. Should a bookmark move from one Streaming Service to another or the user does a manual adjustment, SLM will automatically update everywhere that is required. But this is just the beginning of its capabilities! To learn more, watch the video here:
 
@@ -29,7 +29,7 @@ There are a lot of fantastic methods for integrating [custom linear stations](ht
 
 Enter **Playlist Manager**, a custom add-on for **Streaming Library Manager**!
 
-![image](https://github.com/user-attachments/assets/63754633-2d19-41fa-a0aa-457c164c3d4c)
+![image](https://github.com/user-attachments/assets/5533fe58-2165-4a49-a530-b855b7444ec1)
 
 From a high-level perspective, PLM works on the same premise as SLM. The idea is that there is some piece of content that can come from multiple sources that you have legal access to and it will "assign" which one to use based upon a priority that you set. With SLM, it takes a movie or an episode of a TV show and parses through all the streaming services you have set, sees if it is there, and assigns the appropriate Stream Link. Similarly, with PLM, it takes a "parent" station that you define and parses through all the playlists that you have set, sees if there is a matching "child" station, and assigns the appropriate info to m3u and EPG files that can be integrated into Channels DVR or any other similar tool. Still, this is just the beginning of its capabilities!
 
