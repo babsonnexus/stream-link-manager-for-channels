@@ -1,8 +1,13 @@
 ![slm_logo_v2](https://github.com/user-attachments/assets/caf56400-1523-4efa-b9be-7306942f9f06)
 
 ---
-# Streaming Library Manager for Channels
-In <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to add "<b>[Stream Links](https://getchannels.com/docs/channels-dvr-server/how-to/stream-links/)</b>" and "<b>[Stream Files](https://getchannels.com/docs/channels-dvr-server/how-to/stream-files/)</b>" as local content. They can also integrate additional <b>[custom stations](https://getchannels.com/custom-channels/)</b> by integrating streaming m3u playlists. And then there are even more ways to customize the experience! While these tools are powerful, they have limitations that often require a fair bit of maintenance and knowhow. But what if we could make the whole process a little... easier?
+# Streaming Library Manager
+Dealing with all the media options available nowadays is a massive pain! For instance, in <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to add "<b>[Stream Links](https://getchannels.com/docs/channels-dvr-server/how-to/stream-links/)</b>" and "<b>[Stream Files](https://getchannels.com/docs/channels-dvr-server/how-to/stream-files/)</b>" as local content. They can also have additional <b>[custom linear stations](https://getchannels.com/custom-channels/)</b> by integrating streaming m3u playlists. And then there are even more ways to customize the experience! While these tools are powerful, they have limitations that often require a fair bit of maintenance and knowhow. But what if we could make the whole process a little... easier?
+
+Making these tasks a seamless and simple experience is the purpose of <b>Streaming Library Manager</b> and it's set of custom add-on tools. Currently, the available options are:
+
+* **Streaming Library Manager for Channels** [Default]
+* **Streaming Library Manager Solo Edition**
 
 <i><b>NOTE:</b> Some of the visuals seen in the videos and in the screen shots below may be out of date as updates to format and functionality have been applied to the program.</i>
 
@@ -17,10 +22,12 @@ SLM is a background service that sets up a web-based graphical user interface (G
 
 [![image](https://github.com/user-attachments/assets/0100b998-f9ea-46f8-8baa-59213d398cd3)](https://www.youtube.com/watch?v=5qm_2pU1h1c)
 
-## Playlist Manager [PLM]
-There are a lot of fantastic methods for integrating [custom stations](https://getchannels.com/custom-channels/) into Channels DVR, especially from FAST and similar providers like [Pluto](https://github.com/jgomez177/pluto-for-channels), [Plex](https://github.com/jgomez177/plex-for-channels), [Tubi](https://github.com/jgomez177/tubi-for-channels), [Samsung TV+](https://github.com/matthuisman/samsung-tvplus-for-channels), [ESPN+, NFL+](https://github.com/m0ngr31/EPlusTV), and [plenty more](https://getchannels.com/community/)! The problem is, they require a fair bit of maintenance. For instance, there are [whole](https://community.getchannels.com/t/changes-in-channel-lineups/36494) [threads](https://community.getchannels.com/t/2024-channel-lineup-changes-non-us-services/41159) and [tools](https://github.com/mjitkop/Channels-DVR-Monitor-Channel-Lineups) dedicated just to keeping track of which stations have been added and removed. And that doesn't even get into the redundancy of when each of these services have the same stations, but you have to decide which one you want to put in your [Channel Collection](https://getchannels.com/docs/channels-dvr-server/how-to/channel-collections) before it inevitably disappears without you knowing it and not realizing you need to put a replacement in its spot.
+Non-Channels DVR users can still use SLM to keep track of their programs and what services they are available on. See the information below to disable the integration into Channels DVR and switch to "Solo Edition".
 
-Enter **Playlist Manager**, a custom add-on for **Streaming Library Manager for Channels**!
+## Playlist Manager [PLM]
+There are a lot of fantastic methods for integrating [custom linear stations](https://getchannels.com/custom-channels/) into Channels DVR and some other services, especially from FAST and similar providers like [Pluto](https://github.com/jgomez177/pluto-for-channels), [Plex](https://github.com/jgomez177/plex-for-channels), [Tubi](https://github.com/jgomez177/tubi-for-channels), [Samsung TV+](https://github.com/matthuisman/samsung-tvplus-for-channels), [ESPN+, NFL+](https://github.com/m0ngr31/EPlusTV), and [plenty more](https://getchannels.com/community/)! The problem is, they require a fair bit of maintenance. For instance, there are [whole](https://community.getchannels.com/t/changes-in-channel-lineups/36494) [threads](https://community.getchannels.com/t/2024-channel-lineup-changes-non-us-services/41159) and [tools](https://github.com/mjitkop/Channels-DVR-Monitor-Channel-Lineups) dedicated just to keeping track of which stations have been added and removed. And that doesn't even get into the redundancy of when each of these services have the same stations, but you have to decide which one you want to put in your [Channel Collection](https://getchannels.com/docs/channels-dvr-server/how-to/channel-collections) before it inevitably disappears without you knowing it and not realizing you need to put a replacement in its spot.
+
+Enter **Playlist Manager**, a custom add-on for **Streaming Library Manager**!
 
 ![image](https://github.com/user-attachments/assets/63754633-2d19-41fa-a0aa-457c164c3d4c)
 
@@ -35,7 +42,7 @@ To see a short demonstration, watch the video here:
 <i>Image (edited) courtesy of SpaceX, CC0, via Wikimedia Commons.</i>
 
 # Installation
-There are several methods to install <b>Streaming Library Manager for Channels</b> and only one should be followed. While Docker is the preferred route for those who have it as it is the most controlled path, if you are not comfortable with Docker or are having issues, you can do a straight self-deployment in Windows or Linux, or use Python in any OS type. For those unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are installing Docker in Windows, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591). Channels DVR users who have deployed [OliveTin for Channels](https://community.getchannels.com/t/37609) and/or [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process. Just follow one of these paths throughout the entire installation, doing the step-by-step actions exactly as described.
+There are several methods to install <b>Streaming Library Manager</b> and only one should be followed. While Docker is the preferred route for those who have it as it is the most controlled path, if you are not comfortable with Docker or are having issues, you can do a straight self-deployment in Windows or Linux, or use Python in any OS type. For those unfamiliar with Docker, you can easily [install Docker Desktop as a stand-alone application](https://www.docker.com/products/docker-desktop/). If you are installing Docker in Windows, please set up Windows Subsystem for Linux (WSL) first by following [these directions](https://community.getchannels.com/t/espn-fox-sports-with-custom-channels-via-eplustv/31144/591). Channels DVR users who have deployed [OliveTin for Channels](https://community.getchannels.com/t/37609) and/or [Project One-Click](https://community.getchannels.com/t/39669) can use those, as well, to simplify the process. Just follow one of these paths throughout the entire installation, doing the step-by-step actions exactly as described.
 
 ![SLM Installation Decision Tree v2](https://github.com/user-attachments/assets/0cd52be1-bbe3-45ea-98b3-ecf906d2565f)
 
@@ -66,7 +73,7 @@ You can also follow along in the video here:
 * [01:06:08](https://www.youtube.com/watch?v=APuUaAvNo-k&t=3968s) Settings - Scheduler
 * [01:08:56](https://www.youtube.com/watch?v=APuUaAvNo-k&t=4136s) Final Thoughts
 
-As a general note, it does not matter "where" <b>Streaming Library Manager for Channels</b> is installed; it could even be placed in the Channels DVR directory. The only requirements are that it must be on a machine and in a location that has directory access to the Channels DVR directory and be able to see the Channels DVR Administrative webpage.
+As a general note, it does not matter "where" <b>Streaming Library Manager</b> is installed; it could even be placed in the Channels DVR directory. The only requirements are that it must be on a machine and in a location that has directory access to the Channels DVR directory and be able to see the Channels DVR Administrative webpage.
 
 ## Docker
 If you are not using <i>OliveTin/Project One-Click</i>, it is recommended to install via Stack using [Portainer](https://www.portainer.io/) ([Docker Desktop](https://open.docker.com/extensions/marketplace?extensionId=portainer/portainer-docker-extension) | [Docker Standalone](https://docs.portainer.io/start/install-ce/server/docker)). Otherwise, you can use the single command line method as shown below.
@@ -98,9 +105,9 @@ Environment variables are included, some required, some optional.
 
 * <b>SLM_PORT</b> | OPTIONAL | The port you want to access the program from in the web browser. The default is "5000" if you do not add.
 
-* <b>CHANNELS_FOLDER</b> | REQUIRED | The path to your Channels DVR parent directory (see details in <i>Startup</i> below), i.e., ```/usr/lib/channels-dvr```. You could optionally put in any parent path, so long as the Channels DVR path is accessible somewhere inside. Note that spaces are fine and you do not have to enclose the path in quotes. In Windows, your slashes should go the opposite of the normal way, i.e., ```C:/Files/Media/Channels DVR```. In MacOS, be sure to include your ```/Volumes``` first, i.e., ```/Volumes/external-hdd/Channels DVR```. Be careful not to put extra characters as your system may then create that directory anyway. In other words, there will be no error as the directory exists, but it is not set to where you want it to be.
+* <b>CHANNELS_FOLDER</b> | REQUIRED | The path to your Channels DVR parent directory (see details in <i>Startup</i> below), i.e., ```/usr/lib/channels-dvr```. You could optionally put in any parent path, so long as the Channels DVR path is accessible somewhere inside. Do know that spaces are fine and you do not have to enclose the path in quotes. In Windows, your slashes should go the opposite of the normal way, i.e., ```C:/Files/Media/Channels DVR```. In MacOS, be sure to include your ```/Volumes``` first, i.e., ```/Volumes/external-hdd/Channels DVR```. Be careful not to put extra characters as your system may then create that directory anyway. In other words, there will be no error as the directory exists, but it is not set to where you want it to be. NOTE: If you are not a Channels DVR user, you can set this to any directory as a placeholder.
 
-* <b>SLM_HOST_FOLDER</b> | OPTIONAL | The path on your local host machine where you would like the program files for **Streaming Library Manager for Channels** to reside. As will be discussed in more detail later, these are the files that the application uses to manage the entire solution. The software itself can be replaced at any time, but these files have all of your settings, bookmarks, etc.... As such, you may desire to have them available on your local machine that is hosting Docker in order to back them up. If you do not add this, it will be set to `slm_files` inside the `Volumes` area of Docker Desktop itself.
+* <b>SLM_HOST_FOLDER</b> | OPTIONAL | The path on your local host machine where you would like the program files for **Streaming Library Manager** to reside. As will be discussed in more detail later, these are the files that the application uses to manage the entire solution. The software itself can be replaced at any time, but these files have all of your settings, bookmarks, etc.... As such, you may desire to have them available on your local machine that is hosting Docker in order to back them up. If you do not add this, it will be set to `slm_files` inside the `Volumes` area of Docker Desktop itself.
 
 * <b>TIMEZONE</b> | OPTIONAL | The timezone you want to use. To know what to input, go [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), find your timezone, make sure it is a "Canonical" Type, and use the "TZ identifier". The default is "UTC" if you do not add. Please keep this in mind when using the scheduler function.
 
@@ -140,7 +147,7 @@ If using PowerShell, type in:
 .\slm.bat install
 ```
 
-3. You will be given one last chance to decide if you want to do the installation. Note that an installation will remove any previous instance of <b>Streaming Library Manager for Channels</b> at that location. This is unlike the "upgrade" below which will maintain all your files and settings.
+3. You will be given one last chance to decide if you want to do the installation. Note that an installation will remove any previous instance of <b>Streaming Library Manager</b> at that location. This is unlike the "upgrade" below which will maintain all your files and settings.
 
 ![image](https://github.com/user-attachments/assets/a93612b4-2159-47ae-8ccb-d959078bea8b)
 
@@ -152,7 +159,7 @@ If using PowerShell, type in:
 
 ![image](https://github.com/user-attachments/assets/8cbdac78-5dba-469d-ad58-93459bdf6056)
    
-6. OPTIONAL: By default, <b>Streaming Library Manager for Channels</b> runs on port 5000. You can change this to another port by typing in this command:
+6. OPTIONAL: By default, <b>Streaming Library Manager</b> runs on port 5000. You can change this to another port by typing in this command:
 
 ```
 slm.bat port
@@ -221,7 +228,7 @@ chmod +x "slm.sh"
 ./slm.sh install
 ```
 
-4. You will be given one last chance to decide if you want to do the installation. Note that an installation will remove any previous instance of <b>Streaming Library Manager for Channels</b> at that location. This is unlike the "upgrade" below which will maintain all your files and settings.
+4. You will be given one last chance to decide if you want to do the installation. Note that an installation will remove any previous instance of <b>Streaming Library Manager</b> at that location. This is unlike the "upgrade" below which will maintain all your files and settings.
 
 ![image](https://github.com/user-attachments/assets/53160f56-0c47-4b07-be7b-dfc9bd4cfd03)
 
@@ -237,7 +244,7 @@ chmod +x "slm.sh"
 
 ![image](https://github.com/user-attachments/assets/9b3e34e1-7da2-4001-866e-292df7bf52ae)
 
-7. OPTIONAL: By default, <b>Streaming Library Manager for Channels</b> runs on port 5000. You can change this to another port by typing in this command:
+7. OPTIONAL: By default, <b>Streaming Library Manager</b> runs on port 5000. You can change this to another port by typing in this command:
 
 ```
 ./slm.sh port
@@ -306,7 +313,7 @@ pyinstaller --noconfirm --onedir --console --add-data="requirements.txt:." --add
 * ```dist``` contains the entire executable program. You can leave it in its current location, rename it, and/or move it somewhere else.
 * With that, you no longer need the original content that was unzipped and you can delete it if you want.
 
-6. OPTIONAL: You can change the port for <b>Streaming Library Manager for Channels</b> by creating a permanent Environment Variable called ```SLM_PORT``` (case sensitive) and giving it a value of the port you want to use. If you don't, the program will run on port 5000. You may also need to open the port up to bypass firewalls or other such settings.
+6. OPTIONAL: You can change the port for <b>Streaming Library Manager</b> by creating a permanent Environment Variable called ```SLM_PORT``` (case sensitive) and giving it a value of the port you want to use. If you don't, the program will run on port 5000. You may also need to open the port up to bypass firewalls or other such settings.
 
 ---
 # Upgrade
@@ -336,7 +343,7 @@ When the option comes up, make sure "Re-pull image" is selected.
 It then rebuilds the Image and the Container with all the original command lines. Remember to delete the old, unused Image afterwards.
 
 ## Windows
-1. In ```Command Prompt```, navigate to your <b>Streaming Library Manager for Channels</b> directory and type in the following command:
+1. In ```Command Prompt```, navigate to your <b>Streaming Library Manager</b> directory and type in the following command:
 
 ```
 slm.bat upgrade
@@ -355,7 +362,7 @@ If using PowerShell, type in:
 3. The most important thing is that ```slm.exe``` was terminated or not running, allowing the upgrade to take place. After the upgrade, you will need to restart the program manually or with a reboot. See <b>Startup</b> below.
 
 ## Linux
-1. In a terminal, navigate to your <b>Streaming Library Manager for Channels</b> directory and type in the following command:
+1. In a terminal, navigate to your <b>Streaming Library Manager</b> directory and type in the following command:
 
 ```
 ./slm.sh upgrade
@@ -372,7 +379,7 @@ If using PowerShell, type in:
 3. The most important thing is that the ```/slm``` application was terminated or not running, allowing the upgrade to take place. After the upgrade, you will need to restart the program manually or with a reboot. See <b>Startup</b> below.
 
 ## Python
-1. Make sure <b>Streaming Library Manager for Channels</b> is closed and is not running in the background.
+1. Make sure <b>Streaming Library Manager</b> is closed and is not running in the background.
 
 2. Copy the ```program_files``` directory under ```_internal``` to a safe location.
 
@@ -386,13 +393,13 @@ If using PowerShell, type in:
 
 ---
 # Startup
-Since <b>Streaming Library Manager for Channels</b> is designed to run as a service that you access through a webpage, it should be set up to launch at system startup. There may also be reasons to start manually, like after initial installation or an upgrade.
+Since <b>Streaming Library Manager</b> is designed to run as a service that you access through a webpage, it should be set up to launch at system startup. There may also be reasons to start manually, like after initial installation or an upgrade.
 
 ## Docker
 1. There is nothing additional to do as Docker will automatically start up.
 
 ## Windows
-1. In ```Command Prompt```, navigate to your <b>Streaming Library Manager for Channels</b> directory and type in the following command:
+1. In ```Command Prompt```, navigate to your <b>Streaming Library Manager</b> directory and type in the following command:
 
 ```
 slm.bat startup
@@ -408,11 +415,11 @@ If using PowerShell, type in:
 
 ![image](https://github.com/user-attachments/assets/53d24b29-8701-4cb1-96e5-9c7f93c48d73)
 
-3. If you open ```Task Scheduler```, you should now see a task called "Streaming Library Manager for Channels":
+3. If you open ```Task Scheduler```, you should now see a task called "Streaming Library Manager":
 
 ![image](https://github.com/user-attachments/assets/c909fde6-3ca5-4b73-9ff5-09f65c945f32)
 
-4. The next time you reboot, <b>Streaming Library Manager for Channels</b> will automatically start. Similarly, you can manually start it by either...
+4. The next time you reboot, <b>Streaming Library Manager</b> will automatically start. Similarly, you can manually start it by either...
    
 * Running the process directly in ```Task Scheduler```
 * Double clicking on the ```slm.bat``` file
@@ -423,7 +430,7 @@ If using PowerShell, type in:
 ![image](https://github.com/user-attachments/assets/de995caf-d7fc-4d82-b428-a2b1592d0629)
 
 ## Linux
-1. In a terminal, navigate to your <b>Streaming Library Manager for Channels</b> directory and type in the following command:
+1. In a terminal, navigate to your <b>Streaming Library Manager</b> directory and type in the following command:
 
 ```
 ./slm.sh startup
@@ -445,7 +452,7 @@ You should see a file named ```slm_startup.sh```:
 
 ![image](https://github.com/user-attachments/assets/0518f462-d077-427d-94d1-8e94600686c3)
 
-4. The next time you reboot, <b>Streaming Library Manager for Channels</b> will automatically start. Similarly, you can manually start it by entering:
+4. The next time you reboot, <b>Streaming Library Manager</b> will automatically start. Similarly, you can manually start it by entering:
    
 ```
 ./slm.sh
@@ -468,7 +475,7 @@ In either case, you should see something similar to this:
 ![image](https://github.com/user-attachments/assets/3428ac17-5e1e-4ac2-a9d2-6ff82ff601c8)
 
 ## Python
-You have the option for how you want to handle this. Since <b>Streaming Library Manager for Channels</b> is designed to be a background service, just running the program like this...
+You have the option for how you want to handle this. Since <b>Streaming Library Manager</b> is designed to be a background service, just running the program like this...
 
 ```
 python slm.py
@@ -496,11 +503,11 @@ Replace ```[YOUR_SLM_DIRECTORY]``` with the path you created earlier and save th
 
 ## All
 
-1. The first time you start <b>Streaming Library Manager for Channels</b>, it may take a couple of minutes before it is available. This is due to it running many activities during initial setup that are not repeated. In later startups, it should be just a few seconds depending upon system performance and internet speeds. If you watch the logs or are in an interactive window, you may see something like this:
+1. The first time you start <b>Streaming Library Manager</b>, it may take a couple of minutes before it is available. This is due to it running many activities during initial setup that are not repeated. In later startups, it should be just a few seconds depending upon system performance and internet speeds. If you watch the logs or are in an interactive window, you may see something like this:
 
 ![image](https://github.com/user-attachments/assets/c94b5031-94af-4741-9d0c-3a7e1ee38fc2)
 
-While the Initialization process attempts to find all the necessary values—even noting when it has to use a substitute value—do not worry if any of the searches faulter. There are various levels of safety checks and automatic timeouts that will move the process along. More so, you can always make adjustments in the ```Settings``` later. To be clear, any "error" or the like shown are not failures and are expected behavior. Everything directly related to <b>Streaming Library Manager for Channels</b> is managed from the ```Settings``` area as discussed below.
+While the Initialization process attempts to find all the necessary values—even noting when it has to use a substitute value—do not worry if any of the searches faulter. There are various levels of safety checks and automatic timeouts that will move the process along. More so, you can always make adjustments in the ```Settings``` later. To be clear, any "error" or the like shown are not failures and are expected behavior. Everything directly related to <b>Streaming Library Manager</b> is managed from the ```Settings``` area as discussed below.
 
 Also worth highlighting: if you are using Docker, you may still see it says it starts on port 5000. There are no concerns about this as it is being mapped correctly so long as you gave a port value.
 
@@ -520,7 +527,7 @@ Example Mapped...
 https://localhost:7900
 ```
 
-If you are on a different machine than where <b>Streaming Library Manager for Channels</b> is installed, you will need to use the name or IP Address of that machine in place of ```localhost``` and make sure the port is open (as discussed in the installation directions) to be accessed.
+If you are on a different machine than where <b>Streaming Library Manager</b> is installed, you will need to use the name or IP Address of that machine in place of ```localhost``` and make sure the port is open (as discussed in the installation directions) to be accessed.
 
 3. Once at the location, you should see the homepage:
 
@@ -547,17 +554,28 @@ Aside from the visuals, everything will function exactly the same.
 
 ![image](https://github.com/user-attachments/assets/e981d21f-36f7-4136-9686-d1166949675c)
 
+### Settings: Advanced / Experimental
+
+2. Under ```Advanced / Experimental```, you will find some tools to manage the program and your results.
+
+![image](https://github.com/user-attachments/assets/ddb19693-c241-4fa1-8628-ad3f58b09b48)
+
+* `Channels DVR Integration` is on by default. You have the option to turn it off if you are not a Channels DVR user or have a special use case where it makes sense not to have it on. It will hide everything related to Channels DVR (including mentions of it in text and logos), turning the program into **Streaming Library Manager Solo Edition**. Further, any actions that try to connect to Channels are disabled. You can also ignore any of the settings related to Channels below.
+* `Use Stream Link/File Manager` is on by default. You have the option to turn it off if you are not using those tools. It will then hide everything related to SLM.
+* `Use Playlist Manager` is off by default. This is discussed in detail below.
+* ```Run 'Prune' function in Channels``` is on by default, which means that the program will initiate a delete in Channels DVR for any missing personal media, not just Stream Links. You may decide that you do not want this to run automatically.
+
 ### Settings: Channels URL
 
-2. Next, make sure the Channels URL is correct.
+3. Next, make sure the Channels URL is correct.
 
 ![image](https://github.com/user-attachments/assets/b24ac2e4-2dd3-4319-acb0-35763f18582e)
 
-During Initialization, an attempt was made at determining the correct link. However, that may not have succeeded or the selection may not be the case for you. Modify if necessary and click the ```Test``` button to confirm that <b>Streaming Library Manager for Channels</b> can attach to Channels DVR.
+During Initialization, an attempt was made at determining the correct link. However, that may not have succeeded or the selection may not be the case for you. Modify if necessary and click the ```Test``` button to confirm that <b>Streaming Library Manager</b> can attach to Channels DVR.
 
 ![image](https://github.com/user-attachments/assets/2b1c427e-f6f0-4b4d-9d0c-3a2c1139281f)
 
-You also have the option to let <b>Streaming Library Manager for Channels</b> attempt to determine the link again by clicking the ```Scan``` button:
+You also have the option to let <b>Streaming Library Manager</b> attempt to determine the link again by clicking the ```Scan``` button:
 
 ![image](https://github.com/user-attachments/assets/1a945756-a29d-478d-a6fa-711823f8ab48)
 
@@ -571,7 +589,7 @@ http://host.docker.internal:8089
 
 ### Settings: Channels Directory
 
-3. Similarly, in order for many of the program functions to work correctly, it needs to be pointed to your Channels DVR folder. During initialization, an attempt was made to find the folder. If it could not be discovered, the directory you installed the program in was used.
+4. Similarly, in order for many of the program functions to work correctly, it needs to be pointed to your Channels DVR folder. During initialization, an attempt was made to find the folder. If it could not be discovered, the directory you installed the program in was used.
 
 ![image](https://github.com/user-attachments/assets/0298be2e-bc82-4d31-9d70-d5fb41aec790)
 
@@ -591,17 +609,7 @@ This is the folder you set during installation and should be what you are using.
 
 ![image](https://github.com/user-attachments/assets/7e555c41-41e4-40b2-8e0b-2aad7d48a355)
 
-Do note that you <i>must</i> use the parent Channels DVR directory, not the ```Imports``` or anything similar. If you do not set this correctly or do not have access from the machine you installed <b>Streaming Library Manager for Channels</b> on, then you will not be able to do many things, such as generate Stream Links that Channels DVR can see or be able to get updates from Channels DVR when programs are watched and deleted.
-
-### Settings: Advanced / Experimental
-
-4. Under ```Advanced / Experimental```, you will find some tools to manage the program and your results.
-
-![image](https://github.com/user-attachments/assets/ceb0cafb-90a8-4042-a98e-b924c64d5b5d)
-
-* `Use Stream Link/File Manager` is on by default. You have the option to turn it off if you are not using those tools. It will then hide everything related to SLM.
-* `Use Playlist Manager` is off by default. This is discussed in detail below.
-* ```Run 'Prune' function in Channels``` is on by default, which means that the program will initiate a delete in Channels DVR for any missing personal media, not just Stream Links. You may decide that you do not want this to run automatically.
+Do note that you <i>must</i> use the parent Channels DVR directory, not the ```Imports``` or anything similar. If you do not set this correctly or do not have access from the machine you installed <b>Streaming Library Manager</b> on, then you will not be able to do many things, such as generate Stream Links that Channels DVR can see or be able to get updates from Channels DVR when programs are watched and deleted.
 
 ### Settings: Scheduler + Run Processes and Logs
 
@@ -831,7 +839,7 @@ At this point, you can edit them and make them not hidden by changing their ```B
 
 ![image](https://github.com/user-attachments/assets/74f2b66c-3d51-45ae-8efd-35ed803dfbd1)
 
-6. You can always modify these after the fact, too, including renaming or removing them with little to no repercussions. However, if you remove all Playlists, it is considered a complete reset of the tool. Additionally, instead of removing, you can just make the playlist "inactive" by unchecking the appropriate box. Otherwise, as shown in the example image, you can add ones with only a m3u and no EPG, especially those that already have Gracenote IDs for guide data. You can even pull the m3u(s) from built-in Channels DVR lists like the ones for HDHR and TVE. Since some stations are both in either of those and on FAST providers, this gives a way to match them together, if desired.
+6. You can always modify these after the fact, too, including renaming or removing them with little to no repercussions. However, if you remove all Playlists, it is considered a complete reset of the tool. Additionally, instead of removing, you can just make the playlist "inactive" by unchecking the appropriate box. Note that when you do so, the playlist will be hidden from prioritization and its child stations will also not be visible for parent assignment (both of which are discussed below). Otherwise, as shown in the example image, you can add ones with only a m3u and no EPG, especially those that already have Gracenote IDs for guide data. You can even pull the m3u(s) from built-in Channels DVR lists like the ones for HDHR and TVE. Since some stations are both in either of those and on FAST providers, this gives a way to match them together, if desired.
 
 ![e3581e7eadd6f020fdd63b662a40469816592e3a](https://github.com/user-attachments/assets/b3880f05-4fd4-4164-900c-0fd0df06771c)
 
