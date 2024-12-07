@@ -15220,7 +15220,7 @@ hr.horizontal {
       margin-top: 1.5px;
       margin-bottom: 1.5px; }
 
-.navbar-vertical .nav-item:hover .nav-link {
+/* .navbar-vertical .nav-item:hover .nav-link {
   background-color: rgba(199, 199, 199, 0.2);
   border-radius: 0.375rem; }
   .navbar-vertical .nav-item:hover .nav-link + .collapse .nav .nav-item:hover > .nav-link {
@@ -15228,7 +15228,29 @@ hr.horizontal {
     border-radius: 0.375rem; }
   .navbar-vertical .nav-item:hover .nav-link + .collapse .nav .nav-item + .collapse .nav .nav-item:hover .nav-link {
     background-color: rgba(199, 199, 199, 0.2);
-    border-radius: 0.375rem; }
+    border-radius: 0.375rem; } */
+
+  /* Highlight parent item when it is moused over */
+  .navbar-vertical .nav-item:hover > .nav-link {
+    background-color: rgba(199, 199, 199, 0.2);
+    border-radius: 0.375rem;
+  }
+
+  /* Highlight sub-item when it is moused over */
+  .navbar-vertical .nav-item .collapse .nav .nav-item:hover > .nav-link {
+    background-color: rgba(199, 199, 199, 0.2);
+    border-radius: 0.375rem;
+  }
+
+  /* Ensure parent item is not highlighted when sub-items are hovered over */
+  .navbar-vertical .nav-item .collapse .nav .nav-item > .nav-link:hover {
+    background-color: rgba(199, 199, 199, 0.2);
+  }
+
+  /* Remove highlight from parent item when hovering over sub-items */
+  .navbar-vertical .nav-item .collapse:hover > .nav-link {
+    background-color: transparent;
+  }
 
 @media (min-width: 1px) {
   .g-sidenav-hidden.rtl .main-content {
