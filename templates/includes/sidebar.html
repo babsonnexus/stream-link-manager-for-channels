@@ -7,7 +7,7 @@
     </a>
   </div>  
   <hr class="horizontal light mt-0 mb-2">
-  <div class="collapse navbar-collapse w-auto  max-height-vh-100" id="sidenav-collapse-main">
+  <div class="collapse navbar-collapse w-auto max-height-vh-100" id="sidenav-collapse-main">
     <ul class="navbar-nav">
       <li class="nav-item">
         <a class="nav-link text-white {% if 'index' in segment %} active bg-gradient-primary {% endif %}" 
@@ -20,79 +20,145 @@
       </li>
       {% if html_slm_stream_link_file_manager %}
         <li class="nav-item">
-          <a class="nav-link text-white {% if 'addprograms' in segment %} active bg-gradient-primary {% endif %}" 
-              href="/addprograms">
+          <a class="nav-link text-white" 
+              data-bs-toggle="collapse" href="#collapseStreamLinkFileManager" role="button" aria-expanded="false" aria-controls="collapseStreamLinkFileManager">
             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="material-icons opacity-10">add_box</i>
+              <i class="material-icons opacity-10">connected_tv</i>
             </div>
-            <span class="nav-link-text ms-1">Add Programs</span>
+            <span class="nav-link-text ms-1">Stream Links/Files</span>
           </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-white {% if 'modifyprograms' in segment %} active bg-gradient-primary {% endif %}" 
-              href="/modifyprograms">
-            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="material-icons opacity-10">edit</i>
-            </div>
-            <span class="nav-link-text ms-1">Modify Programs</span>
-          </a>
+          <div class="collapse {% if 'addprograms' in segment or 'modifyprograms' in segment %}show{% endif %}" id="collapseStreamLinkFileManager">
+            <ul class="navbar-nav ms-3">
+              <li class="nav-item">
+                <a class="nav-link text-white {% if 'addprograms' in segment %} active bg-gradient-primary {% endif %}" 
+                    href="/addprograms">
+                  <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                    <i class="material-icons opacity-10">add_box</i>
+                  </div>
+                  <span class="nav-link-text ms-1">Add Programs</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-white {% if 'modifyprograms' in segment %} active bg-gradient-primary {% endif %}" 
+                    href="/modifyprograms">
+                  <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                    <i class="material-icons opacity-10">edit</i>
+                  </div>
+                  <span class="nav-link-text ms-1">Modify Programs</span>
+                </a>
+              </li>
+            </ul>
+          </div>
         </li>
       {% endif %}
       {% if html_slm_playlist_manager %}
-        <li class="nav-item">
-          <a class="nav-link text-white {% if 'playlists' in segment %} active bg-gradient-primary {% endif %}" 
-              href="/playlists">
-            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="material-icons opacity-10">playlist_play</i>
-            </div>
-            <span class="nav-link-text ms-1">Playlists</span>
-          </a>
-        </li>
+      <li class="nav-item">
+        <a class="nav-link text-white" 
+            data-bs-toggle="collapse" href="#collapsePlaylistManager" role="button" aria-expanded="false" aria-controls="collapsePlaylistManager">
+          <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+            <i class="material-icons opacity-10">playlist_play</i>
+          </div>
+          <span class="nav-link-text ms-1">Playlists</span>
+        </a>
+        <div class="collapse {% if 'plm_main' in segment or 'plm_modify_assigned_stations' in segment or 'plm_parent_stations' in segment or 'plm_manage' in segment %}show{% endif %}" id="collapsePlaylistManager">
+          <ul class="navbar-nav ms-3">
+            <li class="nav-item">
+              <a class="nav-link text-white {% if 'plm_main' in segment %} active bg-gradient-primary {% endif %}" 
+                  href="/playlists/plm_main">
+                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                  <i class="material-icons opacity-10">playlist_add_check</i>
+                </div>
+                <span class="nav-link-text ms-1">Main</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white {% if 'plm_modify_assigned_stations' in segment %} active bg-gradient-primary {% endif %}" 
+                  href="/playlists/plm_modify_assigned_stations">
+                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                  <i class="material-icons opacity-10">assignment</i>
+                </div>
+                <span class="nav-link-text ms-1">Assigned Stations</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white {% if 'plm_parent_stations' in segment %} active bg-gradient-primary {% endif %}" 
+                  href="/playlists/plm_parent_stations">
+                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                  <i class="material-icons opacity-10">escalator_warning</i>
+                </div>
+                <span class="nav-link-text ms-1">Parent Stations</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white {% if 'plm_manage' in segment %} active bg-gradient-primary {% endif %}" 
+                  href="/playlists/plm_manage">
+                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                  <i class="material-icons opacity-10">subscriptions</i>
+                </div>
+                <span class="nav-link-text ms-1">Manage Playlists</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </li>
       {% endif %}
       <li class="nav-item">
-        <a class="nav-link text-white {% if 'runprocess' in segment %} active bg-gradient-primary {% endif %}" 
-            href="/runprocess">
+        <a class="nav-link text-white" 
+            data-bs-toggle="collapse" href="#collapseControls" role="button" aria-expanded="false" aria-controls="collapseControls">
           <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-            <i class="material-icons opacity-10">play_circle</i>
+            <i class="material-icons opacity-10">developer_board</i>
           </div>
-          <span class="nav-link-text ms-1">Run Processes</span>
+          <span class="nav-link-text ms-1">Controls</span>
         </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link text-white {% if 'reports_queries' in segment %} active bg-gradient-primary {% endif %}" 
-            href="/reports_queries">
-          <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-            <i class="material-icons opacity-10">poll</i>
-          </div>
-          <span class="nav-link-text ms-1">Reports & Queries</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link text-white {% if 'files' in segment %} active bg-gradient-primary {% endif %}" 
-            href="/files">
-          <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-            <i class="material-icons opacity-10">folder_open</i>
-          </div>
-          <span class="nav-link-text ms-1">Files</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link text-white {% if 'logs' in segment %} active bg-gradient-primary {% endif %}" 
-            href="/logs">
-          <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-            <i class="material-icons opacity-10">receipt_long</i>
-          </div>
-          <span class="nav-link-text ms-1">Logs</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link text-white {% if 'settings' in segment %} active bg-gradient-primary {% endif %}" 
-            href="/settings">
-          <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-            <i class="material-icons opacity-10">settings</i>
-          </div>
-          <span class="nav-link-text ms-1">Settings</span>
-        </a>
+        <div class="collapse {% if 'runprocess' in segment or 'reports_queries' in segment or 'files' in segment or 'logs' in segment or 'settings' in segment %}show{% endif %}" id="collapseControls">
+          <ul class="navbar-nav ms-3">
+            <li class="nav-item">
+              <a class="nav-link text-white {% if 'runprocess' in segment %} active bg-gradient-primary {% endif %}" 
+                  href="/runprocess">
+                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                  <i class="material-icons opacity-10">play_circle</i>
+                </div>
+                <span class="nav-link-text ms-1">Run Processes</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white {% if 'reports_queries' in segment %} active bg-gradient-primary {% endif %}" 
+                  href="/reports_queries">
+                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                  <i class="material-icons opacity-10">poll</i>
+                </div>
+                <span class="nav-link-text ms-1">Reports & Queries</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white {% if 'files' in segment %} active bg-gradient-primary {% endif %}" 
+                  href="/files">
+                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                  <i class="material-icons opacity-10">folder_open</i>
+                </div>
+                <span class="nav-link-text ms-1">Files</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white {% if 'logs' in segment %} active bg-gradient-primary {% endif %}" 
+                  href="/logs">
+                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                  <i class="material-icons opacity-10">receipt_long</i>
+                </div>
+                <span class="nav-link-text ms-1">Logs</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white {% if 'settings' in segment %} active bg-gradient-primary {% endif %}" 
+                  href="/settings">
+                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                  <i class="material-icons opacity-10">settings</i>
+                </div>
+                <span class="nav-link-text ms-1">Settings</span>
+              </a>
+            </li>
+          </ul>
+        </div>
       </li>
       <li class="nav-item">
         <a class="nav-link text-white {% if 'about' in segment %} active bg-gradient-primary {% endif %}" 
@@ -113,4 +179,3 @@
     </div>
   </div>
  </aside>
-    
