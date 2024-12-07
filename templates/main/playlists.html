@@ -95,21 +95,7 @@
 <div class="container-fluid py-4"></div>
   <div class="row min-vh-80 h-100">
     <div class="col-12">
-      <form method="POST" action="/playlists" id="process-form">
-        <!-- Playlist Manger Navigation -->
-        <div style="width: 90%; border: 1px solid black; padding: 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto;">
-          <h3>Playlist Manager Navigation</h3>
-          <div style="width: 100%; display: flex; flex-wrap: wrap; justify-content: space-around; gap: 10px;">
-              <a href="/playlists" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Main Page</a>
-              <a href="/playlists/modify_assigned_stations" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Modify Assigned Stations</a>
-              <a href="/playlists/parent_stations" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Parent Stations</a>
-              <a href="/playlists/manage" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Manage Playlists</a>
-          </div>
-        </div>
-        <!-- Spacer row -->
-        <div class="row">
-          <div class="col-12 my-2"></div>
-        </div>
+      <form method="POST" action="/playlists/plm_main" id="process-form">
         <!-- Final Playlists -->
         <h4 id="final_playlists_anchor">m3u(s) and XML EPG(s)</h4>
         <table style="margin-left: 25px; margin-top: 10px; margin-bottom: 10px;">

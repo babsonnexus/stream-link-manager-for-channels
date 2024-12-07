@@ -32,9 +32,13 @@
               <div class="col-auto">
                 <button type="submit" name="action" value="update_streaming_services" class="btn bg-gradient-primary w-18 my-2 mb-2">Update Streaming Services</button>
                 <button type="submit" name="action" value="get_new_episodes" class="btn bg-gradient-primary w-18 my-2 mb-2">Get New Episodes</button>
-                <button type="submit" name="action" value="import_program_updates" class="btn bg-gradient-primary w-18 my-2 mb-2">Import Updates from Channels</button>
+                {% if html_slm_channels_dvr_integration %}
+                  <button type="submit" name="action" value="import_program_updates" class="btn bg-gradient-primary w-18 my-2 mb-2">Import Updates from Channels</button>
+                {% endif %}
                 <button type="submit" name="action" value="generate_stream_links" class="btn bg-gradient-primary w-18 my-2 mb-2">Generate Stream Links</button>
-                <button type="submit" name="action" value="prune_scan_channels" class="btn bg-gradient-primary w-18 my-2 mb-2">Run Updates in Channels</button>
+                {% if html_slm_channels_dvr_integration %}
+                  <button type="submit" name="action" value="prune_scan_channels" class="btn bg-gradient-primary w-18 my-2 mb-2">Run Updates in Channels</button>
+                {% endif %}
               </div>
             </div>
             <hr>

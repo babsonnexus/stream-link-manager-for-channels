@@ -13,6 +13,20 @@
         <!-- Version History -->
         <h4>Version History</h4>
         <div style="overflow-x: auto; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll;">
+          <h6>v2024.12.07.1618</h6>
+          <p>
+            <ul>
+              <li>MODIFIED: [GEN] Sidebar navigation has been redesigned with collapsed sections for 'Stream Links/Files', 'Playlists', and 'Controls'.</li>
+              <li>REMOVED: [PLM] Playlist Manager no longer has an internal navigation bar at the top of each page and is now selected within the sidebar.</li>
+              <li>NEW: [GEN] Can turn on/off 'Channels DVR Integration' for non-Channels users or special use cases. This setting is on by default.</li>
+              <li>MODIFIED: [PLM] Inactive Source Playlists are not listed in 'Prioritize Playlists'. NOTE: Although they are not visible, they maintain their priority and move their priority when other playlists are set higher.</li>
+              <li>MODIFIED: [PLM] Child stations from inactive Source Playlists are hidden in Assigned and Unassigned Stations. NOTE: The original assignments do remain in the backend and are reestablished when the Source Playlist is reactivated.</li>
+              <li>MODIFIED: [PLM] Stations from inactive Source Playlists are not counted towards statistics (i.e., station type percentages)</li>
+              <li>MODIFIED: [GEN] Increased 'max form parts' from 100,000 to 1,000,000 for PLM users with a large list of child stations. NOTE: May cause performance issues.</li>
+              <li>MODIFIED: [GEN] Backend code cleanup and organization.</li>
+            </ul>
+          </p>
+          <hr>
           <h6>v2024.12.01.1148</h6>
           <p>
             <ul>
@@ -192,7 +206,7 @@
           <p>
             <ul>
               <li>MODIFIED: Search for Channels DVR Folder during 'Initialization' now can find mapped parent directory in Docker</li>
-              <li>MODIFIED: Potential fix for rate instance where special characters cause the 'Logs' area to crash</li>
+              <li>MODIFIED: Potential fix for rare instance where special characters cause the 'Logs' area to crash</li>
             </ul>
           </p>
           <hr>

@@ -127,21 +127,7 @@
 <div class="container-fluid py-4"></div>
   <div class="row min-vh-80 h-100">
     <div class="col-12">
-      <form method="POST" action="/playlists/manage" id="process-form" enctype="multipart/form-data">
-        <!-- Playlist Manger Navigation -->
-        <div style="width: 90%; border: 1px solid black; padding: 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto;">
-          <h3>Playlist Manager Navigation</h3>
-          <div style="width: 100%; display: flex; flex-wrap: wrap; justify-content: space-around; gap: 10px;">
-              <a href="/playlists" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Main Page</a>
-              <a href="/playlists/modify_assigned_stations" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Modify Assigned Stations</a>
-              <a href="/playlists/parent_stations" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Parent Stations</a>
-              <a href="/playlists/manage" class="btn bg-gradient-primary w-20 my-2 mb-2" style="flex: 1;">Manage Playlists</a>
-          </div>
-        </div>
-        <!-- Spacer row -->
-        <div class="row">
-          <div class="col-12 my-2"></div>
-        </div>
+      <form method="POST" action="/playlists/plm_manage" id="process-form" enctype="multipart/form-data">
         <!-- Prioritize Playlists -->
         <h4 id="priority_playlists_anchor">Prioritize Playlists</h4>
         <div class="container">
@@ -443,8 +429,9 @@
 
   function populateLists() {
     priorityList.innerHTML = '';
-    priorityPlaylists.sort((a, b) => (a.m3u_priority || 0) - (b.m3u_priority || 0));
-    priorityPlaylists.forEach(playlist => {
+    const activePlaylists = priorityPlaylists.filter(playlist => playlist.m3u_active === 'On');
+    activePlaylists.sort((a, b) => (a.m3u_priority || 0) - (b.m3u_priority || 0));
+    activePlaylists.forEach(playlist => {
         const option = document.createElement('option');
         option.value = playlist.m3u_id;
         option.text = playlist.m3u_name;
@@ -475,12 +462,23 @@
   }
 
   function playlists_updatePlaylistPriority() {
-    Array.from(priorityList.options).forEach((option, index) => {
-      const playlist = priorityPlaylists.find(s => s.m3u_id === option.value);
+    const allOptions = Array.from(priorityList.options);
+    const activePlaylists = priorityPlaylists.filter(playlist => playlist.m3u_active === 'On');
+    
+    // Ensure unique priorities for active playlists first
+    allOptions.forEach((option, index) => {
+      const playlist = activePlaylists.find(s => s.m3u_id === option.value);
       if (playlist) {
         playlist.m3u_priority = index + 1;
       }
     });
+
+    // Reorder priorities to ensure uniqueness across all playlists
+    priorityPlaylists.sort((a, b) => (a.m3u_priority || 0) - (b.m3u_priority || 0));
+    priorityPlaylists.forEach((playlist, index) => {
+      playlist.m3u_priority = index + 1;
+    });
+
     playlists_updateHiddenInput();
   }
 
