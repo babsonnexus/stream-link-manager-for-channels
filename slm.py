@@ -23,7 +23,7 @@ from flask import Flask, render_template, render_template_string, request, redir
 from jinja2 import TemplateNotFound
 
 # Top Controls
-slm_version = "v2024.12.07.1618"
+slm_version = "v2024.12.09.1620"
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -52,6 +52,7 @@ def webpage_home():
         'main/index.html',
         segment = 'index',
         html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
@@ -466,6 +467,7 @@ def webpage_add_programs():
         'main/addprograms.html',
         segment='addprograms',
         html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
@@ -2049,6 +2051,7 @@ def webpage_modify_programs():
         'main/modifyprograms.html',
         segment = 'modifyprograms',
         html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
@@ -2644,6 +2647,7 @@ def webpage_playlists(sub_page):
         template,
         segment = sub_page,
         html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
@@ -3438,6 +3442,8 @@ def webpage_runprocess():
         elif action == 'backup_now':
             if os.path.exists(program_files_dir):
                 create_backup()
+        elif action == 'check_upgrade_now':
+            check_upgrade()
         elif action == 'update_streaming_services':
             update_streaming_services()
         elif action == 'get_new_episodes':
@@ -3453,6 +3459,7 @@ def webpage_runprocess():
         'main/runprocess.html',
         segment = 'runprocess',
         html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration
@@ -3501,7 +3508,36 @@ def create_backup():
     if len(backups) > max_backups:
         oldest_backups = backups[:len(backups) - max_backups]
         for old_backup in oldest_backups:
-            shutil.rmtree(os.path.join(dst_dir, old_backup))
+            try:
+                shutil.rmtree(os.path.join(dst_dir, old_backup))
+            except OSError as e:
+                os.chmod(os.path.join(dst_dir, old_backup), stat.S_IWRITE)  # Mark the folder as writable
+                shutil.rmtree(os.path.join(dst_dir, old_backup))
+
+# Checks to see if an upgrade is available
+def check_upgrade():
+    global gen_upgrade_flag
+    response = None
+    response_text = None
+    current_version = None
+    check_line = 'slm_version = "'
+    start_index = len(check_line)
+    check_url = "https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/refs/heads/main/slm.py"
+
+    response = fetch_url(check_url, 5, 10)
+    if response:
+        response_text = response.text.splitlines()
+
+        for line in response_text:
+            if line.startswith(check_line):
+                current_version = line[start_index:start_index + 16]
+                break
+
+    if current_version == slm_version or current_version == None:
+        gen_upgrade_flag = None
+    else:
+        notification_add(f"\n{current_time()} Upgrade available ({current_version})! Please follow directions at 'https://github.com/babsonnexus/stream-link-manager-for-channels#upgrade'.\n")
+        gen_upgrade_flag = True
 
 # SLM: End-to-End Update Process
 def end_to_end():
@@ -5966,6 +6002,7 @@ def webpage_reports_queries():
         'main/reports_queries.html',
         segment='reports_queries',
         html_slm_version=slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
@@ -6177,6 +6214,7 @@ def webpage_files():
         'main/files.html',
         segment='files',
         html_slm_version=slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
@@ -6289,6 +6327,7 @@ def webpage_logs():
         'main/logs.html',
         segment='logs',
         html_slm_version=slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
@@ -6323,6 +6362,9 @@ def webpage_settings():
     gen_backup_schedule_time = settings[20]["settings"]
     gen_backup_schedule_frequency = settings[21]["settings"]
     gen_backup_max_backups = settings[22]["settings"]
+    gen_upgrade_schedule = settings[25]["settings"]
+    gen_upgrade_schedule_time = settings[26]["settings"]
+    gen_upgrade_schedule_frequency = settings[27]["settings"]
     try:
         auto_update_schedule = settings[8]["settings"]
     except (IndexError, KeyError):
@@ -6362,6 +6404,7 @@ def webpage_settings():
         'search_defaults': 'search_defaults_anchor',
         'slmapping': 'slmapping_anchor',
         'gen_backup_process': 'scheduler_anchor',
+        'gen_upgrade_process': 'scheduler_anchor',
         'end_to_end_process': 'scheduler_anchor',
         'plm_update_stations_process': 'scheduler_anchor',
         'plm_update_m3us_epgs_process': 'scheduler_anchor',
@@ -6400,6 +6443,9 @@ def webpage_settings():
         gen_backup_schedule_time_input = request.form.get('gen_backup_schedule_time')
         gen_backup_schedule_frequency_input = request.form.get('gen_backup_schedule_frequency')
         gen_backup_max_backups_input = request.form.get('gen_backup_max_backups')
+        gen_upgrade_schedule_input = request.form.get('gen_upgrade_schedule')
+        gen_upgrade_schedule_time_input = request.form.get('gen_upgrade_schedule_time')
+        gen_upgrade_schedule_frequency_input = request.form.get('gen_upgrade_schedule_frequency')
         auto_update_schedule_input = request.form.get('auto_update_schedule')
         auto_update_schedule_time_input = request.form.get('auto_update_schedule_time')
         auto_update_schedule_frequency_input = request.form.get('auto_update_schedule_frequency')
@@ -6426,6 +6472,7 @@ def webpage_settings():
                                                                            'plm_update_stations_process_cancel',
                                                                            'plm_update_m3us_epgs_process_cancel',
                                                                            'gen_backup_process_cancel',
+                                                                           'gen_upgrade_process_cancel',
                                                                            'channels_url_save',
                                                                            'channels_directory_save',
                                                                            'channels_prune_save',
@@ -6438,6 +6485,7 @@ def webpage_settings():
                                                                            'plm_update_stations_process_save',
                                                                            'plm_update_m3us_epgs_process_save',
                                                                            'gen_backup_process_save',
+                                                                           'gen_upgrade_process_save',
                                                                            'streaming_services_update',
                                                                            'channels_url_test',
                                                                            'channels_url_scan'
@@ -6455,6 +6503,7 @@ def webpage_settings():
                                                                                       'plm_update_stations_process_save',
                                                                                       'plm_update_m3us_epgs_process_save',
                                                                                       'gen_backup_process_save',
+                                                                                      'gen_upgrade_process_save',
                                                                                       'channels_url_scan'
                                                                                     ]:
 
@@ -6469,6 +6518,7 @@ def webpage_settings():
                                     'plm_update_stations_process_save',
                                     'plm_update_m3us_epgs_process_save',
                                     'gen_backup_process_save',
+                                    'gen_upgrade_process_save',
                                     'channels_url_scan'
                                     ]:
 
@@ -6507,7 +6557,11 @@ def webpage_settings():
                                 scheduler_message = f"{current_time()} ERROR: For 'Max Backups', please enter a positive integer."
                         except ValueError:
                             scheduler_message = f"{current_time()} ERROR: 'Max Backups' must be a number."
-                        
+
+                    elif settings_action == 'gen_upgrade_process_save':
+                        settings[25]["settings"] = "On" if gen_upgrade_schedule_input == 'on' else "Off"
+                        settings[26]["settings"] = gen_upgrade_schedule_time_input
+                        settings[27]["settings"] = gen_upgrade_schedule_frequency_input
 
                     elif settings_action == 'end_to_end_process_save':
                         try:
@@ -6722,6 +6776,9 @@ def webpage_settings():
         gen_backup_schedule_time = settings[20]["settings"]
         gen_backup_schedule_frequency = settings[21]["settings"]
         gen_backup_max_backups = settings[22]["settings"]
+        gen_upgrade_schedule = settings[25]["settings"]
+        gen_upgrade_schedule_time = settings[26]["settings"]
+        gen_upgrade_schedule_frequency = settings[27]["settings"]
         try:
             auto_update_schedule = settings[8]["settings"]
         except (IndexError, KeyError):
@@ -6745,6 +6802,7 @@ def webpage_settings():
         'main/settings.html',
         segment='settings',
         html_slm_version=slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
@@ -6786,6 +6844,10 @@ def webpage_settings():
         html_gen_backup_schedule_time = gen_backup_schedule_time,
         html_gen_backup_schedule_frequency = gen_backup_schedule_frequency,
         html_gen_backup_max_backups = gen_backup_max_backups,
+        html_gen_upgrade_frequencies = gen_upgrade_frequencies,
+        html_gen_upgrade_schedule = gen_upgrade_schedule,
+        html_gen_upgrade_schedule_time = gen_upgrade_schedule_time,
+        html_gen_upgrade_schedule_frequency = gen_upgrade_schedule_frequency,
         html_scheduler_message = scheduler_message
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
@@ -6920,6 +6982,10 @@ def check_schedule():
         gen_backup_schedule_time = settings[20]["settings"]
         gen_backup_schedule_frequency = settings[21]["settings"]
         gen_backup_schedule_frequency_parsed = int(re.search(r'\d+', gen_backup_schedule_frequency).group())
+        gen_upgrade_schedule = settings[25]["settings"]
+        gen_upgrade_schedule_time = settings[26]["settings"]
+        gen_upgrade_schedule_frequency = settings[27]["settings"]
+        gen_upgrade_schedule_frequency_parsed = int(re.search(r'\d+', gen_upgrade_schedule_frequency).group())
         try:
             auto_update_schedule = settings[8]["settings"]
         except (IndexError, KeyError):
@@ -6939,6 +7005,13 @@ def check_schedule():
 
             if current_minute == gen_backup_schedule_minute and (current_hour - gen_backup_schedule_hour) % gen_backup_schedule_frequency_parsed == 0:
                 threading.Thread(target=create_backup).start()
+                wait_trigger = True
+
+        if  gen_upgrade_schedule == 'On' and  gen_upgrade_schedule_time:
+            gen_upgrade_schedule_hour, gen_upgrade_schedule_minute = map(int, gen_upgrade_schedule_time.split(':'))
+
+            if current_minute == gen_upgrade_schedule_minute and (current_hour - gen_upgrade_schedule_hour) % gen_upgrade_schedule_frequency_parsed == 0:
+                threading.Thread(target=check_upgrade).start()
                 wait_trigger = True
 
         if auto_update_schedule == 'On' and auto_update_schedule_time:
@@ -7052,6 +7125,7 @@ def webpage_route_template(template):
             "main/" + template,
             segment = segment,
             html_slm_version = slm_version,
+            html_gen_upgrade_flag = gen_upgrade_flag,
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
             html_slm_channels_dvr_integration = slm_channels_dvr_integration
@@ -7061,6 +7135,7 @@ def webpage_route_template(template):
         return render_template(
             'main/page-404.html',
             html_slm_version = slm_version,
+            html_gen_upgrade_flag = gen_upgrade_flag,
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
             html_slm_channels_dvr_integration = slm_channels_dvr_integration
@@ -7070,6 +7145,7 @@ def webpage_route_template(template):
         return render_template(
             'main/page-500.html',
             html_slm_version = slm_version,
+            html_gen_upgrade_flag = gen_upgrade_flag,
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
             html_slm_channels_dvr_integration = slm_channels_dvr_integration
@@ -7090,6 +7166,27 @@ def get_segment(request):
         segment = None
     
     return segment
+
+# Web Error Handler
+@app.after_request
+def web_errors(response):
+    if response.status_code >= 400:
+        print(f"{current_time()} ERROR: Webpage responded... {response.status}")
+        print(f"    Client IP: {request.remote_addr}")
+        print(f"    Method: {request.method}")
+        print(f"    URL: {request.url}")
+        print("    Headers: ")
+        for header, value in request.headers.items():
+            print(f"        {header}: {value}")
+        print(f"    User Agent: {request.user_agent}")
+        print(f"    Args: {request.args}")
+        if request.data:
+            print(f"    Data: {request.data.decode('utf-8', 'ignore')}")
+        else:
+            print(f"    Data: No data")
+        if request.form:
+            print(f"    Form Data: {request.form}")
+    return response
 
 ### Administative Functions
 # Current date/time for logging
@@ -7749,6 +7846,9 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": 3}, 24, "GEN: Backup Process Max number of backups to keep")
         check_and_append(csv_file, {"settings": "On"}, 25, "Stream Link/Files Manager: On/Off")
         check_and_append(csv_file, {"settings": "On"}, 26, "GEN: Channels DVR Integration On/Off")
+        check_and_append(csv_file, {"settings": "On"}, 27, "GEN: Check for Updates Process On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 28, "GEN: Check for Updates Process Schedule Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 29, "GEN: Check for Updates Process Schedule Frequency")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -7778,7 +7878,10 @@ def initial_data(csv_file):
                     {"settings": "Every 24 hours"},                                            # [21] GEN: Backup Process Schedule Frequency
                     {"settings": 3},                                                           # [22] GEN: Backup Process Max number of backups to keep
                     {"settings": "On"},                                                        # [23] Stream Link/Files Manager: On/Off
-                    {"settings": "On"} #,                                                      # [24] GEN: Channels DVR Integration On/Off
+                    {"settings": "On"},                                                        # [24] GEN: Channels DVR Integration On/Off
+                    {"settings": "On"},                                                        # [25] GEN: Check for Updates Process On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [26] GEN: Check for Updates Process Schedule Start Time
+                    {"settings": "Every 24 hours"} #,                                          # [27] GEN: Check for Updates Process Schedule Frequency
                     # Add more rows as needed
         ]        
     elif csv_file == csv_streaming_services:
@@ -8201,6 +8304,12 @@ stream_formats = [
     "MPEG-TS"
 ]
 select_program_to_bookmarks = []
+gen_upgrade_flag = None
+gen_upgrade_frequencies = [
+    "Every 1 hour",
+    "Every 12 hours",
+    "Every 24 hours"
+]
 
 ### Start-up process and safety checks
 # Program directories
@@ -8214,6 +8323,7 @@ if os.path.exists(program_files_dir):
 # Set up session logging
 log_filename_fullpath = full_path(log_filename)
 open(log_filename_fullpath, 'w', encoding="utf-8").close()
+
 class logger(object):
     def __init__(self, filename=log_filename_fullpath, mode="ab", buff=0):
         self.stdout = sys.stdout
@@ -8221,23 +8331,30 @@ class logger(object):
         self.file = open(filename, mode, buff)
         sys.stdout = self
         sys.stdin = self
+
     def readline(self):
         user_input = self.stdin.readline()
         self.file.write(user_input.encode("utf-8"))
         return user_input
+
     def __del__(self):
         self.close()
+
     def __enter__(self):
         pass
+
     def __exit__(self, *args):
         self.close()
+
     def write(self, message):
         self.stdout.write(message)
         self.file.write(message.encode("utf-8"))
+
     def flush(self):
         self.stdout.flush()
         self.file.flush()
         os.fsync(self.file.fileno())
+
     def close(self):
         if self.stdout != None:
             sys.stdout = self.stdout
@@ -8248,6 +8365,7 @@ class logger(object):
         if self.file != None:
             self.file.close()
             self.file = None
+
 logging.basicConfig(
     level=logging.DEBUG,
     format="[%(levelname)s | %(asctime)s] - %(message)s",
@@ -8276,6 +8394,8 @@ if global_settings[24]['settings'] == "On":
 
 if slm_channels_dvr_integration:
     check_channels_url(None)
+
+check_upgrade()
 
 # Start the background thread
 thread = threading.Thread(target=check_schedule)
