@@ -317,13 +317,31 @@ pyinstaller --noconfirm --onedir --console --add-data="requirements.txt:." --add
 
 ---
 # Upgrade
-As with any program, there may be a need to update the code for stability, bug fixes, or general upgades. When a new version becomes available, you can easily upgrade using the directions below. To know when a new version is released, set up a watch on this Github repo.
+As with any program, there may be a need to update the code for stability, bug fixes, or general upgades. When a new version is released, you will see notes in the header next to the current version and in the `Notifications` area:
+
+![image](https://github.com/user-attachments/assets/1a302de2-83e1-48a1-956b-98107c0e36ac)
+
+![image](https://github.com/user-attachments/assets/046d0188-02a8-4d00-919a-4023316ae948)
+
+Additionally, the program will also check for updates at regular intervals that you can control in the `Settings` area:
+
+![image](https://github.com/user-attachments/assets/2b5e682a-5c1a-4b3c-afb7-55ef7a9786b5)
+
+By default, it is set to be 'On', run every 24 hours, and run at the time it was created. You can modify and control all of these settings, however a check will still be run when the program starts up no matter what.
+
+Further, you can run a check at any time in the 'Run Processes' area:
+
+![image](https://github.com/user-attachments/assets/8b62ca68-22cc-4b8c-b342-820d8f2d8a63)
+
+Do note that you will not see anything there, but will see the other indicators as highlighted above.
+
+Beyond the internal options, you can set up a watch on this Github repo.
 
 ![bbae83c81a2ddd80776fe1b443bbf2c8bbc3d412](https://github.com/user-attachments/assets/42411117-e081-402b-9ffe-703c48172158)
 
 This way, you'll get an email whenever a new version is released, plus you can see exactly what has changed.
 
-During an upgrade, the ```program_files``` directory is protected.
+No matter the method, you can easily upgrade using the directions below. The key item to consider is that during an upgrade, the ```program_files``` directory is protected.
 
 ![image](https://github.com/user-attachments/assets/cda6bc66-4b7e-4819-bc6f-783afcf76ec9)
 
@@ -992,7 +1010,9 @@ You can also completely replace those files, though it is not recommended to do 
 ### About
 Lastly, there is the ```About``` area to see the latest version information, credits, and other information.
 
-![image](https://github.com/user-attachments/assets/d8f52dcf-5bb5-4639-9688-92bd5d3de2a8)
+![image](https://github.com/user-attachments/assets/4214ae67-76de-41d2-b63d-64d8d2eeebdc)
+
+When an upgrade is available, you can check here to see the details.
 
 ---
 # Troubleshooting / FAQ
