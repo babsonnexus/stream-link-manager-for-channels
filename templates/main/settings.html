@@ -281,6 +281,28 @@
               <button type="submit" name="action" value="gen_backup_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
             </div>
           </div>
+          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+            <div class="form-check form-switch ps-0 is-filled">
+              <input type="checkbox" class="form-check-input ms-auto" id="gen_upgrade_schedule" name="gen_upgrade_schedule" {% if html_gen_upgrade_schedule == "On" %}checked{% endif %}>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_upgrade_schedule">Upgrade Process</label>
+            </div>
+            <div>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_upgrade_schedule_time">Start at:</label>
+              <input type="time" id="gen_upgrade_schedule_time" name="gen_upgrade_schedule_time" value="{{ html_gen_upgrade_schedule_time }}" class="ms-3">
+            </div>
+            <div style="margin-top: 10px;">
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_upgrade_schedule_frequency">And run:</label>
+              <select name="gen_upgrade_schedule_frequency" id="gen_upgrade_schedule_frequency" style="margin-left: 15px;">
+                {% for html_gen_upgrade_frequency in html_gen_upgrade_frequencies %}
+                  <option value="{{ html_gen_upgrade_frequency }}" {% if html_gen_upgrade_frequency == html_gen_upgrade_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_gen_upgrade_frequency }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+              <button type="submit" name="action" value="gen_upgrade_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+              <button type="submit" name="action" value="gen_upgrade_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
+            </div>
+          </div>
           {% if html_slm_stream_link_file_manager %}
             <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
               <div class="form-check form-switch ps-0 is-filled">
