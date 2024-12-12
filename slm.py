@@ -23,7 +23,7 @@ from flask import Flask, render_template, render_template_string, request, redir
 from jinja2 import TemplateNotFound
 
 # Top Controls
-slm_version = "v2024.12.09.1620"
+slm_version = "v2024.12.12.1355"
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -36,13 +36,14 @@ else:
 
 app = Flask(__name__)
 
-# Control how many data elements can be saved at a time from the webpage to the code
+# Control how many data elements can be saved at a time from the webpage to the code. Modify values higher if continual 413 issues.
 class CustomRequest(Request):
     def __init__(self, *args, **kwargs):
         super(CustomRequest, self).__init__(*args, **kwargs)
-        self.max_form_parts = 1000000 # Modify value higher if continual 413 issues
+        self.max_form_parts = 1000000 # Individual web components
 
 app.request_class = CustomRequest
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 25 # MB for submitting requests/files
 
 # Home webpage
 @app.route('/', methods=['GET', 'POST'])
@@ -169,6 +170,12 @@ def webpage_add_programs():
 
                 hidden_bookmarks = {bookmark['entry_id'] for bookmark in bookmarks if bookmark['bookmark_action'] == "Hide"}
                 program_search_results = [entry for entry in program_search_results if entry['entry_id'] not in hidden_bookmarks]
+
+                # Replace None in 'poster' with the default URL
+                default_poster_url = 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Missing_barnstar.jpg'
+                for entry in program_search_results:
+                    if entry['poster'] is None:
+                        entry['poster'] = default_poster_url
 
                 program_search_results_prior = program_search_results
 
@@ -487,7 +494,7 @@ def webpage_add_programs():
         html_done_generate_flag = done_generate_flag,
         html_date_new_default = date_new_default_prior,
         html_program_add_prior = program_add_prior,
-        html_num_results_test = num_results_test,
+        #html_num_results_test = num_results_test,
         html_special_actions = special_actions,
         html_program_add_resort_panel = program_add_resort_panel,
         html_program_add_filter_panel = program_add_filter_panel,
@@ -3366,7 +3373,7 @@ def get_epgs_for_m3us():
                             gz = gzip.GzipFile(fileobj=io.BytesIO(response.content))
                             response_text = gz.read().decode('utf-8')
                         else:
-                            response_text = response.text
+                            response_text = response.content.decode('utf-8')
                         
                         temp_file.write(response_text + "\n")
 
