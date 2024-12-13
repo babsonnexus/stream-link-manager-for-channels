@@ -4,12 +4,15 @@
 # Streaming Library Manager
 Dealing with all the media options available nowadays is a massive pain! For instance, in <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to add "<b>[Stream Links](https://getchannels.com/docs/channels-dvr-server/how-to/stream-links/)</b>" and "<b>[Stream Files](https://getchannels.com/docs/channels-dvr-server/how-to/stream-files/)</b>" as local content. They can also have additional <b>[custom linear stations](https://getchannels.com/custom-channels/)</b> by integrating streaming m3u playlists. And then there are even more ways to customize the experience! While these tools are powerful, they have limitations that often require a fair bit of maintenance and knowhow. But what if we could make the whole process a little... easier?
 
-Making these tasks a seamless and simple experience is the purpose of <b>Streaming Library Manager</b> and it's set of custom add-on tools. Currently, the available options are:
+Making these tasks a seamless and simple experience is the purpose behind <b>Streaming Library Manager</b> and it's set of custom extensions. At this time, the available program options are:
 
 * **Streaming Library Manager for Channels** [Default]
 * **Streaming Library Manager Solo Edition**
 
 <i><b>NOTE:</b> Some of the visuals seen in the videos and in the screen shots below may be out of date as updates to format and functionality have been applied to the program.</i>
+
+# Extensions
+**Streaming Library Manager** is a shell application that houses a set of custom extensions. Some are on by default during installation while others must be initiated. Either way, each can be turned on and off at will with minimal concerns or loss of user data. The currently available extensions are...
 
 ## Stream Link/File Manager [SLM]
 <b>Stream Links/Files</b> appear as normal Movies, TV Shows, and Videos next to recorded and other content. While <b>Stream Files</b> act like regular local media and directly play in the Channels app or admin web page, <b>Stream Links</b> do not. Instead, clicking on one of these launches the appropriate app or web page and plays the content there. In order to do either, the process consists of creating ```.strmlnk``` or ```.strm``` files, putting them in the appropriate location, and running updates in the <b>Channels DVR</b> admin interface to get the content to appear. As can be imagined, the activity around creation and maintenance is incredibly manual and cumbersome.
@@ -27,7 +30,7 @@ Non-Channels DVR users can still use SLM to keep track of their programs and wha
 ## Playlist Manager [PLM]
 There are a lot of fantastic methods for integrating [custom linear stations](https://getchannels.com/custom-channels/) into Channels DVR and some other services, especially from FAST and similar providers like [Pluto](https://github.com/jgomez177/pluto-for-channels), [Plex](https://github.com/jgomez177/plex-for-channels), [Tubi](https://github.com/jgomez177/tubi-for-channels), [Samsung TV+](https://github.com/matthuisman/samsung-tvplus-for-channels), [ESPN+, NFL+](https://github.com/m0ngr31/EPlusTV), and [plenty more](https://getchannels.com/community/)! The problem is, they require a fair bit of maintenance. For instance, there are [whole](https://community.getchannels.com/t/changes-in-channel-lineups/36494) [threads](https://community.getchannels.com/t/2024-channel-lineup-changes-non-us-services/41159) and [tools](https://github.com/mjitkop/Channels-DVR-Monitor-Channel-Lineups) dedicated just to keeping track of which stations have been added and removed. And that doesn't even get into the redundancy of when each of these services have the same stations, but you have to decide which one you want to put in your [Channel Collection](https://getchannels.com/docs/channels-dvr-server/how-to/channel-collections) before it inevitably disappears without you knowing it and not realizing you need to put a replacement in its spot.
 
-Enter **Playlist Manager**, a custom add-on for **Streaming Library Manager**!
+Enter **Playlist Manager**!
 
 ![image](https://github.com/user-attachments/assets/5533fe58-2165-4a49-a530-b855b7444ec1)
 
