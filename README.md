@@ -40,6 +40,13 @@ To see a short demonstration, watch the video here:
 
 [![image](https://github.com/user-attachments/assets/58833ffc-c7e5-4c4e-bfca-d054f9339a53)](https://www.youtube.com/watch?v=Cgd7tUIdpHI)
 
+## Media Tools Manager [MTM]
+With so many shows, movies, stations, and more available, keeping track and managing them all can be quite difficult. Even using this program can add layers of concerns, considerations, and questions. To resolve this quandary and quagmire is the **Media Tools Manager** extension!
+
+![image](https://github.com/user-attachments/assets/9b5f8a61-0076-4309-a421-f9b90fa71bc8)
+
+Included are a set of activities that can be done to help work with certain datasets, controls, processes, and plenty of other options. This is especially true with functions available within or because of Channels DVR. Details on these instruments are available below.
+
 ---
 ![SpaceX_ASDS_in_position_prior_to_Falcon_9_Flight_17_carrying_CRS-6_(17127808431)_EDITED](https://github.com/user-attachments/assets/c45005cf-081f-4eba-bcb4-fcdccd7ca281)
 <i>Image (edited) courtesy of SpaceX, CC0, via Wikimedia Commons.</i>
@@ -976,7 +983,13 @@ This works with both scrolling downward to get more or all available stations, o
 
 34. With these in place and set, the process will take care of itself and you should be good to go!
 
-# Administrative Functions
+## Media Tools Manager
+
+### Installation and Setup
+
+MTM is on by default, although the functions that are available are limited by which other extensions are also active. You also have the option of disabling MTM at any time in the `Settings` area:
+
+![image](https://github.com/user-attachments/assets/8f387492-117b-4d55-bf05-6f3b49dda82a)
 
 ### Reports & Queries
 In order to streamline answers to some questions you may have, certain reports and queries have been made available in the same named area:
@@ -1002,6 +1015,55 @@ To navigate the data, there are several functions such as number of results per 
 ... and on individual columns:
 
 ![image](https://github.com/user-attachments/assets/5ff9add2-2837-4e3f-ba20-aaf41a603b62)
+
+### Gracenote Search
+**Gracenote Search** is a tool used to find the correct `Gracenote ID` for a station, something very useful for getting guide data when using extensions like PLM. While there are other solutions available for this in various locations like **OliveTin for Channels**, the MTM approach is to have the visual interaction be at the forefront. Please note that an active subscription to Channels DVR is required for this to function.
+
+First, users should expand the top panel to reveal a frame linked to the *Zap2It* website, which uses the Gracenote guide data. After selecting a guide location and type, the list of stations is made available. Most importantly is the short code below each station. For instance, the code for "NFL Network" is "NFLHD".
+
+![image](https://github.com/user-attachments/assets/e6a49db1-722f-4d8a-b670-54829f6327bf)
+
+Copying this code into the search field makes it easy to find the expected result instead of guessing what it might be.
+
+![image](https://github.com/user-attachments/assets/fb11f1dc-1f08-4c57-a4b9-b73890bb8e9a)
+
+However, you can still put whatever you want in search, including things like a call sign.
+
+![image](https://github.com/user-attachments/assets/2865a8eb-b975-4825-9bab-f0b614e81a09)
+
+Once you identify the correct station, you can copy the `Gracenote ID` from the first column and use it elsewhere.
+
+### CSV Explorer
+
+**CSV Explorer** is a tool to effortlessly look through data provided by web csv files, most notably what is available from the *Channels DVR API & Feed Explorer*. Due to the close interaction between these concepts, an active subscription to Channels DVR is required for this to function. 
+
+![image](https://github.com/user-attachments/assets/7fdff2f2-e234-4401-a1e2-644e1fdfa594)
+
+Much like **Gracenote Search**, this requires the user to provide a value of what they would like to explore. In this case, it is a link that is created by the Channels DVR API & Feed Explorer.
+
+![image](https://github.com/user-attachments/assets/4dd9b60e-0164-4080-b095-b3715a5bcbe9)
+
+You should expand the frame to enter `API & Feed Explorer` and make the appropriate selections to get what you are looking for. You must select "CSV" as the output option.
+
+![image](https://github.com/user-attachments/assets/61db1e95-b283-43a6-aef5-0b457329cd1c)
+
+It is recommended to be cognizant of how large the data set is. The bigger, the longer it will take to render. This is especially true when there are images involved. Either way, once you have made your selection, copy the link that is created into the field below and click the `Load` button. This will create a table of the results that you can then filter and explore through.
+
+![image](https://github.com/user-attachments/assets/6da1ea12-1043-4ba3-baeb-e2aced6f45f3)
+
+### Automation
+
+**Automation** allows users to execute specialized tasks to run various steps to help manage their media or deal with specific issues/use cases. All current and future automation options are `Off` by default with a time of whenever they are added. It is up to the user to decide if they want to schedule, run only demand, or not use at all.
+
+![image](https://github.com/user-attachments/assets/7b1d87a8-5f07-4ade-9386-4a7c7ce68836)
+
+For example, there is the **Automation** for `Reset Channels DVR Passes`.
+
+![image](https://github.com/user-attachments/assets/1540269d-d616-4904-ac3d-f0c4b8378950)
+
+As the description shows, this will pause and resume all active passes in Channels DVR (hence the `Channels DVR Interface` is required to be on to have this available). This specific sequence was created to resolve an issue where sometimes a lower priority pass is used for scheduling a future recording and—when the guide updates—the lower priority is maintained instead of shifting to the higher priority. When this runs, all scheduled recordings are reset to their expected settings.
+
+# Administrative Functions
 
 ### Files
 Aside from the function covered above, there is not much else a user needs to do. There is the ```Files``` area for viewing the backend data that fuels all of the above, as well as exporting those files for backup and migration purposes.
