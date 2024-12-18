@@ -23,7 +23,7 @@ from flask import Flask, render_template, render_template_string, request, redir
 from jinja2 import TemplateNotFound
 
 # Top Controls
-slm_version = "v2024.12.12.1355"
+slm_version = "v2024.12.18.1525"
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -57,6 +57,7 @@ def webpage_home():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
         html_notifications = notifications
     )
 
@@ -478,6 +479,7 @@ def webpage_add_programs():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
         html_valid_country_codes = valid_country_codes,
         html_country_code = country_code,
         html_valid_language_codes = valid_language_codes,
@@ -2062,6 +2064,7 @@ def webpage_modify_programs():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
         html_sorted_bookmarks = sorted_bookmarks,
         html_entry_id_selected = entry_id_prior,
         html_program_modify_message = program_modify_message,
@@ -2658,6 +2661,7 @@ def webpage_playlists(sub_page):
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
         html_playlists_anchor_id = playlists_anchor_id,
         html_playlists = playlists,
         html_preferred_playlists = preferred_playlists,
@@ -3437,6 +3441,517 @@ def get_epgs_for_m3us():
 
     rename_files_suffix(program_files_dir, ".xml.tmp", ".xml")
 
+# Reports / Queries webpage
+@app.route('/reports_queries', methods=['GET', 'POST'])
+def webpage_reports_queries():
+    global slm_query
+    global slm_query_name
+    slm_query_raw = []
+
+    if request.method == 'POST':
+        action = request.form['action']
+
+        if action == "reports_queries_cancel":
+            slm_query_raw = []
+            slm_query = None
+            slm_query_name = None
+
+        else:
+            slm_query_raw = run_query(action)
+
+            if action in [
+                            "query_currently_unavailable",
+                            "query_previously_watched"
+                         ]:
+                slm_query_raw = sorted(slm_query_raw, key=lambda x: (x["Type"], sort_key(x["Name"].casefold())))
+
+                if action == "query_currently_unavailable":
+                    slm_query_name = "Currently Unavailable"
+                elif action == "query_previously_watched":
+                    slm_query_name = "Previously Watched"
+                
+                
+            elif action in [
+                                "query_plm_parent_children"
+                           ]:
+                
+                if action == "query_plm_parent_children":
+                    slm_query_name = "Stations: Parents and Children"
+
+            slm_query = view_csv(slm_query_raw, "library", None)
+
+    return render_template(
+        'main/reports_queries.html',
+        segment='reports_queries',
+        html_slm_version=slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
+        html_slm_query = slm_query,
+        html_slm_query_name = slm_query_name
+    )
+
+# Run a SQL-like Query
+def run_query(query_name):
+    run_query = None
+
+    bookmarks_data = read_data(csv_bookmarks)
+    bookmarks_status_data = read_data(csv_bookmarks_status)
+    settings_data = read_data(csv_settings)
+    slmappings_data = read_data(csv_slmappings)
+    streaming_services_data = read_data(csv_streaming_services)
+    plm_child_to_parent_maps_data = read_data(csv_playlistmanager_child_to_parent)
+    plm_all_stations_data = read_data(csv_playlistmanager_combined_m3us)
+    plm_parents_data = read_data(csv_playlistmanager_parents)
+    plm_playlists_data = read_data(csv_playlistmanager_playlists)
+
+    # Convert the data into pandas DataFrames
+    bookmarks = pd.DataFrame(bookmarks_data)
+    bookmarks_status = pd.DataFrame(bookmarks_status_data)
+    settings = pd.DataFrame(settings_data)
+    slmappings = pd.DataFrame(slmappings_data)
+    streaming_services = pd.DataFrame(streaming_services_data)
+    plm_child_to_parent_maps = pd.DataFrame(plm_child_to_parent_maps_data)
+    plm_all_stations = pd.DataFrame(plm_all_stations_data)
+    plm_parents = pd.DataFrame(plm_parents_data)
+    plm_playlists = pd.DataFrame(plm_playlists_data)
+
+    if query_name in [
+                        'query_currently_unavailable',
+                        'query_previously_watched'
+                     ]:
+
+        if bookmarks.empty or bookmarks_status.empty:
+            results = []
+
+        else:
+
+            run_query = True
+
+            if query_name == 'query_currently_unavailable':
+                # Add a new column for the season using string slicing
+                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
+
+                query = """
+                SELECT 
+                    bookmarks.object_type AS "Type", 
+                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
+                    bookmarks_status.Season, 
+                    CASE 
+                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                        ELSE ''
+                    END AS "# Episodes"
+                FROM 
+                    bookmarks 
+                INNER JOIN 
+                    bookmarks_status 
+                ON 
+                    bookmarks.entry_id = bookmarks_status.entry_id
+                WHERE 
+                    bookmarks_status.status = 'unwatched' 
+                    AND bookmarks_status.stream_link_file = ''
+                GROUP BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")", 
+                    bookmarks_status.Season
+                ORDER BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")"
+                """
+
+            elif query_name == 'query_previously_watched':
+                # Add a new column for the season using string slicing
+                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
+
+                query = """
+                SELECT 
+                    bookmarks.object_type AS "Type", 
+                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
+                    bookmarks_status.Season, 
+                    CASE 
+                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                        ELSE ''
+                    END AS "# Episodes"
+                FROM 
+                    bookmarks 
+                INNER JOIN 
+                    bookmarks_status 
+                ON 
+                    bookmarks.entry_id = bookmarks_status.entry_id
+                WHERE 
+                    bookmarks_status.status = 'watched'
+                GROUP BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")", 
+                    bookmarks_status.Season
+                ORDER BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")"
+                """
+
+    elif query_name in [
+                            'query_plm_parent_children'
+                       ]:
+
+        if plm_playlists.empty or plm_all_stations.empty or plm_parents.empty:
+            results = []
+
+        else:
+
+            run_query = True
+
+            if query_name == 'query_plm_parent_children':
+
+                query = """
+                SELECT
+                    CASE
+                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN plm_child_to_parent_maps.parent_channel_id
+                        ELSE plm_parents.parent_title
+                    END AS "Parent Station",
+                    plm_all_stations.station_playlist AS "Child Station",
+                    COALESCE(plm_parents.parent_tvc_guide_stationid_override, '') AS "Gracenote ID (Override)",
+                    COALESCE(plm_all_stations.tvc_guide_stationid, '') AS "Gracenote ID (Imported)"
+                FROM plm_child_to_parent_maps
+                LEFT JOIN plm_parents ON plm_child_to_parent_maps.parent_channel_id = plm_parents.parent_channel_id
+                LEFT JOIN plm_all_stations ON plm_child_to_parent_maps.child_m3u_id_channel_id = plm_all_stations.m3u_id || '_' || plm_all_stations.channel_id
+                LEFT JOIN plm_playlists ON plm_all_stations.m3u_id = plm_playlists.m3u_id
+                WHERE plm_all_stations.station_playlist IS NOT NULL
+                ORDER BY
+                    CASE
+                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN 2
+                        ELSE 1
+                    END,
+                    "Parent Station",
+                    CASE
+                        WHEN plm_parents.parent_preferred_playlist IS NOT NULL AND plm_parents.parent_preferred_playlist != '' THEN 
+                            CASE 
+                                WHEN plm_all_stations.m3u_id = plm_parents.parent_preferred_playlist THEN 0
+                                ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
+                            END
+                        ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
+                    END,
+                    "Child Station"
+                """
+
+    # Execute the query
+    if run_query:
+        results = psql.sqldf(query, locals()).to_dict(orient='records')
+
+    return results
+
+# Webpage - Tools - Gracenote Search
+@app.route('/tools_gracenotesearch', methods=['GET', 'POST'])
+def webpage_tools_gracenotesearch():
+    global gracenote_search_results
+    global gracenote_search_entry_prior
+
+    settings = read_data(csv_settings)
+    channels_url = settings[0]["settings"]
+    gracenote_search_web = '/tms/stations/'
+    gracenote_search_url = f"{channels_url}{gracenote_search_web}"
+    gracenote_search_message = ''
+    gracenote_search_results_base = None
+    gracenote_search_results_base_json = None
+    gracenote_search_results_library = []
+
+    if request.method == 'POST':
+        action = request.form['action']
+
+        if action == 'gracenote_search_search':
+            channels_url_okay = check_channels_url(None)
+
+            if channels_url_okay:
+                gracenote_search_entry_input = request.form.get('gracenote_search_entry')
+                gracenote_search_entry_prior = gracenote_search_entry_input
+                gracenote_search_url_entry = f"{gracenote_search_url}{gracenote_search_entry_input}"
+                gracenote_search_results = None
+
+                try:
+                    gracenote_search_results_base = requests.get(gracenote_search_url_entry, headers=url_headers)
+                except requests.RequestException as e:
+                    gracenote_search_message = f"\n{current_time()} ERROR: During search, received {e}. Please try again."
+
+            else:
+                gracenote_search_message = f"{current_time()} ERROR: Channels URL is incorrect. Please update in the 'Settings' area."
+
+            if gracenote_search_message is not None and gracenote_search_message != '':
+                print(f"{gracenote_search_message}")
+
+            if gracenote_search_results_base:
+                gracenote_search_results_base_json = gracenote_search_results_base.json()
+
+                for result in gracenote_search_results_base_json:
+                    gracenote_search_result_gracenote_id = result.get("stationId", '')
+                    gracenote_search_result_logo = result.get("preferredImage", {}).get("uri", '')
+                    if gracenote_search_result_logo is None or gracenote_search_result_logo == '':
+                        gracenote_search_result_logo = 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Missing_barnstar.jpg'
+                    gracenote_search_result_name = result.get("name", '')
+                    gracenote_search_result_affiliate_call_sign = result.get("affiliateCallSign", '')
+                    gracenote_search_result_type = result.get("type", '')
+                    gracenote_search_result_video_type = result.get("videoQuality", {}).get("videoType", '')
+                    gracenote_search_result_language_main = result.get("bcastLangs", [''])[0]
+
+                    gracenote_search_results_library.append({
+                        "Gracenote ID": gracenote_search_result_gracenote_id,
+                        "Logo": gracenote_search_result_logo,
+                        "Name": gracenote_search_result_name,
+                        "Affiliate": gracenote_search_result_affiliate_call_sign,
+                        "Type": gracenote_search_result_type,
+                        "Video": gracenote_search_result_video_type,
+                        "Primary Language": gracenote_search_result_language_main
+                    })
+
+                gracenote_search_results = view_csv(gracenote_search_results_library, "library", True)
+
+        elif action == 'gracenote_search_cancel':
+            gracenote_search_entry_prior = ''
+            gracenote_search_results = None
+
+    return render_template(
+        'main/tools_gracenotesearch.html',
+        segment = 'tools_gracenotesearch',
+        html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
+        html_gracenote_search_results = gracenote_search_results,
+        html_gracenote_search_entry_prior = gracenote_search_entry_prior,
+        html_gracenote_search_message = gracenote_search_message
+    )
+
+# Webpage - Tools - CSV Explorer
+@app.route('/tools_csvexplorer', methods=['GET', 'POST'])
+def webpage_tools_csvexplorer():
+    global csv_explorer_results
+    global csv_explorer_entry_prior
+
+    settings = read_data(csv_settings)
+    channels_url = settings[0]["settings"]
+    channels_api_web = '/admin/api_explorer'
+    channels_api_url = f"{channels_url}{channels_api_web}"
+    tools_csvexplorer_message = ''
+    csv_explorer_results_base = None
+
+    if request.method == 'POST':
+        action = request.form['action']
+
+        if action == 'csv_explorer_search':
+            csv_explorer_entry_input = request.form.get('csv_explorer_entry')
+            csv_explorer_entry_prior = csv_explorer_entry_input
+            csv_explorer_results = None
+            csv_explorer_results_base = None
+            csv_explorer_results_text = None
+
+            if csv_explorer_entry_input is None or csv_explorer_entry_input == '':
+                tools_csvexplorer_message = f"{current_time()} WARNING: Link is empty. Please enter a valid value."
+            
+            else:
+                csv_explorer_results_base = fetch_url(csv_explorer_entry_input, 3, 5)
+
+                if csv_explorer_results_base:
+                    csv_explorer_results_text = csv_explorer_results_base.content.decode('utf-8')
+                    
+                    if is_valid_csv(csv_explorer_results_text):
+                        csv_explorer_results_library = [row for row in csv.DictReader(io.StringIO(csv_explorer_results_text))]
+                        csv_explorer_results = view_csv(csv_explorer_results_library, "library", True)
+                    
+                    else:
+                        tools_csvexplorer_message = f"{current_time()} WARNING: Link does not contain a valid CSV. Please try again."
+                
+                else:
+                    tools_csvexplorer_message = f"{current_time()} WARNING: Unable to connect to link. Please try again."
+
+            if tools_csvexplorer_message is not None and tools_csvexplorer_message != '':
+                print(f"{tools_csvexplorer_message}")
+
+        elif action == 'csv_explorer_cancel':
+            csv_explorer_entry_prior = ''
+            csv_explorer_results = None
+
+    return render_template(
+        'main/tools_csvexplorer.html',
+        segment = 'tools_csvexplorer',
+        html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
+        html_channels_api_url = channels_api_url,
+        html_tools_csvexplorer_message = tools_csvexplorer_message,
+        html_csv_explorer_results = csv_explorer_results,
+        html_csv_explorer_entry_prior = csv_explorer_entry_prior
+    )
+
+# Tests to see if the link references really is a CSV
+def is_valid_csv(content):
+    try:
+        # Try reading the content as CSV
+        csv.reader(io.StringIO(content))
+        # Parse and validate that content is not JSON
+        json.loads(content)
+        # If it parses as JSON as well, it's likely not a valid CSV
+        return False
+    except json.JSONDecodeError:
+        # If the content raises JSON decoding error, it's likely a valid CSV
+        return True
+    except csv.Error:
+        # If the content raises a CSV parsing error, it's likely not a valid CSV
+        return False
+
+# Webpage - Tools - Automation
+@app.route('/tools_automation', methods=['GET', 'POST'])
+def webpage_tools_automation():
+    settings = read_data(csv_settings)
+    reset_channels_passes = settings[29]["settings"]            # [29] MTM: Automation - Reset Channels DVR Passes On/Off
+    reset_channels_passes_time = settings[30]["settings"]       # [30] MTM: Automation - Reset Channels DVR Passes Start Time
+    reset_channels_passes_frequency = settings[31]["settings"]  # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+
+    automation_message = ''
+    automation_frequencies = [
+        "Every 1 hour",
+        "Every 2 hours",
+        "Every 3 hours",
+        "Every 4 hours",
+        "Every 6 hours",
+        "Every 8 hours",
+        "Every 12 hours",
+        "Every 24 hours"
+    ]
+
+    if request.method == 'POST':
+        action = request.form['action']
+
+        if action.endswith('_run'):
+
+            if action.startswith('reset_channels_passes'):
+                automation_message = run_reset_channels_passes()
+
+        elif action.endswith('_save') or action.endswith('_cancel'):
+
+            if action.endswith('_save'):
+
+                if action.startswith('reset_channels_passes'):
+                    reset_channels_passes_input = request.form.get('reset_channels_passes')
+                    reset_channels_passes_time_input = request.form.get('reset_channels_passes_time')
+                    reset_channels_passes_frequency_input = request.form.get('reset_channels_passes_frequency')
+
+                    settings[29]["settings"] = "On" if reset_channels_passes_input == 'on' else "Off"
+                    settings[30]["settings"] = reset_channels_passes_time_input
+                    settings[31]["settings"] = reset_channels_passes_frequency_input
+
+                csv_to_write = csv_settings
+                data_to_write = settings
+                write_data(csv_to_write, data_to_write)
+
+            # Reset all values to current
+            settings = read_data(csv_settings)
+            reset_channels_passes = settings[29]["settings"]            # [29] MTM: Automation - Reset Channels DVR Passes On/Off
+            reset_channels_passes_time = settings[30]["settings"]       # [30] MTM: Automation - Reset Channels DVR Passes Start Time
+            reset_channels_passes_frequency = settings[31]["settings"]  # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+
+    return render_template(
+        'main/tools_automation.html',
+        segment = 'tools_automation',
+        html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
+        html_automation_message = automation_message,
+        html_automation_frequencies = automation_frequencies,
+        html_reset_channels_passes = reset_channels_passes,
+        html_reset_channels_passes_time = reset_channels_passes_time,
+        html_reset_channels_passes_frequency = reset_channels_passes_frequency
+    )
+
+# Automation - Reset Channels DVR Passes
+def run_reset_channels_passes():
+    settings = read_data(csv_settings)
+    channels_url = settings[0]["settings"]
+    passes_url = '/dvr/rules/'
+    channels_passes_url = f"{channels_url}{passes_url}"
+    passes_pause = '/pause'
+    passes_resume = '/resume'
+    passes_message = ''
+    passes_results_base = None
+    passes_results_base_json = None
+    passes_results_dictionary = []
+    passes_results_dictionary_active = []
+    passes_error = None
+
+    notification_add(f"\n{current_time()} Beginning 'Reset Channels DVR Passes' Automation...")
+
+    channels_url_okay = check_channels_url(None)
+
+    if channels_url_okay:
+        try:
+            passes_results_base = requests.get(channels_passes_url, headers=url_headers)
+        except requests.RequestException as e:
+            passes_message = f"\n{current_time()} ERROR: During process, received {e}. Please try again."
+    else:
+        passes_message = f"{current_time()} ERROR: Channels URL is incorrect. Please update in the 'Settings' area."
+
+    if passes_results_base:
+        passes_results_base_json = passes_results_base.json()
+
+        for result in passes_results_base_json:
+            passes_result_paused = result.get("Paused", '')
+            passes_result_id = result.get("ID", '')
+            passes_result_priority = result.get("Priority", '')
+
+            passes_results_dictionary.append({
+                "passes_result_paused": passes_result_paused,
+                "passes_result_id": passes_result_id,
+                "passes_result_priority": passes_result_priority
+            })
+
+        for item in passes_results_dictionary:
+            if item['passes_result_paused'] == False:
+                passes_results_dictionary_active.append({
+                    "passes_result_id": item['passes_result_id'],
+                    "passes_result_priority": item['passes_result_priority']
+                })
+
+        # First sort with lowest priority on top to pause
+        passes_results_dictionary_active.sort(key=lambda x: int(x.get("passes_result_priority", float("inf"))))
+        for item in passes_results_dictionary_active:
+            print(f"{current_time()} INFO: Pausing pass with the id '{item['passes_result_id']}'.")
+            url = f"{channels_passes_url}{item['passes_result_id']}{passes_pause}"
+            try:
+                requests.put(url)
+            except requests.RequestException as e:
+                notification_add(f"\n{current_time()} WARNING: For pass with the id '{item['passes_result_id']}', received error {e}. Skipping pause...")
+                passes_error = True
+
+        # Resort with highest priority on top to resume
+        passes_results_dictionary_active.sort(key=lambda x: int(x.get("passes_result_priority", float("inf"))), reverse=True)
+        for item in passes_results_dictionary_active:
+            print(f"{current_time()} INFO: Resuming pass with the id '{item['passes_result_id']}'.")
+            url = f"{channels_passes_url}{item['passes_result_id']}{passes_resume}"
+            try:
+                requests.put(url)
+            except requests.RequestException as e:
+                notification_add(f"\n{current_time()} WARNING: For pass with the id '{item['passes_result_id']}', received error {e}. Skipping resume...")
+                passes_error = True
+
+        if passes_error:
+            passes_message = f"{current_time()} ERROR: 'Reset Channels DVR Passes' completed with an issue, see log for details."
+        else:
+            passes_message = f"{current_time()} INFO: 'Reset Channels DVR Passes' completed successfully."
+
+    if passes_message is not None and passes_message != '':
+        print(f"{passes_message}")
+
+    notification_add(f"\n{current_time()} Finished 'Reset Channels DVR Passes' Automation.")
+
+    return passes_message
+
 # Run Processes Webpage
 @app.route('/runprocess', methods=['GET', 'POST'])
 def webpage_runprocess():
@@ -3469,7 +3984,8 @@ def webpage_runprocess():
         html_gen_upgrade_flag = gen_upgrade_flag,
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
-        html_slm_channels_dvr_integration = slm_channels_dvr_integration
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager
     )
 
 # Create a continous stream of the log file
@@ -5966,205 +6482,6 @@ async def send_reprocess_requests(reprocess_session, reprocess_url):
     except asyncio.TimeoutError:
         notification_add(f"\n{current_time()} ERROR: Request for {reprocess_url} timed out.")
 
-# Reports / Queries webpage
-@app.route('/reports_queries', methods=['GET', 'POST'])
-def webpage_reports_queries():
-    global slm_query
-    global slm_query_name
-    slm_query_raw = []
-
-    if request.method == 'POST':
-        action = request.form['action']
-
-        if action == "reports_queries_cancel":
-            slm_query_raw = []
-            slm_query = None
-            slm_query_name = None
-
-        else:
-            slm_query_raw = run_query(action)
-
-            if action in [
-                            "query_currently_unavailable",
-                            "query_previously_watched"
-                         ]:
-                slm_query_raw = sorted(slm_query_raw, key=lambda x: (x["Type"], sort_key(x["Name"].casefold())))
-
-                if action == "query_currently_unavailable":
-                    slm_query_name = "Currently Unavailable"
-                elif action == "query_previously_watched":
-                    slm_query_name = "Previously Watched"
-                
-                
-            elif action in [
-                                "query_plm_parent_children"
-                           ]:
-                
-                if action == "query_plm_parent_children":
-                    slm_query_name = "Stations: Parents and Children"
-
-            slm_query = view_csv(slm_query_raw, "library")
-
-    return render_template(
-        'main/reports_queries.html',
-        segment='reports_queries',
-        html_slm_version=slm_version,
-        html_gen_upgrade_flag = gen_upgrade_flag,
-        html_slm_playlist_manager = slm_playlist_manager,
-        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
-        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
-        html_slm_query = slm_query,
-        html_slm_query_name = slm_query_name
-    )
-
-# Run a SQL-like Query
-def run_query(query_name):
-    run_query = None
-
-    bookmarks_data = read_data(csv_bookmarks)
-    bookmarks_status_data = read_data(csv_bookmarks_status)
-    settings_data = read_data(csv_settings)
-    slmappings_data = read_data(csv_slmappings)
-    streaming_services_data = read_data(csv_streaming_services)
-    plm_child_to_parent_maps_data = read_data(csv_playlistmanager_child_to_parent)
-    plm_all_stations_data = read_data(csv_playlistmanager_combined_m3us)
-    plm_parents_data = read_data(csv_playlistmanager_parents)
-    plm_playlists_data = read_data(csv_playlistmanager_playlists)
-
-    # Convert the data into pandas DataFrames
-    bookmarks = pd.DataFrame(bookmarks_data)
-    bookmarks_status = pd.DataFrame(bookmarks_status_data)
-    settings = pd.DataFrame(settings_data)
-    slmappings = pd.DataFrame(slmappings_data)
-    streaming_services = pd.DataFrame(streaming_services_data)
-    plm_child_to_parent_maps = pd.DataFrame(plm_child_to_parent_maps_data)
-    plm_all_stations = pd.DataFrame(plm_all_stations_data)
-    plm_parents = pd.DataFrame(plm_parents_data)
-    plm_playlists = pd.DataFrame(plm_playlists_data)
-
-    if query_name in [
-                        'query_currently_unavailable',
-                        'query_previously_watched'
-                     ]:
-
-        if bookmarks.empty or bookmarks_status.empty:
-            results = []
-
-        else:
-
-            run_query = True
-
-            if query_name == 'query_currently_unavailable':
-                # Add a new column for the season using string slicing
-                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
-
-                query = """
-                SELECT 
-                    bookmarks.object_type AS "Type", 
-                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
-                    bookmarks_status.Season, 
-                    CASE 
-                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
-                        ELSE ''
-                    END AS "# Episodes"
-                FROM 
-                    bookmarks 
-                INNER JOIN 
-                    bookmarks_status 
-                ON 
-                    bookmarks.entry_id = bookmarks_status.entry_id
-                WHERE 
-                    bookmarks_status.status = 'unwatched' 
-                    AND bookmarks_status.stream_link_file = ''
-                GROUP BY 
-                    bookmarks.object_type, 
-                    bookmarks.title || " (" || bookmarks.release_year || ")", 
-                    bookmarks_status.Season
-                ORDER BY 
-                    bookmarks.object_type, 
-                    bookmarks.title || " (" || bookmarks.release_year || ")"
-                """
-
-            elif query_name == 'query_previously_watched':
-                # Add a new column for the season using string slicing
-                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
-
-                query = """
-                SELECT 
-                    bookmarks.object_type AS "Type", 
-                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
-                    bookmarks_status.Season, 
-                    CASE 
-                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
-                        ELSE ''
-                    END AS "# Episodes"
-                FROM 
-                    bookmarks 
-                INNER JOIN 
-                    bookmarks_status 
-                ON 
-                    bookmarks.entry_id = bookmarks_status.entry_id
-                WHERE 
-                    bookmarks_status.status = 'watched'
-                GROUP BY 
-                    bookmarks.object_type, 
-                    bookmarks.title || " (" || bookmarks.release_year || ")", 
-                    bookmarks_status.Season
-                ORDER BY 
-                    bookmarks.object_type, 
-                    bookmarks.title || " (" || bookmarks.release_year || ")"
-                """
-
-    elif query_name in [
-                            'query_plm_parent_children'
-                       ]:
-
-        if plm_playlists.empty or plm_all_stations.empty or plm_parents.empty:
-            results = []
-
-        else:
-
-            run_query = True
-
-            if query_name == 'query_plm_parent_children':
-
-                query = """
-                SELECT
-                    CASE
-                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN plm_child_to_parent_maps.parent_channel_id
-                        ELSE plm_parents.parent_title
-                    END AS "Parent Station",
-                    plm_all_stations.station_playlist AS "Child Station",
-                    COALESCE(plm_parents.parent_tvc_guide_stationid_override, '') AS "Gracenote ID (Override)",
-                    COALESCE(plm_all_stations.tvc_guide_stationid, '') AS "Gracenote ID (Imported)"
-                FROM plm_child_to_parent_maps
-                LEFT JOIN plm_parents ON plm_child_to_parent_maps.parent_channel_id = plm_parents.parent_channel_id
-                LEFT JOIN plm_all_stations ON plm_child_to_parent_maps.child_m3u_id_channel_id = plm_all_stations.m3u_id || '_' || plm_all_stations.channel_id
-                LEFT JOIN plm_playlists ON plm_all_stations.m3u_id = plm_playlists.m3u_id
-                WHERE plm_all_stations.station_playlist IS NOT NULL
-                ORDER BY
-                    CASE
-                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN 2
-                        ELSE 1
-                    END,
-                    "Parent Station",
-                    CASE
-                        WHEN plm_parents.parent_preferred_playlist IS NOT NULL AND plm_parents.parent_preferred_playlist != '' THEN 
-                            CASE 
-                                WHEN plm_all_stations.m3u_id = plm_parents.parent_preferred_playlist THEN 0
-                                ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
-                            END
-                        ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
-                    END,
-                    "Child Station"
-                """
-
-    # Execute the query
-    if run_query:
-        results = psql.sqldf(query, locals()).to_dict(orient='records')
-
-    return results
-
 # Files webpage
 @app.route('/files', methods=['GET', 'POST'])
 def webpage_files():
@@ -6211,7 +6528,7 @@ def webpage_files():
                 break
 
         if action == 'view_file':
-            table_html = view_csv(select_file_input_csv, "csv")
+            table_html = view_csv(select_file_input_csv, "csv", None)
         elif action == 'export_file':
             return export_csv(select_file_input_csv)
         elif action == 'replace_file':
@@ -6225,6 +6542,7 @@ def webpage_files():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
         table_html=table_html,
         replace_message=replace_message,
         html_file_lists = file_lists,
@@ -6232,7 +6550,7 @@ def webpage_files():
     )
 
 # Makes CSV file able to be viewable in HTML
-def view_csv(csv_file, type):
+def view_csv(csv_file, type, image_flag):
     if type == "csv":
         data = read_data(csv_file)
     elif type == "library":
@@ -6240,25 +6558,43 @@ def view_csv(csv_file, type):
 
     if data is None:
         return "Error reading data"
-    
+
     if not data:
         return "No Data"
-    
+
     headers = data[0].keys()
     table_html = '<thead><tr>'
-    for header in headers:
-        table_html += f'<th>{header}<br><input type="text" class="filter-input" placeholder="Filter {header}"></th>'
+    for header, value in zip(headers, data[0].values()):
+        if is_image_url(value) and image_flag:
+            table_html += f'<th style="text-align: center;"><input type="text" readonly style="background-color: #d1cdcde5; width: 10%;"><br>{header}</th>'
+        else:
+            table_html += f'<th style="text-align: center;"><input type="text" class="filter-input"><br>{header}</th>'
     table_html += '</tr></thead><tbody>'
-    
+
     for row in data:
         table_html += '<tr>'
-        for header in headers:
-            table_html += f'<td>{row[header]}</td>'
+        for value in row.values():
+            if is_image_url(value) and image_flag:
+                table_html += f'<td><img src="{value}" class="image-cell" alt="Image"></td>'
+            else:
+                table_html += f'<td>{value}</td>'
         table_html += '</tr>'
-    
+
     table_html += '</tbody>'
-    
+
     return render_template_string(table_html)
+
+# Check for common image extensions and presence of a dot (.) before the extension
+def is_image_url(url):
+    response = None
+    extensions = (".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff", ".tif", ".svg", ".psd",
+                  ".raw", ".arw", ".cr2", ".nef", ".orf", ".dng", ".hdr", ".jxr", ".pcd", ".eps")
+    
+    if isinstance(url, str) and url:
+        if url.startswith(('http://', 'https://')) and any(ext in url.lower() for ext in extensions):
+            response = True
+
+    return response
 
 # Exports a CSV file to the user's local disk
 def export_csv(csv_file):
@@ -6338,6 +6674,7 @@ def webpage_logs():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
         html_log_filename_fullpath=log_filename_fullpath,
         html_page_lines=page_lines,
         html_page=page,
@@ -6353,6 +6690,7 @@ def webpage_settings():
     global slm_playlist_manager
     global slm_stream_link_file_manager
     global slm_channels_dvr_integration
+    global slm_media_tools_manager
     settings_anchor_id = None
     run_empty_row = None
 
@@ -6420,7 +6758,8 @@ def webpage_settings():
         'channels_prune': 'advanced_experimental_anchor',
         'playlist_manager': 'advanced_experimental_anchor',
         'stream_link_file_manager': 'advanced_experimental_anchor',
-        'channels_dvr_integration': 'advanced_experimental_anchor'
+        'channels_dvr_integration': 'advanced_experimental_anchor',
+        'media_tools_manager': 'advanced_experimental_anchor'
     }
 
     if not os.path.exists(channels_directory):
@@ -6439,6 +6778,7 @@ def webpage_settings():
         playlist_manager_input = request.form.get('playlist_manager')
         stream_link_file_manager_input = request.form.get('stream_link_file_manager')
         channels_dvr_integration_input = request.form.get('channels_dvr_integration')
+        media_tools_manager_input = request.form.get('media_tools_manager')
         station_start_number_input = request.form.get('station_start_number')
         max_stations_input = request.form.get('max_stations')
         country_code_input = request.form.get('country_code')
@@ -6473,6 +6813,7 @@ def webpage_settings():
                                                                            'playlist_manager_cancel',
                                                                            'stream_link_file_manager_cancel',
                                                                            'channels_dvr_integration_cancel',
+                                                                           'media_tools_manager_cancel',
                                                                            'search_defaults_cancel',
                                                                            'streaming_services_cancel',
                                                                            'end_to_end_process_cancel',
@@ -6486,6 +6827,7 @@ def webpage_settings():
                                                                            'playlist_manager_save',
                                                                            'stream_link_file_manager_save',
                                                                            'channels_dvr_integration_save',
+                                                                           'media_tools_manager_save',
                                                                            'search_defaults_save',
                                                                            'streaming_services_save',
                                                                            'end_to_end_process_save',
@@ -6504,6 +6846,7 @@ def webpage_settings():
                                                                                       'playlist_manager_save',
                                                                                       'stream_link_file_manager_save',
                                                                                       'channels_dvr_integration_save',
+                                                                                      'media_tools_manager_save',
                                                                                       'search_defaults_save',
                                                                                       'streaming_services_save',
                                                                                       'end_to_end_process_save',
@@ -6520,6 +6863,7 @@ def webpage_settings():
                                     'playlist_manager_save',
                                     'stream_link_file_manager_save',
                                     'channels_dvr_integration_save',
+                                    'media_tools_manager_save',
                                     'search_defaults_save',
                                     'end_to_end_process_save',
                                     'plm_update_stations_process_save',
@@ -6634,6 +6978,14 @@ def webpage_settings():
                             slm_channels_dvr_integration = True
                         else:
                             slm_channels_dvr_integration = None
+
+                    elif settings_action == 'media_tools_manager_save':
+                        settings[28]["settings"] = "On" if media_tools_manager_input == 'on' else "Off"
+
+                        if media_tools_manager_input == 'on':
+                            slm_media_tools_manager = True
+                        else:
+                            slm_media_tools_manager = None
 
                     csv_to_write = csv_settings
                     data_to_write = settings
@@ -6813,6 +7165,7 @@ def webpage_settings():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
         html_settings_anchor_id = settings_anchor_id,
         html_channels_url=channels_url,
         html_channels_url_prior = channels_url_prior,
@@ -7006,15 +7359,19 @@ def check_schedule():
         plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
         plm_m3us_epgs_schedule_frequency = settings[17]["settings"]
         plm_m3us_epgs_schedule_frequency_parsed = int(re.search(r'\d+', plm_m3us_epgs_schedule_frequency).group())
-        
-        if  gen_backup_schedule == 'On' and  gen_backup_schedule_time:
+        reset_channels_passes = settings[29]["settings"]            # [29] MTM: Automation - Reset Channels DVR Passes On/Off
+        reset_channels_passes_time = settings[30]["settings"]       # [30] MTM: Automation - Reset Channels DVR Passes Start Time
+        reset_channels_passes_frequency = settings[31]["settings"]  # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+        reset_channels_passes_frequency_parsed = int(re.search(r'\d+', reset_channels_passes_frequency).group())
+
+        if gen_backup_schedule == 'On' and  gen_backup_schedule_time:
             gen_backup_schedule_hour, gen_backup_schedule_minute = map(int, gen_backup_schedule_time.split(':'))
 
             if current_minute == gen_backup_schedule_minute and (current_hour - gen_backup_schedule_hour) % gen_backup_schedule_frequency_parsed == 0:
                 threading.Thread(target=create_backup).start()
                 wait_trigger = True
 
-        if  gen_upgrade_schedule == 'On' and  gen_upgrade_schedule_time:
+        if gen_upgrade_schedule == 'On' and  gen_upgrade_schedule_time:
             gen_upgrade_schedule_hour, gen_upgrade_schedule_minute = map(int, gen_upgrade_schedule_time.split(':'))
 
             if current_minute == gen_upgrade_schedule_minute and (current_hour - gen_upgrade_schedule_hour) % gen_upgrade_schedule_frequency_parsed == 0:
@@ -7038,6 +7395,21 @@ def check_schedule():
             
             if current_minute == plm_update_m3us_epgs_schedule_minute and (current_hour - plm_update_m3us_epgs_schedule_hour) % plm_m3us_epgs_schedule_frequency_parsed == 0:
                 threading.Thread(target=get_final_m3us_epgs).start()
+                wait_trigger = True
+
+            plm_update_m3us_epgs_schedule_minute_offset = (plm_update_m3us_epgs_schedule_minute + 30) % 60
+            plm_update_m3us_epgs_schedule_hour_offset = (plm_update_m3us_epgs_schedule_hour + (plm_update_m3us_epgs_schedule_minute + 30) // 60) % 24
+
+            if current_minute == plm_update_m3us_epgs_schedule_minute_offset and (current_hour - plm_update_m3us_epgs_schedule_hour_offset) % plm_m3us_epgs_schedule_frequency_parsed == 0:
+                temp_file_path = full_path("temp.txt")
+                reliable_remove(temp_file_path)
+                wait_trigger = True
+
+        if reset_channels_passes == 'On' and  reset_channels_passes_time:
+            reset_channels_passes_hour, reset_channels_passes_minute = map(int, reset_channels_passes_time.split(':'))
+
+            if current_minute == reset_channels_passes_minute and (current_hour - reset_channels_passes_hour) % reset_channels_passes_frequency_parsed == 0:
+                threading.Thread(target=run_reset_channels_passes).start()
                 wait_trigger = True
 
         if wait_trigger:
@@ -7135,7 +7507,8 @@ def webpage_route_template(template):
             html_gen_upgrade_flag = gen_upgrade_flag,
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
-            html_slm_channels_dvr_integration = slm_channels_dvr_integration
+            html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+            html_slm_media_tools_manager = slm_media_tools_manager
         )
 
     except TemplateNotFound:
@@ -7145,7 +7518,8 @@ def webpage_route_template(template):
             html_gen_upgrade_flag = gen_upgrade_flag,
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
-            html_slm_channels_dvr_integration = slm_channels_dvr_integration
+            html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+            html_slm_media_tools_manager = slm_media_tools_manager
         ), 404
 
     except:
@@ -7155,7 +7529,8 @@ def webpage_route_template(template):
             html_gen_upgrade_flag = gen_upgrade_flag,
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
-            html_slm_channels_dvr_integration = slm_channels_dvr_integration
+            html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+            html_slm_media_tools_manager = slm_media_tools_manager
         ), 500
 
 # Get any webpage not already called out
@@ -7422,7 +7797,8 @@ def reliable_remove(filepath):
 
     for attempt in range(max_retries):
         try:
-            os.remove(filepath)
+            if os.path.exists(filepath):
+                os.remove(filepath)
             if not os.path.exists(filepath):
                 return True
         except Exception as e:
@@ -7856,6 +8232,10 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "On"}, 27, "GEN: Check for Updates Process On/Off")
         check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 28, "GEN: Check for Updates Process Schedule Start Time")
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 29, "GEN: Check for Updates Process Schedule Frequency")
+        check_and_append(csv_file, {"settings": "On"}, 30, "MTM: Media Tools Manager On/Off")
+        check_and_append(csv_file, {"settings": "Off"}, 31, "MTM: Automation - Reset Channels DVR Passes On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 32, "MTM: Automation - Reset Channels DVR Passes Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 33, "MTM: Automation - Reset Channels DVR Passes Frequency")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -7888,7 +8268,11 @@ def initial_data(csv_file):
                     {"settings": "On"},                                                        # [24] GEN: Channels DVR Integration On/Off
                     {"settings": "On"},                                                        # [25] GEN: Check for Updates Process On/Off
                     {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [26] GEN: Check for Updates Process Schedule Start Time
-                    {"settings": "Every 24 hours"} #,                                          # [27] GEN: Check for Updates Process Schedule Frequency
+                    {"settings": "Every 24 hours"},                                            # [27] GEN: Check for Updates Process Schedule Frequency
+                    {"settings": "On"},                                                        # [28] MTM: Media Tools Manager On/Off
+                    {"settings": "Off"},                                                       # [29] MTM: Automation - Reset Channels DVR Passes On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [30] MTM: Automation - Reset Channels DVR Passes Start Time
+                    {"settings": "Every 24 hours"} #,                                          # [31] MTM: Automation - Reset Channels DVR Passes Frequency
                     # Add more rows as needed
         ]        
     elif csv_file == csv_streaming_services:
@@ -8317,6 +8701,10 @@ gen_upgrade_frequencies = [
     "Every 12 hours",
     "Every 24 hours"
 ]
+gracenote_search_results = None
+gracenote_search_entry_prior = ''
+csv_explorer_results = None
+csv_explorer_entry_prior = ''
 
 ### Start-up process and safety checks
 # Program directories
@@ -8398,6 +8786,9 @@ if global_settings[23]['settings'] == "On":
 slm_channels_dvr_integration = None
 if global_settings[24]['settings'] == "On":
     slm_channels_dvr_integration = True
+slm_media_tools_manager = None
+if global_settings[28]['settings'] == "On":
+    slm_media_tools_manager = True
 
 if slm_channels_dvr_integration:
     check_channels_url(None)
