@@ -1187,8 +1187,11 @@ Follow the directions related to "TIMEZONE" in the installation steps above.
 This block is just an indicator to let you know nothing is stuck and that things are still running in the background. For actions that last less than a couple of seconds, not enough time will pass to begin to fill it in. For anything longer, you will see information fill up to the top, but it will all clear out when the process finishes running. However, there are some issues with certain browsers like Safari where it seems incapable of displaying what is happening. Rest assured that although the background process is running as expected, you can always verify in the logs if desired.
 
 ### Additional questions or issues
-* For SLM, please ask at the [Channels DVR Community Message Board](https://community.getchannels.com/t/39684).
-* For PLM, please ask in [this thread](https://community.getchannels.com/t/41719).
+For general **Streaming Library Manager** support, please visit the [Channels Community Message Board](https://community.getchannels.com/t/42369) or open a question under `Issues` above. Otherwise, for specific extension questions, see:
+
+* **[SLM](https://community.getchannels.com/t/39684)**
+* **[PLM](https://community.getchannels.com/t/41719)**
+* **[MTM](https://community.getchannels.com/t/42368)**
 
 ![SpaceX_ASDS_moving_into_position_for_CRS-7_launch_(18610429514)_EDITED](https://github.com/user-attachments/assets/ab32ab8c-3acd-4c72-b047-8c2bad7ef7d9)
 <i>Image (edited) courtesy of SpaceX, CC0, via Wikimedia Commons.</i>
