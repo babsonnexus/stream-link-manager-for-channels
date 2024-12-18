@@ -1,0 +1,355 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Gracenote Search{% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<style>
+  .table-wrapper.special-table {
+      overflow-y: auto;
+      max-height: 400px; /* Adjust as needed */
+      border: 2px solid #4c2588;
+      border-radius: 0.25em;
+      background: linear-gradient(195deg, #4c2588 0%, #4c278a 100%) !important;
+      display: none;
+      width: 98%;
+    }
+
+    .special-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .special-table th, .special-table td {
+      border: 1px solid #4c2588;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .special-table th {
+      background: linear-gradient(195deg, #4c2588 0%, #4c278a 100%);
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .special-table tr {
+      border: 1px solid #4c2588;
+    }
+
+    .special-table tr:nth-child(even) {
+      background-color: #dcc4ff !important;
+    }
+
+    .special-table tr:nth-child(odd) {
+      background-color: #f3e6ff !important;
+    }
+
+  .dark-version .file-input-wrapper {
+    background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+    border-color: #2c1a4a;
+  }
+
+  .dark-version .file-input-wrapper label {
+    background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+    color: #ccc;
+    box-shadow: 0 3px 3px 0 rgba(44, 26, 74, 0.15), 0 3px 1px -2px rgba(44, 26, 74, 0.2), 0 1px 5px 0 rgba(44, 26, 74, 0.15);
+  }
+
+  .dark-version .file-input-wrapper label:hover {
+    background-color: #2c1a4a;
+    border-color: #2c1a4a;
+    box-shadow: 0 14px 26px -12px rgba(44, 26, 74, 0.4), 0 4px 23px 0 rgba(44, 26, 74, 0.15), 0 8px 10px -5px rgba(44, 26, 74, 0.2);
+  }
+
+  .dark-version .file-input-wrapper .file-name {
+    background: #3c2a6a;
+    border-color: #2c1a4a;
+    color: #ccc;
+  }
+  
+  .dark-version .special-table {
+    background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%) !important;
+    border-color: #2c1a4a;
+  }
+  
+    .dark-version .special-table th {
+      background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+      color: #ccc;
+    }
+  
+    .dark-version .special-table tr:nth-child(even) {
+      background-color: #2c1a4a !important;
+    }
+  
+    .dark-version .special-table tr:nth-child(odd) {
+      background-color: #3c2a6a !important;
+    }
+  
+    .dark-version .special-table td {
+      color: #ccc;
+    }
+
+  /* DataTables custom styles */
+  .special-table .dataTables_wrapper,
+  .special-table .dataTables_scroll,
+  .special-table .dataTables_scrollHead,
+  .special-table .dataTables_scrollBody,
+  .special-table .dataTables_scrollFoot {
+    background: linear-gradient(195deg, #4c2588 0%, #4c278a 100%) !important;
+  }
+
+    .special-table .dataTables_length,
+    .special-table .dataTables_filter,
+    .special-table .dataTables_info,
+    .special-table .dataTables_paginate {
+      margin-top: 0.5em;
+      margin-bottom: 0.5em;
+    }
+
+    .special-table .dataTables_length,
+    .special-table .dataTables_info {
+      margin-left: 0.5em;
+    }
+
+    .special-table .dataTables_filter,
+    .special-table .dataTables_paginate {
+      margin-right: 0.5em;
+    }
+
+    .special-table .dataTables_length label,
+    .special-table .dataTables_filter label,
+    .special-table .dataTables_info{
+      color: white !important;
+    }
+
+    .special-table .dataTables_length select,
+    .special-table .dataTables_filter input {
+      color: black;
+      background-color: white !important;
+      margin-left: 0.5em !important;
+      margin-right: 0.5em !important;
+    }
+
+  .special-table .dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: white !important;
+  }
+
+  .dark-version .special-table .dataTables_wrapper,
+  .dark-version .special-table .dataTables_scrollBody {
+    background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%) !important;
+  }
+
+  .dark-version .special-table .dataTables_paginate .paginate_button {
+    color: white !important;
+  }
+
+  .image-cell {
+    width: 80px;
+    height: auto;
+    float: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="container-fluid py-4"></div>
+  <div class="row min-vh-80 h-100">
+    <div class="col-12">
+      <form method="POST" action="/tools_gracenotesearch" id="process-form">
+        <!-- [1] Find Station Code -->
+        <table style="width: 95%;">
+          <tr>
+            <td style="width: 20%;">
+              <h4 style="margin: 0;">[1] Find Station Code</h4>
+            </td>
+            <td style="width: 75%; text-align: center;">
+              <button class="btn bg-gradient-primary my-2 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#zap2itPanel" aria-expanded="true" aria-controls="zap2itPanel" style="width: 100%;">
+                Expand / Collapse
+              </button>
+            </td>
+          </tr>
+        </table>
+        <div class="collapse" id="zap2itPanel">
+          <div class="content-placeholder">
+            <iframe
+              src="https://tvlistings.zap2it.com"
+              title="Zap2It Listings"
+              style="overflow-x: auto; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll; width: 98%;"
+              >
+            </iframe>
+          </div>    
+        </div>
+        <hr>
+        <!-- [2] Search Code -->
+        <table style="width: 95%;">
+          <tr>
+            <td style="width: 20%;">
+              <h4 style="margin: 0;">[2] Search Code</h4>
+            </td>
+          </tr>
+        </table>
+        <div>
+          <input type="text" id="gracenote_search_entry" name="gracenote_search_entry" value="{{ html_gracenote_search_entry_prior }}" style="width: calc(70%); margin-left: 10px; margin-right: 10px;">
+          <button type="submit" name="action" value="gracenote_search_search" class="btn bg-gradient-primary w-10 my-2 mb-2">Search</button>
+          <button type="submit" name="action" value="gracenote_search_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel / Clear</button>
+        </div>
+        <hr>
+        <!-- [3] Copy Gracenote ID -->
+        <table style="width: 95%;">
+          <tr>
+            <td style="width: 20%;">
+              <h4 style="margin: 0;">[3] Copy Gracenote ID</h4>
+            </td>
+          </tr>
+        </table>
+        <p><div id="html_gracenote_search_message">{{ html_gracenote_search_message }}</div></p>
+        {% if html_gracenote_search_results %}
+          <div class="table-wrapper special-table">
+            <table id="myTable" class="display">
+              {{ html_gracenote_search_results|safe }}
+            </table>
+          </div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+  <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="loadingModalLabel">Processing</h5>
+        </div>
+        <div class="modal-body">
+          Please wait while the process completes...
+        </div>
+      </div>
+    </div>
+  </div>
+
+    {% include 'includes/footer.html' %}
+
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<!-- Processing Box -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('process-form').addEventListener('submit', function(event) {
+      console.log("Form submitted"); // Debugging
+
+      // Wait for a short delay to ensure the form submission is not blocked
+      setTimeout(() => {
+        // Ensure the modal element exists
+        const modalElement = document.getElementById('loadingModal');
+        if (!modalElement) {
+          console.error('Modal element not found!');
+          return;
+        }
+
+        // Show the modal
+        const loadingModal = new bootstrap.Modal(modalElement, {
+          backdrop: 'static',
+          keyboard: false
+        });
+        console.log("Showing modal"); // Debugging
+        loadingModal.show();
+
+        // Disable all navigation links
+        document.querySelectorAll('a').forEach(element => {
+          element.setAttribute('disabled', 'true');
+          element.addEventListener('click', function(event) {
+            event.preventDefault();
+          });
+        });
+      }, 500); // Adjust the delay as needed
+    });
+  });
+</script>
+<!-- Build Table -->
+<script>
+  $(document).ready(function() {
+      console.log("Document ready");
+
+      // Extract column headers dynamically
+      var columnHeaders = [];
+      $('#myTable thead th').each(function() {
+          columnHeaders.push({ "data": $(this).text().trim() });
+      });
+
+      console.log("Column headers:", columnHeaders);
+
+      // Initialize DataTables with dynamic columns and disable sorting
+      var table = $('#myTable').DataTable({
+          "columns": columnHeaders,
+          "ordering": false, // Disable sorting
+          "createdRow": function(row, data, dataIndex) {
+          },
+          "initComplete": function(settings, json) {
+              // Show the table once DataTables is initialized
+              $('.table-wrapper').show();
+          }
+      });
+
+      console.log("DataTable initialized");
+
+      // Apply the search
+      $('#myTable thead').on('keyup change', '.filter-input', function() {
+          var columnIndex = $(this).parent().index();
+          console.log("Filtering column: " + columnIndex + " with value: " + this.value);
+          table.column(columnIndex).search(this.value).draw();
+      });
+  });
+</script>
+<!-- Remember Expand / Collapsed Status-->
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    function applyCollapseState(sectionId) {
+      var section = document.getElementById(sectionId);
+      var isExpanded = localStorage.getItem(sectionId + '_expanded') === 'true';
+      if (isExpanded) {
+        section.classList.add('show');
+        loadContent(sectionId); // Load content if initially expanded
+      }
+    }
+
+    function saveCollapseState(sectionId) {
+      var section = document.getElementById(sectionId);
+      var isExpanded = section.classList.contains('show');
+      localStorage.setItem(sectionId + '_expanded', isExpanded);
+    }
+
+    function loadContent(sectionId) {
+      var contentElement = document.getElementById(sectionId);
+      var contentPlaceholder = contentElement.querySelector('.content-placeholder');
+
+      if (contentPlaceholder && contentPlaceholder.innerHTML.trim() === '') {
+        fetch('/get-content?section=' + sectionId)
+          .then(response => response.text())
+          .then(data => {
+            contentPlaceholder.innerHTML = data;
+          })
+          .catch(error => console.error('Error loading content:', error));
+      }
+    }
+
+    applyCollapseState('zap2itPanel');
+
+    ['shown.bs.collapse', 'hidden.bs.collapse'].forEach(eventName => {
+      document.getElementById('zap2itPanel').addEventListener(eventName, function() {
+        saveCollapseState('zap2itPanel');
+        if (eventName === 'shown.bs.collapse') {
+          loadContent('zap2itPanel');
+        }
+      });
+    });
+  });
+</script>
+{% endblock javascripts %}

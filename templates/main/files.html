@@ -49,27 +49,28 @@
     width: calc(100% - 1em - 2px);
   }
   
-  .table-wrapper {
+  .table-wrapper.special-table {
       overflow-y: auto;
       max-height: 400px; /* Adjust as needed */
       border: 2px solid #4c2588;
       border-radius: 0.25em;
       background: linear-gradient(195deg, #4c2588 0%, #4c278a 100%) !important;
       display: none;
+      width: 98%;
     }
 
-    table {
+    .special-table table {
       width: 100%;
       border-collapse: collapse;
     }
 
-    th, td {
+    .special-table th, .special-table td {
       border: 1px solid #4c2588;
       padding: 8px;
       text-align: left;
     }
 
-    th {
+    .special-table th {
       background: linear-gradient(195deg, #4c2588 0%, #4c278a 100%);
       color: white;
       position: sticky;
@@ -77,15 +78,15 @@
       z-index: 1;
     }
 
-    tr {
+    .special-table tr {
       border: 1px solid #4c2588;
     }
 
-    tr:nth-child(even) {
+    .special-table tr:nth-child(even) {
       background-color: #dcc4ff !important;
     }
 
-    tr:nth-child(odd) {
+    .special-table tr:nth-child(odd) {
       background-color: #f3e6ff !important;
     }
 
@@ -112,111 +113,79 @@
     color: #ccc;
   }
   
-  .dark-version .table-wrapper {
+  .dark-version .special-table {
     background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%) !important;
     border-color: #2c1a4a;
   }
   
-    .dark-version th {
+    .dark-version .special-table th {
       background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
       color: #ccc;
     }
   
-    .dark-version tr:nth-child(even) {
+    .dark-version .special-table tr:nth-child(even) {
       background-color: #2c1a4a !important;
     }
   
-    .dark-version tr:nth-child(odd) {
+    .dark-version .special-table tr:nth-child(odd) {
       background-color: #3c2a6a !important;
     }
   
-    .dark-version td {
+    .dark-version .special-table td {
       color: #ccc;
     }
 
   /* DataTables custom styles */
-  .dataTables_wrapper,
-  .dataTables_scroll,
-  .dataTables_scrollHead,
-  .dataTables_scrollBody,
-  .dataTables_scrollFoot {
+  .special-table .dataTables_wrapper,
+  .special-table .dataTables_scroll,
+  .special-table .dataTables_scrollHead,
+  .special-table .dataTables_scrollBody,
+  .special-table .dataTables_scrollFoot {
     background: linear-gradient(195deg, #4c2588 0%, #4c278a 100%) !important;
   }
 
-    .dataTables_length,
-    .dataTables_filter,
-    .dataTables_info,
-    .dataTables_paginate {
+    .special-table .dataTables_length,
+    .special-table .dataTables_filter,
+    .special-table .dataTables_info,
+    .special-table .dataTables_paginate {
       margin-top: 0.5em;
       margin-bottom: 0.5em;
     }
 
-    .dataTables_length,
-    .dataTables_info {
+    .special-table .dataTables_length,
+    .special-table .dataTables_info {
       margin-left: 0.5em;
     }
 
-    .dataTables_filter,
-    .dataTables_paginate {
+    .special-table .dataTables_filter,
+    .special-table .dataTables_paginate {
       margin-right: 0.5em;
     }
 
-    .dataTables_length label,
-    .dataTables_filter label,
-    .dataTables_info{
+    .special-table .dataTables_length label,
+    .special-table .dataTables_filter label,
+    .special-table .dataTables_info{
       color: white !important;
     }
 
-    .dataTables_length select,
-    .dataTables_filter input {
+    .special-table .dataTables_length select,
+    .special-table .dataTables_filter input {
       color: black;
       background-color: white !important;
       margin-left: 0.5em !important;
       margin-right: 0.5em !important;
     }
 
-  .dataTables_wrapper .dataTables_paginate .paginate_button {
+  .special-table .dataTables_wrapper .dataTables_paginate .paginate_button {
     color: white !important;
   }
 
-  .dark-version .dataTables_wrapper,
-  .dark-version .dataTables_scrollBody {
+  .dark-version .special-table .dataTables_wrapper,
+  .dark-version .special-table .dataTables_scrollBody {
     background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%) !important;
   }
 
-    .dataTables_length,
-    .dataTables_filter,
-    .dataTables_info,
-    .dataTables_paginate {
-      margin-top: 0.5em;
-      margin-bottom: 0.5em;
-    }
-
-    .dataTables_length,
-    .dataTables_info {
-      margin-left: 0.5em;
-    }
-
-    .dataTables_filter,
-    .dataTables_paginate {
-      margin-right: 0.5em;
-    }
-
-    .dataTables_length label,
-    .dataTables_filter label,
-    .dataTables_info{
-      color: white !important;
-    }
-
-    .dataTables_length select,
-    .dataTables_filter input {
-      color: black;
-      background-color: white !important;
-      margin-left: 0.5em !important;
-      margin-right: 0.5em !important;
-    }
-
-  .dark-version .dataTables_wrapper .dataTables_paginate .paginate_button {
+  .dark-version .special-table .dataTables_paginate .paginate_button {
     color: white !important;
   }
 
@@ -257,7 +226,7 @@
       </form>
       <div id="table-container">
         {% if table_html %}
-          <div class="table-wrapper">
+          <div class="table-wrapper special-table">
             <table id="myTable" class="display">
               {{ table_html|safe }}
             </table>

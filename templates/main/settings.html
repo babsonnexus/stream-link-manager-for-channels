@@ -438,6 +438,16 @@
               <button type="submit" name="action" value="playlist_manager_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
             </div>
           </div>
+          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+            <div class="form-check form-switch ps-0 is-filled">
+              <input type="checkbox" class="form-check-input ms-auto" id="media_tools_manager" name="media_tools_manager" {% if html_slm_media_tools_manager %}checked{% endif %}>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="media_tools_manager">Use Media Tools Manager</label>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+              <button type="submit" name="action" value="media_tools_manager_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+              <button type="submit" name="action" value="media_tools_manager_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
+            </div>
+          </div>
           {% if html_slm_channels_dvr_integration %}
             <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
               <div class="form-check form-switch ps-0 is-filled">
