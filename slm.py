@@ -23,7 +23,7 @@ from flask import Flask, render_template, render_template_string, request, redir
 from jinja2 import TemplateNotFound
 
 # Top Controls
-slm_version = "v2024.12.18.1525"
+slm_version = "v2024.12.18.0847"
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -4006,7 +4006,12 @@ def stream_log():
 def create_backup():
     src_dir = program_files_dir
     dst_dir = backup_dir
-    
+
+    # List of items to be excluded from backup
+    exclude_items = [
+                        'temp.txt'
+                    ]
+
     # Determine the max number of backups to keep
     max_backups = 3
     try:
@@ -4022,9 +4027,10 @@ def create_backup():
     backup_subdir = os.path.join(dst_dir, timestamp)
     os.makedirs(backup_subdir, exist_ok=True)
     for item in os.listdir(src_dir):
-        src_item = os.path.join(src_dir, item)
-        if os.path.isfile(src_item):
-            shutil.copy2(src_item, backup_subdir)
+        if item not in exclude_items:
+            src_item = os.path.join(src_dir, item)
+            if os.path.isfile(src_item):
+                shutil.copy2(src_item, backup_subdir)
 
     # Clean up old backups if there are more than max_backups
     backups = sorted(os.listdir(dst_dir))
