@@ -23,7 +23,7 @@ from flask import Flask, render_template, render_template_string, request, redir
 from jinja2 import TemplateNotFound
 
 # Top Controls
-slm_version = "v2024.12.18.0847"
+slm_version = "v2024.12.19.0902"
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
