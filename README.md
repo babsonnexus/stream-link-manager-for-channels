@@ -327,21 +327,21 @@ pyinstaller --noconfirm --onedir --console --add-data="requirements.txt:." --add
 
 ---
 # Upgrade
-As with any program, there may be a need to update the code for stability, bug fixes, or general upgades. When a new version is released, you will see notes in the header next to the current version and in the `Notifications` area:
+As with any program, there may be a need to update the code for stability, bug fixes, or general upgrades. When a new version is released, you will see notes in the header next to the current version and in the `Notifications` area:
 
 ![image](https://github.com/user-attachments/assets/1a302de2-83e1-48a1-956b-98107c0e36ac)
 
 ![image](https://github.com/user-attachments/assets/046d0188-02a8-4d00-919a-4023316ae948)
 
-Additionally, the program will also check for updates at regular intervals that you can control in the `Settings` area:
+Additionally, the program will also check for updates at regular intervals that you can control in the `Automation` area of MTM:
 
-![image](https://github.com/user-attachments/assets/2b5e682a-5c1a-4b3c-afb7-55ef7a9786b5)
+![image](https://github.com/user-attachments/assets/2e19b273-a5f2-4064-a687-15fc8bf1edba)
 
 By default, it is set to be 'On', run every 24 hours, and run at the time it was created. You can modify and control all of these settings, however a check will still be run when the program starts up no matter what.
 
-Further, you can run a check at any time in the 'Run Processes' area:
+Further, you can run a check at any time in the the same location:
 
-![image](https://github.com/user-attachments/assets/8b62ca68-22cc-4b8c-b342-820d8f2d8a63)
+![image](https://github.com/user-attachments/assets/2d102f30-946f-4b4e-b536-6efa1d2af0b3)
 
 Do note that you will not see anything there, but will see the other indicators as highlighted above.
 
@@ -582,15 +582,16 @@ Aside from the visuals, everything will function exactly the same.
 
 ![image](https://github.com/user-attachments/assets/e981d21f-36f7-4136-9686-d1166949675c)
 
-### Settings: Advanced / Experimental
+### Settings: Extensions, Advanced, and Experimental
 
-2. Under ```Advanced / Experimental```, you will find some tools to manage the program and your results.
+2. Under ```Extensions, Advanced, and Experimental```, you will find some tools to manage the program and your results.
 
 ![image](https://github.com/user-attachments/assets/ddb19693-c241-4fa1-8628-ad3f58b09b48)
 
 * `Channels DVR Integration` is on by default. You have the option to turn it off if you are not a Channels DVR user or have a special use case where it makes sense not to have it on. It will hide everything related to Channels DVR (including mentions of it in text and logos), turning the program into **Streaming Library Manager Solo Edition**. Further, any actions that try to connect to Channels are disabled. You can also ignore any of the settings related to Channels below.
 * `Use Stream Link/File Manager` is on by default. You have the option to turn it off if you are not using those tools. It will then hide everything related to SLM.
 * `Use Playlist Manager` is off by default. This is discussed in detail below.
+* `Use Media Tools Manager` is on by default. You have the option to turn it off if you do not want these functions, but it is not recommended to do so. For instance, doing so will take away your ability to run automations.
 * ```Run 'Prune' function in Channels``` is on by default, which means that the program will initiate a delete in Channels DVR for any missing personal media, not just Stream Links. You may decide that you do not want this to run automatically.
 
 ### Settings: Channels URL
@@ -638,36 +639,6 @@ This is the folder you set during installation and should be what you are using.
 ![image](https://github.com/user-attachments/assets/7e555c41-41e4-40b2-8e0b-2aad7d48a355)
 
 Do note that you <i>must</i> use the parent Channels DVR directory, not the ```Imports``` or anything similar. If you do not set this correctly or do not have access from the machine you installed <b>Streaming Library Manager</b> on, then you will not be able to do many things, such as generate Stream Links that Channels DVR can see or be able to get updates from Channels DVR when programs are watched and deleted.
-
-### Settings: Scheduler + Run Processes and Logs
-
-5. Finally, there is the ```Scheduler```.
-
-![image](https://github.com/user-attachments/assets/ee84c754-a47b-4169-9e8d-b56527fbfe19)
-
-Depending upon your choices above, there will be several automations that you can set timing, frequency, and other details for. For intstance, in the ```Stream Links/Files: End-to-End Process```, several steps are taken. These can all be seen and initiated manually in the ```Run Processes``` area.
-
-![image](https://github.com/user-attachments/assets/ff2ce43c-892d-44b7-ad31-372904f5c43f)
-
-These tasks are:
-
-* Update the Streaming Services for any new or removed providers
-* Check for new episodes of bookmarked shows
-* Import from Channels DVR any Movies and Episodes that have been watched and deleted, marking them as "watched" in SLM
-* Find and assign valid Stream Links to bookmarked Movies and Episodes
-* In Channels DVR, initiate several steps to make new programs appear, have deleted ones be removed, and update specific files to use revised links
-
-![image](https://github.com/user-attachments/assets/89958211-b692-4e94-82c0-b4a89282dfe7)
-
-While these can all be done manually, it is recommended to set a schedule to run automatically at some point during the day. Note that this can take a significant amount of time, depending upon the number of Movies and Episodes that you have bookmarked. Also, the clock shown should match your system and locale settings. After a process is complete, you can see pertinent notifications in the ```Home``` area (newest on top), such as if there are changes to Streaming Services or new episodes were added.
-
-![image](https://github.com/user-attachments/assets/d3dea0dc-edf6-40eb-bd6c-0d573deafd1f)
-
-If you are looking for additional detail as to what transpired, the ```Logs``` area contains more information.
-
-![image](https://github.com/user-attachments/assets/a5467c2e-8a06-4c3b-b9cc-c51250aa7908)
-
-Unlike the notifications and live process trackers, the log is in order of action.
 
 ## Stream Link/File Manager
 
@@ -845,7 +816,7 @@ At this point, you can edit them and make them not hidden by changing their ```B
 ## Playlist Manager
 
 ### Installation
-1. Go to ```Settings``` and scroll down to ```Advanced / Experimental```.
+1. Go to ```Settings``` and scroll down to ```Extensions, Advanced, and Experimental```.
 
 ![b3ae8a7666bb3fa0fe028f1567cb36f5db453d3b](https://github.com/user-attachments/assets/e0d7d3a2-c3e6-4c56-921f-7b15afc52258)
 
@@ -955,13 +926,13 @@ This works with both scrolling downward to get more or all available stations, o
 26. At this point, you have everything you need and can continue using PLM as a regular function. However, there are several settings and automated routines to consider before proceeding.
 
 ### Settings and Automation
-27. Back in the ```Settings``` area under ```Advanced / Experimental```, at the spot where you turned on PLM, there are two additional inputs. One is the station number you would like to start at, with a default of ```10000```. Each new Parent that is added will increase this value by one.
+27. Back in the ```Settings``` area under ```Extensions, Advanced, and Experimental```, at the spot where you turned on PLM, there are two additional inputs. One is the station number you would like to start at, with a default of ```10000```. Each new Parent that is added will increase this value by one.
 
 ![bc46bb2060f475b904d04176ab173352bb2dcd95](https://github.com/user-attachments/assets/7ced31ed-9352-49a7-8925-ebaf83266727)
 
 28. The other choice is the ```Max Stations per m3u```, with a default of ```750```. This is the number of stations that will be in an m3u file before it splits into a new file, 750 being the maximum Channels DVR allows at the time of this writing. This can be set to any positive integer. It should be noted the XML EPG data is split by the same stations in the end-result m3u(s).
 
-29. Further up under the ```Scheduler``` section are two more things for you to set. The first is the equivalent of the ```Update Station List``` button. Turning this on will run a process once per day at the time you set to update the station list, thus giving you an automated way to handle changes and get new selections in the ```Unassigned Stations``` section.
+29. Further, under ```Automation``` in MTM (see details below) are two more things for you to set. The first is the equivalent of the ```Update Station List``` button. Turning this on will run a process once per day at the time you set to update the station list, thus giving you an automated way to handle changes and get new selections in the ```Unassigned Stations``` section.
 
 ![936126de4bb11635dc6f575b548c8f63f93c8ca1](https://github.com/user-attachments/assets/2f9ac1d2-8991-40bb-811d-556fc9c02dd0)
 
@@ -1053,20 +1024,51 @@ It is recommended to be cognizant of how large the data set is. The bigger, the 
 
 ### Automation
 
-**Automation** allows users to execute specialized tasks to run various steps to help manage their media or deal with specific issues/use cases. All current and future automation options are `Off` by default with a time of whenever they are added. It is up to the user to decide if they want to schedule, run only demand, or not use at all.
+**Automation** allows users to execute specialized tasks to run various steps to help manage their media or deal with specific issues/use cases. These often consist of elements related to setting timing, frequency, and other details. For the most part, current and future automation options are `Off` by default with a time of whenever they are added. However, there are a few related to program performance that begin in the `On` position. Either way, it is up to the user to decide if they want to schedule, run only demand, or not use at all.
 
-![image](https://github.com/user-attachments/assets/7b1d87a8-5f07-4ade-9386-4a7c7ce68836)
+![image](https://github.com/user-attachments/assets/62fb4fe2-07f1-426f-b21d-0a0bf31dfed1)
 
-For example, there is the **Automation** for `Reset Channels DVR Passes`.
+As an example, there is the **Automation** for `Reset Channels DVR Passes`.
 
 ![image](https://github.com/user-attachments/assets/1540269d-d616-4904-ac3d-f0c4b8378950)
 
 As the description shows, this will pause and resume all active passes in Channels DVR (hence the `Channels DVR Interface` is required to be on to have this available). This specific sequence was created to resolve an issue where sometimes a lower priority pass is used for scheduling a future recording and—when the guide updates—the lower priority is maintained instead of shifting to the higher priority. When this runs, all scheduled recordings are reset to their expected settings.
 
-# Administrative Functions
+Depending upon your choices in `Settings`, the options within those `Scheduler` tasks will change. For instance, in the ```Stream Links/Files: End-to-End Process```, several steps are taken. These can all be seen and initiated using the ```Run``` button.
+
+![image](https://github.com/user-attachments/assets/81db9445-fb26-4041-8761-ea4fdc13b944)
+
+These tasks are:
+
+* Update the Streaming Services for any new or removed providers
+* Check for new episodes of bookmarked shows
+* Import from Channels DVR any Movies and Episodes that have been watched and deleted, marking them as "watched" in SLM
+* Find and assign valid Stream Links to bookmarked Movies and Episodes
+* In Channels DVR, initiate several steps to make new programs appear, have deleted ones be removed, and update specific files to use revised links
+
+![image](https://github.com/user-attachments/assets/89958211-b692-4e94-82c0-b4a89282dfe7)
+
+As noted, these can all be done manually, and your options will be different whether you are using the `Channels DVR Integration` or not.
+
+![image](https://github.com/user-attachments/assets/02467eff-b7a0-4d30-a25f-4e294292e572)
+
+![image](https://github.com/user-attachments/assets/b3d3576d-f1c8-47a6-857f-f609f0920a96)
+
+In all cases, it is recommended to set a schedule to run automatically at some point during the day. Note that this particular process can take a significant amount of time, depending upon the number of Movies and Episodes that you have bookmarked. Also, the clock shown should match your system and locale settings. After an automation is complete, you can see pertinent notifications in the ```Home``` area (newest on top), such as if there are changes to Streaming Services or new episodes were added.
+
+![image](https://github.com/user-attachments/assets/d3dea0dc-edf6-40eb-bd6c-0d573deafd1f)
+
+If you are looking for additional detail as to what transpired, the ```Logs``` area contains more information.
+
+![image](https://github.com/user-attachments/assets/a5467c2e-8a06-4c3b-b9cc-c51250aa7908)
+
+Unlike the notifications and live process trackers, the log is in order of action.
+
+# Controls
+Aside from the function covered above, there is not much else a user needs to do. As discussed, there is the `Home` area for notifications and the `Logs` one for further information and troubleshooting, but there are a couple of more.
 
 ### Files
-Aside from the function covered above, there is not much else a user needs to do. There is the ```Files``` area for viewing the backend data that fuels all of the above, as well as exporting those files for backup and migration purposes.
+The ```Files``` area is for viewing the backend data that fuels all of the above, as well as exporting those files for backup and migration purposes.
 
 ![image](https://github.com/user-attachments/assets/632b69a6-5562-48bc-b1db-a1448ff75661)
 
@@ -1114,7 +1116,7 @@ You end up with no Stream Link:
 It is all a function of what services you have selected and the data on JustWatch. As such, it is up to you to manage your services and find the best combination that works for your particular use case.
 
 ### [SLM] My Streaming Service suddenly disappeared and ruined my Stream Links!
-While new Streaming Services are brought online and shut down on a regular basis, they also sometimes just change names. Any name change will result in the "old name" being removed and the "new name" being added. If this happens to you, all you need to do is return to the ```Setttings``` area, add the "new name", and prioritize it. The next time you generate your Stream Links, any missing Movies and Shows that were removed will be recreated. Remember, there is a difference between "bookmarking" a Movie or Show and having Stream Links for it.
+While new Streaming Services are brought online and shut down on a regular basis, they also sometimes just change names. Any name change will result in the "old name" being removed and the "new name" being added. If this happens to you, all you need to do is return to the ```Settings``` area, add the "new name", and prioritize it. The next time you generate your Stream Links, any missing Movies and Shows that were removed will be recreated. Remember, there is a difference between "bookmarking" a Movie or Show and having Stream Links for it.
 
 ### [SLM] The data or links for my program are wrong
 JustWatch is the provider for all of the information. If there are any issues, please let them know by filling out [this form](https://support.justwatch.com/hc/en-us/requests/new) or emailing them at feedback@justwatch.com. It is unlikely that they will make an update in a timely manner as they are also dependent upon upstream data, so please take advantage of the manual and override capabilities built into the program, or using mapping if possible.
@@ -1126,7 +1128,7 @@ SLM is completely dependent upon Movie and Show data from the JustWatch website,
 Go to the JustWatch website and search for it on there. A Movie or Show might be available, but still be missing links to the appropriate streaming service. If it is brand new, it might also take a day or two until they update their data, which is what SLM uses. Should the links be missing on JustWatch, submit a request by filling out [this form](https://support.justwatch.com/hc/en-us/requests/new) or sending an e-mail to feedback@justwatch.com. If you can confirm JustWatch has a working link on there and it still won't show up in this program, please submit an issue request with as much detail as possible. There may be an edge case for how that particular Movie or Show is stored on JustWatch that this software has not accounted for.
 
 ### [SLM] I generated my Stream Links when I bookmarked my Movie/Show, but it didn't show up in Channels
-Generating the Stream Link(s) is not enough; you need to update personal media from within Channels so that it appears inside that interface. There are several ways to deal with this. First and foremost, within this software, under ```Run Processes```, is a button that will do all the necessary steps:
+Generating the Stream Link(s) is not enough; you need to update personal media from within Channels so that it appears inside that interface. There are several ways to deal with this. First and foremost, within this software, under ```Automation``` in MTM, is a button that will do all the necessary steps:
 
 ![image](https://github.com/user-attachments/assets/7163353d-9e95-42b9-9bf3-2c942f2aa490)
 
@@ -1144,7 +1146,7 @@ There is also the possibility that the link cleaning and replacement process tha
 ### [SLM] Why do some things play the correct movie/episode automatically and why do others go to a generic landing page for that movie/show?
 There are two components that relate to this. First is the quality of the links provided by JustWatch. For instance, with Disney+, JustWatch only has links to generic landing pages and does not have individual episode information like it has for Hulu. There is nothing that can be done aside from requesting that JustWatch updates their data.
 
-The second situation is that even though JustWatch provides links to more generic areas, there may be systematic ways to correct them. As an example, JustWatch provides a link to a movie on Netflix that looks like this: ```http://www.netflix.com/title/81078554```. However, if you replace ```title``` with ```watch```, it will play automatically. This being a “systematic way” to do a replace, it was included in the ```Stream Link Mappings``` settings as highlighted above. If you have more examples that could be accomplished this way, please let the community know. If they are deemed benefitial for other users, they will be added to the default list that comes with a new installation.
+The second situation is that even though JustWatch provides links to more generic areas, there may be systematic ways to correct them. As an example, JustWatch provides a link to a movie on Netflix that looks like this: ```http://www.netflix.com/title/81078554```. However, if you replace ```title``` with ```watch```, it will play automatically. This being a “systematic way” to do a replace, it was included in the ```Stream Link Mappings``` settings as highlighted above. If you have more examples that could be accomplished this way, please let the community know. If they are deemed beneficial for other users, they will be added to the default list that comes with a new installation.
 
 ### [PLM] Is Playlist Manager a complete replacement for all my sources in Channels?
 There is no "right way" to approach this; PLM is a tool to use as you please, with thousands of possibilities on what you might want to do. While one user might desire to have PLM playlists be the only sources in Channels, others will not choose to go down that path. For instance, there is no great replacement for how Channels handles TVE (unless you have Frndly or use ADBTuner or CC4C for every station), so a user who wants those stations would have to keep that as a source no matter what, just at a lower priority so it is not used by default.
@@ -1180,14 +1182,14 @@ If you see a situation like this...
 
 ... the most likely culprit is the file type for the images. The Channels DVR apps require images to be either `.png` or `.jpg`, unlike the web which can accept about anything.
 
-### [GEN] I set the scheduler for a certain time and it is running hours earlier/later. | The time showing in the logs is wrong.
+### [MTM] I set the scheduler for a certain time and it is running hours earlier/later. | The time showing in the logs is wrong.
 Follow the directions related to "TIMEZONE" in the installation steps above.
 
-### [GEN] I never see anything in the "Live Process Log (While Running)" block
+### [MTM] I never see anything in the "Live Process Log (While Running)" block
 This block is just an indicator to let you know nothing is stuck and that things are still running in the background. For actions that last less than a couple of seconds, not enough time will pass to begin to fill it in. For anything longer, you will see information fill up to the top, but it will all clear out when the process finishes running. However, there are some issues with certain browsers like Safari where it seems incapable of displaying what is happening. Rest assured that although the background process is running as expected, you can always verify in the logs if desired.
 
 ### Additional questions or issues
-For general **Streaming Library Manager** support, please visit the [Channels Community Message Board](https://community.getchannels.com/t/42369) or open a question under `Issues` above. Otherwise, for specific extension questions, see:
+For general **Streaming Library Manager** support, please visit the **[Channels Community Message Board](https://community.getchannels.com/t/42369)** or open a question under `Issues` above. Otherwise, for specific extension questions, see:
 
 * **[SLM](https://community.getchannels.com/t/39684)**
 * **[PLM](https://community.getchannels.com/t/41719)**
