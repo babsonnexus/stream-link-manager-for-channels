@@ -251,121 +251,6 @@
             </div>
             <hr>
           {% endif %}
-          <!-- Scheduler -->
-          <h4 id="scheduler_anchor">Scheduler</h4>
-          <p><em>WARNING: A buffer of at least 1 minute is required between automated processes, otherwise they may not run</em></p>
-          <p><div id="html_scheduler_message">{{ html_scheduler_message }}</div></p>
-          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-            <div class="form-check form-switch ps-0 is-filled">
-              <input type="checkbox" class="form-check-input ms-auto" id="gen_backup_schedule" name="gen_backup_schedule" {% if html_gen_backup_schedule == "On" %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_backup_schedule">Backup Process</label>
-            </div>
-            <div>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_backup_schedule_time">Start at:</label>
-              <input type="time" id="gen_backup_schedule_time" name="gen_backup_schedule_time" value="{{ html_gen_backup_schedule_time }}" class="ms-3">
-            </div>
-            <div style="margin-top: 10px;">
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_backup_schedule_frequency">And run:</label>
-              <select name="gen_backup_schedule_frequency" id="gen_backup_schedule_frequency" style="margin-left: 15px;">
-                {% for html_gen_backup_frequency in html_gen_backup_frequencies %}
-                  <option value="{{ html_gen_backup_frequency }}" {% if html_gen_backup_frequency == html_gen_backup_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_gen_backup_frequency }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div>
-              <label for="gen_backup_max_backups" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Max Backups:</label>
-              <input type="text" id="gen_backup_max_backups" name="gen_backup_max_backups" value="{{ html_gen_backup_max_backups }}" style="display: block; margin-left: 15px; width: 25%;">
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-              <button type="submit" name="action" value="gen_backup_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-              <button type="submit" name="action" value="gen_backup_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
-            </div>
-          </div>
-          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-            <div class="form-check form-switch ps-0 is-filled">
-              <input type="checkbox" class="form-check-input ms-auto" id="gen_upgrade_schedule" name="gen_upgrade_schedule" {% if html_gen_upgrade_schedule == "On" %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_upgrade_schedule">Upgrade Process</label>
-            </div>
-            <div>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_upgrade_schedule_time">Start at:</label>
-              <input type="time" id="gen_upgrade_schedule_time" name="gen_upgrade_schedule_time" value="{{ html_gen_upgrade_schedule_time }}" class="ms-3">
-            </div>
-            <div style="margin-top: 10px;">
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_upgrade_schedule_frequency">And run:</label>
-              <select name="gen_upgrade_schedule_frequency" id="gen_upgrade_schedule_frequency" style="margin-left: 15px;">
-                {% for html_gen_upgrade_frequency in html_gen_upgrade_frequencies %}
-                  <option value="{{ html_gen_upgrade_frequency }}" {% if html_gen_upgrade_frequency == html_gen_upgrade_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_gen_upgrade_frequency }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-              <button type="submit" name="action" value="gen_upgrade_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-              <button type="submit" name="action" value="gen_upgrade_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
-            </div>
-          </div>
-          {% if html_slm_stream_link_file_manager %}
-            <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-              <div class="form-check form-switch ps-0 is-filled">
-                <input type="checkbox" class="form-check-input ms-auto" id="auto_update_schedule" name="auto_update_schedule" {% if html_auto_update_schedule == "On" %}checked{% endif %}>
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule">Stream Links/Files: End-to-End Process</label>
-              </div>
-              <div>
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule_time">Start at:</label>
-                <input type="time" id="auto_update_schedule_time" name="auto_update_schedule_time" value="{{ html_auto_update_schedule_time }}" class="ms-3">
-              </div>
-              <div style="margin-top: 10px;">
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule_frequency">And run:</label>
-                <select name="auto_update_schedule_frequency" id="auto_update_schedule_frequency" style="margin-left: 15px;">
-                  {% for html_slm_end_to_end_frequency in html_slm_end_to_end_frequencies %}
-                    <option value="{{ html_slm_end_to_end_frequency }}" {% if html_slm_end_to_end_frequency == html_auto_update_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_slm_end_to_end_frequency }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-                <button type="submit" name="action" value="end_to_end_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-                <button type="submit" name="action" value="end_to_end_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
-              </div>
-            </div>
-          {% endif %}
-          {% if html_slm_playlist_manager %}
-            <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; vertical-align: top; margin-bottom: 5px;">
-              <div class="form-check form-switch ps-0 is-filled">
-                <input type="checkbox" class="form-check-input ms-auto" id="plm_update_stations_schedule" name="plm_update_stations_schedule" {% if html_plm_update_stations_schedule == "On" %}checked{% endif %}>
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_stations_schedule">Playlist Manager: Update Station List</label>
-              </div>
-              <div>
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_stations_schedule_time">Run at:</label>
-                <input type="time" id="plm_update_stations_schedule_time" name="plm_update_stations_schedule_time" value="{{ html_plm_update_stations_schedule_time }}" class="ms-3">
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-                <button type="submit" name="action" value="plm_update_stations_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-                <button type="submit" name="action" value="plm_update_stations_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
-              </div>
-            </div>
-            <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; vertical-align: top; margin-bottom: 5px;">
-              <div class="form-check form-switch ps-0 is-filled">
-                <input type="checkbox" class="form-check-input ms-auto" id="plm_update_m3us_epgs_schedule" name="plm_update_m3us_epgs_schedule" {% if html_plm_update_m3us_epgs_schedule == "On" %}checked{% endif %}>
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_m3us_epgs_schedule">Playlist Manager: Update m3u(s) & XML EPG(s)</label>
-              </div>
-              <div>
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_m3us_epgs_schedule_time">Start at:</label>
-                <input type="time" id="plm_update_m3us_epgs_schedule_time" name="plm_update_m3us_epgs_schedule_time" value="{{ html_plm_update_m3us_epgs_schedule_time }}" class="ms-3">
-              </div>
-              <div style="margin-top: 10px;">
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_m3us_epgs_schedule_frequency">And run:</label>
-                <select name="plm_update_m3us_epgs_schedule_frequency" id="plm_update_m3us_epgs_schedule_frequency" style="margin-left: 15px;">
-                  {% for html_plm_m3us_epgs_schedule_frequency in html_plm_m3us_epgs_schedule_frequencies %}
-                    <option value="{{ html_plm_m3us_epgs_schedule_frequency }}" {% if html_plm_m3us_epgs_schedule_frequency == html_plm_update_m3us_epgs_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_plm_m3us_epgs_schedule_frequency }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-                <button type="submit" name="action" value="plm_update_m3us_epgs_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-                <button type="submit" name="action" value="plm_update_m3us_epgs_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
-              </div>
-            </div>
-          {% endif %}
-          <hr>
           {% if html_slm_channels_dvr_integration %}
             <!-- Channels URL -->
             <h4 id="channels_url_anchor">Channels URL</h4>
@@ -398,7 +283,7 @@
             <hr>
           {% endif %}
           <!-- Advanced / Experimental -->
-          <h4 id="advanced_experimental_anchor">Advanced / Experimental</h4>
+          <h4 id="advanced_experimental_anchor">Extensions, Advanced, and Experimental</h4>
           <p><div id="html_advanced_experimental_message">{{ html_advanced_experimental_message }}</div></p>
           <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
             <div class="form-check form-switch ps-0 is-filled">
