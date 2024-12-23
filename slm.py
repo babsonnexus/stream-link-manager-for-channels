@@ -23,7 +23,7 @@ from flask import Flask, render_template, render_template_string, request, redir
 from jinja2 import TemplateNotFound
 
 # Top Controls
-slm_version = "v2024.12.23.1522"
+slm_version = "v2024.12.23.1553"
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -3348,7 +3348,7 @@ def get_playlist_files():
 
 # Wrapper for getting uploaded m3u and XML EPG files
 def get_uploaded_playlist_files():
-    extensions = ['m3u', 'xml']
+    extensions = ['m3u', 'xml', 'gz', 'm3u8']
     all_prior_files = get_all_prior_files(playlists_uploads_dir, extensions)
 
     playlist_files = []
@@ -7677,7 +7677,7 @@ def get_file_path(path, name, special_action):
 
     if special_action == "Make STRM":
         file_name_extension = "strm"
-    elif special_action in ['m3u', 'xml']:
+    elif special_action in ['m3u', 'xml', 'gz', 'm3u8']:
         file_name_extension = special_action
     else:
         file_name_extension = "strmlnk"
@@ -7826,7 +7826,7 @@ def file_delete(path, name, special_action):
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
-                if special_action in ['m3u', 'xml']:
+                if special_action in ['m3u', 'xml', 'gz', 'm3u8']:
                     notification_add(f"    Deleted: {name}.{special_action}")
                 else:
                     notification_add(f"    Deleted: {file_path}")
