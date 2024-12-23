@@ -163,17 +163,8 @@
           </div>
           <span class="nav-link-text ms-1">Controls</span>
         </a>
-        <div class="collapse {% if 'runprocess' in segment or 'files' in segment or 'logs' in segment or 'settings' in segment %}show{% endif %}" id="collapseControls">
+        <div class="collapse {% if 'files' in segment or 'logs' in segment or 'settings' in segment %}show{% endif %}" id="collapseControls">
           <ul class="navbar-nav ms-3">
-            <li class="nav-item">
-              <a class="nav-link text-white {% if 'runprocess' in segment %} active bg-gradient-primary {% endif %}" 
-                  href="/runprocess">
-                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                  <i class="material-icons opacity-10">play_circle</i>
-                </div>
-                <span class="nav-link-text ms-1">Run Processes</span>
-              </a>
-            </li>
             <li class="nav-item">
               <a class="nav-link text-white {% if 'files' in segment %} active bg-gradient-primary {% endif %}" 
                   href="/files">
