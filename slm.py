@@ -23,7 +23,7 @@ from flask import Flask, render_template, render_template_string, request, redir
 from jinja2 import TemplateNotFound
 
 # Top Controls
-slm_version = "v2024.12.19.0902"
+slm_version = "v2024.12.23.1522"
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -2297,7 +2297,8 @@ def webpage_playlists(sub_page):
                         upload_extensions = [
                             "m3u",
                             "xml",
-                            "gz"
+                            "gz",
+                            "m3u8"
                         ]
 
                         file = request.files.get('uploaded_playlists_action_new_file')
@@ -2321,7 +2322,7 @@ def webpage_playlists(sub_page):
                                 os.replace(full_path(temp_upload), full_path(final_upload))
                             
                             else:
-                                uploaded_playlists_message = "Incorrect format. Files must be 'm3u', 'xml', or 'gz'."    
+                                uploaded_playlists_message = "Incorrect format. Files must be 'm3u', 'm3u8', 'xml', or 'gz'."    
 
                         else:
                             uploaded_playlists_message = "No selected file"
@@ -3807,11 +3808,30 @@ def is_valid_csv(content):
 @app.route('/tools_automation', methods=['GET', 'POST'])
 def webpage_tools_automation():
     settings = read_data(csv_settings)
+    gen_backup_schedule = settings[19]["settings"]
+    gen_backup_schedule_time = settings[20]["settings"]
+    gen_backup_schedule_frequency = settings[21]["settings"]
+    gen_backup_max_backups = settings[22]["settings"]
+    gen_upgrade_schedule = settings[25]["settings"]
+    gen_upgrade_schedule_time = settings[26]["settings"]
+    gen_upgrade_schedule_frequency = settings[27]["settings"]
+    try:
+        auto_update_schedule = settings[8]["settings"]
+    except (IndexError, KeyError):
+        auto_update_schedule = 'Off'
+    auto_update_schedule_time = settings[6]["settings"]
+    auto_update_schedule_frequency = settings[18]["settings"]
+    plm_update_stations_schedule = settings[13]["settings"]
+    plm_update_stations_schedule_time = settings[14]["settings"]
+    plm_update_m3us_epgs_schedule = settings[15]["settings"]
+    plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
+    plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
     reset_channels_passes = settings[29]["settings"]            # [29] MTM: Automation - Reset Channels DVR Passes On/Off
     reset_channels_passes_time = settings[30]["settings"]       # [30] MTM: Automation - Reset Channels DVR Passes Start Time
     reset_channels_passes_frequency = settings[31]["settings"]  # [31] MTM: Automation - Reset Channels DVR Passes Frequency
 
     automation_message = ''
+    action_friendly_name = ''
     automation_frequencies = [
         "Every 1 hour",
         "Every 2 hours",
@@ -3822,14 +3842,110 @@ def webpage_tools_automation():
         "Every 12 hours",
         "Every 24 hours"
     ]
+    plm_m3us_epgs_schedule_frequencies = [
+        "Every 1 hour",
+        "Every 3 hours",
+        "Every 6 hours",
+        "Every 12 hours",
+        "Every 24 hours"
+    ]
+    slm_end_to_end_frequencies = [
+        "Every 8 hours",
+        "Every 12 hours",
+        "Every 24 hours"
+    ]
+    gen_backup_frequencies = [
+        "Every 1 hour",
+        "Every 2 hours",
+        "Every 4 hours",
+        "Every 8 hours",
+        "Every 12 hours",
+        "Every 24 hours"
+    ]
+    gen_upgrade_frequencies = [
+        "Every 1 hour",
+        "Every 12 hours",
+        "Every 24 hours"
+    ]
+
+    trim_values = [
+        '_run',
+        '_save',
+        '_cancel'
+    ]
+    other_actions = [
+        'update_streaming_services',
+        'get_new_episodes',
+        'import_program_updates',
+        'generate_stream_links',
+        'prune_scan_channels'
+    ]
+    trimmed_action = None
+    anchor_base = None
+    anchor = None
 
     if request.method == 'POST':
         action = request.form['action']
+
+        for trim_value in trim_values:
+            if action.endswith(trim_value):
+                trimmed_action = action[:-len(trim_value)]
+                break
+
+        if trimmed_action:
+            anchor_base = 'end_to_end_subprocesses' if trimmed_action in other_actions else trimmed_action
+            anchor = 'anchor_' + anchor_base
 
         if action.endswith('_run'):
 
             if action.startswith('reset_channels_passes'):
                 automation_message = run_reset_channels_passes()
+
+            else:
+
+                if action.startswith('gen_backup_process'):
+                    action_friendly_name = 'Backup Process'
+                    if os.path.exists(program_files_dir):
+                        create_backup()
+
+                elif action.startswith('gen_upgrade_process'):
+                    action_friendly_name = 'Upgrade Process'
+                    check_upgrade()
+
+                elif action.startswith('end_to_end_process'):
+                    action_friendly_name = 'Stream Links/Files: End-to-End Process'
+                    end_to_end()
+
+                elif action.startswith('plm_update_stations_process'):
+                    action_friendly_name = 'Playlist Manager: Update Station List'
+                    get_combined_m3us()
+
+                elif action.startswith('plm_update_m3us_epgs_process'):
+                    action_friendly_name = 'Playlist Manager: Update m3u(s) & XML EPG(s)'
+                    get_final_m3us_epgs()
+
+                elif action.startswith('update_streaming_services'):
+                    action_friendly_name = 'Update Streaming Services'
+                    update_streaming_services()
+
+                elif action.startswith('get_new_episodes'):
+                    action_friendly_name = 'Get New Episodes'
+                    get_new_episodes(None)
+
+                elif action.startswith('import_program_updates'):
+                    action_friendly_name = 'Import Updates from Channels'
+                    import_program_updates()
+
+                elif action.startswith('generate_stream_links'):
+                    action_friendly_name = 'Generate Stream Links/Files'
+                    generate_stream_links()
+
+                elif action.startswith('prune_scan_channels'):
+                    action_friendly_name = 'Run Updates in Channels'
+                    prune_scan_channels()
+
+                automation_message = f"{current_time()} INFO: '{action_friendly_name}' completed. See 'Logs' for more details."
+                print(f"{automation_message}")
 
         elif action.endswith('_save') or action.endswith('_cancel'):
 
@@ -3844,12 +3960,84 @@ def webpage_tools_automation():
                     settings[30]["settings"] = reset_channels_passes_time_input
                     settings[31]["settings"] = reset_channels_passes_frequency_input
 
+                elif action.startswith('gen_backup_process'):
+                    gen_backup_schedule_input = request.form.get('gen_backup_schedule')
+                    gen_backup_schedule_time_input = request.form.get('gen_backup_schedule_time')
+                    gen_backup_schedule_frequency_input = request.form.get('gen_backup_schedule_frequency')
+                    gen_backup_max_backups_input = request.form.get('gen_backup_max_backups')
+
+                    settings[19]["settings"] = "On" if gen_backup_schedule_input == 'on' else "Off"
+                    settings[20]["settings"] = gen_backup_schedule_time_input
+                    settings[21]["settings"] = gen_backup_schedule_frequency_input
+                    try:
+                        if int(gen_backup_max_backups_input) > 0:
+                            settings[22]["settings"] = int(gen_backup_max_backups_input)
+                        else:
+                            automation_message = f"{current_time()} ERROR: For 'Max Backups', please enter a positive integer."
+                    except ValueError:
+                        automation_message = f"{current_time()} ERROR: 'Max Backups' must be a number."
+
+                elif action.startswith('gen_upgrade_process'):
+                    gen_upgrade_schedule_input = request.form.get('gen_upgrade_schedule')
+                    gen_upgrade_schedule_time_input = request.form.get('gen_upgrade_schedule_time')
+                    gen_upgrade_schedule_frequency_input = request.form.get('gen_upgrade_schedule_frequency')
+
+                    settings[25]["settings"] = "On" if gen_upgrade_schedule_input == 'on' else "Off"
+                    settings[26]["settings"] = gen_upgrade_schedule_time_input
+                    settings[27]["settings"] = gen_upgrade_schedule_frequency_input
+
+                elif action.startswith('end_to_end_process'):
+                    auto_update_schedule_input = request.form.get('auto_update_schedule')
+                    auto_update_schedule_time_input = request.form.get('auto_update_schedule_time')
+                    auto_update_schedule_frequency_input = request.form.get('auto_update_schedule_frequency')
+
+                    try:
+                        settings[8]["settings"] = "On" if auto_update_schedule_input == 'on' else "Off"
+                    except (IndexError, KeyError):
+                        settings.append({"settings": "On" if auto_update_schedule_input == 'on' else "Off"})
+                    settings[6]["settings"] = auto_update_schedule_time_input
+                    settings[18]["settings"] = auto_update_schedule_frequency_input
+
+                elif action.startswith('plm_update_stations_process'):
+                    plm_update_stations_schedule_input = request.form.get('plm_update_stations_schedule')
+                    plm_update_stations_schedule_time_input = request.form.get('plm_update_stations_schedule_time')
+
+                    settings[13]["settings"] = "On" if plm_update_stations_schedule_input == 'on' else "Off"
+                    settings[14]["settings"] = plm_update_stations_schedule_time_input
+
+                elif action.startswith('plm_update_m3us_epgs_process'):
+                    plm_update_m3us_epgs_schedule_input = request.form.get('plm_update_m3us_epgs_schedule')
+                    plm_update_m3us_epgs_schedule_time_input = request.form.get('plm_update_m3us_epgs_schedule_time')
+                    plm_update_m3us_epgs_schedule_frequency_input = request.form.get('plm_update_m3us_epgs_schedule_frequency')
+
+                    settings[15]["settings"] = "On" if plm_update_m3us_epgs_schedule_input == 'on' else "Off"
+                    settings[16]["settings"] = plm_update_m3us_epgs_schedule_time_input
+                    settings[17]["settings"] = plm_update_m3us_epgs_schedule_frequency_input
+
                 csv_to_write = csv_settings
                 data_to_write = settings
                 write_data(csv_to_write, data_to_write)
 
             # Reset all values to current
             settings = read_data(csv_settings)
+            gen_backup_schedule = settings[19]["settings"]
+            gen_backup_schedule_time = settings[20]["settings"]
+            gen_backup_schedule_frequency = settings[21]["settings"]
+            gen_backup_max_backups = settings[22]["settings"]
+            gen_upgrade_schedule = settings[25]["settings"]
+            gen_upgrade_schedule_time = settings[26]["settings"]
+            gen_upgrade_schedule_frequency = settings[27]["settings"]
+            try:
+                auto_update_schedule = settings[8]["settings"]
+            except (IndexError, KeyError):
+                auto_update_schedule = 'Off'
+            auto_update_schedule_time = settings[6]["settings"]
+            auto_update_schedule_frequency = settings[18]["settings"]
+            plm_update_stations_schedule = settings[13]["settings"]
+            plm_update_stations_schedule_time = settings[14]["settings"]
+            plm_update_m3us_epgs_schedule = settings[15]["settings"]
+            plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
+            plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
             reset_channels_passes = settings[29]["settings"]            # [29] MTM: Automation - Reset Channels DVR Passes On/Off
             reset_channels_passes_time = settings[30]["settings"]       # [30] MTM: Automation - Reset Channels DVR Passes Start Time
             reset_channels_passes_frequency = settings[31]["settings"]  # [31] MTM: Automation - Reset Channels DVR Passes Frequency
@@ -3863,11 +4051,31 @@ def webpage_tools_automation():
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_anchor = anchor,
         html_automation_message = automation_message,
         html_automation_frequencies = automation_frequencies,
         html_reset_channels_passes = reset_channels_passes,
         html_reset_channels_passes_time = reset_channels_passes_time,
-        html_reset_channels_passes_frequency = reset_channels_passes_frequency
+        html_reset_channels_passes_frequency = reset_channels_passes_frequency,
+        html_auto_update_schedule = auto_update_schedule,
+        html_auto_update_schedule_time = auto_update_schedule_time,
+        html_plm_update_stations_schedule = plm_update_stations_schedule,
+        html_plm_update_stations_schedule_time = plm_update_stations_schedule_time,
+        html_slm_end_to_end_frequencies = slm_end_to_end_frequencies,
+        html_auto_update_schedule_frequency = auto_update_schedule_frequency,
+        html_plm_update_m3us_epgs_schedule = plm_update_m3us_epgs_schedule,
+        html_plm_update_m3us_epgs_schedule_time = plm_update_m3us_epgs_schedule_time,
+        html_plm_m3us_epgs_schedule_frequencies = plm_m3us_epgs_schedule_frequencies,
+        html_plm_update_m3us_epgs_schedule_frequency = plm_update_m3us_epgs_schedule_frequency,
+        html_gen_backup_frequencies = gen_backup_frequencies,
+        html_gen_backup_schedule = gen_backup_schedule,
+        html_gen_backup_schedule_time = gen_backup_schedule_time,
+        html_gen_backup_schedule_frequency = gen_backup_schedule_frequency,
+        html_gen_backup_max_backups = gen_backup_max_backups,
+        html_gen_upgrade_frequencies = gen_upgrade_frequencies,
+        html_gen_upgrade_schedule = gen_upgrade_schedule,
+        html_gen_upgrade_schedule_time = gen_upgrade_schedule_time,
+        html_gen_upgrade_schedule_frequency = gen_upgrade_schedule_frequency
     )
 
 # Automation - Reset Channels DVR Passes
@@ -3951,42 +4159,6 @@ def run_reset_channels_passes():
     notification_add(f"\n{current_time()} Finished 'Reset Channels DVR Passes' Automation.")
 
     return passes_message
-
-# Run Processes Webpage
-@app.route('/runprocess', methods=['GET', 'POST'])
-def webpage_runprocess():
-
-    if request.method == 'POST':
-        action = request.form['action']
-
-        if action == 'end_to_end':
-            end_to_end()
-        elif action == 'backup_now':
-            if os.path.exists(program_files_dir):
-                create_backup()
-        elif action == 'check_upgrade_now':
-            check_upgrade()
-        elif action == 'update_streaming_services':
-            update_streaming_services()
-        elif action == 'get_new_episodes':
-            get_new_episodes(None)
-        elif action == 'import_program_updates':
-            import_program_updates()
-        elif action == 'generate_stream_links':
-            generate_stream_links()
-        elif action == 'prune_scan_channels':
-            prune_scan_channels()
-
-    return render_template(
-        'main/runprocess.html',
-        segment = 'runprocess',
-        html_slm_version = slm_version,
-        html_gen_upgrade_flag = gen_upgrade_flag,
-        html_slm_playlist_manager = slm_playlist_manager,
-        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
-        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
-        html_slm_media_tools_manager = slm_media_tools_manager
-    )
 
 # Create a continous stream of the log file
 @app.route('/stream_log')
@@ -6709,24 +6881,6 @@ def webpage_settings():
     language_code = settings[3]["settings"]
     num_results = settings[4]["settings"]
     hide_bookmarked = settings[9]["settings"]
-    gen_backup_schedule = settings[19]["settings"]
-    gen_backup_schedule_time = settings[20]["settings"]
-    gen_backup_schedule_frequency = settings[21]["settings"]
-    gen_backup_max_backups = settings[22]["settings"]
-    gen_upgrade_schedule = settings[25]["settings"]
-    gen_upgrade_schedule_time = settings[26]["settings"]
-    gen_upgrade_schedule_frequency = settings[27]["settings"]
-    try:
-        auto_update_schedule = settings[8]["settings"]
-    except (IndexError, KeyError):
-        auto_update_schedule = 'Off'
-    auto_update_schedule_time = settings[6]["settings"]
-    auto_update_schedule_frequency = settings[18]["settings"]
-    plm_update_stations_schedule = settings[13]["settings"]
-    plm_update_stations_schedule_time = settings[14]["settings"]
-    plm_update_m3us_epgs_schedule = settings[15]["settings"]
-    plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
-    plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
     channels_prune = settings[7]["settings"]
     station_start_number = settings[11]['settings']
     max_stations = settings[12]['settings']
@@ -6754,11 +6908,6 @@ def webpage_settings():
         'streaming_services': 'streaming_services_anchor',
         'search_defaults': 'search_defaults_anchor',
         'slmapping': 'slmapping_anchor',
-        'gen_backup_process': 'scheduler_anchor',
-        'gen_upgrade_process': 'scheduler_anchor',
-        'end_to_end_process': 'scheduler_anchor',
-        'plm_update_stations_process': 'scheduler_anchor',
-        'plm_update_m3us_epgs_process': 'scheduler_anchor',
         'channels_url': 'channels_url_anchor',
         'channels_directory': 'channels_directory_anchor',
         'channels_prune': 'advanced_experimental_anchor',
@@ -6792,21 +6941,6 @@ def webpage_settings():
         num_results_input = request.form.get('num_results')
         hide_bookmarked_input = request.form.get('hide_bookmarked')
         streaming_services_input = request.form.get('streaming_services')
-        gen_backup_schedule_input = request.form.get('gen_backup_schedule')
-        gen_backup_schedule_time_input = request.form.get('gen_backup_schedule_time')
-        gen_backup_schedule_frequency_input = request.form.get('gen_backup_schedule_frequency')
-        gen_backup_max_backups_input = request.form.get('gen_backup_max_backups')
-        gen_upgrade_schedule_input = request.form.get('gen_upgrade_schedule')
-        gen_upgrade_schedule_time_input = request.form.get('gen_upgrade_schedule_time')
-        gen_upgrade_schedule_frequency_input = request.form.get('gen_upgrade_schedule_frequency')
-        auto_update_schedule_input = request.form.get('auto_update_schedule')
-        auto_update_schedule_time_input = request.form.get('auto_update_schedule_time')
-        auto_update_schedule_frequency_input = request.form.get('auto_update_schedule_frequency')
-        plm_update_stations_schedule_input = request.form.get('plm_update_stations_schedule')
-        plm_update_stations_schedule_time_input = request.form.get('plm_update_stations_schedule_time')
-        plm_update_m3us_epgs_schedule_input = request.form.get('plm_update_m3us_epgs_schedule')
-        plm_update_m3us_epgs_schedule_time_input = request.form.get('plm_update_m3us_epgs_schedule_time')
-        plm_update_m3us_epgs_schedule_frequency_input = request.form.get('plm_update_m3us_epgs_schedule_frequency')
 
         for prefix, anchor_id in action_to_anchor.items():
             if settings_action.startswith(prefix):
@@ -6822,11 +6956,6 @@ def webpage_settings():
                                                                            'media_tools_manager_cancel',
                                                                            'search_defaults_cancel',
                                                                            'streaming_services_cancel',
-                                                                           'end_to_end_process_cancel',
-                                                                           'plm_update_stations_process_cancel',
-                                                                           'plm_update_m3us_epgs_process_cancel',
-                                                                           'gen_backup_process_cancel',
-                                                                           'gen_upgrade_process_cancel',
                                                                            'channels_url_save',
                                                                            'channels_directory_save',
                                                                            'channels_prune_save',
@@ -6836,11 +6965,6 @@ def webpage_settings():
                                                                            'media_tools_manager_save',
                                                                            'search_defaults_save',
                                                                            'streaming_services_save',
-                                                                           'end_to_end_process_save',
-                                                                           'plm_update_stations_process_save',
-                                                                           'plm_update_m3us_epgs_process_save',
-                                                                           'gen_backup_process_save',
-                                                                           'gen_upgrade_process_save',
                                                                            'streaming_services_update',
                                                                            'channels_url_test',
                                                                            'channels_url_scan'
@@ -6855,11 +6979,6 @@ def webpage_settings():
                                                                                       'media_tools_manager_save',
                                                                                       'search_defaults_save',
                                                                                       'streaming_services_save',
-                                                                                      'end_to_end_process_save',
-                                                                                      'plm_update_stations_process_save',
-                                                                                      'plm_update_m3us_epgs_process_save',
-                                                                                      'gen_backup_process_save',
-                                                                                      'gen_upgrade_process_save',
                                                                                       'channels_url_scan'
                                                                                     ]:
 
@@ -6871,11 +6990,6 @@ def webpage_settings():
                                     'channels_dvr_integration_save',
                                     'media_tools_manager_save',
                                     'search_defaults_save',
-                                    'end_to_end_process_save',
-                                    'plm_update_stations_process_save',
-                                    'plm_update_m3us_epgs_process_save',
-                                    'gen_backup_process_save',
-                                    'gen_upgrade_process_save',
                                     'channels_url_scan'
                                     ]:
 
@@ -6902,40 +7016,6 @@ def webpage_settings():
                             except ValueError:
                                 search_defaults_message = f"{current_time()} ERROR: 'Number of Results' must be a number."
                             settings[9]["settings"] = "On" if hide_bookmarked_input == 'on' else "Off"
-
-                    elif settings_action == 'gen_backup_process_save':
-                        settings[19]["settings"] = "On" if gen_backup_schedule_input == 'on' else "Off"
-                        settings[20]["settings"] = gen_backup_schedule_time_input
-                        settings[21]["settings"] = gen_backup_schedule_frequency_input
-                        try:
-                            if int(gen_backup_max_backups_input) > 0:
-                                settings[22]["settings"] = int(gen_backup_max_backups_input)
-                            else:
-                                scheduler_message = f"{current_time()} ERROR: For 'Max Backups', please enter a positive integer."
-                        except ValueError:
-                            scheduler_message = f"{current_time()} ERROR: 'Max Backups' must be a number."
-
-                    elif settings_action == 'gen_upgrade_process_save':
-                        settings[25]["settings"] = "On" if gen_upgrade_schedule_input == 'on' else "Off"
-                        settings[26]["settings"] = gen_upgrade_schedule_time_input
-                        settings[27]["settings"] = gen_upgrade_schedule_frequency_input
-
-                    elif settings_action == 'end_to_end_process_save':
-                        try:
-                            settings[8]["settings"] = "On" if auto_update_schedule_input == 'on' else "Off"
-                        except (IndexError, KeyError):
-                            settings.append({"settings": "On" if auto_update_schedule_input == 'on' else "Off"})
-                        settings[6]["settings"] = auto_update_schedule_time_input
-                        settings[18]["settings"] = auto_update_schedule_frequency_input
-
-                    elif settings_action == 'plm_update_stations_process_save':
-                        settings[13]["settings"] = "On" if plm_update_stations_schedule_input == 'on' else "Off"
-                        settings[14]["settings"] = plm_update_stations_schedule_time_input
-
-                    elif settings_action == 'plm_update_m3us_epgs_process_save':
-                        settings[15]["settings"] = "On" if plm_update_m3us_epgs_schedule_input == 'on' else "Off"
-                        settings[16]["settings"] = plm_update_m3us_epgs_schedule_time_input
-                        settings[17]["settings"] = plm_update_m3us_epgs_schedule_frequency_input
 
                     elif settings_action == 'channels_prune_save':
                         settings[7]["settings"] = "On" if channels_prune_input == 'on' else "Off"
@@ -7137,24 +7217,6 @@ def webpage_settings():
         language_code = settings[3]["settings"]
         num_results = settings[4]["settings"]
         hide_bookmarked = settings[9]["settings"]
-        gen_backup_schedule = settings[19]["settings"]
-        gen_backup_schedule_time = settings[20]["settings"]
-        gen_backup_schedule_frequency = settings[21]["settings"]
-        gen_backup_max_backups = settings[22]["settings"]
-        gen_upgrade_schedule = settings[25]["settings"]
-        gen_upgrade_schedule_time = settings[26]["settings"]
-        gen_upgrade_schedule_frequency = settings[27]["settings"]
-        try:
-            auto_update_schedule = settings[8]["settings"]
-        except (IndexError, KeyError):
-            auto_update_schedule = 'Off'
-        auto_update_schedule_time = settings[6]["settings"]
-        auto_update_schedule_frequency = settings[18]["settings"]
-        plm_update_stations_schedule = settings[13]["settings"]
-        plm_update_stations_schedule_time = settings[14]["settings"]
-        plm_update_m3us_epgs_schedule = settings[15]["settings"]
-        plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
-        plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
         channels_prune = settings[7]["settings"]
         station_start_number = settings[11]['settings']
         max_stations = settings[12]['settings']
@@ -7181,16 +7243,6 @@ def webpage_settings():
         html_valid_language_codes = valid_language_codes,
         html_language_code = language_code,
         html_num_results = num_results,
-        html_auto_update_schedule = auto_update_schedule,
-        html_auto_update_schedule_time = auto_update_schedule_time,
-        html_plm_update_stations_schedule = plm_update_stations_schedule,
-        html_plm_update_stations_schedule_time = plm_update_stations_schedule_time,
-        html_slm_end_to_end_frequencies = slm_end_to_end_frequencies,
-        html_auto_update_schedule_frequency = auto_update_schedule_frequency,
-        html_plm_update_m3us_epgs_schedule = plm_update_m3us_epgs_schedule,
-        html_plm_update_m3us_epgs_schedule_time = plm_update_m3us_epgs_schedule_time,
-        html_plm_m3us_epgs_schedule_frequencies = plm_m3us_epgs_schedule_frequencies,
-        html_plm_update_m3us_epgs_schedule_frequency = plm_update_m3us_epgs_schedule_frequency,
         html_channels_prune = channels_prune,
         html_streaming_services = streaming_services,
         html_channels_url_message = channels_url_message,
@@ -7204,24 +7256,11 @@ def webpage_settings():
         html_hide_bookmarked = hide_bookmarked,
         html_station_start_number = station_start_number,
         html_max_stations = max_stations,
-        html_advanced_experimental_message = advanced_experimental_message,
-        html_gen_backup_frequencies = gen_backup_frequencies,
-        html_gen_backup_schedule = gen_backup_schedule,
-        html_gen_backup_schedule_time = gen_backup_schedule_time,
-        html_gen_backup_schedule_frequency = gen_backup_schedule_frequency,
-        html_gen_backup_max_backups = gen_backup_max_backups,
-        html_gen_upgrade_frequencies = gen_upgrade_frequencies,
-        html_gen_upgrade_schedule = gen_upgrade_schedule,
-        html_gen_upgrade_schedule_time = gen_upgrade_schedule_time,
-        html_gen_upgrade_schedule_frequency = gen_upgrade_schedule_frequency,
-        html_scheduler_message = scheduler_message
+        html_advanced_experimental_message = advanced_experimental_message
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '-1'
-
-    if settings_anchor_id:
-        response.headers['Location'] = f'/settings#{settings_anchor_id}'
 
     return response
 
@@ -8676,37 +8715,12 @@ bookmark_actions_default = [
 bookmark_actions_default_show_only = [
     "Disable Get New Episodes" #, Add more as needed
 ]
-plm_m3us_epgs_schedule_frequencies = [
-    "Every 1 hour",
-    "Every 3 hours",
-    "Every 6 hours",
-    "Every 12 hours",
-    "Every 24 hours"
-]
-slm_end_to_end_frequencies = [
-    "Every 8 hours",
-    "Every 12 hours",
-    "Every 24 hours"
-]
-gen_backup_frequencies = [
-    "Every 1 hour",
-    "Every 2 hours",
-    "Every 4 hours",
-    "Every 8 hours",
-    "Every 12 hours",
-    "Every 24 hours"
-]
 stream_formats = [
     "HLS",
     "MPEG-TS"
 ]
 select_program_to_bookmarks = []
 gen_upgrade_flag = None
-gen_upgrade_frequencies = [
-    "Every 1 hour",
-    "Every 12 hours",
-    "Every 24 hours"
-]
 gracenote_search_results = None
 gracenote_search_entry_prior = ''
 csv_explorer_results = None
