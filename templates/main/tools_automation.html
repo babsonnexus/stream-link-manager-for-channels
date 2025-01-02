@@ -152,6 +152,38 @@
                     </div>
                   {% endif %}
                 </div>
+                <div id="anchor_slm_new_recent_releases" class="settings-box" style="width: 99%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" class="form-check-input ms-auto" id="slm_new_recent_releases" name="slm_new_recent_releases" title="WARNING: The first occasion this process is run, it may take a significant amount of time. However, it should be much faster every subsequent instance after that. As such, it is recommended to run manually a couple of times before setting a schedule to understand what that total length of time may be in your setup." {% if html_slm_new_recent_releases == "On" %}checked{% endif %}>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="slm_new_recent_releases"><b>Stream Links: New & Recent Releases</b></label>
+                  </div>
+                  <div>
+                    <p><em>After checking for new episodes, will search for Stream Link values for every episode and movie that has an 'original release date' within the timeframe of when it is run back through the entered 'Recent Hours'. For example, if 'Recent Hours' is '72', it will try to find Stream Links for anything with an 'original release date' in the last 72 hours (3 days). Afterwards, if using Channels DVR, it will refresh the media in there.</em></p>
+                  </div>
+                  <div>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="slm_new_recent_releases_time">Start at:</label>
+                    <input type="time" id="slm_new_recent_releases_time" name="slm_new_recent_releases_time" value="{{ html_slm_new_recent_releases_time }}" class="ms-3">
+                  </div>
+                  <div style="margin-top: 10px;">
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="slm_new_recent_releases_frequency">And run:</label>
+                    <select name="slm_new_recent_releases_frequency" id="slm_new_recent_releases_frequency" style="margin-left: 15px;">
+                      {% for html_automation_frequency in html_automation_frequencies %}
+                        <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_slm_new_recent_releases_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div>
+                    <label for="slm_new_recent_releases_when" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Recent Hours:</label>
+                    <input type="text" id="slm_new_recent_releases_when" name="slm_new_recent_releases_when" value="{{ html_slm_new_recent_releases_when }}" style="display: block; margin-left: 15px; width: 25%;">
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                    <button type="submit" name="action" value="slm_new_recent_releases_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+                    <button type="submit" name="action" value="slm_new_recent_releases_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: -25px;">
+                    <button type="submit" name="action" value="slm_new_recent_releases_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run</button>
+                  </div>
+                </div>
               {% endif %}
               {% if html_slm_playlist_manager %}
                 <hr>
@@ -234,6 +266,34 @@
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-top: -25px;">
                     <button type="submit" name="action" value="reset_channels_passes_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run</button>
+                  </div>
+                </div>
+                <div id="anchor_refresh_channels_m3u_playlists" class="settings-box" style="width: 99%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; vertical-align: top; margin-bottom: 5px;">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" class="form-check-input ms-auto" id="refresh_channels_m3u_playlists" name="refresh_channels_m3u_playlists" {% if html_refresh_channels_m3u_playlists == "On" %}checked{% endif %}>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="refresh_channels_m3u_playlists"><b>Refresh Channels DVR m3u Playlists</b></label>
+                  </div>
+                  <div>
+                    <p><em>Runs a set of functions in Channels DVR to update m3u Playlists, thus getting the most up to date list of stations from those sources. Note that this does not run on non-m3u sources like HDHR, TVE, etc...</em></p>
+                  </div>
+                  <div>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="refresh_channels_m3u_playlists_time">Start at:</label>
+                    <input type="time" id="refresh_channels_m3u_playlists_time" name="refresh_channels_m3u_playlists_time" value="{{ html_refresh_channels_m3u_playlists_time }}" class="ms-3">
+                  </div>
+                  <div style="margin-top: 10px;">
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="refresh_channels_m3u_playlists_frequency">And run:</label>
+                    <select name="refresh_channels_m3u_playlists_frequency" id="refresh_channels_m3u_playlists_frequency" style="margin-left: 15px;">
+                      {% for html_automation_frequency in html_automation_frequencies %}
+                        <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_refresh_channels_m3u_playlists_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                    <button type="submit" name="action" value="refresh_channels_m3u_playlists_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+                    <button type="submit" name="action" value="refresh_channels_m3u_playlists_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: -25px;">
+                    <button type="submit" name="action" value="refresh_channels_m3u_playlists_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run</button>
                   </div>
                 </div>
               {% endif %}
