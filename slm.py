@@ -23,7 +23,7 @@ from flask import Flask, render_template, render_template_string, request, redir
 from jinja2 import TemplateNotFound
 
 # Top Controls
-slm_version = "v2024.12.23.1553"
+slm_version = "v2025.01.02.1434"
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -357,7 +357,8 @@ def webpage_add_programs():
                         "stream_link": None,
                         "stream_link_override": stream_link_override,
                         "stream_link_file": None,
-                        "special_action": special_action
+                        "special_action": special_action,
+                        "original_release_date": None
                     })
 
             # Get settings for a Movie and write back
@@ -1670,7 +1671,7 @@ def set_bookmarks(entry_id, title, release_year, object_type, url, country_code,
     append_data(csv_bookmarks, new_row)
 
     if object_type == "MOVIE":
-        new_row = {"entry_id": entry_id, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": "unwatched", "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None}
+        new_row = {"entry_id": entry_id, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": "unwatched", "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None, "original_release_date": None}
         append_data(csv_bookmarks_status, new_row)
     elif object_type == "SHOW":
         if type == "search":
@@ -1872,10 +1873,12 @@ def webpage_modify_programs():
                         else:
                             new_special_action = program_modify_add_episode_special_action_input
 
-                        new_row = {"entry_id": entry_id_prior, "season_episode_id": None, "season_episode_prefix": new_episode_prefix, "season_episode": new_season_episode, "status": "unwatched", "stream_link": None, "stream_link_override": new_stream_link, "stream_link_file": None, "special_action": new_special_action}
+                        new_row = {"entry_id": entry_id_prior, "season_episode_id": None, "season_episode_prefix": new_episode_prefix, "season_episode": new_season_episode, "status": "unwatched", "stream_link": None, "stream_link_override": new_stream_link, "stream_link_file": None, "special_action": new_special_action, "original_release_date": None}
                         append_data(csv_bookmarks_status, new_row)
 
             elif modify_programs_action.startswith('program_modify_delete_episode_') or modify_programs_action == 'program_modify_save':
+
+                rebuild_bookmark_status_trigger = None
 
                 # Delete an episode
                 if modify_programs_action.startswith('program_modify_delete_episode_'):
@@ -1926,7 +1929,6 @@ def webpage_modify_programs():
 
                     if save_error_bookmarks == 0:
 
-                        rebuild_bookmark_status_trigger = None
                         if bookmark_action_prior == "Hide" and new_bookmark_action != "Hide":
                             rebuild_bookmark_status_trigger = True
 
@@ -2015,7 +2017,7 @@ def webpage_modify_programs():
 
                 if rebuild_bookmark_status_trigger:
                     if object_type_selected_prior == "MOVIE":
-                        new_row = {"entry_id": entry_id_prior, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": "unwatched", "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None}
+                        new_row = {"entry_id": entry_id_prior, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": "unwatched", "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None, "original_release_date": None}
                         append_data(csv_bookmarks_status, new_row)
                     elif object_type_selected_prior == "SHOW":
                         get_new_episodes(entry_id_prior)
@@ -3826,9 +3828,16 @@ def webpage_tools_automation():
     plm_update_m3us_epgs_schedule = settings[15]["settings"]
     plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
     plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
-    reset_channels_passes = settings[29]["settings"]            # [29] MTM: Automation - Reset Channels DVR Passes On/Off
-    reset_channels_passes_time = settings[30]["settings"]       # [30] MTM: Automation - Reset Channels DVR Passes Start Time
-    reset_channels_passes_frequency = settings[31]["settings"]  # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+    reset_channels_passes = settings[29]["settings"]                     # [29] MTM: Automation - Reset Channels DVR Passes On/Off
+    reset_channels_passes_time = settings[30]["settings"]                # [30] MTM: Automation - Reset Channels DVR Passes Start Time
+    reset_channels_passes_frequency = settings[31]["settings"]           # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+    slm_new_recent_releases = settings[32]["settings"]                   # [32] MTM: Automation - SLM New & Recent Releases On/Off
+    slm_new_recent_releases_time = settings[33]["settings"]              # [33] MTM: Automation - SLM New & Recent Releases Start Time
+    slm_new_recent_releases_frequency = settings[34]["settings"]         # [34] MTM: Automation - SLM New & Recent Releases Frequency
+    slm_new_recent_releases_when = settings[35]["settings"]              # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
+    refresh_channels_m3u_playlists = settings[36]["settings"]            # [36] MTM: Automation - Refresh Channels M3U Playlists On/Off
+    refresh_channels_m3u_playlists_time = settings[37]["settings"]       # [37] MTM: Automation - Refresh Channels M3U Playlists Start Time
+    refresh_channels_m3u_playlists_frequency = settings[38]["settings"]  # [38] MTM: Automation - Refresh Channels M3U Playlists Frequency
 
     automation_message = ''
     action_friendly_name = ''
@@ -3901,6 +3910,9 @@ def webpage_tools_automation():
             if action.startswith('reset_channels_passes'):
                 automation_message = run_reset_channels_passes()
 
+            elif action.startswith('refresh_channels_m3u_playlists'):
+                automation_message = run_refresh_channels_m3u_playlists()
+
             else:
 
                 if action.startswith('gen_backup_process'):
@@ -3915,6 +3927,10 @@ def webpage_tools_automation():
                 elif action.startswith('end_to_end_process'):
                     action_friendly_name = 'Stream Links/Files: End-to-End Process'
                     end_to_end()
+
+                elif action.startswith('slm_new_recent_releases'):
+                    action_friendly_name = 'Stream Links/Files: New & Recent Releases'
+                    run_slm_new_recent_releases()
 
                 elif action.startswith('plm_update_stations_process'):
                     action_friendly_name = 'Playlist Manager: Update Station List'
@@ -3938,7 +3954,7 @@ def webpage_tools_automation():
 
                 elif action.startswith('generate_stream_links'):
                     action_friendly_name = 'Generate Stream Links/Files'
-                    generate_stream_links()
+                    generate_stream_links(None)
 
                 elif action.startswith('prune_scan_channels'):
                     action_friendly_name = 'Run Updates in Channels'
@@ -3959,6 +3975,15 @@ def webpage_tools_automation():
                     settings[29]["settings"] = "On" if reset_channels_passes_input == 'on' else "Off"
                     settings[30]["settings"] = reset_channels_passes_time_input
                     settings[31]["settings"] = reset_channels_passes_frequency_input
+
+                elif action.startswith('refresh_channels_m3u_playlists'):
+                    refresh_channels_m3u_playlists_input = request.form.get('refresh_channels_m3u_playlists')
+                    refresh_channels_m3u_playlists_time_input = request.form.get('refresh_channels_m3u_playlists_time')
+                    refresh_channels_m3u_playlists_frequency_input = request.form.get('refresh_channels_m3u_playlists_frequency')
+
+                    settings[36]["settings"] = "On" if refresh_channels_m3u_playlists_input == 'on' else "Off"
+                    settings[37]["settings"] = refresh_channels_m3u_playlists_time_input
+                    settings[38]["settings"] = refresh_channels_m3u_playlists_frequency_input
 
                 elif action.startswith('gen_backup_process'):
                     gen_backup_schedule_input = request.form.get('gen_backup_schedule')
@@ -3997,6 +4022,23 @@ def webpage_tools_automation():
                         settings.append({"settings": "On" if auto_update_schedule_input == 'on' else "Off"})
                     settings[6]["settings"] = auto_update_schedule_time_input
                     settings[18]["settings"] = auto_update_schedule_frequency_input
+
+                elif action.startswith('slm_new_recent_releases'):
+                    slm_new_recent_releases_input = request.form.get('slm_new_recent_releases')
+                    slm_new_recent_releases_time_input = request.form.get('slm_new_recent_releases_time')
+                    slm_new_recent_releases_frequency_input = request.form.get('slm_new_recent_releases_frequency')
+                    slm_new_recent_releases_when_input = request.form.get('slm_new_recent_releases_when')
+
+                    settings[32]["settings"] = "On" if slm_new_recent_releases_input == 'on' else "Off"
+                    settings[33]["settings"] = slm_new_recent_releases_time_input
+                    settings[34]["settings"] = slm_new_recent_releases_frequency_input
+                    try:
+                        if int(slm_new_recent_releases_when_input) > 0:
+                            settings[35]["settings"] = int(slm_new_recent_releases_when_input)
+                        else:
+                            automation_message = f"{current_time()} ERROR: For 'Recent Hours', please enter a positive integer."
+                    except ValueError:
+                        automation_message = f"{current_time()} ERROR: 'Recent Hours' must be a number."
 
                 elif action.startswith('plm_update_stations_process'):
                     plm_update_stations_schedule_input = request.form.get('plm_update_stations_schedule')
@@ -4038,9 +4080,16 @@ def webpage_tools_automation():
             plm_update_m3us_epgs_schedule = settings[15]["settings"]
             plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
             plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
-            reset_channels_passes = settings[29]["settings"]            # [29] MTM: Automation - Reset Channels DVR Passes On/Off
-            reset_channels_passes_time = settings[30]["settings"]       # [30] MTM: Automation - Reset Channels DVR Passes Start Time
-            reset_channels_passes_frequency = settings[31]["settings"]  # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+            reset_channels_passes = settings[29]["settings"]                     # [29] MTM: Automation - Reset Channels DVR Passes On/Off
+            reset_channels_passes_time = settings[30]["settings"]                # [30] MTM: Automation - Reset Channels DVR Passes Start Time
+            reset_channels_passes_frequency = settings[31]["settings"]           # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+            slm_new_recent_releases = settings[32]["settings"]                   # [32] MTM: Automation - SLM New & Recent Releases On/Off
+            slm_new_recent_releases_time = settings[33]["settings"]              # [33] MTM: Automation - SLM New & Recent Releases Start Time
+            slm_new_recent_releases_frequency = settings[34]["settings"]         # [34] MTM: Automation - SLM New & Recent Releases Frequency
+            slm_new_recent_releases_when = settings[35]["settings"]              # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
+            refresh_channels_m3u_playlists = settings[36]["settings"]            # [36] MTM: Automation - Refresh Channels M3U Playlists On/Off
+            refresh_channels_m3u_playlists_time = settings[37]["settings"]       # [37] MTM: Automation - Refresh Channels M3U Playlists Start Time
+            refresh_channels_m3u_playlists_frequency = settings[38]["settings"]  # [38] MTM: Automation - Refresh Channels M3U Playlists Frequency
 
     return render_template(
         'main/tools_automation.html',
@@ -4075,90 +4124,15 @@ def webpage_tools_automation():
         html_gen_upgrade_frequencies = gen_upgrade_frequencies,
         html_gen_upgrade_schedule = gen_upgrade_schedule,
         html_gen_upgrade_schedule_time = gen_upgrade_schedule_time,
-        html_gen_upgrade_schedule_frequency = gen_upgrade_schedule_frequency
+        html_gen_upgrade_schedule_frequency = gen_upgrade_schedule_frequency,
+        html_slm_new_recent_releases = slm_new_recent_releases,
+        html_slm_new_recent_releases_time = slm_new_recent_releases_time,
+        html_slm_new_recent_releases_frequency = slm_new_recent_releases_frequency,
+        html_slm_new_recent_releases_when = slm_new_recent_releases_when,
+        html_refresh_channels_m3u_playlists = refresh_channels_m3u_playlists,
+        html_refresh_channels_m3u_playlists_time = refresh_channels_m3u_playlists_time,
+        html_refresh_channels_m3u_playlists_frequency = refresh_channels_m3u_playlists_frequency
     )
-
-# Automation - Reset Channels DVR Passes
-def run_reset_channels_passes():
-    settings = read_data(csv_settings)
-    channels_url = settings[0]["settings"]
-    passes_url = '/dvr/rules/'
-    channels_passes_url = f"{channels_url}{passes_url}"
-    passes_pause = '/pause'
-    passes_resume = '/resume'
-    passes_message = ''
-    passes_results_base = None
-    passes_results_base_json = None
-    passes_results_dictionary = []
-    passes_results_dictionary_active = []
-    passes_error = None
-
-    notification_add(f"\n{current_time()} Beginning 'Reset Channels DVR Passes' Automation...")
-
-    channels_url_okay = check_channels_url(None)
-
-    if channels_url_okay:
-        try:
-            passes_results_base = requests.get(channels_passes_url, headers=url_headers)
-        except requests.RequestException as e:
-            passes_message = f"\n{current_time()} ERROR: During process, received {e}. Please try again."
-    else:
-        passes_message = f"{current_time()} ERROR: Channels URL is incorrect. Please update in the 'Settings' area."
-
-    if passes_results_base:
-        passes_results_base_json = passes_results_base.json()
-
-        for result in passes_results_base_json:
-            passes_result_paused = result.get("Paused", '')
-            passes_result_id = result.get("ID", '')
-            passes_result_priority = result.get("Priority", '')
-
-            passes_results_dictionary.append({
-                "passes_result_paused": passes_result_paused,
-                "passes_result_id": passes_result_id,
-                "passes_result_priority": passes_result_priority
-            })
-
-        for item in passes_results_dictionary:
-            if item['passes_result_paused'] == False:
-                passes_results_dictionary_active.append({
-                    "passes_result_id": item['passes_result_id'],
-                    "passes_result_priority": item['passes_result_priority']
-                })
-
-        # First sort with lowest priority on top to pause
-        passes_results_dictionary_active.sort(key=lambda x: int(x.get("passes_result_priority", float("inf"))))
-        for item in passes_results_dictionary_active:
-            print(f"{current_time()} INFO: Pausing pass with the id '{item['passes_result_id']}'.")
-            url = f"{channels_passes_url}{item['passes_result_id']}{passes_pause}"
-            try:
-                requests.put(url)
-            except requests.RequestException as e:
-                notification_add(f"\n{current_time()} WARNING: For pass with the id '{item['passes_result_id']}', received error {e}. Skipping pause...")
-                passes_error = True
-
-        # Resort with highest priority on top to resume
-        passes_results_dictionary_active.sort(key=lambda x: int(x.get("passes_result_priority", float("inf"))), reverse=True)
-        for item in passes_results_dictionary_active:
-            print(f"{current_time()} INFO: Resuming pass with the id '{item['passes_result_id']}'.")
-            url = f"{channels_passes_url}{item['passes_result_id']}{passes_resume}"
-            try:
-                requests.put(url)
-            except requests.RequestException as e:
-                notification_add(f"\n{current_time()} WARNING: For pass with the id '{item['passes_result_id']}', received error {e}. Skipping resume...")
-                passes_error = True
-
-        if passes_error:
-            passes_message = f"{current_time()} ERROR: 'Reset Channels DVR Passes' completed with an issue, see log for details."
-        else:
-            passes_message = f"{current_time()} INFO: 'Reset Channels DVR Passes' completed successfully."
-
-    if passes_message is not None and passes_message != '':
-        print(f"{passes_message}")
-
-    notification_add(f"\n{current_time()} Finished 'Reset Channels DVR Passes' Automation.")
-
-    return passes_message
 
 # Create a continous stream of the log file
 @app.route('/stream_log')
@@ -4173,6 +4147,117 @@ def stream_log():
                     continue
                 yield f"data:{line}\n\n"
     return Response(generate(), mimetype='text/event-stream')
+
+# Background process to check the schedule
+def check_schedule():
+    while True:
+        settings = read_data(csv_settings)
+        wait_trigger = None
+        current_time = datetime.datetime.now().strftime('%H:%M')
+        current_hour = datetime.datetime.now().hour
+        current_minute = datetime.datetime.now().minute
+
+        gen_backup_schedule = settings[19]["settings"]
+        gen_backup_schedule_time = settings[20]["settings"]
+        gen_backup_schedule_frequency = settings[21]["settings"]
+        gen_backup_schedule_frequency_parsed = int(re.search(r'\d+', gen_backup_schedule_frequency).group())
+        gen_upgrade_schedule = settings[25]["settings"]
+        gen_upgrade_schedule_time = settings[26]["settings"]
+        gen_upgrade_schedule_frequency = settings[27]["settings"]
+        gen_upgrade_schedule_frequency_parsed = int(re.search(r'\d+', gen_upgrade_schedule_frequency).group())
+        try:
+            auto_update_schedule = settings[8]["settings"]
+        except (IndexError, KeyError):
+            auto_update_schedule = 'Off'           
+        auto_update_schedule_time = settings[6]["settings"]
+        auto_update_schedule_frequency = settings[18]["settings"]
+        auto_update_schedule_frequency_parsed = int(re.search(r'\d+', auto_update_schedule_frequency).group())
+        plm_update_stations_schedule = settings[13]["settings"]
+        plm_update_stations_schedule_time = settings[14]["settings"]
+        plm_update_m3us_epgs_schedule = settings[15]["settings"]
+        plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
+        plm_m3us_epgs_schedule_frequency = settings[17]["settings"]
+        plm_m3us_epgs_schedule_frequency_parsed = int(re.search(r'\d+', plm_m3us_epgs_schedule_frequency).group())
+        reset_channels_passes = settings[29]["settings"]                     # [29] MTM: Automation - Reset Channels DVR Passes On/Off
+        reset_channels_passes_time = settings[30]["settings"]                # [30] MTM: Automation - Reset Channels DVR Passes Start Time
+        reset_channels_passes_frequency = settings[31]["settings"]           # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+        reset_channels_passes_frequency_parsed = int(re.search(r'\d+', reset_channels_passes_frequency).group())
+        slm_new_recent_releases = settings[32]["settings"]                   # [32] MTM: Automation - SLM New & Recent Releases On/Off
+        slm_new_recent_releases_time = settings[33]["settings"]              # [33] MTM: Automation - SLM New & Recent Releases Start Time
+        slm_new_recent_releases_frequency = settings[34]["settings"]         # [34] MTM: Automation - SLM New & Recent Releases Frequency
+        slm_new_recent_releases_frequency_parsed = int(re.search(r'\d+', slm_new_recent_releases_frequency).group())
+        refresh_channels_m3u_playlists = settings[36]["settings"]            # [36] MTM: Automation - Refresh Channels M3U Playlists On/Off
+        refresh_channels_m3u_playlists_time = settings[37]["settings"]       # [37] MTM: Automation - Refresh Channels M3U Playlists Start Time
+        refresh_channels_m3u_playlists_frequency = settings[38]["settings"]  # [38] MTM: Automation - Refresh Channels M3U Playlists Frequency
+        refresh_channels_m3u_playlists_frequency_parsed = int(re.search(r'\d+', refresh_channels_m3u_playlists_frequency).group())
+
+        if gen_backup_schedule == 'On' and gen_backup_schedule_time:
+            gen_backup_schedule_hour, gen_backup_schedule_minute = map(int, gen_backup_schedule_time.split(':'))
+
+            if current_minute == gen_backup_schedule_minute and (current_hour - gen_backup_schedule_hour) % gen_backup_schedule_frequency_parsed == 0:
+                threading.Thread(target=create_backup).start()
+                wait_trigger = True
+
+        if gen_upgrade_schedule == 'On' and gen_upgrade_schedule_time:
+            gen_upgrade_schedule_hour, gen_upgrade_schedule_minute = map(int, gen_upgrade_schedule_time.split(':'))
+
+            if current_minute == gen_upgrade_schedule_minute and (current_hour - gen_upgrade_schedule_hour) % gen_upgrade_schedule_frequency_parsed == 0:
+                threading.Thread(target=check_upgrade).start()
+                wait_trigger = True
+
+        if auto_update_schedule == 'On' and auto_update_schedule_time:
+            auto_update_schedule_hour, auto_update_schedule_minute = map(int, auto_update_schedule_time.split(':'))
+
+            if current_minute == auto_update_schedule_minute and (current_hour - auto_update_schedule_hour) % auto_update_schedule_frequency_parsed == 0:
+                threading.Thread(target=end_to_end).start()
+                wait_trigger = True
+
+        if slm_new_recent_releases == 'On' and slm_new_recent_releases_time:
+            slm_new_recent_releases_hour, slm_new_recent_releases_minute = map(int, slm_new_recent_releases_time.split(':'))
+
+            if current_minute == slm_new_recent_releases_minute and (current_hour - slm_new_recent_releases_hour) % slm_new_recent_releases_frequency_parsed == 0:
+                threading.Thread(target=run_slm_new_recent_releases).start()
+                wait_trigger = True
+
+        if plm_update_stations_schedule == 'On' and plm_update_stations_schedule_time:
+            if current_time == plm_update_stations_schedule_time:
+                threading.Thread(target=get_combined_m3us).start()
+                wait_trigger = True
+        
+        if plm_update_m3us_epgs_schedule == 'On' and plm_update_m3us_epgs_schedule_time:
+            plm_update_m3us_epgs_schedule_hour, plm_update_m3us_epgs_schedule_minute = map(int, plm_update_m3us_epgs_schedule_time.split(':'))
+            
+            if current_minute == plm_update_m3us_epgs_schedule_minute and (current_hour - plm_update_m3us_epgs_schedule_hour) % plm_m3us_epgs_schedule_frequency_parsed == 0:
+                threading.Thread(target=get_final_m3us_epgs).start()
+                wait_trigger = True
+
+            plm_update_m3us_epgs_schedule_minute_offset = (plm_update_m3us_epgs_schedule_minute + 30) % 60
+            plm_update_m3us_epgs_schedule_hour_offset = (plm_update_m3us_epgs_schedule_hour + (plm_update_m3us_epgs_schedule_minute + 30) // 60) % 24
+
+            if current_minute == plm_update_m3us_epgs_schedule_minute_offset and (current_hour - plm_update_m3us_epgs_schedule_hour_offset) % plm_m3us_epgs_schedule_frequency_parsed == 0:
+                temp_file_path = full_path("temp.txt")
+                reliable_remove(temp_file_path)
+                wait_trigger = True
+
+        if reset_channels_passes == 'On' and reset_channels_passes_time:
+            reset_channels_passes_hour, reset_channels_passes_minute = map(int, reset_channels_passes_time.split(':'))
+
+            if current_minute == reset_channels_passes_minute and (current_hour - reset_channels_passes_hour) % reset_channels_passes_frequency_parsed == 0:
+                threading.Thread(target=run_reset_channels_passes).start()
+                wait_trigger = True
+
+        if refresh_channels_m3u_playlists == 'On' and refresh_channels_m3u_playlists_time:
+            refresh_channels_m3u_playlists_hour, refresh_channels_m3u_playlists_minute = map(int, refresh_channels_m3u_playlists_time.split(':'))
+
+            if current_minute == refresh_channels_m3u_playlists_minute and (current_hour - refresh_channels_m3u_playlists_hour) % refresh_channels_m3u_playlists_frequency_parsed == 0:
+                threading.Thread(target=run_refresh_channels_m3u_playlists).start()
+                wait_trigger = True
+
+        if wait_trigger:
+            time.sleep(65)  # Wait a bit longer to avoid multiple triggers within the same minute+
+            wait_trigger = None
+
+        time.sleep(1)  # Check every second
 
 # Create a backup of program files and remove old backups
 def create_backup():
@@ -4259,7 +4344,7 @@ def end_to_end():
     if slm_channels_dvr_integration:
         import_program_updates()
         time.sleep(2)
-    generate_stream_links()
+    generate_stream_links(None)
     time.sleep(2)
     if slm_channels_dvr_integration:
         prune_scan_channels()
@@ -4309,7 +4394,7 @@ def get_new_episodes(entry_id_filter):
         if season_episodes:
             for season_episode in season_episodes:
                 if season_episode['season_episode'] not in [existing_episode['season_episode'] for existing_episode in existing_episodes]:
-                    new_row = {"entry_id": show_bookmark['entry_id'], "season_episode_id": season_episode['season_episode_id'], "season_episode_prefix": None, "season_episode": season_episode['season_episode'], "status": "unwatched", "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": "None"}
+                    new_row = {"entry_id": show_bookmark['entry_id'], "season_episode_id": season_episode['season_episode_id'], "season_episode_prefix": None, "season_episode": season_episode['season_episode'], "status": "unwatched", "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": "None", "original_release_date": None}
                     append_data(csv_bookmarks_status, new_row)
                     notification_add(f"    For {show_bookmark['title']} ({show_bookmark['release_year']}), added {season_episode['season_episode']}")
         else:
@@ -6039,8 +6124,8 @@ def import_program_updates():
 
         print(f"\n{current_time()} Finished checking for removed Stream Links.\n")
 
-# Find if a stream link is available for bookmakred programs, create stream link files if true, remove files if false
-def generate_stream_links():
+# Find if a stream link is available for bookmarked programs, create stream link files if true, remove files if false
+def generate_stream_links(original_release_date_list):
     print("\n==========================================================")
     print("|                                                        |")
     print("|                  Generate Stream Links                 |")
@@ -6067,16 +6152,17 @@ def generate_stream_links():
         print(f"\n{current_time()} START: Generating Stream Links...")
 
         print(f"\n{current_time()} Getting Stream Links...\n")
-        find_stream_links(auto_bookmarks)
+        find_stream_links(auto_bookmarks, original_release_date_list)
         print(f"\n{current_time()} Finished getting Stream Links.")
 
         if slm_channels_dvr_integration:
-            print(f"\n{current_time()} Checking for changes from last run...\n")
-            get_stream_link_ids()
-            print(f"\n{current_time()} Finished checking for changes from last run.\n")
+            if original_release_date_list is None:
+                print(f"\n{current_time()} Checking for changes from last run...\n")
+                get_stream_link_ids()
+                print(f"\n{current_time()} Finished checking for changes from last run.\n")
 
             print(f"\n{current_time()} Creating and removing Stream Link files and directories...\n")
-            create_stream_link_files(bookmarks, True)
+            create_stream_link_files(bookmarks, True, original_release_date_list)
             print(f"\n{current_time()} Finished creating and removing Stream Link files and directories.")
 
         print(f"\n{current_time()} END: Finished Generating Stream Links.\n")
@@ -6099,19 +6185,18 @@ def generate_stream_links_single(entry_id):
         
     if run_generation:
         if not entry_id.startswith('slm'):
-            find_stream_links(modify_bookmarks)
+            find_stream_links(modify_bookmarks, None)
 
         if slm_channels_dvr_integration:
-            create_stream_link_files(modify_bookmarks, None)
+            create_stream_link_files(modify_bookmarks, None, None)
             generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links! Please execute process 'Run Updates in Channels' in order to see this program."
         else:
             generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links! Please use 'Modify Programs' to see values."
 
-
     return generate_stream_links_single_message
 
 # Get the valid Stream Links (if available) and write to the appropriate table
-def find_stream_links(auto_bookmarks):
+def find_stream_links(auto_bookmarks, original_release_date_list):
     bookmarks_statuses = read_data(csv_bookmarks_status)
 
     for auto_bookmark in auto_bookmarks:
@@ -6132,11 +6217,11 @@ def find_stream_links(auto_bookmarks):
 
                     special_action = bookmarks_status['special_action']
 
-                    if special_action == "Make STRM":
+                    if special_action == "Make STRM" and original_release_date_list is None:
 
                         stream_link_dirty = "https://strm_must_use_override"
 
-                    elif bookmarks_status['stream_link_override'] != "":
+                    elif bookmarks_status['stream_link_override'] != "" and original_release_date_list is None:
 
                         stream_link_dirty = "https://skipped_for_override"
 
@@ -6151,13 +6236,14 @@ def find_stream_links(auto_bookmarks):
                                     node_id = bookmarks_status['season_episode_id']
                                 else:
                                     print(f"\n{current_time()} ERROR: Invalid object_type\n")
+                                
+                                if original_release_date_list is None or node_id in original_release_date_list:
+                                    stream_link_details = get_offers(node_id, auto_bookmark['country_code'], auto_bookmark['language_code'])
+                                    stream_link_offers = extract_offer_info(stream_link_details)
+                                    stream_link_dirty = get_stream_link(stream_link_offers, special_action)
 
-                                stream_link_details = get_offers(node_id, auto_bookmark['country_code'], auto_bookmark['language_code'])
-                                stream_link_offers = extract_offer_info(stream_link_details)
-                                stream_link_dirty = get_stream_link(stream_link_offers, special_action)
-
-                                if stream_link_dirty is None or stream_link_dirty == '':
-                                    stream_link_reason = "None due to not found on your selected streaming services"
+                                    if stream_link_dirty is None or stream_link_dirty == '':
+                                        stream_link_reason = "None due to not found on your selected streaming services"
 
                                 break  # Break out of the retry loop if successful
                             
@@ -6177,28 +6263,30 @@ def find_stream_links(auto_bookmarks):
 
                     stream_link_reason = "None due to 'Watched' status"
 
-                stream_link = clean_stream_link(stream_link_dirty, auto_bookmark['object_type'])
+                if stream_link_dirty:
 
-                bookmarks_status['stream_link'] = stream_link
+                    stream_link = clean_stream_link(stream_link_dirty, auto_bookmark['object_type'])
 
-                if auto_bookmark['object_type'] == "MOVIE":
-                    if stream_link_reason:
-                        print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) assigned Stream Link: {stream_link_reason}")
-                    else:
-                        print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) assigned Stream Link: {stream_link}")
-                elif auto_bookmark['object_type'] == "SHOW":
-                    if stream_link_reason:
-                        if bookmarks_status['season_episode_prefix'] != "":
-                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode_prefix']} {bookmarks_status['season_episode']} assigned Stream Link: {stream_link_reason}")
+                    bookmarks_status['stream_link'] = stream_link
+
+                    if auto_bookmark['object_type'] == "MOVIE":
+                        if stream_link_reason:
+                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) assigned Stream Link: {stream_link_reason}")
                         else:
-                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode']} assigned Stream Link: {stream_link_reason}")
-                    else:
-                        if bookmarks_status['season_episode_prefix'] != "":
-                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode_prefix']} {bookmarks_status['season_episode']} assigned Stream Link: {stream_link}")
+                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) assigned Stream Link: {stream_link}")
+                    elif auto_bookmark['object_type'] == "SHOW":
+                        if stream_link_reason:
+                            if bookmarks_status['season_episode_prefix'] != "":
+                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode_prefix']} {bookmarks_status['season_episode']} assigned Stream Link: {stream_link_reason}")
+                            else:
+                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode']} assigned Stream Link: {stream_link_reason}")
                         else:
-                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode']} assigned Stream Link: {stream_link}")
-                else:
-                    print(f"\n{current_time()} ERROR: Invalid object_type\n")
+                            if bookmarks_status['season_episode_prefix'] != "":
+                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode_prefix']} {bookmarks_status['season_episode']} assigned Stream Link: {stream_link}")
+                            else:
+                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode']} assigned Stream Link: {stream_link}")
+                    else:
+                        print(f"\n{current_time()} ERROR: Invalid object_type\n")
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
@@ -6519,7 +6607,7 @@ def get_stream_link_ids():
         notification_add(f"\n{current_time()} INFO: Cannot check for changes from last run due to Channels URL error.\n")
 
 # Creates Stream Link Files and removes invalid ones and empty directories (for TV)
-def create_stream_link_files(base_bookmarks, remove_choice):
+def create_stream_link_files(base_bookmarks, remove_choice, original_release_date_list):
     bookmarks = [
         base_bookmark for base_bookmark in base_bookmarks 
         if base_bookmark['bookmark_action'] not in ["Hide"]
@@ -6567,13 +6655,15 @@ def create_stream_link_files(base_bookmarks, remove_choice):
 
                 if bookmark_status['status'].lower() == "unwatched" and stream_link_url:
 
-                    if bookmark['object_type'] == "SHOW":
-                        create_directory(os.path.join(tv_path, title_full))
-                        create_directory(stream_link_path)
+                    if original_release_date_list is None or bookmark_status['entry_id'] in original_release_date_list or bookmark_status['season_episode_id'] in original_release_date_list:
 
-                    file_path_return = create_file(stream_link_path, stream_link_file_name, stream_link_url, special_action)
-                    file_path_return = normalize_path(file_path_return)
-                    bookmark_status['stream_link_file'] = file_path_return
+                        if bookmark['object_type'] == "SHOW":
+                            create_directory(os.path.join(tv_path, title_full))
+                            create_directory(stream_link_path)
+
+                        file_path_return = create_file(stream_link_path, stream_link_file_name, stream_link_url, special_action)
+                        file_path_return = normalize_path(file_path_return)
+                        bookmark_status['stream_link_file'] = file_path_return
 
                 elif bookmark_status['status'].lower() == "watched" or bookmark_status['stream_link'] == "" or ( special_action == "Make STRM" and bookmark_status['stream_link_override'] == "" ):
 
@@ -6659,6 +6749,310 @@ async def send_reprocess_requests(reprocess_session, reprocess_url):
         await reprocess_session.put(reprocess_url)
     except asyncio.TimeoutError:
         notification_add(f"\n{current_time()} ERROR: Request for {reprocess_url} timed out.")
+
+# Automation - Generate Stream Links for New & Recent Releases Only
+def run_slm_new_recent_releases():
+    print("\n==========================================================")
+    print("|                                                        |")
+    print("|           SLM: New & Recent Releases Process           |")
+    print("|                                                        |")
+    print("==========================================================")
+
+    notification_add(f"\n{current_time()} Beginning SLM New & Recent Releases process...\n")
+
+    start_time = time.time()
+
+    # Get new episodes
+    get_new_episodes(None)
+    time.sleep(2)
+
+    # Generate Stream Links for New & Recent Releases
+    original_release_date_list = get_original_release_date_list()
+    generate_stream_links(original_release_date_list)
+    time.sleep(2)
+
+    # Run scan in Channels DVR
+    if slm_channels_dvr_integration:
+        # Temp turn off Prune
+        settings = read_data(csv_settings)
+        channels_prune = settings[7]["settings"]
+        settings[7]["settings"] = "Off"
+        write_data(csv_settings, settings)
+
+        # Run scan
+        prune_scan_channels()
+
+        # Turn Prune back on
+        settings[7]["settings"] = channels_prune
+        write_data(csv_settings, settings)
+
+        time.sleep(2)
+
+    end_time = time.time()
+
+    elapsed_seconds = end_time - start_time
+
+    hours, remainder = divmod(elapsed_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    notification_add(f"\n{current_time()} Total Elapsed Time: {int(hours)} hours | {int(minutes)} minutes | {int(seconds)} seconds")
+
+    notification_add(f"\n{current_time()} SLM New & Recent Releases process complete.\n")
+
+# Create a list of Node IDs for New & Recent Releases
+def get_original_release_date_list():
+    print("\n==========================================================")
+    print("|                                                        |")
+    print("|               Get Original Release Dates               |")
+    print("|                                                        |")
+    print("==========================================================")
+
+    print(f"\n{current_time()} Gathering original release dates...\n")
+
+    bookmarks = read_data(csv_bookmarks)
+    auto_bookmarks = [
+        bookmark for bookmark in bookmarks 
+        if not bookmark['entry_id'].startswith('slm') 
+        and bookmark['bookmark_action'] not in ["Hide"]
+    ]
+    bookmarks_statuses = read_data(csv_bookmarks_status)
+    settings = read_data(csv_settings)
+    slm_new_recent_releases_when = settings[35]["settings"]
+
+    current_date = datetime.datetime.now()
+    original_release_date_list = []
+
+    for auto_bookmark in auto_bookmarks:
+        for bookmarks_status in bookmarks_statuses:
+            if auto_bookmark['entry_id'] == bookmarks_status['entry_id']:
+                if bookmarks_status['status'].lower() == "unwatched":
+
+                    if bookmarks_status['special_action'] == "Make STRM" or bookmarks_status['stream_link_override'] != "":
+                        continue
+
+                    else:
+                        original_release_date_raw = None
+                        original_release_date = None
+
+                        if auto_bookmark['object_type'] == "MOVIE":
+                            node_id = bookmarks_status['entry_id']
+                        elif auto_bookmark['object_type'] == "SHOW":
+                            node_id = bookmarks_status['season_episode_id']
+                        else:
+                            print(f"\n{current_time()} ERROR: Invalid object_type\n")
+                            continue
+
+                        if node_id:
+                            country_code = auto_bookmark['country_code']
+                            language_code = auto_bookmark['language_code']
+
+                            if bookmarks_status['original_release_date'] is None or bookmarks_status['original_release_date'] == '':
+                                original_release_date_raw =  get_original_release_date(node_id, country_code, language_code)
+                                if original_release_date_raw:
+                                    bookmarks_status['original_release_date'] = original_release_date_raw
+                                    
+                            else:
+                                original_release_date_raw = bookmarks_status['original_release_date']
+
+                            if original_release_date_raw is not None and original_release_date_raw != '':
+                                original_release_date = datetime.datetime.strptime(original_release_date_raw, "%Y-%m-%d")
+                                time_difference = current_date - original_release_date
+                                hours_since_release = int(time_difference.total_seconds() // 3600)
+
+                                if 0 <= int(hours_since_release) <= int(slm_new_recent_releases_when):
+                                    original_release_date_list.append(node_id)
+
+    write_data(csv_bookmarks_status, bookmarks_statuses)
+
+    print(f"\n{current_time()} Finished gathering original release dates.\n")
+
+    return original_release_date_list
+
+# Gets the original release date for individual movies/episodes
+def get_original_release_date(node_id, country_code, language_code):
+    results = []
+    results_json = []
+    result = None
+
+    _GRAPHQL_GetOriginalReleaseDate = """
+        query GetOriginalReleaseDate($nodeId: ID!, $country: Country!, $language: Language!) {
+            node(id: $nodeId) {
+                id
+                __typename
+                ... on MovieOrShowOrSeasonOrEpisode {
+                    content(country: $country, language: $language) {
+                        originalReleaseDate
+                    }
+                }
+            }
+        }
+    """
+
+    json_data = {
+        'query': _GRAPHQL_GetOriginalReleaseDate,
+        'variables': {
+            "platform": "WEB",
+            "nodeId": node_id,
+            "country": country_code,
+            "language": language_code,
+        },
+        'operationName': 'GetOriginalReleaseDate',
+    }
+
+    try:
+        results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+        results_json = results.json()
+        result = results_json.get('data', {}).get('node', {}).get('content', {}).get('originalReleaseDate', None)
+    except aiohttp.ClientError as e:
+        print(f"\n{current_time()} WARNING: {e}. Skipping '{node_id}', please try again.")
+
+    return result
+
+# Automation - Reset Channels DVR Passes
+def run_reset_channels_passes():
+    settings = read_data(csv_settings)
+    channels_url = settings[0]["settings"]
+    passes_url = '/dvr/rules/'
+    channels_passes_url = f"{channels_url}{passes_url}"
+    passes_pause = '/pause'
+    passes_resume = '/resume'
+    passes_message = ''
+    passes_results_base = None
+    passes_results_base_json = None
+    passes_results_dictionary = []
+    passes_results_dictionary_active = []
+    passes_error = None
+
+    notification_add(f"\n{current_time()} Beginning 'Reset Channels DVR Passes' Automation...")
+
+    channels_url_okay = check_channels_url(None)
+
+    if channels_url_okay:
+        try:
+            passes_results_base = requests.get(channels_passes_url, headers=url_headers)
+        except requests.RequestException as e:
+            passes_message = f"\n{current_time()} ERROR: During process, received {e}. Please try again."
+    else:
+        passes_message = f"{current_time()} ERROR: Channels URL is incorrect. Please update in the 'Settings' area."
+
+    if passes_results_base:
+        passes_results_base_json = passes_results_base.json()
+
+        for result in passes_results_base_json:
+            passes_result_paused = result.get("Paused", '')
+            passes_result_id = result.get("ID", '')
+            passes_result_priority = result.get("Priority", '')
+
+            passes_results_dictionary.append({
+                "passes_result_paused": passes_result_paused,
+                "passes_result_id": passes_result_id,
+                "passes_result_priority": passes_result_priority
+            })
+
+        for item in passes_results_dictionary:
+            if item['passes_result_paused'] == False:
+                passes_results_dictionary_active.append({
+                    "passes_result_id": item['passes_result_id'],
+                    "passes_result_priority": item['passes_result_priority']
+                })
+
+        # First sort with lowest priority on top to pause
+        passes_results_dictionary_active.sort(key=lambda x: int(x.get("passes_result_priority", float("inf"))))
+        for item in passes_results_dictionary_active:
+            print(f"{current_time()} INFO: Pausing pass with the id '{item['passes_result_id']}'.")
+            url = f"{channels_passes_url}{item['passes_result_id']}{passes_pause}"
+            try:
+                requests.put(url)
+            except requests.RequestException as e:
+                notification_add(f"\n{current_time()} WARNING: For pass with the id '{item['passes_result_id']}', received error {e}. Skipping pause...")
+                passes_error = True
+
+        # Resort with highest priority on top to resume
+        passes_results_dictionary_active.sort(key=lambda x: int(x.get("passes_result_priority", float("inf"))), reverse=True)
+        for item in passes_results_dictionary_active:
+            print(f"{current_time()} INFO: Resuming pass with the id '{item['passes_result_id']}'.")
+            url = f"{channels_passes_url}{item['passes_result_id']}{passes_resume}"
+            try:
+                requests.put(url)
+            except requests.RequestException as e:
+                notification_add(f"\n{current_time()} WARNING: For pass with the id '{item['passes_result_id']}', received error {e}. Skipping resume...")
+                passes_error = True
+
+        if passes_error:
+            passes_message = f"{current_time()} ERROR: 'Reset Channels DVR Passes' completed with an issue, see log for details."
+        else:
+            passes_message = f"{current_time()} INFO: 'Reset Channels DVR Passes' completed successfully."
+
+    if passes_message is not None and passes_message != '':
+        print(f"{passes_message}")
+
+    notification_add(f"\n{current_time()} Finished 'Reset Channels DVR Passes' Automation.")
+
+    return passes_message
+
+# Automation - Refresh Channels DVR m3u Playlists
+def run_refresh_channels_m3u_playlists():
+    settings = read_data(csv_settings)
+    channels_url = settings[0]["settings"]
+    providers_web = '/dvr/lineups'
+    refresh_web_pt1 = '/providers/m3u/sources/'
+    refresh_web_pt3 = '/refresh'
+    providers_url = f"{channels_url}{providers_web}"
+    refresh_url_pt1 = f"{channels_url}{refresh_web_pt1}"
+    message = ''
+    automation_error = None
+    providers_results_base = None
+    providers_results_base_json = None
+    providers_results_dictionary = []
+
+    notification_add(f"\n{current_time()} Beginning 'Refresh Channels DVR m3u Playlists' Automation...")
+
+    channels_url_okay = check_channels_url(None)
+
+    if channels_url_okay:
+        try:
+            providers_results_base = requests.get(providers_url, headers=url_headers)
+        except requests.RequestException as e:
+            message = f"\n{current_time()} ERROR: During process, received {e}. Please try again."
+    else:
+        message = f"{current_time()} ERROR: Channels URL is incorrect. Please update in the 'Settings' area."
+
+    if providers_results_base:
+        providers_results_base_json = providers_results_base.json()
+        if providers_results_base_json:
+                for key in providers_results_base_json.keys():
+                    if key.startswith("M3U-"):
+                        providers_results_dictionary.append(key[4:])
+
+        if providers_results_dictionary:
+            for provider in providers_results_dictionary:
+                refresh_url = f"{refresh_url_pt1}{provider}{refresh_web_pt3}"
+                for attempt in range(3):
+                    try:
+                        requests.post(refresh_url, timeout=60)
+                        break  # Exit the retry loop if the request is successful
+                    except requests.Timeout:
+                        if attempt < 2:  # Only log a warning if we will retry
+                            print(f"\n{current_time()} WARNING: For m3u Playlist '{provider}', request timed out. Retrying...")
+                        else:
+                            print(f"\n{current_time()} ERROR: For m3u Playlist '{provider}', request timed out. Skipping refresh...")
+                            automation_error = True
+                    except requests.RequestException as e:
+                        print(f"\n{current_time()} ERROR: For m3u Playlist '{provider}', received error {e}. Skipping refresh...")
+                        automation_error = True
+                        break  # Exit the retry loop on other exceptions
+
+            if automation_error:
+                message = f"{current_time()} ERROR: 'Refresh Channels DVR m3u Playlists' completed with an issue, see log for details."
+            else:
+                message = f"{current_time()} INFO: 'Refresh Channels DVR m3u Playlists' completed successfully."
+
+        else:
+            message = f"\n{current_time()} INFO: For 'Refresh Channels DVR m3u Playlists', no matching valid m3u playlists were found."
+
+    notification_add(f"\n{current_time()} Finished 'Refresh Channels DVR m3u Playlists' Automation.")
+
+    return message
 
 # Files webpage
 @app.route('/files', methods=['GET', 'POST'])
@@ -7373,95 +7767,6 @@ def get_country_code():
     print(f"{current_time()} INFO: Country Code set to '{country_code_new}'\n")
 
     return country_code_new
-
-# Background process to check the schedule
-def check_schedule():
-    while True:
-        settings = read_data(csv_settings)
-        wait_trigger = None
-        current_time = datetime.datetime.now().strftime('%H:%M')
-        current_hour = datetime.datetime.now().hour
-        current_minute = datetime.datetime.now().minute
-
-        gen_backup_schedule = settings[19]["settings"]
-        gen_backup_schedule_time = settings[20]["settings"]
-        gen_backup_schedule_frequency = settings[21]["settings"]
-        gen_backup_schedule_frequency_parsed = int(re.search(r'\d+', gen_backup_schedule_frequency).group())
-        gen_upgrade_schedule = settings[25]["settings"]
-        gen_upgrade_schedule_time = settings[26]["settings"]
-        gen_upgrade_schedule_frequency = settings[27]["settings"]
-        gen_upgrade_schedule_frequency_parsed = int(re.search(r'\d+', gen_upgrade_schedule_frequency).group())
-        try:
-            auto_update_schedule = settings[8]["settings"]
-        except (IndexError, KeyError):
-            auto_update_schedule = 'Off'           
-        auto_update_schedule_time = settings[6]["settings"]
-        auto_update_schedule_frequency = settings[18]["settings"]
-        auto_update_schedule_frequency_parsed = int(re.search(r'\d+', auto_update_schedule_frequency).group())
-        plm_update_stations_schedule = settings[13]["settings"]
-        plm_update_stations_schedule_time = settings[14]["settings"]
-        plm_update_m3us_epgs_schedule = settings[15]["settings"]
-        plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
-        plm_m3us_epgs_schedule_frequency = settings[17]["settings"]
-        plm_m3us_epgs_schedule_frequency_parsed = int(re.search(r'\d+', plm_m3us_epgs_schedule_frequency).group())
-        reset_channels_passes = settings[29]["settings"]            # [29] MTM: Automation - Reset Channels DVR Passes On/Off
-        reset_channels_passes_time = settings[30]["settings"]       # [30] MTM: Automation - Reset Channels DVR Passes Start Time
-        reset_channels_passes_frequency = settings[31]["settings"]  # [31] MTM: Automation - Reset Channels DVR Passes Frequency
-        reset_channels_passes_frequency_parsed = int(re.search(r'\d+', reset_channels_passes_frequency).group())
-
-        if gen_backup_schedule == 'On' and  gen_backup_schedule_time:
-            gen_backup_schedule_hour, gen_backup_schedule_minute = map(int, gen_backup_schedule_time.split(':'))
-
-            if current_minute == gen_backup_schedule_minute and (current_hour - gen_backup_schedule_hour) % gen_backup_schedule_frequency_parsed == 0:
-                threading.Thread(target=create_backup).start()
-                wait_trigger = True
-
-        if gen_upgrade_schedule == 'On' and  gen_upgrade_schedule_time:
-            gen_upgrade_schedule_hour, gen_upgrade_schedule_minute = map(int, gen_upgrade_schedule_time.split(':'))
-
-            if current_minute == gen_upgrade_schedule_minute and (current_hour - gen_upgrade_schedule_hour) % gen_upgrade_schedule_frequency_parsed == 0:
-                threading.Thread(target=check_upgrade).start()
-                wait_trigger = True
-
-        if auto_update_schedule == 'On' and auto_update_schedule_time:
-            auto_update_schedule_hour, auto_update_schedule_minute = map(int, auto_update_schedule_time.split(':'))
-
-            if current_minute == auto_update_schedule_minute and (current_hour - auto_update_schedule_hour) % auto_update_schedule_frequency_parsed == 0:
-                threading.Thread(target=end_to_end).start()
-                wait_trigger = True
-        
-        if plm_update_stations_schedule == 'On' and plm_update_stations_schedule_time:
-            if current_time == plm_update_stations_schedule_time:
-                threading.Thread(target=get_combined_m3us).start()
-                wait_trigger = True
-        
-        if plm_update_m3us_epgs_schedule == 'On' and plm_update_m3us_epgs_schedule_time:
-            plm_update_m3us_epgs_schedule_hour, plm_update_m3us_epgs_schedule_minute = map(int, plm_update_m3us_epgs_schedule_time.split(':'))
-            
-            if current_minute == plm_update_m3us_epgs_schedule_minute and (current_hour - plm_update_m3us_epgs_schedule_hour) % plm_m3us_epgs_schedule_frequency_parsed == 0:
-                threading.Thread(target=get_final_m3us_epgs).start()
-                wait_trigger = True
-
-            plm_update_m3us_epgs_schedule_minute_offset = (plm_update_m3us_epgs_schedule_minute + 30) % 60
-            plm_update_m3us_epgs_schedule_hour_offset = (plm_update_m3us_epgs_schedule_hour + (plm_update_m3us_epgs_schedule_minute + 30) // 60) % 24
-
-            if current_minute == plm_update_m3us_epgs_schedule_minute_offset and (current_hour - plm_update_m3us_epgs_schedule_hour_offset) % plm_m3us_epgs_schedule_frequency_parsed == 0:
-                temp_file_path = full_path("temp.txt")
-                reliable_remove(temp_file_path)
-                wait_trigger = True
-
-        if reset_channels_passes == 'On' and  reset_channels_passes_time:
-            reset_channels_passes_hour, reset_channels_passes_minute = map(int, reset_channels_passes_time.split(':'))
-
-            if current_minute == reset_channels_passes_minute and (current_hour - reset_channels_passes_hour) % reset_channels_passes_frequency_parsed == 0:
-                threading.Thread(target=run_reset_channels_passes).start()
-                wait_trigger = True
-
-        if wait_trigger:
-            time.sleep(65)  # Wait a bit longer to avoid multiple triggers within the same minute+
-            wait_trigger = None
-
-        time.sleep(1)  # Check every second
 
 # Check if Channels URL is correct
 def check_channels_url(channels_url_input):
@@ -8252,6 +8557,7 @@ def check_and_create_csv(csv_file):
     # Add columns for new functionality
     if csv_file == csv_bookmarks_status:
         check_and_add_column(csv_file, 'special_action', 'None')
+        check_and_add_column(csv_file, 'original_release_date', '')
 
     if csv_file == csv_bookmarks:
         check_and_add_column(csv_file, 'bookmark_action', 'None')
@@ -8281,6 +8587,13 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Off"}, 31, "MTM: Automation - Reset Channels DVR Passes On/Off")
         check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 32, "MTM: Automation - Reset Channels DVR Passes Start Time")
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 33, "MTM: Automation - Reset Channels DVR Passes Frequency")
+        check_and_append(csv_file, {"settings": "Off"}, 34, "MTM: Automation - SLM New & Recent Releases On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 35, "MTM: Automation - SLM New & Recent Releases Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 36, "MTM: Automation - SLM New & Recent Releases Frequency")
+        check_and_append(csv_file, {"settings": 72}, 37, "MTM: Automation - SLM New & Recent Releases Hours Past to Consider")
+        check_and_append(csv_file, {"settings": "Off"}, 38, "MTM: Automation - Refresh Channels DVR m3u Playlists On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 39, "MTM: Automation - Refresh Channels DVR m3u Playlists Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 40, "MTM: Automation - Refresh Channels DVR m3u Playlists Frequency")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -8317,7 +8630,14 @@ def initial_data(csv_file):
                     {"settings": "On"},                                                        # [28] MTM: Media Tools Manager On/Off
                     {"settings": "Off"},                                                       # [29] MTM: Automation - Reset Channels DVR Passes On/Off
                     {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [30] MTM: Automation - Reset Channels DVR Passes Start Time
-                    {"settings": "Every 24 hours"} #,                                          # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+                    {"settings": "Every 24 hours"},                                            # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+                    {"settings": "Off"},                                                       # [32] MTM: Automation - SLM New & Recent Releases On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [33] MTM: Automation - SLM New & Recent Releases Start Time
+                    {"settings": "Every 24 hours"},                                            # [34] MTM: Automation - SLM New & Recent Releases Frequency
+                    {"settings": 72},                                                          # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
+                    {"settings": "Off"},                                                       # [36] MTM: Automation - Refresh Channels DVR m3u Playlists On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [37] MTM: Automation - Refresh Channels DVR m3u Playlists Start Time
+                    {"settings": "Every 24 hours"} #,                                          # [38] MTM: Automation - Refresh Channels DVR m3u Playlists Frequency
                     # Add more rows as needed
         ]        
     elif csv_file == csv_streaming_services:
@@ -8328,7 +8648,7 @@ def initial_data(csv_file):
         ]
     elif csv_file == csv_bookmarks_status:
         data = [
-            {"entry_id": None, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": None, "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None}
+            {"entry_id": None, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": None, "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None, "original_release_date": None}
         ]
     elif csv_file == csv_slmappings:
         data = [
