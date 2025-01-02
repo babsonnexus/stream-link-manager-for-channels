@@ -23,7 +23,7 @@ from flask import Flask, render_template, render_template_string, request, redir
 from jinja2 import TemplateNotFound
 
 # Top Controls
-slm_version = "v2025.01.02.1434"
+slm_version = "v2025.01.02.1443"
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -3929,7 +3929,7 @@ def webpage_tools_automation():
                     end_to_end()
 
                 elif action.startswith('slm_new_recent_releases'):
-                    action_friendly_name = 'Stream Links/Files: New & Recent Releases'
+                    action_friendly_name = 'Stream Links: New & Recent Releases'
                     run_slm_new_recent_releases()
 
                 elif action.startswith('plm_update_stations_process'):
