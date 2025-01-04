@@ -23,7 +23,7 @@ from flask import Flask, render_template, render_template_string, request, redir
 from jinja2 import TemplateNotFound
 
 # Top Controls
-slm_version = "v2025.01.02.1443"
+slm_version = "v2025.01.04.1653"
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -3464,7 +3464,8 @@ def webpage_reports_queries():
 
             if action in [
                             "query_currently_unavailable",
-                            "query_previously_watched"
+                            "query_previously_watched",
+                            "query_not_on_justwatch"
                          ]:
                 slm_query_raw = sorted(slm_query_raw, key=lambda x: (x["Type"], sort_key(x["Name"].casefold())))
 
@@ -3472,8 +3473,9 @@ def webpage_reports_queries():
                     slm_query_name = "Currently Unavailable"
                 elif action == "query_previously_watched":
                     slm_query_name = "Previously Watched"
-                
-                
+                elif action == "query_not_on_justwatch":
+                    slm_query_name = "Not on JustWatch (Must run 'Stream Links: New & Recent Releases' first)"
+
             elif action in [
                                 "query_plm_parent_children"
                            ]:
@@ -3523,7 +3525,8 @@ def run_query(query_name):
 
     if query_name in [
                         'query_currently_unavailable',
-                        'query_previously_watched'
+                        'query_previously_watched',
+                        'query_not_on_justwatch'
                      ]:
 
         if bookmarks.empty or bookmarks_status.empty:
@@ -3589,6 +3592,34 @@ def run_query(query_name):
                     bookmarks.object_type, 
                     bookmarks.title || " (" || bookmarks.release_year || ")", 
                     bookmarks_status.Season
+                ORDER BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")"
+                """
+
+            elif query_name == 'query_not_on_justwatch':
+
+                query = """
+                SELECT 
+                    bookmarks.object_type AS "Type", 
+                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name",  
+                    CASE 
+                        WHEN bookmarks.object_type = 'MOVIE'
+                        THEN ''
+                        ELSE bookmarks_status.season_episode
+                    END AS "Season/Episode"
+                FROM 
+                    bookmarks 
+                INNER JOIN 
+                    bookmarks_status 
+                ON 
+                    bookmarks.entry_id = bookmarks_status.entry_id
+                WHERE 
+                    bookmarks_status.original_release_date = '9999-12-31'
+                GROUP BY 
+                    bookmarks.object_type, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")", 
+                    bookmarks_status.season_episode
                 ORDER BY 
                     bookmarks.object_type, 
                     bookmarks.title || " (" || bookmarks.release_year || ")"
@@ -3695,6 +3726,7 @@ def webpage_tools_gracenotesearch():
                     gracenote_search_result_type = result.get("type", '')
                     gracenote_search_result_video_type = result.get("videoQuality", {}).get("videoType", '')
                     gracenote_search_result_language_main = result.get("bcastLangs", [''])[0]
+                    gracenote_search_result_call_sign = result.get("callSign", '')
 
                     gracenote_search_results_library.append({
                         "Gracenote ID": gracenote_search_result_gracenote_id,
@@ -3703,7 +3735,8 @@ def webpage_tools_gracenotesearch():
                         "Affiliate": gracenote_search_result_affiliate_call_sign,
                         "Type": gracenote_search_result_type,
                         "Video": gracenote_search_result_video_type,
-                        "Primary Language": gracenote_search_result_language_main
+                        "Primary Language": gracenote_search_result_language_main,
+                        "Call Sign": gracenote_search_result_call_sign
                     })
 
                 gracenote_search_results = view_csv(gracenote_search_results_library, "library", True)
@@ -6853,7 +6886,7 @@ def get_original_release_date_list():
                                     
                             else:
                                 original_release_date_raw = bookmarks_status['original_release_date']
-
+                            
                             if original_release_date_raw is not None and original_release_date_raw != '':
                                 original_release_date = datetime.datetime.strptime(original_release_date_raw, "%Y-%m-%d")
                                 time_difference = current_date - original_release_date
@@ -6902,7 +6935,13 @@ def get_original_release_date(node_id, country_code, language_code):
     try:
         results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
         results_json = results.json()
-        result = results_json.get('data', {}).get('node', {}).get('content', {}).get('originalReleaseDate', None)
+        node_data = results_json.get('data', {}).get('node', {})
+        if node_data is not None:
+            result = node_data.get('content', {}).get('originalReleaseDate', None)
+            if result is None or result == '' or result =='None':
+                result = "1900-01-01"
+        else:
+            result = "9999-12-31"
     except aiohttp.ClientError as e:
         print(f"\n{current_time()} WARNING: {e}. Skipping '{node_id}', please try again.")
 
