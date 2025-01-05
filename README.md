@@ -83,7 +83,7 @@ You can also follow along in the video here:
 * [01:06:08](https://www.youtube.com/watch?v=APuUaAvNo-k&t=3968s) Settings - Scheduler
 * [01:08:56](https://www.youtube.com/watch?v=APuUaAvNo-k&t=4136s) Final Thoughts
 
-As a general note, it does not matter "where" <b>Streaming Library Manager</b> is installed; it could even be placed in the Channels DVR directory. The only requirements are that it must be on a machine and in a location that has directory access to the Channels DVR directory and be able to see the Channels DVR Administrative webpage.
+As a general note, it does not matter "where" <b>Streaming Library Manager</b> is installed; it could even be placed in the Channels DVR directory. The only requirements are that—if you are using Channels DVR—it must be on a machine and in a location that has directory access to the Channels DVR directory and be able to see the Channels DVR Administrative webpage. Otherwise, the program should function normally anywhere.
 
 ## Docker
 If you are not using <i>OliveTin/Project One-Click</i>, it is recommended to install via Stack using [Portainer](https://www.portainer.io/) ([Docker Desktop](https://open.docker.com/extensions/marketplace?extensionId=portainer/portainer-docker-extension) | [Docker Standalone](https://docs.portainer.io/start/install-ce/server/docker)). Otherwise, you can use the single command line method as shown below.
@@ -812,6 +812,12 @@ Programs that were previously hidden are not show in the list by default. Howeve
 ![image](https://github.com/user-attachments/assets/9f1baf57-3da4-4954-960a-c9afd313780e)
 
 At this point, you can edit them and make them not hidden by changing their ```Bookmark Status``` to "None".
+
+### Processes
+
+6. In order to keep `Stream Links/Files` up to date, you can either manually or on a schedule run various `Automation` routines. See details in **Media Tools Manager** below.
+
+![image](https://github.com/user-attachments/assets/c8813095-ab24-480a-a713-bdd836425bfb)
 
 ## Playlist Manager
 
