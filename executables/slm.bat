@@ -16,7 +16,7 @@ set "executable_path=%dir_current%\%executable%"
 set "batch=slm.bat"
 set "batch_path='%dir_current%\%batch%'"
 set "run_command=powershell -NoProfile -ExecutionPolicy Bypass -Command ^"Start-Process -WindowStyle hidden '%executable_path%'^""
-set "scheduled_task=schtasks /create /tn "Stream Link Manager for Channels^" /tr ^"%batch_path%^" /sc onlogon /rl highest /f"
+set "scheduled_task=schtasks /create /tn "Streaming Library Manager^" /tr ^"%batch_path%^" /sc onlogon /rl highest /f"
 set "temp_batch=%dir_current%\temp.bat"
 
 if [%1] neq [] goto handles
@@ -27,7 +27,7 @@ if exist "%executable%" (
     call %run_command%
 ) else (
     :: Display error message and pause
-    echo Stream Link Manager not installed. Please install using 'slm.bat install'.
+    echo Streaming Library Manager not installed. Please install using 'slm.bat install'.
     timeout /T -1
 )
 
@@ -35,7 +35,7 @@ goto end
 
 :download
 :: Check if the process is running
-echo Checking to see if Stream Link Manager for Channels is running...
+echo Checking to see if Streaming Library Manager is running...
 tasklist /FI "IMAGENAME eq %executable%" 2>NUL | find /I "%executable%" >NUL
 
 :: If the process is found, kill it
@@ -52,11 +52,11 @@ if "%ERRORLEVEL%"=="0" (
 )
 
 :: Download and extract files
-echo Downloading Stream Link Manager for Channels files...
+echo Downloading Streaming Library Manager files...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri '%link%' -OutFile '%outfile%'"
 timeout /NOBREAK /T 5
 
-echo Extracting Stream Link Manager for Channels files...
+echo Extracting Streaming Library Manager files...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath .\%outfile%"
 timeout /NOBREAK /T 5
 
@@ -121,7 +121,7 @@ if "%handle%"=="upgrade" (
 
 :: Startup
 if "%handle%"=="startup" (
-    echo Setting Stream Link Manager for Channels to run on startup...
+    echo Setting Streaming Library Manager to run on startup...
     echo !scheduled_task! > "%temp_batch%"
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd -ArgumentList '/c \"%temp_batch%\"' -Verb RunAs"
     echo Creating task, please wait...
@@ -154,11 +154,11 @@ if "%handle%"=="port" (
     rem Create the variable
     echo Saving port number to environment variables...
     setx "SLM_PORT" "!port_number!"
-    echo Stream Link Manager for Channels port set to [!port_number!].
+    echo Streaming Library Manager port set to [!port_number!].
 
     rem Add a new inbound rule to Windows Firewall
     echo Opening port in Windows firewall...
-    echo netsh advfirewall firewall add rule name="Stream Link Manager for Channels" dir=in action=allow protocol=TCP localport=!port_number! > "%temp_batch%"
+    echo netsh advfirewall firewall add rule name="Streaming Library Manager" dir=in action=allow protocol=TCP localport=!port_number! > "%temp_batch%"
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd -ArgumentList '/c \"%temp_batch%\"' -Verb RunAs"
     echo Please wait...
     timeout /NOBREAK /T 5
@@ -174,7 +174,7 @@ if "%handle%"=="port" (
         echo Port !port_number! is open and the server is listening.
     )
 
-    echo Please completely exit out of this command prompt and restart Stream Link Manager for Channels in a new window for the port to take effect.
+    echo Please completely exit out of this command prompt and restart Streaming Library Manager in a new window for the port to take effect.
     
     goto end
 )

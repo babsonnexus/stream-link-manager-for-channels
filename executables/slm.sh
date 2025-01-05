@@ -121,7 +121,7 @@ if [ $# -eq 0 ]; then
         disown
     else
         # Display error message and pause
-        echo "Stream Link Manager not installed. Please install using './slm.sh install'."
+        echo "Streaming Library Manager not installed. Please install using './slm.sh install'."
         read -n 1 -s -r -p "Press any key to continue..."
     fi
 fi
@@ -178,18 +178,18 @@ if [ $continue_install = "true" ]; then
     fi
 
     # Download and extract files
-    echo "Downloading Stream Link Manager files..."
+    echo "Downloading Streaming Library Manager files..."
     wget -q -O "$outfile" "$link"
     sleep 5
 
-    echo "Extracting Stream Link Manager files..."
+    echo "Extracting Streaming Library Manager files..."
     if [ -f "$executable" ]; then
         rm -f "$executable"
     fi
     unzip -q "$outfile" -d "${outfile%.zip}"
     sleep 5
 
-    echo "Building Stream Link Manager executable..."
+    echo "Building Streaming Library Manager executable..."
     cd "$dir_download" || return
     $PIP_CMD install -r requirements.txt
     pyinstaller --noconfirm --onedir --console --add-data "requirements.txt:." --add-data "static:static/" --add-data "templates:templates/"  "$file_python"
