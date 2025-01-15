@@ -24,7 +24,7 @@ from jinja2 import TemplateNotFound
 import yt_dlp as youtube_dl
 
 # Top Controls
-slm_version = "v2025.01.04.1653" # v2025.01.15.1741 (PRERELEASE)
+slm_version = "v2025.01.04.1653" # v2025.01.15.1822 (PRERELEASE)
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -3705,12 +3705,11 @@ def streams_youtube():
 def get_youtube_m3u8_manifest(youtube_url):
     print(f"{current_time()} INFO: Starting to retrieve manifest for {youtube_url}.")
     ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
+        'verbose': True,  # Increase verbosity
+        'no_warnings': False,  # Show warnings
         'format': 'all',
-        #'hls_prefer_native': True,
         'retries': 10,  # Retry up to 10 times in case of failure
-        'fragment_retries': 10,  # Retry up to 10 times for each fragment
+        'fragment_retries': 10  # Retry up to 10 times for each fragment
     }
     
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
