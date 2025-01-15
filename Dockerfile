@@ -16,9 +16,8 @@ RUN apt-get update && apt-get install -y \
 RUN wget https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz -O /tmp/ffmpeg.tar.xz && \
     mkdir -p /tmp/ffmpeg && \
     tar -xvf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1 && \
-    ls /tmp/ffmpeg && \
-    mv /tmp/ffmpeg/ffmpeg-master-latest-linux64-gpl/bin/ffmpeg /usr/local/bin/ffmpeg && \
-    mv /tmp/ffmpeg/ffmpeg-master-latest-linux64-gpl/bin/ffprobe /usr/local/bin/ffprobe && \
+    mv /tmp/ffmpeg/bin/ffmpeg /usr/local/bin/ffmpeg && \
+    mv /tmp/ffmpeg/bin/ffprobe /usr/local/bin/ffprobe && \
     rm -rf /tmp/ffmpeg /tmp/ffmpeg.tar.xz
 
 # Test to ensure ffmpeg is installed and working
