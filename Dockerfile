@@ -7,33 +7,8 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libffi-dev \
     python3-dev \
-    wget \
-    xz-utils \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-# Download and install custom ffmpeg build for ARM64
-RUN wget https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linuxarm64-gpl.tar.xz -O /tmp/ffmpeg.tar.xz && \
-    mkdir -p /tmp/ffmpeg && \
-    tar -xvf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1 && \
-    mv /tmp/ffmpeg/bin/ffmpeg /usr/local/bin/ffmpeg && \
-    mv /tmp/ffmpeg/bin/ffprobe /usr/local/bin/ffprobe && \
-    mkdir -p /usr/share/doc/ffmpeg && \
-    mv /tmp/ffmpeg/doc/* /usr/share/doc/ffmpeg/ && \
-    mkdir -p /usr/share/man/man1 && \
-    mv /tmp/ffmpeg/man/man1/* /usr/share/man/man1/ && \
-    mkdir -p /usr/share/licenses/ffmpeg && \
-    mv /tmp/ffmpeg/LICENSE.txt /usr/share/licenses/ffmpeg/ && \
-    rm -rf /tmp/ffmpeg /tmp/ffmpeg.tar.xz
-
-# Add /usr/local/bin to PATH
-ENV PATH="/usr/local/bin:${PATH}"
-
-# Debugging step: Check if ffmpeg and ffprobe are in the correct location
-RUN ls -l /usr/local/bin/ffmpeg && ls -l /usr/local/bin/ffprobe
-
-# Debugging step: Run ffmpeg directly
-RUN /usr/local/bin/ffmpeg -version
 
 # Set the working directory in the container
 WORKDIR /app
