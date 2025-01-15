@@ -21,9 +21,10 @@ import gzip
 import io
 from flask import Flask, render_template, render_template_string, request, redirect, url_for, Response, send_file, Request, make_response
 from jinja2 import TemplateNotFound
+import yt_dlp as youtube_dl
 
 # Top Controls
-slm_version = "v2025.01.04.1653"
+slm_version = "v2025.01.04.1653" # v2025.01.15.1139 (PRERELEASE)
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -58,6 +59,7 @@ def webpage_home():
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
         html_notifications = notifications
     )
 
@@ -481,6 +483,7 @@ def webpage_add_programs():
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
         html_valid_country_codes = valid_country_codes,
         html_country_code = country_code,
         html_valid_language_codes = valid_language_codes,
@@ -2067,6 +2070,7 @@ def webpage_modify_programs():
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
         html_sorted_bookmarks = sorted_bookmarks,
         html_entry_id_selected = entry_id_prior,
         html_program_modify_message = program_modify_message,
@@ -2665,6 +2669,7 @@ def webpage_playlists(sub_page):
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
         html_playlists_anchor_id = playlists_anchor_id,
         html_playlists = playlists,
         html_preferred_playlists = preferred_playlists,
@@ -3444,6 +3449,390 @@ def get_epgs_for_m3us():
 
     rename_files_suffix(program_files_dir, ".xml.tmp", ".xml")
 
+# Add streaming stations from particular sources
+@app.route('/playlists/streams', methods=['GET', 'POST'])
+def webpage_playlists_streams():
+    global streaming_stations_source_test_prior
+    global streaming_stations_url_test_prior
+
+    streaming_stations = read_data(csv_playlistmanager_streaming_stations)
+
+    streaming_station_options = [
+        "Custom (HLS)",
+        "Custom (MPEG-TS)",
+        "YouTube (HLS)"
+    ]
+
+    test_url = ''
+    run_empty_row = None
+
+    if request.method == 'POST':
+        action = request.form['action']
+
+        if action.endswith('test'):
+            streaming_stations_source_test_input = request.form.get('streaming_stations_source_test')
+            streaming_stations_url_test_input = request.form.get('streaming_stations_url_test')
+
+            streaming_stations_source_test_prior = streaming_stations_source_test_input
+            streaming_stations_url_test_prior = streaming_stations_url_test_input
+
+            if streaming_stations_url_test_input is not None and streaming_stations_url_test_input != '':
+                if streaming_stations_source_test_input.startswith('Custom'):
+                    test_url = streaming_stations_url_test_input
+
+                elif streaming_stations_source_test_input.startswith('YouTube'):
+                    test_url = f"{request.url_root}playlists/streams/youtube?url={streaming_stations_url_test_input}"
+
+        elif action.endswith('new') or action.endswith('save') or 'delete' in action:
+
+            streaming_stations_channel_id_input = None
+            streaming_stations_source_input = None
+            streaming_stations_url_input = None
+            streaming_stations_title_input = None
+            streaming_stations_tvg_logo_input = None
+            streaming_stations_tvg_description_input = None
+            streaming_stations_tvc_guide_tags_input = None
+            streaming_stations_tvc_guide_genres_input = None
+            streaming_stations_tvc_guide_categories_input = None
+            streaming_stations_tvc_guide_placeholders_input = None
+            streaming_stations_tvc_stream_vcodec_input = None
+            streaming_stations_tvc_stream_acodec_input = None
+
+            if action.endswith('save') or 'delete' in action:
+
+                streaming_stations_channel_id_inputs = {}
+                streaming_stations_source_inputs = {}
+                streaming_stations_url_inputs = {}
+                streaming_stations_title_inputs = {}
+                streaming_stations_tvg_logo_inputs = {}
+                streaming_stations_tvg_description_inputs = {}
+                streaming_stations_tvc_guide_tags_inputs = {}
+                streaming_stations_tvc_guide_genres_inputs = {}
+                streaming_stations_tvc_guide_categories_inputs = {}
+                streaming_stations_tvc_guide_placeholders_inputs = {}
+                streaming_stations_tvc_stream_vcodec_inputs = {}
+                streaming_stations_tvc_stream_acodec_inputs = {}
+
+                for key in request.form.keys():
+                    if key.startswith('streaming_stations_channel_id_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_channel_id_inputs[index] = request.form.get(key)
+
+                    if key.startswith('streaming_stations_source_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_source_inputs[index] = request.form.get(key)
+
+                    if key.startswith('streaming_stations_url_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_url_inputs[index] = request.form.get(key)
+
+                    if key.startswith('streaming_stations_title_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_title_inputs[index] = request.form.get(key)
+
+                    if key.startswith('streaming_stations_tvg_logo_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_tvg_logo_inputs[index] = request.form.get(key)
+
+                    if key.startswith('streaming_stations_tvg_description_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_tvg_description_inputs[index] = request.form.get(key)
+
+                    if key.startswith('streaming_stations_tvc_guide_tags_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_tvc_guide_tags_inputs[index] = request.form.get(key)
+
+                    if key.startswith('streaming_stations_tvc_guide_genres_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_tvc_guide_genres_inputs[index] = request.form.get(key)
+
+                    if key.startswith('streaming_stations_tvc_guide_categories_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_tvc_guide_categories_inputs[index] = request.form.get(key)
+
+                    if key.startswith('streaming_stations_tvc_guide_placeholders_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_tvc_guide_placeholders_inputs[index] = request.form.get(key)
+
+                    if key.startswith('streaming_stations_tvc_stream_vcodec_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_tvc_stream_vcodec_inputs[index] = request.form.get(key)
+
+                    if key.startswith('streaming_stations_tvc_stream_acodec_'):
+                        index = key.split('_')[-1]
+                        streaming_stations_tvc_stream_acodec_inputs[index] = request.form.get(key)
+
+                if action.endswith('save'):
+                    temp_records = []
+
+                    for row in streaming_stations_channel_id_inputs:
+                        streaming_stations_channel_id_input = streaming_stations_channel_id_inputs.get(row)
+                        streaming_stations_source_input = streaming_stations_source_inputs.get(row)
+                        streaming_stations_url_input = streaming_stations_url_inputs.get(row)
+                        streaming_stations_title_input = streaming_stations_title_inputs.get(row)
+                        streaming_stations_tvg_logo_input = streaming_stations_tvg_logo_inputs.get(row)
+                        streaming_stations_tvg_description_input = streaming_stations_tvg_description_inputs.get(row)
+                        streaming_stations_tvc_guide_tags_input = streaming_stations_tvc_guide_tags_inputs.get(row)
+                        streaming_stations_tvc_guide_genres_input = streaming_stations_tvc_guide_genres_inputs.get(row)
+                        streaming_stations_tvc_guide_categories_input = streaming_stations_tvc_guide_categories_inputs.get(row)
+                        streaming_stations_tvc_guide_placeholders_input = streaming_stations_tvc_guide_placeholders_inputs.get(row)
+                        streaming_stations_tvc_stream_vcodec_input = streaming_stations_tvc_stream_vcodec_inputs.get(row)
+                        streaming_stations_tvc_stream_acodec_input = streaming_stations_tvc_stream_acodec_inputs.get(row)
+
+                        temp_records.append({
+                            'channel_id': streaming_stations_channel_id_input,
+                            'source': streaming_stations_source_input,
+                            'url': streaming_stations_url_input,
+                            'title': streaming_stations_title_input,
+                            'tvg_logo': streaming_stations_tvg_logo_input,
+                            'tvg_description': streaming_stations_tvg_description_input,
+                            'tvc_guide_tags': streaming_stations_tvc_guide_tags_input,
+                            'tvc_guide_genres': streaming_stations_tvc_guide_genres_input,
+                            'tvc_guide_categories': streaming_stations_tvc_guide_categories_input,
+                            'tvc_guide_placeholders': streaming_stations_tvc_guide_placeholders_input,
+                            'tvc_stream_vcodec': streaming_stations_tvc_stream_vcodec_input,
+                            'tvc_stream_acodec': streaming_stations_tvc_stream_acodec_input
+                        })
+
+                    for streaming_station in streaming_stations:
+                        for temp_record in temp_records:
+                            if streaming_station['channel_id'] == temp_record['channel_id']:
+                                streaming_station['source'] = temp_record['source']
+                                streaming_station['url'] = temp_record['url']
+                                streaming_station['title'] = temp_record['title']
+                                streaming_station['tvg_logo'] = temp_record['tvg_logo']
+                                streaming_station['tvg_description'] = temp_record['tvg_description']
+                                streaming_station['tvc_guide_tags'] = temp_record['tvc_guide_tags']
+                                streaming_station['tvc_guide_genres'] = temp_record['tvc_guide_genres']
+                                streaming_station['tvc_guide_categories'] = temp_record['tvc_guide_categories']
+                                streaming_station['tvc_guide_placeholders'] = temp_record['tvc_guide_placeholders']
+                                streaming_station['tvc_stream_vcodec'] = temp_record['tvc_stream_vcodec']
+                                streaming_station['tvc_stream_acodec'] = temp_record['tvc_stream_acodec']
+
+                elif 'delete' in action:
+                    action_delete_index = int(action.split('_')[-1])
+                    delete_channel_id = streaming_stations_channel_id_inputs.get(str(action_delete_index))
+
+                    # Create a temporary record with fields set to None
+                    temp_record = create_temp_record(streaming_stations[0].keys())
+
+                    if 0 <= action_delete_index < len(streaming_stations) + 1:
+                        for streaming_station in streaming_stations:
+                            if streaming_station['channel_id'] == delete_channel_id:
+                                streaming_stations.remove(streaming_station)
+                                break
+
+                        # If the list is now empty, add the temp record to keep headers
+                        if not streaming_stations:
+                            streaming_stations.append(temp_record)
+                            run_empty_row = True
+
+            elif action.endswith('new'):
+                    streaming_stations_channel_id_input = f"plmss_{max((int(streaming_station['channel_id'].split('_')[1]) for streaming_station in streaming_stations), default=0) + 1:04d}"
+                    streaming_stations_source_input = request.form.get('streaming_stations_source_new')
+                    streaming_stations_url_input = request.form.get('streaming_stations_url_new')
+                    streaming_stations_title_input = request.form.get('streaming_stations_title_new')
+                    streaming_stations_tvg_logo_input = request.form.get('streaming_stations_tvg_logo_new')
+                    streaming_stations_tvg_description_input = request.form.get('streaming_stations_tvg_description_new')
+                    streaming_stations_tvc_guide_tags_input = request.form.get('streaming_stations_tvc_guide_tags_new')
+                    streaming_stations_tvc_guide_genres_input = request.form.get('streaming_stations_tvc_guide_genres_new')
+                    streaming_stations_tvc_guide_categories_input = request.form.get('streaming_stations_tvc_guide_categories_new')
+                    streaming_stations_tvc_guide_placeholders_input = request.form.get('streaming_stations_tvc_guide_placeholders_new')
+                    streaming_stations_tvc_stream_vcodec_input = request.form.get('streaming_stations_tvc_stream_vcodec_new')
+                    streaming_stations_tvc_stream_acodec_input = request.form.get('streaming_stations_tvc_stream_acodec_new')
+
+                    streaming_stations.append({
+                        'channel_id': streaming_stations_channel_id_input,
+                        'source': streaming_stations_source_input,
+                        'url': streaming_stations_url_input,
+                        'title': streaming_stations_title_input,
+                        'tvg_logo': streaming_stations_tvg_logo_input,
+                        'tvg_description': streaming_stations_tvg_description_input,
+                        'tvc_guide_tags': streaming_stations_tvc_guide_tags_input,
+                        'tvc_guide_genres': streaming_stations_tvc_guide_genres_input,
+                        'tvc_guide_categories': streaming_stations_tvc_guide_categories_input,
+                        'tvc_guide_placeholders': streaming_stations_tvc_guide_placeholders_input,
+                        'tvc_stream_vcodec': streaming_stations_tvc_stream_vcodec_input,
+                        'tvc_stream_acodec': streaming_stations_tvc_stream_acodec_input
+                    })
+
+            if len(streaming_stations) > 1:
+                streaming_stations = sorted(streaming_stations, key=lambda x: sort_key(x['title'].casefold()))
+
+            write_data(csv_playlistmanager_streaming_stations, streaming_stations)
+            if run_empty_row:
+                remove_empty_row(csv_playlistmanager_streaming_stations)
+    
+            make_streaming_stations_m3us()
+
+        elif action.endswith('cancel'):
+            streaming_stations_source_test_prior = ''
+            streaming_stations_url_test_prior = ''
+
+        streaming_stations = read_data(csv_playlistmanager_streaming_stations)
+
+    return render_template(
+        'main/playlists_streams.html',
+        segment = 'plm_streams',
+        html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
+        html_streaming_stations = streaming_stations,
+        html_streaming_station_options = streaming_station_options,
+        html_streaming_stations_source_test_prior = streaming_stations_source_test_prior,
+        html_streaming_stations_url_test_prior = streaming_stations_url_test_prior,
+        html_test_url = test_url
+    )
+
+# Creates an m3u8 for an individual YouTube stream
+@app.route('/playlists/streams/youtube', methods=['GET'])
+def streams_youtube():
+    youtube_url = request.args.get('url', type=str)
+    if not youtube_url:
+        return "YouTube URL is required"
+    m3u8_url = get_youtube_m3u8_manifest(youtube_url)
+    if m3u8_url:
+        playlist = f"#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1280000\n{m3u8_url}\n"
+        return Response(playlist, content_type='application/vnd.apple.mpegurl')
+    else:
+        return "Failed to retrieve m3u8 manifest URL"
+
+# Gets the manifest needed for the YouTube stream
+def get_youtube_m3u8_manifest(youtube_url):
+    ydl_opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'format': 'bestvideo+bestaudio/best',
+        'hls_prefer_native': True,
+        'retries': 10,  # Retry up to 10 times in case of failure
+        'fragment_retries': 10,  # Retry up to 10 times for each fragment
+    }
+
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        try:
+            info_dict = ydl.extract_info(youtube_url, download=False)
+            formats = info_dict.get('formats', None)
+            if formats:
+                best_format = None
+                for f in formats:
+                    if 'm3u8' in f.get('protocol', '') and f.get('acodec') != 'none' and f.get('vcodec') != 'none':
+                        if not best_format or f.get('tbr', 0) > best_format.get('tbr', 0):
+                            best_format = f
+                if best_format:
+                    return best_format.get('url')
+        except Exception as e:
+            print(f"{current_time()} ERROR: While attempting to retrieve {youtube_url}, received {e}.")
+    return None
+
+# Creates the m3u(s) for Streaming Stations
+def make_streaming_stations_m3us():
+    settings = read_data(csv_settings)
+
+    station_start_number = int(settings[40]['settings'])
+    max_stations = int(settings[41]['settings'])
+
+    streaming_stations = read_data(csv_playlistmanager_streaming_stations)
+
+    final_m3us = []
+
+    for streaming_station in streaming_stations:
+        title = None
+        tvc_guide_title = None
+        channel_id = None
+        tvg_id = None
+        tvg_name = None
+        tvg_logo = None
+        tvg_chno = None
+        channel_number = None
+        tvg_description = None
+        tvc_guide_description = None
+        group_title = None
+        tvc_guide_stationid = None
+        tvc_guide_art = None
+        tvc_guide_tags = None
+        tvc_guide_genres = None
+        tvc_guide_categories = None
+        tvc_guide_placeholders = None
+        tvc_stream_vcodec = None
+        tvc_stream_acodec = None
+        url = None
+        stream_format = None
+
+        title = streaming_station['title']
+        tvc_guide_title = title
+        channel_id = streaming_station['channel_id']
+        tvg_id = ''
+        tvg_name = title
+        tvg_logo = streaming_station['tvg_logo']
+        tvg_chno = int(channel_id.split('_')[-1]) + int(station_start_number)
+        channel_number = tvg_chno
+        tvg_description = streaming_station['tvg_description']
+        tvc_guide_description = tvg_description
+        group_title = ''
+        tvc_guide_stationid = ''
+        tvc_guide_art = tvg_logo
+        tvc_guide_tags = streaming_station['tvc_guide_tags']
+        tvc_guide_genres = streaming_station['tvc_guide_genres']
+        tvc_guide_categories = streaming_station['tvc_guide_categories']
+        tvc_guide_placeholders = streaming_station['tvc_guide_placeholders']
+        tvc_stream_vcodec = streaming_station['tvc_stream_vcodec']
+        tvc_stream_acodec = streaming_station['tvc_stream_acodec']
+        if 'YouTube' in streaming_station['source']:
+            url = f"{request.url_root}playlists/streams/youtube?url={streaming_station['url']}"
+        else:
+            url = streaming_station['url']
+        if 'HLS' in streaming_station['source']:
+            stream_format = "HLS"
+        elif 'MPEG-TS' in streaming_station['source']:
+            stream_format = "MPEG-TS"
+
+        final_m3us.append({
+            "title": title,
+            "tvc_guide_title": tvc_guide_title,
+            "channel_id": channel_id,
+            "tvg_id": tvg_id,
+            "tvg_name": tvg_name,
+            "tvg_logo": tvg_logo,
+            "tvg_chno": tvg_chno,
+            "channel_number": channel_number,
+            "tvg_description": tvg_description,
+            "tvc_guide_description": tvc_guide_description,
+            "group_title": group_title,
+            "tvc_guide_stationid": tvc_guide_stationid,
+            "tvc_guide_art": tvc_guide_art,
+            "tvc_guide_tags": tvc_guide_tags,
+            "tvc_guide_genres": tvc_guide_genres,
+            "tvc_guide_categories": tvc_guide_categories,
+            "tvc_guide_placeholders": tvc_guide_placeholders,
+            "tvc_stream_vcodec": tvc_stream_vcodec,
+            "tvc_stream_acodec": tvc_stream_acodec,
+            "url": url,
+            "stream_format": stream_format
+        })
+    
+    plmss_hls_final_m3us = []
+    plmss_mpeg_ts_final_m3us = []
+
+    for final_m3u in final_m3us:
+        if final_m3u['stream_format'] == "HLS":
+            plmss_hls_final_m3us.append(final_m3u)
+        elif final_m3u['stream_format'] == "MPEG-TS":
+            plmss_mpeg_ts_final_m3us.append(final_m3u)
+
+    extensions = ['m3u']
+    all_prior_files = []
+    all_prior_files = get_all_prior_files(playlists_uploads_dir, extensions)
+    for all_prior_file in all_prior_files:
+    	if 'plmss' in all_prior_file['filename']:
+            file_delete(playlists_uploads_dir, all_prior_file['filename'], all_prior_file['extension'])
+
+    create_chunk_files(plmss_hls_final_m3us, os.path.join(playlists_uploads_dir_name, "plmss_hls_m3u"), "m3u", max_stations)
+    create_chunk_files(plmss_mpeg_ts_final_m3us, os.path.join(playlists_uploads_dir_name, "plmss_mpeg_ts_m3u"), "m3u", max_stations)
+
 # Reports / Queries webpage
 @app.route('/reports_queries', methods=['GET', 'POST'])
 def webpage_reports_queries():
@@ -3477,11 +3866,11 @@ def webpage_reports_queries():
                     slm_query_name = "Not on JustWatch (Must run 'Stream Links: New & Recent Releases' first)"
 
             elif action in [
-                                "query_plm_parent_children"
+                                "query_plm_children"
                            ]:
                 
-                if action == "query_plm_parent_children":
-                    slm_query_name = "Stations: Parents and Children"
+                if action == "query_plm_children":
+                    slm_query_name = "Stations: streaming_stations and Children"
 
             slm_query = view_csv(slm_query_raw, "library", None)
 
@@ -3494,6 +3883,7 @@ def webpage_reports_queries():
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
         html_slm_query = slm_query,
         html_slm_query_name = slm_query_name
     )
@@ -3754,6 +4144,7 @@ def webpage_tools_gracenotesearch():
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
         html_gracenote_search_results = gracenote_search_results,
         html_gracenote_search_entry_prior = gracenote_search_entry_prior,
         html_gracenote_search_message = gracenote_search_message
@@ -3817,6 +4208,7 @@ def webpage_tools_csvexplorer():
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
         html_channels_api_url = channels_api_url,
         html_tools_csvexplorer_message = tools_csvexplorer_message,
         html_csv_explorer_results = csv_explorer_results,
@@ -4133,6 +4525,7 @@ def webpage_tools_automation():
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
         html_anchor = anchor,
         html_automation_message = automation_message,
         html_automation_frequencies = automation_frequencies,
@@ -7154,6 +7547,7 @@ def webpage_files():
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
         table_html=table_html,
         replace_message=replace_message,
         html_file_lists = file_lists,
@@ -7286,6 +7680,7 @@ def webpage_logs():
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
         html_log_filename_fullpath=log_filename_fullpath,
         html_page_lines=page_lines,
         html_page=page,
@@ -7302,6 +7697,7 @@ def webpage_settings():
     global slm_stream_link_file_manager
     global slm_channels_dvr_integration
     global slm_media_tools_manager
+    global plm_streaming_stations
     settings_anchor_id = None
     run_empty_row = None
 
@@ -7317,6 +7713,8 @@ def webpage_settings():
     channels_prune = settings[7]["settings"]
     station_start_number = settings[11]['settings']
     max_stations = settings[12]['settings']
+    plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
+    plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u                                              
 
     streaming_services = read_data(csv_streaming_services)
 
@@ -7335,7 +7733,6 @@ def webpage_settings():
     channels_directory_message = ""
     search_defaults_message = ""
     advanced_experimental_message = ""
-    scheduler_message = ""
 
     action_to_anchor = {
         'streaming_services': 'streaming_services_anchor',
@@ -7347,7 +7744,8 @@ def webpage_settings():
         'playlist_manager': 'advanced_experimental_anchor',
         'stream_link_file_manager': 'advanced_experimental_anchor',
         'channels_dvr_integration': 'advanced_experimental_anchor',
-        'media_tools_manager': 'advanced_experimental_anchor'
+        'media_tools_manager': 'advanced_experimental_anchor',
+        'plm_streaming_stations': 'advanced_experimental_anchor'
     }
 
     if not os.path.exists(channels_directory):
@@ -7367,8 +7765,11 @@ def webpage_settings():
         stream_link_file_manager_input = request.form.get('stream_link_file_manager')
         channels_dvr_integration_input = request.form.get('channels_dvr_integration')
         media_tools_manager_input = request.form.get('media_tools_manager')
+        plm_streaming_stations_input = request.form.get('plm_streaming_stations')
         station_start_number_input = request.form.get('station_start_number')
         max_stations_input = request.form.get('max_stations')
+        plm_streaming_stations_station_start_number_input = request.form.get('plm_streaming_stations_station_start_number')
+        plm_streaming_stations_max_stations_input = request.form.get('plm_streaming_stations_max_stations')
         country_code_input = request.form.get('country_code')
         language_code_input = request.form.get('language_code')
         num_results_input = request.form.get('num_results')
@@ -7387,6 +7788,7 @@ def webpage_settings():
                                                                            'stream_link_file_manager_cancel',
                                                                            'channels_dvr_integration_cancel',
                                                                            'media_tools_manager_cancel',
+                                                                           'plm_streaming_stations_cancel',
                                                                            'search_defaults_cancel',
                                                                            'streaming_services_cancel',
                                                                            'channels_url_save',
@@ -7396,6 +7798,7 @@ def webpage_settings():
                                                                            'stream_link_file_manager_save',
                                                                            'channels_dvr_integration_save',
                                                                            'media_tools_manager_save',
+                                                                           'plm_streaming_stations_save',
                                                                            'search_defaults_save',
                                                                            'streaming_services_save',
                                                                            'streaming_services_update',
@@ -7410,6 +7813,7 @@ def webpage_settings():
                                                                                       'stream_link_file_manager_save',
                                                                                       'channels_dvr_integration_save',
                                                                                       'media_tools_manager_save',
+                                                                                      'plm_streaming_stations_save',
                                                                                       'search_defaults_save',
                                                                                       'streaming_services_save',
                                                                                       'channels_url_scan'
@@ -7422,6 +7826,7 @@ def webpage_settings():
                                     'stream_link_file_manager_save',
                                     'channels_dvr_integration_save',
                                     'media_tools_manager_save',
+                                    'plm_streaming_stations_save',
                                     'search_defaults_save',
                                     'channels_url_scan'
                                     ]:
@@ -7505,6 +7910,26 @@ def webpage_settings():
                             slm_media_tools_manager = True
                         else:
                             slm_media_tools_manager = None
+
+                    elif settings_action == 'plm_streaming_stations_save':
+                        try:
+                            if int(plm_streaming_stations_station_start_number_input) > 0 and int(plm_streaming_stations_max_stations_input) > 0:
+                                settings[39]["settings"] = "On" if plm_streaming_stations_input == 'on' else "Off"
+                                settings[40]['settings'] = int(plm_streaming_stations_station_start_number_input)
+                                settings[41]['settings'] = int(plm_streaming_stations_max_stations_input)
+
+                                if plm_streaming_stations_input == 'on':
+                                    plm_streaming_stations = True
+                                    plm_csv_file = csv_playlistmanager_streaming_stations
+                                    check_and_create_csv(plm_csv_file)
+                                else:
+                                    plm_streaming_stations = None
+
+                            else:
+                                advanced_experimental_message = f"{current_time()} ERROR: For Streaming Stations, 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
+                        
+                        except ValueError:
+                            advanced_experimental_message = f"{current_time()} ERROR: For Streaming Stations, 'Station Start Number' and 'Max Stations per m3u' must be numbers."
 
                     csv_to_write = csv_settings
                     data_to_write = settings
@@ -7653,6 +8078,8 @@ def webpage_settings():
         channels_prune = settings[7]["settings"]
         station_start_number = settings[11]['settings']
         max_stations = settings[12]['settings']
+        plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
+        plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u 
 
         streaming_services = read_data(csv_streaming_services)
 
@@ -7667,6 +8094,7 @@ def webpage_settings():
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
         html_settings_anchor_id = settings_anchor_id,
         html_channels_url=channels_url,
         html_channels_url_prior = channels_url_prior,
@@ -7689,6 +8117,8 @@ def webpage_settings():
         html_hide_bookmarked = hide_bookmarked,
         html_station_start_number = station_start_number,
         html_max_stations = max_stations,
+        html_plm_streaming_stations_station_start_number = plm_streaming_stations_station_start_number,
+        html_plm_streaming_stations_max_stations = plm_streaming_stations_max_stations,
         html_advanced_experimental_message = advanced_experimental_message
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
@@ -7897,7 +8327,8 @@ def webpage_route_template(template):
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
             html_slm_channels_dvr_integration = slm_channels_dvr_integration,
-            html_slm_media_tools_manager = slm_media_tools_manager
+            html_slm_media_tools_manager = slm_media_tools_manager,
+            html_plm_streaming_stations = plm_streaming_stations
         )
 
     except TemplateNotFound:
@@ -7908,7 +8339,8 @@ def webpage_route_template(template):
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
             html_slm_channels_dvr_integration = slm_channels_dvr_integration,
-            html_slm_media_tools_manager = slm_media_tools_manager
+            html_slm_media_tools_manager = slm_media_tools_manager,
+            html_plm_streaming_stations = plm_streaming_stations
         ), 404
 
     except:
@@ -7919,7 +8351,8 @@ def webpage_route_template(template):
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
             html_slm_channels_dvr_integration = slm_channels_dvr_integration,
-            html_slm_media_tools_manager = slm_media_tools_manager
+            html_slm_media_tools_manager = slm_media_tools_manager,
+            html_plm_streaming_stations = plm_streaming_stations
         ), 500
 
 # Get any webpage not already called out
@@ -8633,6 +9066,9 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Off"}, 38, "MTM: Automation - Refresh Channels DVR m3u Playlists On/Off")
         check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 39, "MTM: Automation - Refresh Channels DVR m3u Playlists Start Time")
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 40, "MTM: Automation - Refresh Channels DVR m3u Playlists Frequency")
+        check_and_append(csv_file, {"settings": "Off"}, 41, "PLM: Streaming Stations On/Off")
+        check_and_append(csv_file, {"settings": 5000}, 42, "PLM: Streaming Stations Starting station number")
+        check_and_append(csv_file, {"settings": 750}, 43, "PLM: Streaming Stations Max number of stations per m3u")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -8676,7 +9112,10 @@ def initial_data(csv_file):
                     {"settings": 72},                                                          # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
                     {"settings": "Off"},                                                       # [36] MTM: Automation - Refresh Channels DVR m3u Playlists On/Off
                     {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [37] MTM: Automation - Refresh Channels DVR m3u Playlists Start Time
-                    {"settings": "Every 24 hours"} #,                                          # [38] MTM: Automation - Refresh Channels DVR m3u Playlists Frequency
+                    {"settings": "Every 24 hours"},                                            # [38] MTM: Automation - Refresh Channels DVR m3u Playlists Frequency
+                    {"settings": "Off"},                                                       # [39] PLM: Streaming Stations On/Off
+                    {"settings": 5000},                                                        # [40] PLM: Streaming Stations Starting station number
+                    {"settings": 750} #                                                        # [41] PLM: Streaming Stations Max number of stations per m3u
                     # Add more rows as needed
         ]        
     elif csv_file == csv_streaming_services:
@@ -8713,6 +9152,10 @@ def initial_data(csv_file):
     elif csv_file == csv_playlistmanager_combined_m3us:
         data = [
             {"station_playlist": None, "m3u_id": None, "title": None, "tvc_guide_title": None, "channel_id": None, "tvg_id": None, "tvg_name": None, "tvg_logo": None, "tvg_chno": None, "channel_number": None, "tvg_description": None, "tvc_guide_description": None, "group_title": None, "tvc_guide_stationid": None, "tvc_guide_art": None, "tvc_guide_tags": None, "tvc_guide_genres": None, "tvc_guide_categories": None, "tvc_guide_placeholders": None, "tvc_stream_vcodec": None, "tvc_stream_acodec": None, "url": None}
+        ]
+    elif csv_file == csv_playlistmanager_streaming_stations:
+        data = [
+            {"channel_id": None, "source": None, "url": None, "title": None, "tvg_logo": None, "tvg_description": None,     "tvc_guide_tags": None, "tvc_guide_genres": None, "tvc_guide_categories": None, "tvc_guide_placeholders": None, "tvc_stream_vcodec": None, "tvc_stream_acodec": None}
         ]
 
     return data
@@ -8868,6 +9311,7 @@ csv_playlistmanager_playlists = "PlaylistManager_Playlists.csv"
 csv_playlistmanager_combined_m3us = "PlaylistManager_Combinedm3us.csv"
 csv_playlistmanager_parents = "PlaylistManager_Parents.csv"
 csv_playlistmanager_child_to_parent = "PlaylistManager_ChildToParent.csv"
+csv_playlistmanager_streaming_stations = "PlaylistManager_StreamingStations.csv"
 csv_files = [
     csv_settings,
     csv_streaming_services,
@@ -9084,6 +9528,8 @@ gracenote_search_results = None
 gracenote_search_entry_prior = ''
 csv_explorer_results = None
 csv_explorer_entry_prior = ''
+streaming_stations_source_test_prior = ''
+streaming_stations_url_test_prior = ''
 
 ### Start-up process and safety checks
 # Program directories
@@ -9168,6 +9614,9 @@ if global_settings[24]['settings'] == "On":
 slm_media_tools_manager = None
 if global_settings[28]['settings'] == "On":
     slm_media_tools_manager = True
+plm_streaming_stations = None
+if global_settings[39]['settings'] == "On":
+    plm_streaming_stations = True
 
 if slm_channels_dvr_integration:
     check_channels_url(None)
