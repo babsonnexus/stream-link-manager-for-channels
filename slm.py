@@ -24,7 +24,7 @@ from jinja2 import TemplateNotFound
 import yt_dlp as youtube_dl
 
 # Top Controls
-slm_version = "v2025.01.04.1653" # v2025.01.15.1822 (PRERELEASE)
+slm_version = "v2025.01.04.1653" # v2025.01.15.1837 (PRERELEASE)
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -3701,15 +3701,30 @@ def streams_youtube():
     else:
         return "Failed to retrieve m3u8 manifest URL"
 
+# Custom logger to write yt-dlp output to your log file
+class YTDLLogger:
+    def debug(self, msg):
+        log.write(msg + "\n")
+
+    def info(self, msg):
+        log.write(msg + "\n")
+
+    def warning(self, msg):
+        log.write("[WARNING] " + msg + "\n")
+
+    def error(self, msg):
+        log.write("[ERROR] " + msg + "\n")
+
 # Gets the manifest needed for the YouTube stream
 def get_youtube_m3u8_manifest(youtube_url):
     print(f"{current_time()} INFO: Starting to retrieve manifest for {youtube_url}.")
     ydl_opts = {
-        'verbose': True,  # Increase verbosity
-        'no_warnings': False,  # Show warnings
+        'verbose': True,            # Get verbose output
+        'no_warnings': False,       # Show warnings
         'format': 'all',
-        'retries': 10,  # Retry up to 10 times in case of failure
-        'fragment_retries': 10  # Retry up to 10 times for each fragment
+        'retries': 10,              # Retry up to 10 times in case of failure
+        'fragment_retries': 10,     # Retry up to 10 times for each fragment
+        'logger': YTDLLogger()      # Pass the custom logger
     }
     
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
