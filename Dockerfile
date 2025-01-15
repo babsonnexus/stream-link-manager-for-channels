@@ -8,6 +8,9 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     python3-dev \
     ffmpeg \
+    alsa-utils \
+    alsa-oss \
+    libasound2 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
