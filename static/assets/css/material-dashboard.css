@@ -17461,3 +17461,8 @@ pre[class*="language-"] {
     overflow: auto !important; } }
 
 /*# sourceMappingURL=material-dashboard.css.map */
+
+/* Custom CSS for Select2 dropdown */
+.select2-dropdown.no-wrap .select2-results__option {
+  white-space: nowrap;
+}
