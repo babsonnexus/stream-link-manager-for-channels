@@ -32,8 +32,8 @@ ENV PATH="/usr/local/bin:${PATH}"
 # Debugging step: Check if ffmpeg and ffprobe are in the correct location
 RUN ls -l /usr/local/bin/ffmpeg && ls -l /usr/local/bin/ffprobe
 
-# Test to ensure ffmpeg is installed and working
-RUN ffmpeg -version
+# Debugging step: Run ffmpeg directly
+RUN /usr/local/bin/ffmpeg -version
 
 # Set the working directory in the container
 WORKDIR /app
