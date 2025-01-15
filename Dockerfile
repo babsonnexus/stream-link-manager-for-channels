@@ -18,7 +18,16 @@ RUN wget https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg
     tar -xvf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1 && \
     mv /tmp/ffmpeg/bin/ffmpeg /usr/local/bin/ffmpeg && \
     mv /tmp/ffmpeg/bin/ffprobe /usr/local/bin/ffprobe && \
+    mkdir -p /usr/share/doc/ffmpeg && \
+    mv /tmp/ffmpeg/doc/* /usr/share/doc/ffmpeg/ && \
+    mkdir -p /usr/share/man/man1 && \
+    mv /tmp/ffmpeg/man/man1/* /usr/share/man/man1/ && \
+    mkdir -p /usr/share/licenses/ffmpeg && \
+    mv /tmp/ffmpeg/LICENSE.txt /usr/share/licenses/ffmpeg/ && \
     rm -rf /tmp/ffmpeg /tmp/ffmpeg.tar.xz
+
+# Add /usr/local/bin to PATH
+ENV PATH="/usr/local/bin:${PATH}"
 
 # Test to ensure ffmpeg is installed and working
 RUN ffmpeg -version
