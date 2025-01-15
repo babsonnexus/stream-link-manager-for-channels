@@ -8,10 +8,11 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     python3-dev \
     ffmpeg \
-    libavcodec-extra \
-    libav-tools \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Test to ensure ffmpeg is installed and working
+RUN ffmpeg -version
 
 # Set the working directory in the container
 WORKDIR /app
