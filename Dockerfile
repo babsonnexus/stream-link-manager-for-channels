@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and install custom ffmpeg build
-RUN wget https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg_linux64.tar.xz -O /tmp/ffmpeg.tar.xz && \
+RUN wget https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz -O /tmp/ffmpeg.tar.xz && \
     tar -xvf /tmp/ffmpeg.tar.xz -C /usr/local/bin --strip-components=1 && \
     rm /tmp/ffmpeg.tar.xz
 
