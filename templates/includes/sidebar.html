@@ -60,7 +60,7 @@
           </div>
           <span class="nav-link-text ms-1">Playlists</span>
         </a>
-        <div class="collapse {% if 'plm_main' in segment or 'plm_modify_assigned_stations' in segment or 'plm_parent_stations' in segment or 'plm_manage' in segment %}show{% endif %}" id="collapsePlaylistManager">
+        <div class="collapse {% if 'plm_main' in segment or 'plm_modify_assigned_stations' in segment or 'plm_parent_stations' in segment or 'plm_manage' in segment or 'plm_streams' in segment %}show{% endif %}" id="collapsePlaylistManager">
           <ul class="navbar-nav ms-3">
             <li class="nav-item">
               <a class="nav-link text-white {% if 'plm_main' in segment %} active bg-gradient-primary {% endif %}" 
@@ -71,6 +71,17 @@
                 <span class="nav-link-text ms-1">Main</span>
               </a>
             </li>
+            {% if html_plm_streaming_stations %}
+            <li class="nav-item">
+              <a class="nav-link text-white {% if 'plm_streams' in segment %} active bg-gradient-primary {% endif %}" 
+                  href="/playlists/streams">
+                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                  <i class="material-icons opacity-10">queue_play_next</i>
+                </div>
+                <span class="nav-link-text ms-1">Streaming Stations</span>
+              </a>
+            </li>
+          {% endif %}
             <li class="nav-item">
               <a class="nav-link text-white {% if 'plm_modify_assigned_stations' in segment %} active bg-gradient-primary {% endif %}" 
                   href="/playlists/plm_modify_assigned_stations">
