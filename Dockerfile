@@ -29,6 +29,9 @@ RUN wget https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg
 # Add /usr/local/bin to PATH
 ENV PATH="/usr/local/bin:${PATH}"
 
+# Debugging step: Check if ffmpeg and ffprobe are in the correct location
+RUN ls -l /usr/local/bin/ffmpeg && ls -l /usr/local/bin/ffprobe
+
 # Test to ensure ffmpeg is installed and working
 RUN ffmpeg -version
 
