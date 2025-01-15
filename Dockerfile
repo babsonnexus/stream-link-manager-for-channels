@@ -7,12 +7,14 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libffi-dev \
     python3-dev \
-    ffmpeg \
-    alsa-utils \
-    alsa-oss \
-    libasound2 \
+    wget \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Download and install custom ffmpeg build
+RUN wget https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg_linux64.tar.xz -O /tmp/ffmpeg.tar.xz && \
+    tar -xvf /tmp/ffmpeg.tar.xz -C /usr/local/bin --strip-components=1 && \
+    rm /tmp/ffmpeg.tar.xz
 
 # Test to ensure ffmpeg is installed and working
 RUN ffmpeg -version
