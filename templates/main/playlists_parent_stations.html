@@ -86,7 +86,7 @@
               <input type="text" id="parents_parent_tvc_guide_stationid_override_new" name="parents_parent_tvc_guide_stationid_override_new" placeholder="i.e., 121165">
             </div>
             <div class="grid-item">
-              <select name="parents_parent_preferred_playlist_new" id="parents_parent_preferred_playlist_new" style="width: 100%; max-width: 100%;">
+              <select class="select2" name="parents_parent_preferred_playlist_new" id="parents_parent_preferred_playlist_new" style="width: 100%; max-width: 100%;">
                 {% for html_preferred_playlist in html_preferred_playlists %}
                   <option value="{{ html_preferred_playlist.m3u_id }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_preferred_playlist.prefer_name }}</option>
                 {% endfor %}
@@ -319,6 +319,7 @@
               const selectItem = document.createElement('div');
               selectItem.className = 'grid-item';
               const select = document.createElement('select');
+              select.className = 'select2';
               select.name = `parents_parent_preferred_playlist_${adjustedIndex}`;
               select.id = `parents_parent_preferred_playlist_${adjustedIndex}`;
               select.style.width = '100%';
@@ -359,6 +360,10 @@
               titleInput.addEventListener('input', checkExistingInputs);
               select.addEventListener('change', checkExistingInputs);
           });
+
+          // Reinitialize select2 for new select elements
+          initializeSelect2();
+
       }
   
       function loadMoreRecords() {

@@ -79,7 +79,7 @@
               <hr style="border: 3px solid; width: 100%;">
             </div>
             <div class="grid-item">
-              <select name="assigned_child_to_parents_parent_channel_id_all" id="assigned_child_to_parents_parent_channel_id_all" style="width: 100%; max-width: 100%;">
+              <select class="select2" name="assigned_child_to_parents_parent_channel_id_all" id="assigned_child_to_parents_parent_channel_id_all" style="width: 100%; max-width: 100%;">
                 {% for html_child_to_parent_mapping in html_child_to_parent_mappings %}
                   <option value="{{ html_child_to_parent_mapping.parent_channel_id }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_child_to_parent_mapping.parent_title }}</option>
                 {% endfor %}
@@ -266,6 +266,7 @@
             const selectItem = document.createElement('div');
             selectItem.className = 'grid-item';
             const select = document.createElement('select');
+            select.className = 'select2';
             select.name = `assigned_child_to_parents_parent_channel_id_${adjustedIndex}`;
             select.id = `assigned_child_to_parents_parent_channel_id_${adjustedIndex}`;
             select.style.width = '100%';
@@ -312,6 +313,10 @@
 
             recordContainer.appendChild(gridContainer);
         });
+
+          // Reinitialize select2 for new select elements
+          initializeSelect2();
+
     }
 
     function loadMoreRecords() {

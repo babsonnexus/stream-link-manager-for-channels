@@ -71,13 +71,13 @@
             <h6 style="text-align: center;">Search Options</h6>
             <div class="search-defaults-container" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px;">
               <label for="country_code" style="margin-top: 8px;">Country Code:</label>
-              <select name="country_code" id="country_code" style="width: calc(10%);">
+              <select class="select2" name="country_code" id="country_code" style="width: calc(10%);">
                   {% for country_code_item in html_valid_country_codes %}
                       <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %}>{{ country_code_item }}</option>
                   {% endfor %}
               </select>
               <label for="language_code" style="margin-left: 15px; margin-top: 8px;">Language Code:</label>
-              <select name="language_code" id="language_code" style="width: calc(10%);">
+              <select class="select2" name="language_code" id="language_code" style="width: calc(10%);">
                   {% for language_code_item in html_valid_language_codes %}
                       <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %}>{{ language_code_item }}</option>
                   {% endfor %}
@@ -95,7 +95,7 @@
             <label for="release_year">Release Year:</label>
             <input type="text" id="release_year" name="release_year" placeholder="Enter year (i.e., 2024)" style="width: calc(30%);">
             <label for="program_type">Program Type:</label>
-            <select name="program_type" id="program_type"  style="width: calc(25%);">
+            <select class="select2" name="program_type" id="program_type" style="width: calc(25%);">
                 {% for program_type_item in html_program_types %}
                     <option value="{{ program_type_item }}" {% if program_type_item == html_program_type_default %}selected{% endif %} style="width: auto; min-width: 100%;">{{ program_type_item }}</option>
                 {% endfor %}
@@ -256,7 +256,7 @@
               <label for="field_release_year">Release Year:</label>
               <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected }}" placeholder="Enter year (i.e., 2024)" style="width: calc(15%);" title="{{ html_release_year_selected }}">
               <label for="field_bookmark_action">Bookmark Action:</label>
-              <select name="field_bookmark_action" id="field_bookmark_action">
+              <select class="select2" name="field_bookmark_action" id="field_bookmark_action">
                 {% for html_bookmark_action in html_bookmark_actions %}
                   <option {% if html_bookmark_action_selected == html_bookmark_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_bookmark_action }}</option>
                 {% endfor %}

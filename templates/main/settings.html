@@ -146,13 +146,13 @@
             <div class="search-defaults-container" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px;">
               <h4 id="search_defaults_anchor" style="flex-basis: 100%;">Search Defaults</h4>
               <label for="country_code" style="margin-top: 8px;">Country Code:</label>
-              <select name="country_code" id="country_code" style="width: calc(13%);">
+              <select class="select2" name="country_code" id="country_code" style="width: calc(13%);">
                 {% for country_code_item in html_valid_country_codes %}
                   <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %} style="width: auto; min-width: 100%;">{{ country_code_item }}</option>
                 {% endfor %}
               </select>
               <label for="language_code" style="margin-left: 15px; margin-top: 8px;">Language Code:</label>
-              <select name="language_code" id="language_code" style="width: calc(13%);">
+              <select class="select2" name="language_code" id="language_code" style="width: calc(13%);">
                 {% for language_code_item in html_valid_language_codes %}
                   <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %} style="width: auto; min-width: 100%;">{{ language_code_item }}</option>
                 {% endfor %}
@@ -195,14 +195,14 @@
                     <input type="text" id="slmapping_contains_string_existing_{{ loop.index }}" name="slmapping_contains_string_existing_{{ loop.index }}" value="{{ item.contains_string }}" title="{{ item.contains_string }}">
                   </div>
                   <div class="grid-item">
-                    <select name="slmapping_object_type_existing_{{ loop.index }}" id="slmapping_object_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                    <select class="select2" name="slmapping_object_type_existing_{{ loop.index }}" id="slmapping_object_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
                       {% for object_type_item in html_slmappings_object_type %}
                         <option value="{{ object_type_item }}" {% if object_type_item == object_type %}selected{% endif %} style="width: auto; min-width: 100%;">{{ object_type_item }}</option>
                       {% endfor %}
                     </select>
                   </div>
                   <div class="grid-item">
-                    <select name="slmapping_replace_type_existing_{{ loop.index }}" id="slmapping_replace_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                    <select class="select2" name="slmapping_replace_type_existing_{{ loop.index }}" id="slmapping_replace_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
                       {% for replace_type_item in html_slmappings_replace_type %}
                         <option value="{{ replace_type_item }}" {% if replace_type_item == replace_type %}selected{% endif %} style="width: auto; min-width: 100%;">{{ replace_type_item }}</option>
                       {% endfor %}
@@ -226,14 +226,14 @@
                   <input type="text" id="slmapping_contains_string_new" name="slmapping_contains_string_new">
                 </div>
                 <div class="grid-item">
-                  <select name="slmapping_object_type_new" id="slmapping_object_type_new" style="width: 100%; max-width: 100%;">
+                  <select class="select2" name="slmapping_object_type_new" id="slmapping_object_type_new" style="width: 100%; max-width: 100%;">
                     {% for object_type_item in html_slmappings_object_type %}
                       <option value="{{ object_type_item }}" style="width: auto; min-width: 100%;">{{ object_type_item }}</option>
                     {% endfor %}
                   </select>
                 </div>
                 <div class="grid-item">
-                  <select name="slmapping_replace_type_new" id="slmapping_replace_type_new" style="width: 100%; max-width: 100%;">
+                  <select class="select2" name="slmapping_replace_type_new" id="slmapping_replace_type_new" style="width: 100%; max-width: 100%;">
                     {% for replace_type_item in html_slmappings_replace_type %}
                       <option value="{{ replace_type_item }}" style="width: auto; min-width: 100%;">{{ replace_type_item }}</option>
                     {% endfor %}
@@ -295,6 +295,18 @@
               <button type="submit" name="action" value="channels_dvr_integration_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
             </div>
           </div>
+          {% if html_slm_channels_dvr_integration %}
+            <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+              <div class="form-check form-switch ps-0 is-filled">
+                <input type="checkbox" class="form-check-input ms-auto" id="channels_prune" name="channels_prune" {% if html_channels_prune == "On" %}checked{% endif %}>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_prune">Run 'Prune' function in Channels DVR</label>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                <button type="submit" name="action" value="channels_prune_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+                <button type="submit" name="action" value="channels_prune_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
+              </div>
+            </div>
+          {% endif %}
           <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
             <div class="form-check form-switch ps-0 is-filled">
               <input type="checkbox" class="form-check-input ms-auto" id="stream_link_file_manager" name="stream_link_file_manager" {% if html_slm_stream_link_file_manager %}checked{% endif %}>
@@ -323,6 +335,26 @@
               <button type="submit" name="action" value="playlist_manager_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
             </div>
           </div>
+          {% if html_slm_playlist_manager %}
+            <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+              <div class="form-check form-switch ps-0 is-filled">
+                <input type="checkbox" class="form-check-input ms-auto" id="plm_streaming_stations" name="plm_streaming_stations" {% if html_plm_streaming_stations %}checked{% endif %}>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_streaming_stations">Use PLM Streaming Stations</label>
+              </div>
+              <div>
+                <label for="plm_streaming_stations_station_start_number" style="margin-left: 15px; margin-top: 8px; margin-right: 10px;">Station Start Number:</label>
+                <input type="text" id="plm_streaming_stations_station_start_number" name="plm_streaming_stations_station_start_number" value="{{ html_plm_streaming_stations_station_start_number }}">
+              </div>
+              <div>
+                <label for="plm_streaming_stations_max_stations" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Max Stations per m3u:</label>
+                <input type="text" id="plm_streaming_stations_max_stations" name="plm_streaming_stations_max_stations" value="{{ html_plm_streaming_stations_max_stations }}">
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                <button type="submit" name="action" value="plm_streaming_stations_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+                <button type="submit" name="action" value="plm_streaming_stations_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
+              </div>
+            </div>
+          {% endif %}
           <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
             <div class="form-check form-switch ps-0 is-filled">
               <input type="checkbox" class="form-check-input ms-auto" id="media_tools_manager" name="media_tools_manager" {% if html_slm_media_tools_manager %}checked{% endif %}>
@@ -333,18 +365,6 @@
               <button type="submit" name="action" value="media_tools_manager_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
             </div>
           </div>
-          {% if html_slm_channels_dvr_integration %}
-            <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-              <div class="form-check form-switch ps-0 is-filled">
-                <input type="checkbox" class="form-check-input ms-auto" id="channels_prune" name="channels_prune" {% if html_channels_prune == "On" %}checked{% endif %}>
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_prune">Run 'Prune' function in Channels</label>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-                <button type="submit" name="action" value="channels_prune_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-                <button type="submit" name="action" value="channels_prune_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
-              </div>
-            </div>
-          {% endif %}
           <hr>
         </form>
       </div>

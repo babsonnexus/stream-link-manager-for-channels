@@ -48,11 +48,13 @@
                 </div>
                 <div style="margin-top: 10px;">
                   <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_backup_schedule_frequency">And run:</label>
-                  <select name="gen_backup_schedule_frequency" id="gen_backup_schedule_frequency" style="margin-left: 15px;">
-                    {% for html_gen_backup_frequency in html_gen_backup_frequencies %}
-                      <option value="{{ html_gen_backup_frequency }}" {% if html_gen_backup_frequency == html_gen_backup_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_gen_backup_frequency }}</option>
-                    {% endfor %}
-                  </select>
+                  <div style="margin-left: 15px;">
+                    <select class="select2" name="gen_backup_schedule_frequency" id="gen_backup_schedule_frequency">
+                      {% for html_gen_backup_frequency in html_gen_backup_frequencies %}
+                        <option value="{{ html_gen_backup_frequency }}" {% if html_gen_backup_frequency == html_gen_backup_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_gen_backup_frequency }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label for="gen_backup_max_backups" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Max Backups:</label>
@@ -80,11 +82,13 @@
                 </div>
                 <div style="margin-top: 10px;">
                   <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="gen_upgrade_schedule_frequency">And run:</label>
-                  <select name="gen_upgrade_schedule_frequency" id="gen_upgrade_schedule_frequency" style="margin-left: 15px;">
-                    {% for html_gen_upgrade_frequency in html_gen_upgrade_frequencies %}
-                      <option value="{{ html_gen_upgrade_frequency }}" {% if html_gen_upgrade_frequency == html_gen_upgrade_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_gen_upgrade_frequency }}</option>
-                    {% endfor %}
-                  </select>
+                  <div style="margin-left: 15px;">
+                    <select class="select2" name="gen_upgrade_schedule_frequency" id="gen_upgrade_schedule_frequency">
+                      {% for html_gen_upgrade_frequency in html_gen_upgrade_frequencies %}
+                        <option value="{{ html_gen_upgrade_frequency }}" {% if html_gen_upgrade_frequency == html_gen_upgrade_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_gen_upgrade_frequency }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                   <button type="submit" name="action" value="gen_upgrade_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
@@ -111,11 +115,13 @@
                   </div>
                   <div style="margin-top: 10px;">
                     <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="auto_update_schedule_frequency">And run:</label>
-                    <select name="auto_update_schedule_frequency" id="auto_update_schedule_frequency" style="margin-left: 15px;">
-                      {% for html_slm_end_to_end_frequency in html_slm_end_to_end_frequencies %}
-                        <option value="{{ html_slm_end_to_end_frequency }}" {% if html_slm_end_to_end_frequency == html_auto_update_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_slm_end_to_end_frequency }}</option>
-                      {% endfor %}
-                    </select>
+                    <div style="margin-left: 15px;">
+                      <select class="select2" name="auto_update_schedule_frequency" id="auto_update_schedule_frequency">
+                        {% for html_slm_end_to_end_frequency in html_slm_end_to_end_frequencies %}
+                          <option value="{{ html_slm_end_to_end_frequency }}" {% if html_slm_end_to_end_frequency == html_auto_update_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_slm_end_to_end_frequency }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                     <button type="submit" name="action" value="end_to_end_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
@@ -166,11 +172,13 @@
                   </div>
                   <div style="margin-top: 10px;">
                     <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="slm_new_recent_releases_frequency">And run:</label>
-                    <select name="slm_new_recent_releases_frequency" id="slm_new_recent_releases_frequency" style="margin-left: 15px;">
-                      {% for html_automation_frequency in html_automation_frequencies %}
-                        <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_slm_new_recent_releases_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
-                      {% endfor %}
-                    </select>
+                    <div style="margin-left: 15px;">
+                      <select class="select2" name="slm_new_recent_releases_frequency" id="slm_new_recent_releases_frequency">
+                        {% for html_automation_frequency in html_automation_frequencies %}
+                          <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_slm_new_recent_releases_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label for="slm_new_recent_releases_when" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Recent Hours:</label>
@@ -222,11 +230,13 @@
                   </div>
                   <div style="margin-top: 10px;">
                     <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_m3us_epgs_schedule_frequency">And run:</label>
-                    <select name="plm_update_m3us_epgs_schedule_frequency" id="plm_update_m3us_epgs_schedule_frequency" style="margin-left: 15px;">
-                      {% for html_plm_m3us_epgs_schedule_frequency in html_plm_m3us_epgs_schedule_frequencies %}
-                        <option value="{{ html_plm_m3us_epgs_schedule_frequency }}" {% if html_plm_m3us_epgs_schedule_frequency == html_plm_update_m3us_epgs_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_plm_m3us_epgs_schedule_frequency }}</option>
-                      {% endfor %}
-                    </select>
+                    <div style="margin-left: 15px;">
+                      <select class="select2" name="plm_update_m3us_epgs_schedule_frequency" id="plm_update_m3us_epgs_schedule_frequency">
+                        {% for html_plm_m3us_epgs_schedule_frequency in html_plm_m3us_epgs_schedule_frequencies %}
+                          <option value="{{ html_plm_m3us_epgs_schedule_frequency }}" {% if html_plm_m3us_epgs_schedule_frequency == html_plm_update_m3us_epgs_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_plm_m3us_epgs_schedule_frequency }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                     <button type="submit" name="action" value="plm_update_m3us_epgs_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
@@ -254,11 +264,13 @@
                   </div>
                   <div style="margin-top: 10px;">
                     <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="reset_channels_passes_frequency">And run:</label>
-                    <select name="reset_channels_passes_frequency" id="reset_channels_passes_frequency" style="margin-left: 15px;">
-                      {% for html_automation_frequency in html_automation_frequencies %}
-                        <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_reset_channels_passes_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
-                      {% endfor %}
-                    </select>
+                    <div style="margin-left: 15px;">
+                      <select class="select2" name="reset_channels_passes_frequency" id="reset_channels_passes_frequency">
+                        {% for html_automation_frequency in html_automation_frequencies %}
+                          <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_reset_channels_passes_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                     <button type="submit" name="action" value="reset_channels_passes_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
@@ -282,11 +294,13 @@
                   </div>
                   <div style="margin-top: 10px;">
                     <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="refresh_channels_m3u_playlists_frequency">And run:</label>
-                    <select name="refresh_channels_m3u_playlists_frequency" id="refresh_channels_m3u_playlists_frequency" style="margin-left: 15px;">
-                      {% for html_automation_frequency in html_automation_frequencies %}
-                        <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_refresh_channels_m3u_playlists_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
-                      {% endfor %}
-                    </select>
+                    <div style="margin-left: 15px;">
+                      <select class="select2" name="refresh_channels_m3u_playlists_frequency" id="refresh_channels_m3u_playlists_frequency">
+                        {% for html_automation_frequency in html_automation_frequencies %}
+                          <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_refresh_channels_m3u_playlists_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                     <button type="submit" name="action" value="refresh_channels_m3u_playlists_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
