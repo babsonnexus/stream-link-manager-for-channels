@@ -24,7 +24,7 @@ from jinja2 import TemplateNotFound
 import yt_dlp as youtube_dl
 
 # Top Controls
-slm_version = "v2025.01.04.1653" # v2025.01.15.1139 (PRERELEASE)
+slm_version = "v2025.01.04.1653" # v2025.01.15.1425 (PRERELEASE)
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -3703,6 +3703,7 @@ def streams_youtube():
 
 # Gets the manifest needed for the YouTube stream
 def get_youtube_m3u8_manifest(youtube_url):
+    print(f"{current_time()} INFO: Starting to retrieve manifest for {youtube_url}.")
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
@@ -3711,21 +3712,35 @@ def get_youtube_m3u8_manifest(youtube_url):
         'retries': 10,  # Retry up to 10 times in case of failure
         'fragment_retries': 10,  # Retry up to 10 times for each fragment
     }
-
+    
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         try:
+            print(f"{current_time()} INFO: Extracting info from {youtube_url}.")
             info_dict = ydl.extract_info(youtube_url, download=False)
-            formats = info_dict.get('formats', None)
-            if formats:
-                best_format = None
-                for f in formats:
-                    if 'm3u8' in f.get('protocol', '') and f.get('acodec') != 'none' and f.get('vcodec') != 'none':
-                        if not best_format or f.get('tbr', 0) > best_format.get('tbr', 0):
-                            best_format = f
-                if best_format:
-                    return best_format.get('url')
+            if info_dict:
+                print(f"{current_time()} INFO: Extraction successful for {youtube_url}. Info dictionary: {info_dict}")
+                formats = info_dict.get('formats', None)
+                if formats:
+                    print(f"{current_time()} INFO: Found {len(formats)} formats.")
+                    best_format = None
+                    for f in formats:
+                        print(f"{current_time()} DEBUG: Checking format: {f}")
+                        if 'm3u8' in f.get('protocol', '') and f.get('acodec') != 'none' and f.get('vcodec') != 'none':
+                            if not best_format or f.get('tbr', 0) > best_format.get('tbr', 0):
+                                best_format = f
+                                print(f"{current_time()} INFO: New best format found: {best_format}")
+                    if best_format:
+                        print(f"{current_time()} INFO: Best format URL: {best_format.get('url')}")
+                        return best_format.get('url')
+                    else:
+                        print(f"{current_time()} WARNING: No suitable m3u8 format found.")
+                else:
+                    print(f"{current_time()} WARNING: No formats found in info dictionary.")
+            else:
+                print(f"{current_time()} ERROR: Failed to extract info for {youtube_url}. Info dictionary is empty.")
         except Exception as e:
             print(f"{current_time()} ERROR: While attempting to retrieve {youtube_url}, received {e}.")
+    print(f"{current_time()} ERROR: Manifest retrieval failed for {youtube_url}.")
     return None
 
 # Creates the m3u(s) for Streaming Stations
