@@ -24,7 +24,7 @@ from jinja2 import TemplateNotFound
 import yt_dlp as youtube_dl
 
 # Top Controls
-slm_version = "v2025.01.04.1653" # v2025.01.15.1612 (PRERELEASE)
+slm_version = "v2025.01.04.1653" # v2025.01.15.1741 (PRERELEASE)
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -3708,7 +3708,7 @@ def get_youtube_m3u8_manifest(youtube_url):
         'quiet': True,
         'no_warnings': True,
         'format': 'all',
-        'hls_prefer_native': True,
+        #'hls_prefer_native': True,
         'retries': 10,  # Retry up to 10 times in case of failure
         'fragment_retries': 10,  # Retry up to 10 times for each fragment
     }
