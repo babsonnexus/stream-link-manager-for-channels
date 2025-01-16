@@ -24,9 +24,11 @@ from jinja2 import TemplateNotFound
 import yt_dlp as youtube_dl
 
 # Top Controls
-slm_version = "v2025.01.04.1653" # v2025.01.15.1902 (PRERELEASE)
+slm_version = "v2025.01.16.1503"
+# slm_version = "v2025.01.16.1503 (PRERELEASE)"
 
 slm_port = os.environ.get("SLM_PORT")
+# slm_port = None
 if slm_port is None:
     slm_port = 5000
 else:
@@ -3460,7 +3462,7 @@ def webpage_playlists_streams():
     streaming_station_options = [
         "Custom (HLS)",
         "Custom (MPEG-TS)",
-        "YouTube (HLS)"
+        "YouTube Live (HLS)"
     ]
 
     test_url = ''
@@ -3480,8 +3482,8 @@ def webpage_playlists_streams():
                 if streaming_stations_source_test_input.startswith('Custom'):
                     test_url = streaming_stations_url_test_input
 
-                elif streaming_stations_source_test_input.startswith('YouTube'):
-                    test_url = f"{request.url_root}playlists/streams/youtube?url={streaming_stations_url_test_input}"
+                elif streaming_stations_source_test_input.startswith('YouTube Live'):
+                    test_url = f"{request.url_root}playlists/streams/youtubelive?url={streaming_stations_url_test_input}"
 
         elif action.endswith('new') or action.endswith('save') or 'delete' in action:
 
@@ -3688,36 +3690,39 @@ def webpage_playlists_streams():
         html_test_url = test_url
     )
 
-# Creates an m3u8 for an individual YouTube stream
-@app.route('/playlists/streams/youtube', methods=['GET'])
-def streams_youtube():
-    youtube_url = request.args.get('url', type=str)
-    if not youtube_url:
-        return "YouTube URL is required"
-    m3u8_url = get_youtube_m3u8_manifest(youtube_url)
+# Creates an m3u8 for an individual YouTube Live stream
+@app.route('/playlists/streams/youtubelive', methods=['GET'])
+def streams_youtubelive():
+    youtubelive_url = request.args.get('url', type=str)
+    if not youtubelive_url:
+        return "YouTube Live URL is required"
+    
+    m3u8_url = get_youtubelive_m3u8_manifest(youtubelive_url)
+    
     if m3u8_url:
+        # Extract the identifier from the URL
+        video_id_match = re.search(r'v=([a-zA-Z0-9_-]+)', youtubelive_url)
+        channel_name_match = re.search(r'@([^/]+)/live', youtubelive_url)
+        
+        if video_id_match:
+            filename = f"{video_id_match.group(1)}.m3u8"
+        elif channel_name_match:
+            filename = f"{channel_name_match.group(1)}.m3u8"
+        else:
+            filename = "youtubelive.m3u8"  # Fallback in case no match is found
+        
         playlist = f"#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1280000\n{m3u8_url}\n"
-        return Response(playlist, content_type='application/vnd.apple.mpegurl')
+        
+        # Return the Response with the filename
+        response = Response(playlist, content_type='application/vnd.apple.mpegurl')
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
     else:
         return "Failed to retrieve m3u8 manifest URL"
 
-# Custom logger to write yt-dlp output to your log file
-class YTDLLogger:
-    def debug(self, msg):
-        log.write(msg + "\n")
-
-    def info(self, msg):
-        log.write(msg + "\n")
-
-    def warning(self, msg):
-        log.write("[WARNING] " + msg + "\n")
-
-    def error(self, msg):
-        log.write("[ERROR] " + msg + "\n")
-
-# Gets the manifest needed for the YouTube stream
-def get_youtube_m3u8_manifest(youtube_url):
-    print(f"{current_time()} INFO: Starting to retrieve manifest for {youtube_url}.")
+# Gets the manifest needed for the YouTube Live stream
+def get_youtubelive_m3u8_manifest(youtubelive_url):
+    print(f"{current_time()} INFO: Starting to retrieve manifest for {youtubelive_url}.")
     ydl_opts = {
         'verbose': True,                                    # Get verbose output
         'no_warnings': False,                               # Show warnings
@@ -3734,10 +3739,10 @@ def get_youtube_m3u8_manifest(youtube_url):
     
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         try:
-            print(f"{current_time()} INFO: Extracting info from {youtube_url}...")
-            info_dict = ydl.extract_info(youtube_url, download=False)
+            print(f"{current_time()} INFO: Extracting info from {youtubelive_url}...")
+            info_dict = ydl.extract_info(youtubelive_url, download=False)
             if info_dict:
-                print(f"{current_time()} INFO: Extraction successful for {youtube_url}.")
+                print(f"{current_time()} INFO: Extraction successful for {youtubelive_url}.")
                 formats = info_dict.get('formats', None)
                 if formats:
                     print(f"{current_time()} INFO: Found {len(formats)} formats.")
@@ -3754,10 +3759,10 @@ def get_youtube_m3u8_manifest(youtube_url):
                 else:
                     print(f"{current_time()} WARNING: No formats found in info dictionary.")
             else:
-                print(f"{current_time()} ERROR: Failed to extract info for {youtube_url}. Info dictionary is empty.")
+                print(f"{current_time()} ERROR: Failed to extract info for {youtubelive_url}. Info dictionary is empty.")
         except Exception as e:
-            print(f"{current_time()} ERROR: While attempting to retrieve {youtube_url}, received {e}.")
-    print(f"{current_time()} ERROR: Manifest retrieval failed for {youtube_url}.")
+            print(f"{current_time()} ERROR: While attempting to retrieve {youtubelive_url}, received {e}.")
+    print(f"{current_time()} ERROR: Manifest retrieval failed for {youtubelive_url}.")
     return None
 
 # Creates the m3u(s) for Streaming Stations
@@ -3813,8 +3818,8 @@ def make_streaming_stations_m3us():
         tvc_guide_placeholders = streaming_station['tvc_guide_placeholders']
         tvc_stream_vcodec = streaming_station['tvc_stream_vcodec']
         tvc_stream_acodec = streaming_station['tvc_stream_acodec']
-        if 'YouTube' in streaming_station['source']:
-            url = f"{request.url_root}playlists/streams/youtube?url={streaming_station['url']}"
+        if 'YouTube Live' in streaming_station['source']:
+            url = f"{request.url_root}playlists/streams/youtubelive?url={streaming_station['url']}"
         else:
             url = streaming_station['url']
         if 'HLS' in streaming_station['source']:
@@ -9573,6 +9578,21 @@ if os.path.exists(program_files_dir):
     create_backup()
 
 # Set up session logging
+### Custom logger to write yt-dlp output to your log file
+class YTDLLogger:
+    def debug(self, msg):
+        log.write(msg + "\n")
+
+    def info(self, msg):
+        log.write(msg + "\n")
+
+    def warning(self, msg):
+        log.write("[WARNING] " + msg + "\n")
+
+    def error(self, msg):
+        log.write("[ERROR] " + msg + "\n")
+
+### Log Setup
 log_filename_fullpath = full_path(log_filename)
 open(log_filename_fullpath, 'w', encoding="utf-8").close()
 
