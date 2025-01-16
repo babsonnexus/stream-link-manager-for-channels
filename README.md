@@ -960,6 +960,64 @@ This works with both scrolling downward to get more or all available stations, o
 
 34. With these in place and set, the process will take care of itself and you should be good to go!
 
+### Streaming Stations
+
+Not all potential stations are available in m3u form. For instance, there are live streams on some websites or in video providers like YouTube. In order to integrate these is the **Streaming Stations** add-on for **Playlist Manager**.
+
+Out of the box, you do not even need to have PLM turned on to take advantage of these features. With just a base installation of **Streaming Library Manager**, you can input the following:
+
+* **YouTube Live:** Enter the link `http://[SLM_SERVER]:[SLM_PORT]/playlists/streams/youtubelive?url=[YOUTUBE_URL]`, filling in the fields between brackets and removing the brackets. For instance, to get an individual stream, you would use something like `http://localhost:5000/playlists/streams/youtubelive?url=https://www.youtube.com/watch?v=R7vrbiDi0Tc`. Additionally, you can get the most recently posted active live stream of a channel by using its `@` username and `/live`, i.e., `http://localhost:5000/playlists/streams/youtubelive?url=https://www.youtube.com/@KittenAcademy/live'`.
+
+* _More to come..._
+
+Now, you can take these links and put them into your own m3u files. Some users who have been utilizing similar methods that are no longer available can easily switch the links they have been using to ones hosted locally and provided by **Streaming Library Manager** without doing anything else. The stream is only active when you call it to watch and automatically closes out when you do. As such, there are no concerns about the stream having a timeout or expiring at some point, nor do you need to kill or keep track of activities. That said, there are even more capabilities inherent in this program!
+
+In `Settings` under `Extensions, Advanced, and Experimental`, if you already have `Use Playlist Manager` initiated, you will find a new selection for `Use PLM Streaming Stations`. 
+
+![image](https://github.com/user-attachments/assets/441b5b44-3738-44a4-aca2-e71a67bcc230)
+
+If you do not see this, you need to check `Use Playlist Manager` and save that first. Once this is done and you have activated `Use PLM Streaming Stations`, you will find a new option in the navigation menu called `Streaming Stations`.
+
+![image](https://github.com/user-attachments/assets/e4267171-e2d1-4c52-81a8-e330139a3da1)
+
+Clicking this will reveal the `Streaming Stations` management area:
+
+![image](https://github.com/user-attachments/assets/8bb74996-4151-416d-beab-e5c02c7f682f)
+
+In the first row, you can select a `Source`, put a `URL`, and click the `Test` button, which will do the same function as going to the direct links above.
+
+![image](https://github.com/user-attachments/assets/d1da4776-2dc7-441b-8ceb-37b7ac9242f7)
+
+![image](https://github.com/user-attachments/assets/e37059ca-7e62-4ca4-af67-7495bf8842d8)
+
+![image](https://github.com/user-attachments/assets/fad552d7-3bff-4ee1-a5d4-909625df09cc)
+
+Doing so will give you the option to open the streaming m3u8 in the tool of your choice, thus confirming the availability and correctness of the original `URL`.
+
+![image](https://github.com/user-attachments/assets/9a85673e-f6d7-4e9c-9f40-e7dc9f352f4c)
+
+![image](https://github.com/user-attachments/assets/22e67d87-86ab-419f-8e95-f770b846b3f5)
+
+With this confirmation, you can then `Add` these details as stations of your own. You could even use the `Custom` selections if you know an m3u8.
+
+![image](https://github.com/user-attachments/assets/bccbe95a-8ba8-4b1b-baaf-18c8e2eaa67a)
+
+Information on the purposes and allowed inputs of all the fields is available as a pop-up box by hovering over the header:
+
+![image](https://github.com/user-attachments/assets/17bd3324-d6e3-46e2-b57f-0fbb378026c2)
+
+Every time you `Add`, `Delete`, or `Save` changes, a set of m3u files is created or updated. These can be seen in **Playlist Manager**'s `Manage Playlists` area under `Uploaded and Generated Playlists, Guides, and Related Files`.
+
+![image](https://github.com/user-attachments/assets/b6c501c9-3ca2-4dc2-969f-52cfebb5b93b)
+
+There will be separate ones for `HLS` and `MPEG-TS` stations. Additionally, back in the `Settings`, you can set the number of stations allowed per file (along with a starting station number), with the default being 750 for the same reasons as discussed above. Note that these all contain `plmss` in the name and cannot be manually deleted. At this point, you could then take these links and integrate them directly into your final watching tool (i.e., Channels DVR). In other words, there would be no need for you to manually maintain your own m3u file.
+
+![image](https://github.com/user-attachments/assets/533432d9-95b0-4f0d-b2eb-04549b33ca4e)
+
+![image](https://github.com/user-attachments/assets/1ab88e9a-4408-4b9c-9480-210b0e456413)
+
+However, you could also take it to the next logical step by adding it as a source Playlist right above this value. Therefore, you could take advantage of all of PLM's regular functions, including incorporating guide data. In the end, no matter which method you prefer, there is a simple way to integrate your web-based streaming stations that otherwise cannot be!
+
 ## Media Tools Manager
 
 ### Installation and Setup
