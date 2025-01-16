@@ -24,7 +24,7 @@ from jinja2 import TemplateNotFound
 import yt_dlp as youtube_dl
 
 # Top Controls
-slm_version = "v2025.01.04.1653" # v2025.01.15.1848 (PRERELEASE)
+slm_version = "v2025.01.04.1653" # v2025.01.15.1902 (PRERELEASE)
 
 slm_port = os.environ.get("SLM_PORT")
 if slm_port is None:
@@ -3725,7 +3725,11 @@ def get_youtube_m3u8_manifest(youtube_url):
         'retries': 10,                                      # Retry up to 10 times in case of failure
         'fragment_retries': 10,                             # Retry up to 10 times for each fragment
         'logger': YTDLLogger(),                             # Pass the custom logger
-        'extractor-args': 'youtube:player_client=web',      # Force player API
+        'extractor_args': {                                 # Set extractor args correctly
+            'youtube': {
+                'player_client': ['web']                    # Force player API client to web
+            }
+        }
     }
     
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
