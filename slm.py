@@ -24,8 +24,8 @@ from jinja2 import TemplateNotFound
 import yt_dlp as youtube_dl
 
 # Top Controls
-slm_version = "v2025.01.16.1503"
-# slm_version = "v2025.01.16.1503 (PRERELEASE)"
+slm_version = "v2025.01.16.1518"
+# slm_version = "v2025.01.16.1518 (PRERELEASE)"
 
 slm_port = os.environ.get("SLM_PORT")
 # slm_port = None
@@ -7549,6 +7549,10 @@ def webpage_files():
         {'file_name': 'All Stations', 'file': csv_playlistmanager_combined_m3us }
     ]
 
+    plm_streaming_stations_file_lists = [
+        {'file_name': 'Streaming Stations', 'file': csv_playlistmanager_streaming_stations }
+    ]
+
     if slm_stream_link_file_manager:
         for stream_link_file_manager_file_list in stream_link_file_manager_file_lists:
             file_lists.append({'file_name': stream_link_file_manager_file_list['file_name'], 'file': stream_link_file_manager_file_list['file']})
@@ -7556,6 +7560,10 @@ def webpage_files():
     if slm_playlist_manager:
         for plm_file_list in plm_file_lists:
             file_lists.append({'file_name': plm_file_list['file_name'], 'file': plm_file_list['file']})
+
+    if plm_streaming_stations:
+        for plm_streaming_stations_file_list in plm_streaming_stations_file_lists:
+            file_lists.append({'file_name': plm_streaming_stations_file_list['file_name'], 'file': plm_streaming_stations_file_list['file']})
 
     if request.method == 'POST':
         action = request.form['action']
