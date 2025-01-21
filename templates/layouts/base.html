@@ -66,24 +66,21 @@
   <!-- Specific Page JS goes HERE  -->
   {% block javascripts %}{% endblock javascripts %}
 
-    <script>
-      var win = navigator.platform.indexOf('Win') > -1;
-      if (win && document.querySelector('#sidenav-scrollbar')) {
-        var options = {
-          damping: '0.5'
-        }
-        Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
+  <script>
+    var win = navigator.platform.indexOf('Win') > -1;
+    if (win && document.querySelector('#sidenav-scrollbar')) {
+      var options = {
+        damping: '0.5'
       }
-    </script>
-      
-    <!-- Github buttons -->
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
+      Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
+    }
+  </script>
+    
+  <!-- Github buttons -->
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
 
-    <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
-    <script src="/static/assets/js/material-dashboard.min.js?v=3.0.0"></script>
-
-    <!-- Include jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
+  <script src="/static/assets/js/material-dashboard.min.js?v=3.0.0"></script>
 
     <!-- Include Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -107,7 +104,7 @@
           }
         }, 100); // Adjust the delay as needed
       });
-    </script>    
-
+    </script>
+    
 </body> 
 </html>
