@@ -24,8 +24,8 @@ from jinja2 import TemplateNotFound
 import yt_dlp as youtube_dl
 
 # Top Controls
-slm_version = "v2025.01.16.1518"
-# slm_version = "v2025.01.16.1518 (PRERELEASE)"
+slm_version = "v2025.01.21.1307"
+# slm_version = "v2025.01.21.1307 (PRERELEASE)"
 
 slm_port = os.environ.get("SLM_PORT")
 # slm_port = None
@@ -502,7 +502,6 @@ def webpage_add_programs():
         html_done_generate_flag = done_generate_flag,
         html_date_new_default = date_new_default_prior,
         html_program_add_prior = program_add_prior,
-        #html_num_results_test = num_results_test,
         html_special_actions = special_actions,
         html_program_add_resort_panel = program_add_resort_panel,
         html_program_add_filter_panel = program_add_filter_panel,
@@ -3382,8 +3381,11 @@ def get_epgs_for_m3us():
                     response = fetch_url(playlist['epg_xml'], 5, 10)
             
                     if response:
+                        # Get the final URL after redirection
+                        final_url = response.url
+
                         # Handle .gz files
-                        if playlist['epg_xml'].endswith('.gz'):
+                        if final_url.endswith('.gz'):
                             gz = gzip.GzipFile(fileobj=io.BytesIO(response.content))
                             response_text = gz.read().decode('utf-8')
                         else:
@@ -3702,10 +3704,13 @@ def streams_youtubelive():
     if m3u8_url:
         # Extract the identifier from the URL
         video_id_match = re.search(r'v=([a-zA-Z0-9_-]+)', youtubelive_url)
+        short_video_id_match = re.search(r'.be/([a-zA-Z0-9_-]+)', youtubelive_url)
         channel_name_match = re.search(r'@([^/]+)/live', youtubelive_url)
         
         if video_id_match:
             filename = f"{video_id_match.group(1)}.m3u8"
+        elif short_video_id_match:
+            filename = f"{short_video_id_match.group(1)}.m3u8"
         elif channel_name_match:
             filename = f"{channel_name_match.group(1)}.m3u8"
         else:
@@ -3903,11 +3908,15 @@ def webpage_reports_queries():
                     slm_query_name = "Not on JustWatch (Must run 'Stream Links: New & Recent Releases' first)"
 
             elif action in [
-                                "query_plm_children"
+                                "query_plm_children",
+                                "query_mtm_stations_by_channels_collection"
                            ]:
                 
                 if action == "query_plm_children":
-                    slm_query_name = "Stations: streaming_stations and Children"
+                    slm_query_name = "Stations: Parents and Children"
+
+                elif action == "query_mtm_stations_by_channels_collection":
+                    slm_query_name = "Stations by Channels Collection"
 
             slm_query = view_csv(slm_query_raw, "library", None)
 
@@ -3928,6 +3937,7 @@ def webpage_reports_queries():
 # Run a SQL-like Query
 def run_query(query_name):
     run_query = None
+    results = []
 
     bookmarks_data = read_data(csv_bookmarks)
     bookmarks_status_data = read_data(csv_bookmarks_status)
@@ -3957,7 +3967,7 @@ def run_query(query_name):
                      ]:
 
         if bookmarks.empty or bookmarks_status.empty:
-            results = []
+            pass
 
         else:
 
@@ -4096,11 +4106,120 @@ def run_query(query_name):
                     "Child Station"
                 """
 
+    elif query_name in [
+                            'query_mtm_stations_by_channels_collection'
+                       ]:
+
+        # Get list of all Channels DVR Stations
+        all_stations_data = get_channels_dvr_json('all_stations')
+
+        # Get list of Stations by Collection
+        channel_collections_data = get_channels_dvr_json('channel_collections')
+
+        # If have both, then set query and run_query to True
+        if all_stations_data and channel_collections_data:
+            run_query = True
+
+            all_stations = pd.DataFrame(all_stations_data)
+            channel_collections = pd.DataFrame(channel_collections_data)
+
+            query = """
+            SELECT
+                all_stations."Station Number",
+                all_stations."Station Name",
+                all_stations."Station ID",
+                all_stations."Source Name",
+                COALESCE(channel_collections."Channel Collection Name", 'No Channel Collection Found') AS "Channel Collection Name"
+            FROM
+                all_stations
+            LEFT JOIN
+                channel_collections
+            ON
+                all_stations."Station ID" = channel_collections."Station ID"
+            ORDER BY
+                all_stations."Station Name"
+            """
+
     # Execute the query
     if run_query:
         results = psql.sqldf(query, locals()).to_dict(orient='records')
 
+        if query_name == 'query_mtm_stations_by_channels_collection':
+            results = sorted(results, key=lambda x: (sort_key(x["Station Name"].casefold()), sort_key(x["Channel Collection Name"].casefold())))
+
     return results
+
+# Gets JSON data from Channels DVR
+def get_channels_dvr_json(selection):
+    settings = read_data(csv_settings)
+    channels_url = settings[0]["settings"]
+    route = None
+    url = None
+    results_base = None
+    results_base_json = None
+    results_library = []
+
+    if selection == 'all_stations':
+        route = '/api/v1/channels'
+    elif selection == 'channel_collections':
+        route = '/dvr/collections/channels'
+
+    if route:
+        url = f"{channels_url}{route}"
+
+    if url:
+
+        channels_url_okay = check_channels_url(None)
+
+        if channels_url_okay:
+            try:
+                results_base = requests.get(url, headers=url_headers)
+            except requests.RequestException as e:
+                print(f"{current_time()} ERROR: While performing {selection}, received {e}.")
+
+            if results_base:
+                results_base_json = results_base.json()
+
+                if selection == 'all_stations':
+                    for result in results_base_json:
+                        id = result.get("id", '')
+                        name = result.get("name", '')
+                        number = result.get("number", '')
+                        logo_url = result.get("logo_url", '')
+                        hd = result.get("hd", '')
+                        favorited = result.get("favorited", '')
+                        source_name = result.get("source_name", '')
+                        source_id = result.get("source_id", '')
+                        station_id = result.get("station_id", '')
+                    
+                        results_library.append({
+                            "Station ID": id,
+                            "Station Name": name,
+                            "Station Number": number,
+                            "Station Logo": logo_url,
+                            "Is HD?": hd,
+                            "Is Favorite?": favorited,
+                            "Source Name": source_name,
+                            "Source ID": source_id,
+                            "Station Channels ID": station_id
+                        })
+
+                    results_library = sorted(results_library, key=lambda x: sort_key(x["Station Name"].casefold()))
+
+                elif selection == 'channel_collections':
+                    for result in results_base_json:
+                        name = result.get("name", '')
+                        items = result.get("items", [])
+
+                        for item in items:
+                            results_library.append({
+                                "Station ID": item,
+                                "Channel Collection Name": name
+                                })
+                        
+                    results_library = sorted(results_library, key=lambda x: (sort_key(x["Station ID"].casefold()), sort_key(x["Channel Collection Name"].casefold())))                       
+
+    return results_library
 
 # Webpage - Tools - Gracenote Search
 @app.route('/tools_gracenotesearch', methods=['GET', 'POST'])
