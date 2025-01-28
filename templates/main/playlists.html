@@ -101,6 +101,17 @@
         <table style="margin-left: 25px; margin-top: 10px; margin-bottom: 10px;">
           {% for html_playlist_file in html_playlist_files %}
             <tr>
+              <td  style="padding-right: 15px;">
+                {% if '.xml' in html_playlist_file.playlist_filename %}
+                  <button type="submit" name="action" value="playlist_file_add_to_xml_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>XML for Playlist</button>
+                {% elif '.m3u' in html_playlist_file.playlist_filename %}
+                  {% if html_slm_channels_dvr_integration %}
+                    <button type="submit" name="action" value="playlist_file_add_to_channels_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2">Add to Channels DVR</button>
+                  {% else %}
+                    <button type="submit" name="action" value="playlist_file_add_to_m3u_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>m3u for Playlist</button>
+                  {% endif %}
+                {% endif %}
+              </td>
               <td style="padding-right: 15px; text-align: right;"><b>{{ html_playlist_file.playlist_label }}</b></td>
               <td><a href="{{ url_for('download_m3u_epg', filename=html_playlist_file.playlist_filename) }}">{{ request.url_root }}playlists/files/{{ html_playlist_file.playlist_filename }}</a></td>
             </tr>

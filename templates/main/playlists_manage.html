@@ -13,7 +13,7 @@
 
   .uploaded_playlists .grid-container {
     display: grid;
-      grid-template-columns: 10fr 1fr;
+      grid-template-columns: 3.5fr 5.5fr 2fr;
       gap: 10px;
   }
 
@@ -291,6 +291,7 @@
         {% if html_uploaded_playlist_files %}
           <div class="uploaded_playlists container-fluid">
             <div class="grid-container" style="text-align: center;">
+              <div class="grid-item"><h6>File Type</h6></div>
               <div class="grid-item"><h6>File Link</h6></div>
               <div class="grid-item"><h6>Action</h6></div>
             </div>
@@ -298,10 +299,21 @@
           {% for html_uploaded_playlist_file in html_uploaded_playlist_files %}
             <div class="grid-container" style="text-align: center;">
               <div class="grid-item">
-                <input type="text" id="uploaded_playlists_file_{{ loop.index }}" name="uploaded_playlists_file_{{ loop.index }}" value="{{ request.url_root }}playlists/uploads/{{ html_uploaded_playlist_file }}" readonly style="background-color: #d1cdcde5;" title="{{ request.url_root }}playlists/uploads/{{ html_uploaded_playlist_file }}">
+                <input type="text" id="uploaded_playlists_type_{{ loop.index }}" name="uploaded_playlists_type_{{ loop.index }}" value="{{ html_uploaded_playlist_file.file_type }}" readonly style="background-color: #d1cdcde5;" title="{{ html_uploaded_playlist_file.file_type }}">
               </div>
               <div class="grid-item">
-                <button type="submit" name="action" value="uploaded_playlists_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2" {% if 'plmss' in html_uploaded_playlist_file %}disabled{% endif %}>Delete</button>
+                <input type="text" id="uploaded_playlists_file_{{ loop.index }}" name="uploaded_playlists_file_{{ loop.index }}" value="{{ request.url_root }}playlists/uploads/{{ html_uploaded_playlist_file.file_link }}" readonly style="background-color: #d1cdcde5;" title="{{ request.url_root }}playlists/uploads/{{ html_uploaded_playlist_file.file_link }}">
+              </div>
+              <div class="grid-item">
+                {% if 'plmss' in html_uploaded_playlist_file.file_link %}
+                  {% if html_slm_channels_dvr_integration %}
+                    <button type="submit" name="action" value="generated_playlists_action_add_to_channels_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Add to Channels DVR</button>
+                  {% else %}
+                    <button type="submit" name="action" value="generated_playlists_action_add_to_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2" disabled>Generated Playlist</button>
+                  {% endif %}
+                {% else %}
+                  <button type="submit" name="action" value="uploaded_playlists_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
+                {% endif %}
               </div>
             </div>
           {% endfor %}
