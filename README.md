@@ -925,40 +925,68 @@ This works with both scrolling downward to get more or all available stations, o
 
 ![ecb35db14a4e60ba4eca7d72d322b2d1147cb004](https://github.com/user-attachments/assets/0f8a4331-3243-4b56-9707-0c9916a452e1)
 
-25. "Gracenote" m3u files do not have XML EPG data because the guide information comes from the loaded Gracenote ID. On the other hand, all the "Non-Gracenote" m3u(s) do require their own corresponding XML EPG. Either way, each is split between "HLS" and "MPEG-TS" options since those are interpreted by Channels DVR differently. Also, depending on circumstances described below, you may end up with multiple of these lists.
+25. "Gracenote" m3u files do not have XML EPG data because the guide information comes from the loaded Gracenote ID. On the other hand, all the "Non-Gracenote" m3u(s) do require their own corresponding XML EPG. Either way, each is split between "HLS", "MPEG-TS", and "STRMLNK" options since those are interpreted by Channels DVR differently. Also, depending on circumstances described below, you may end up with multiple of these lists.
 
 ![7d29a9e78fb4a76389438800549f02a6ff5f67ea](https://github.com/user-attachments/assets/0b122137-be06-4262-b106-07a132a9103d)
 
-26. At this point, you have everything you need and can continue using PLM as a regular function. However, there are several settings and automated routines to consider before proceeding.
+26. From this point, you could directly load these playlists into Channels DVR with a click of a single button.
+
+![image](https://github.com/user-attachments/assets/2f6657a3-df78-43e4-8540-35c14df8256b)
+
+This is true for all **Playlist Manager** final result playlists and guide data:
+
+![image](https://github.com/user-attachments/assets/f6628d3d-0b1e-4009-a50c-5d6f5ae51c0f)
+
+Clicking on any of these active buttons will result in completely filled in 'Custom Channels' being added to Channels DVR.
+
+![Image](https://github.com/user-attachments/assets/ebdb1527-b58d-419d-a38b-4734384cb205)
+
+For Gracenote or ones without guide data, they may look something like this:
+
+![Image](https://github.com/user-attachments/assets/a776b20d-6b2d-4790-aa72-06627be28eee)
+
+If the playlist is associated with guide data, that will be set, too, and be made to refresh hourly:
+
+![Image](https://github.com/user-attachments/assets/98c58f43-9d89-4cfe-9aa8-373eecbf03aa)
+
+Being that these are normal 'Custom Stations', you are free to update them from there. Accidentally clicking the button again will not result in two sources, but the same source being reset to default. HLS, MPEG-TS, and STRMLNK all function exactly the same.
+
+For Non-Channels DVR users, they will just see disabled buttons:
+
+![Image](https://github.com/user-attachments/assets/a65a81b2-d3ea-4953-abd6-fe40dc533e90)
+
+For now, this is a Channels DVR only function, but the code is built to allow the same function for other tools in the future.
+
+27. At this point, you have everything you need and can continue using PLM as a regular function. However, there are several settings and automated routines to consider before proceeding.
 
 ### Settings and Automation
-27. Back in the ```Settings``` area under ```Extensions, Advanced, and Experimental```, at the spot where you turned on PLM, there are two additional inputs. One is the station number you would like to start at, with a default of ```10000```. Each new Parent that is added will increase this value by one.
+28. Back in the ```Settings``` area under ```Extensions, Advanced, and Experimental```, at the spot where you turned on PLM, there are two additional inputs. One is the station number you would like to start at, with a default of ```10000```. Each new Parent that is added will increase this value by one.
 
 ![bc46bb2060f475b904d04176ab173352bb2dcd95](https://github.com/user-attachments/assets/7ced31ed-9352-49a7-8925-ebaf83266727)
 
-28. The other choice is the ```Max Stations per m3u```, with a default of ```750```. This is the number of stations that will be in an m3u file before it splits into a new file, 750 being the maximum Channels DVR allows at the time of this writing. This can be set to any positive integer. It should be noted the XML EPG data is split by the same stations in the end-result m3u(s).
+29. The other choice is the ```Max Stations per m3u```, with a default of ```750```. This is the number of stations that will be in an m3u file before it splits into a new file, 750 being the maximum Channels DVR allows at the time of this writing. This can be set to any positive integer. It should be noted the XML EPG data is split by the same stations in the end-result m3u(s).
 
-29. Further, under ```Automation``` in MTM (see details below) are two more things for you to set. The first is the equivalent of the ```Update Station List``` button. Turning this on will run a process once per day at the time you set to update the station list, thus giving you an automated way to handle changes and get new selections in the ```Unassigned Stations``` section.
+30. Further, under ```Automation``` in MTM (see details below) are two more things for you to set. The first is the equivalent of the ```Update Station List``` button. Turning this on will run a process once per day at the time you set to update the station list, thus giving you an automated way to handle changes and get new selections in the ```Unassigned Stations``` section.
 
 ![936126de4bb11635dc6f575b548c8f63f93c8ca1](https://github.com/user-attachments/assets/2f9ac1d2-8991-40bb-811d-556fc9c02dd0)
 
-30. When stations are updated, there are notices that are also made available in the ```Notifications``` pane in the ```Home``` area. You will get info on "Added", "Removed", and "Modified" stations, the latter meaning there has been a change in at least one field of provided data.
+31. When stations are updated, there are notices that are also made available in the ```Notifications``` pane in the ```Home``` area. You will get info on "Added", "Removed", and "Modified" stations, the latter meaning there has been a change in at least one field of provided data.
 
 ![ceb602109eadd02f18f731e8246ff6ce6aff2a1f](https://github.com/user-attachments/assets/3c2ddb87-e24b-43ad-94c7-a4ec29112caf)
 
-31. In the same vein, you can also turn on the process to update the m3u and EPG files at regular intervals.
+32. In the same vein, you can also turn on the process to update the m3u and EPG files at regular intervals.
 
 ![62eff4d47820765cfaf4accecb3a928ff0666318](https://github.com/user-attachments/assets/9853492b-17b5-4352-969b-ad69c9e2d6a6)
 
-32. Unlike the updating the station list, this one allows you to make a selection to how frequently you want the action to happen based upon a starting time. For instance, if we leave the time at ```02:01 PM``` and select ```Every 6 hours```, it will run at ```02:01 PM```, ```08:01 PM```, ```02:01 AM```, and ```08:01 AM```.
+33. Unlike the updating the station list, this one allows you to make a selection to how frequently you want the action to happen based upon a starting time. For instance, if we leave the time at ```02:01 PM``` and select ```Every 6 hours```, it will run at ```02:01 PM```, ```08:01 PM```, ```02:01 AM```, and ```08:01 AM```.
 
 ![1a5fe30027fe5e5072079da26e0e3aa1006799cf](https://github.com/user-attachments/assets/a70e379b-6b4f-4b50-b5d8-5d71c5bf2f9f)
 
-33. As with the previous automation, this one will also give you notifications. In all cases, there is additional detail available in the ```Logs``` area.
+34. As with the previous automation, this one will also give you notifications. In all cases, there is additional detail available in the ```Logs``` area.
 
 ![d06f0c709256037b1995f6ca47e10cff68e7084f](https://github.com/user-attachments/assets/499a632b-fd2c-47ce-b19b-d40232770091)
 
-34. With these in place and set, the process will take care of itself and you should be good to go!
+35. With these in place and set, the process will take care of itself and you should be good to go!
 
 ### Streaming Stations
 
@@ -998,9 +1026,19 @@ Doing so will give you the option to open the streaming m3u8 in the tool of your
 
 ![image](https://github.com/user-attachments/assets/22e67d87-86ab-419f-8e95-f770b846b3f5)
 
+It should only be considered an issue if you receive an error similar to this:
+
+![JP_ScreenShot_2025_01_24_16_38_46](https://github.com/user-attachments/assets/c22ed8e5-f7dd-4d2d-9a49-fd5f1dae5f90)
+
 With this confirmation, you can then `Add` these details as stations of your own. You could even use the `Custom` selections if you know an m3u8.
 
 ![image](https://github.com/user-attachments/assets/bccbe95a-8ba8-4b1b-baaf-18c8e2eaa67a)
+
+There is additionally the option for a **Stream Link** station, which will launch the corresponding app on the client device:
+
+![image](https://github.com/user-attachments/assets/79cf948e-b451-497a-8736-0805772f3fbc)
+
+For those unfamiliar, these 'Stream Link Stations' will launch an app on a client device and play a stream from there. More info can be found at https://community.getchannels.com/t/experimental-stream-links-from-the-guide-via-custom-channels/36062. An example for the `URL` would be `nbctve://live/usa`.
 
 Information on the purposes and allowed inputs of all the fields is available as a pop-up box by hovering over the header:
 
@@ -1008,15 +1046,15 @@ Information on the purposes and allowed inputs of all the fields is available as
 
 Every time you `Add`, `Delete`, or `Save` changes, a set of m3u files is created or updated. These can be seen in **Playlist Manager**'s `Manage Playlists` area under `Uploaded and Generated Playlists, Guides, and Related Files`.
 
-![image](https://github.com/user-attachments/assets/b6c501c9-3ca2-4dc2-969f-52cfebb5b93b)
+![image](https://github.com/user-attachments/assets/ae7fab98-7b64-49d0-9bce-5ce1824d2729)
 
-There will be separate ones for `HLS` and `MPEG-TS` stations. Additionally, back in the `Settings`, you can set the number of stations allowed per file (along with a starting station number), with the default being 750 for the same reasons as discussed above. Note that these all contain `plmss` in the name and cannot be manually deleted. At this point, you could then take these links and integrate them directly into your final watching tool (i.e., Channels DVR). In other words, there would be no need for you to manually maintain your own m3u file.
+There will be separate ones for `HLS`, `MPEG-TS`, and `STRMLNK` stations. Additionally, back in the `Settings`, you can set the number of stations allowed per file (along with a starting station number), with the default being 750 for the same reasons as discussed above. Note that these all contain `plmss` in the name and cannot be manually deleted. At this point, you could then take these links and integrate them directly into your final watching tool (i.e., Channels DVR). In other words, there would be no need for you to manually maintain your own m3u file.
 
 ![image](https://github.com/user-attachments/assets/533432d9-95b0-4f0d-b2eb-04549b33ca4e)
 
 ![image](https://github.com/user-attachments/assets/1ab88e9a-4408-4b9c-9480-210b0e456413)
 
-However, you could also take it to the next logical step by adding it as a source Playlist right above this value. Therefore, you could take advantage of all of PLM's regular functions, including incorporating guide data. In the end, no matter which method you prefer, there is a simple way to integrate your web-based streaming stations that otherwise cannot be!
+Just as with regular PLM playlists, these, too, can automatically be loaded into Channels DVR as a 'Custom Channel'. However, you could also take it to the next logical step by adding it as a source Playlist right above this value. Therefore, you could take advantage of all of PLM's regular functions, including incorporating guide data. In the end, no matter which method you prefer, there is a simple way to integrate your web-based streaming stations that otherwise cannot be!
 
 ## Media Tools Manager
 
