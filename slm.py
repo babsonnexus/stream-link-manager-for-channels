@@ -24,11 +24,19 @@ from jinja2 import TemplateNotFound
 import yt_dlp as youtube_dl
 
 # Top Controls
-slm_version = "v2025.01.21.1307"
-# slm_version = "v2025.01.21.1307 (PRERELEASE)"
+slm_environment_version = None
+slm_environment_port = None
 
+# Current Stable Release
+slm_version = "v2025.01.28.1009"
 slm_port = os.environ.get("SLM_PORT")
-# slm_port = None
+
+# Current Development State
+if slm_environment_version == "PRERELEASE":
+    slm_version = "v2025.01.28.1009"
+if slm_environment_port == "PRERELEASE":
+    slm_port = None
+
 if slm_port is None:
     slm_port = 5000
 else:
@@ -2115,7 +2123,9 @@ def webpage_playlists(sub_page):
         'unassigned_child_to_parents': 'unassigned_child_to_parents_anchor',
         'assigned_child_to_parents': 'assigned_child_to_parents_anchor',
         'final_playlists': 'final_playlists_anchor',
-        'uploaded_playlists': 'uploaded_playlists_anchor'
+        'playlist_file_add_to': 'final_playlists_anchor',
+        'uploaded_playlists': 'uploaded_playlists_anchor',
+        'generated_playlists': 'uploaded_playlists_anchor'
     }
 
     preferred_playlists = []
@@ -2154,7 +2164,7 @@ def webpage_playlists(sub_page):
                 break
 
         posts = ['_cancel', '_save', 'save_all', '_new']
-        inposts = ['_delete_', '_update_','_make_parent_', '_set_parent_']
+        inposts = ['_delete_', '_update_','_make_parent_', '_set_parent_', '_add_to_']
         if any(playlists_action.endswith(post) for post in posts) or any(inpost in playlists_action for inpost in inposts):
 
             this_posts = ['_save', '_new']
@@ -2661,6 +2671,71 @@ def webpage_playlists(sub_page):
                     get_final_m3us_epgs()
                     playlist_files = get_playlist_files()
 
+            elif '_add_to_' in playlists_action:
+                make_playlist_name = ''
+                make_playlist_type = ''
+                make_playlist_source = 'URL'
+                make_playlist_url = ''
+                make_playlist_text = ''
+                make_playlist_refresh = '24'
+                make_playlist_limit = ''
+                make_playlist_satip = ''
+                make_playlist_numbering = ''
+                make_playlist_logos = ''
+                make_playlist_xmltv_url = ''
+                make_playlist_xmltv_refresh = '3600'
+
+                playlists_action_add_to_index = int(playlists_action.split('_')[-1]) - 1
+
+                if playlists_action.startswith('playlist_file_add_to_'):
+                    make_playlist_url = f"{request.url_root}playlists/files/{playlist_files[playlists_action_add_to_index]['playlist_filename']}"
+
+                elif playlists_action.startswith('generated_playlists_action_add_to_'):
+                    make_playlist_url = f"{request.url_root}playlists/uploads/{uploaded_playlist_files[playlists_action_add_to_index]['file_link']}"
+
+                make_playlist_number = make_playlist_url.split('_')[-1].split('.')[0]
+
+                if make_playlist_number:
+
+                    if 'hls' in make_playlist_url:
+                        make_playlist_type = 'HLS'
+                    elif 'mpeg_ts' in make_playlist_url:
+                        make_playlist_type = 'MPEG-TS'
+                    elif 'strmlnk' in make_playlist_url:
+                        make_playlist_type = 'STRMLNK'
+
+                    if 'gracenote_' in make_playlist_url:
+                        make_playlist_name_base = f"Gracenote"
+                    elif 'epg_' in make_playlist_url:
+                        make_playlist_name_base = f"Non-Gracenote"
+                    elif 'plmss_' in make_playlist_url:
+                        make_playlist_name_base = f"Streaming Stations"
+
+                    make_playlist_name = f"PLM - {make_playlist_name_base} ({make_playlist_type}) [{make_playlist_number}]"
+
+                    if 'epg_' in make_playlist_url:
+                        make_playlist_xmltv_url = make_playlist_url.replace('.m3u', '.xml')
+
+                    json_data = {
+                        "name": make_playlist_name,
+                        "type": make_playlist_type,
+                        "source": make_playlist_source,
+                        "url": make_playlist_url,
+                        "text": make_playlist_text,
+                        "refresh": make_playlist_refresh,
+                        "limit": make_playlist_limit,
+                        "satip": make_playlist_satip,
+                        "numbering": make_playlist_numbering,
+                        "logos": make_playlist_logos,
+                        "xmltv_url": make_playlist_xmltv_url,
+                        "xmltv_refresh": make_playlist_xmltv_refresh
+                    }
+
+                    make_playlist_name_clean = re.sub(r'[^a-zA-Z0-9]', '', make_playlist_name)
+                    make_playlist_route = f"/providers/m3u/sources/{make_playlist_name_clean}"
+
+                    put_channels_dvr_json(make_playlist_route, json_data)
+
     response = make_response(render_template(
         template,
         segment = sub_page,
@@ -2816,7 +2891,7 @@ def parse_m3u(m3u_id, m3u_name, response):
                     'tvc_stream_acodec': metadata["tvc-stream-acodec"],
                     'url': ""
                 }
-        elif line.startswith('http'):
+        elif line.startswith('http') or '://' in line:
             if current_record:
                 current_record['url'] = line.strip()
                 records.append(current_record)
@@ -2831,7 +2906,7 @@ def parse_m3u(m3u_id, m3u_name, response):
 def clean_m3u(data):
     cleaned_lines = []
     for i, line in enumerate(data):
-        if not (line.startswith('http') or line.startswith('#EXTINF:')):
+        if not (line.startswith('http') or line.startswith('#EXTINF:') or '://' in line):
             if i > 0:
                 cleaned_lines[-1] += ' ' + line.strip()
             else:
@@ -3218,8 +3293,10 @@ def get_final_m3us_epgs():
     
     gracenote_hls_final_m3us = []
     gracenote_mpeg_ts_final_m3us = []
+    gracenote_strmlnk_final_m3us = []
     epg_hls_final_m3us = []
     epg_mpeg_ts_final_m3us = []
+    epg_strmlnk_final_m3us = []
 
     for final_m3u in final_m3us:
         if final_m3u['tvc_guide_stationid'] is not None and final_m3u['tvc_guide_stationid'] != '':
@@ -3227,11 +3304,15 @@ def get_final_m3us_epgs():
                 gracenote_hls_final_m3us.append(final_m3u)
             elif final_m3u['stream_format'] == "MPEG-TS":
                 gracenote_mpeg_ts_final_m3us.append(final_m3u)
+            elif final_m3u['stream_format'] == "STRMLNK":
+                gracenote_strmlnk_final_m3us.append(final_m3u)
         else:
             if final_m3u['stream_format'] == "HLS":
                 epg_hls_final_m3us.append(final_m3u)
             elif final_m3u['stream_format'] == "MPEG-TS":
                 epg_mpeg_ts_final_m3us.append(final_m3u)
+            elif final_m3u['stream_format'] == "STRMLNK":
+                epg_strmlnk_final_m3us.append(final_m3u)
 
     extensions = ['m3u']
     all_prior_files = []
@@ -3241,8 +3322,10 @@ def get_final_m3us_epgs():
 
     create_chunk_files(gracenote_hls_final_m3us, "plm_gracenote_hls_m3u", "m3u", max_stations)
     create_chunk_files(gracenote_mpeg_ts_final_m3us, "plm_gracenote_mpeg_ts_m3u", "m3u", max_stations)
+    create_chunk_files(gracenote_strmlnk_final_m3us, "plm_gracenote_strmlnk_m3u", "m3u", max_stations)
     create_chunk_files(epg_hls_final_m3us, "plm_epg_hls_m3u", "m3u", max_stations)
     create_chunk_files(epg_mpeg_ts_final_m3us, "plm_epg_mpeg_ts_m3u", "m3u", max_stations)
+    create_chunk_files(epg_strmlnk_final_m3us, "plm_strmlnk_m3u", "m3u", max_stations)
     get_epgs_for_m3us()
 
     notification_add(f"\n{current_time()} Finished generation of final m3u(s) and XML EPG(s).")
@@ -3335,12 +3418,16 @@ def get_playlist_files():
                     playlist_label = f"m3u Playlist - Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
                 elif 'mpeg_ts' in playlist_filename:
                     playlist_label = f"m3u Playlist - Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
+                elif 'strmlnk' in playlist_filename:
+                    playlist_label = f"m3u Playlist - Gracenote (STRMLNK) [{playlist_number}] ({station_count} {station_word}): "
 
             elif 'epg_' in playlist_filename:
                 if 'hls' in playlist_filename:
                     playlist_label = f"m3u Playlist - Non-Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
                 elif 'mpeg_ts' in playlist_filename:
                     playlist_label = f"m3u Playlist - Non-Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
+                elif 'strmlnk' in playlist_filename:
+                    playlist_label = f"m3u Playlist - Non-Gracenote (STRMLNK) [{playlist_number}] ({station_count} {station_word}): "
 
         elif playlist_extension == "xml":
             if 'epg_' in playlist_filename:
@@ -3348,6 +3435,8 @@ def get_playlist_files():
                     playlist_label = f"XML EPG for Non-Gracenote (HLS) [{playlist_number}]: "
                 elif 'mpeg_ts' in playlist_filename:
                     playlist_label = f"XML EPG for Non-Gracenote (MPEG-TS) [{playlist_number}]: "
+                elif 'strmlnk' in playlist_filename:
+                    playlist_label = f"XML EPG for Non-Gracenote (STRMLNK) [{playlist_number}]: "
 
         playlist_files.append({'playlist_label': playlist_label, 'playlist_filename': playlist_filename})
         
@@ -3363,9 +3452,33 @@ def get_uploaded_playlist_files():
     for all_prior_file in all_prior_files:
         playlist_extension = all_prior_file['extension']
         playlist_filename = f"{all_prior_file['filename']}.{playlist_extension}"
-        playlist_files.append(playlist_filename)
+
+        if playlist_extension == 'xml':
+            playlist_filetype = "Uploaded Guide Data (Standard)"
+
+        elif playlist_extension == 'gz':
+            playlist_filetype = "Uploaded Guide Data (Compressed)"
+
+        elif 'plmss' in playlist_filename:
+
+            if 'hls' in playlist_filename:
+                playlist_filetype = "Generated Streaming Stations Playlist (HLS)"
+
+            elif 'mpeg_ts' in playlist_filename:
+                playlist_filetype = "Generated Streaming Stations Playlist (MPEG-TS)"
+
+            elif 'strmlnk' in playlist_filename:
+                playlist_filetype = "Generated Stream Link Stations Playlist (STRMLNK)"
+
+        else:
+            playlist_filetype = "Uploaded Playlist"
+
+        playlist_files.append({
+            'file_type': playlist_filetype,
+            'file_link': playlist_filename
+            })
     
-    playlist_files.sort()
+    playlist_files = sorted(playlist_files, key=lambda x: ['file_link'])
     return playlist_files
 
 # Gets the XML EPG for each m3u that needs one
@@ -3464,6 +3577,7 @@ def webpage_playlists_streams():
     streaming_station_options = [
         "Custom (HLS)",
         "Custom (MPEG-TS)",
+        "Stream Link (STRMLNK)",
         "YouTube Live (HLS)"
     ]
 
@@ -3831,6 +3945,8 @@ def make_streaming_stations_m3us():
             stream_format = "HLS"
         elif 'MPEG-TS' in streaming_station['source']:
             stream_format = "MPEG-TS"
+        elif 'STRMLNK' in streaming_station['source']:
+            stream_format = "STRMLNK"
 
         final_m3us.append({
             "title": title,
@@ -3858,12 +3974,15 @@ def make_streaming_stations_m3us():
     
     plmss_hls_final_m3us = []
     plmss_mpeg_ts_final_m3us = []
+    plmss_strmlnk_final_m3us = []
 
     for final_m3u in final_m3us:
         if final_m3u['stream_format'] == "HLS":
             plmss_hls_final_m3us.append(final_m3u)
         elif final_m3u['stream_format'] == "MPEG-TS":
             plmss_mpeg_ts_final_m3us.append(final_m3u)
+        elif final_m3u['stream_format'] == "STRMLNK":
+            plmss_strmlnk_final_m3us.append(final_m3u)
 
     extensions = ['m3u']
     all_prior_files = []
@@ -3874,6 +3993,7 @@ def make_streaming_stations_m3us():
 
     create_chunk_files(plmss_hls_final_m3us, os.path.join(playlists_uploads_dir_name, "plmss_hls_m3u"), "m3u", max_stations)
     create_chunk_files(plmss_mpeg_ts_final_m3us, os.path.join(playlists_uploads_dir_name, "plmss_mpeg_ts_m3u"), "m3u", max_stations)
+    create_chunk_files(plmss_strmlnk_final_m3us, os.path.join(playlists_uploads_dir_name, "plmss_strmlnk_m3u"), "m3u", max_stations)
 
 # Reports / Queries webpage
 @app.route('/reports_queries', methods=['GET', 'POST'])
@@ -3909,14 +4029,14 @@ def webpage_reports_queries():
 
             elif action in [
                                 "query_plm_children",
-                                "query_mtm_stations_by_channels_collection"
+                                "query_mtm_stations_by_channel_collection"
                            ]:
                 
                 if action == "query_plm_children":
                     slm_query_name = "Stations: Parents and Children"
 
-                elif action == "query_mtm_stations_by_channels_collection":
-                    slm_query_name = "Stations by Channels Collection"
+                elif action == "query_mtm_stations_by_channel_collection":
+                    slm_query_name = "Stations by Channel Collection"
 
             slm_query = view_csv(slm_query_raw, "library", None)
 
@@ -4107,7 +4227,7 @@ def run_query(query_name):
                 """
 
     elif query_name in [
-                            'query_mtm_stations_by_channels_collection'
+                            'query_mtm_stations_by_channel_collection'
                        ]:
 
         # Get list of all Channels DVR Stations
@@ -4144,82 +4264,10 @@ def run_query(query_name):
     if run_query:
         results = psql.sqldf(query, locals()).to_dict(orient='records')
 
-        if query_name == 'query_mtm_stations_by_channels_collection':
+        if query_name == 'query_mtm_stations_by_channel_collection':
             results = sorted(results, key=lambda x: (sort_key(x["Station Name"].casefold()), sort_key(x["Channel Collection Name"].casefold())))
 
     return results
-
-# Gets JSON data from Channels DVR
-def get_channels_dvr_json(selection):
-    settings = read_data(csv_settings)
-    channels_url = settings[0]["settings"]
-    route = None
-    url = None
-    results_base = None
-    results_base_json = None
-    results_library = []
-
-    if selection == 'all_stations':
-        route = '/api/v1/channels'
-    elif selection == 'channel_collections':
-        route = '/dvr/collections/channels'
-
-    if route:
-        url = f"{channels_url}{route}"
-
-    if url:
-
-        channels_url_okay = check_channels_url(None)
-
-        if channels_url_okay:
-            try:
-                results_base = requests.get(url, headers=url_headers)
-            except requests.RequestException as e:
-                print(f"{current_time()} ERROR: While performing {selection}, received {e}.")
-
-            if results_base:
-                results_base_json = results_base.json()
-
-                if selection == 'all_stations':
-                    for result in results_base_json:
-                        id = result.get("id", '')
-                        name = result.get("name", '')
-                        number = result.get("number", '')
-                        logo_url = result.get("logo_url", '')
-                        hd = result.get("hd", '')
-                        favorited = result.get("favorited", '')
-                        source_name = result.get("source_name", '')
-                        source_id = result.get("source_id", '')
-                        station_id = result.get("station_id", '')
-                    
-                        results_library.append({
-                            "Station ID": id,
-                            "Station Name": name,
-                            "Station Number": number,
-                            "Station Logo": logo_url,
-                            "Is HD?": hd,
-                            "Is Favorite?": favorited,
-                            "Source Name": source_name,
-                            "Source ID": source_id,
-                            "Station Channels ID": station_id
-                        })
-
-                    results_library = sorted(results_library, key=lambda x: sort_key(x["Station Name"].casefold()))
-
-                elif selection == 'channel_collections':
-                    for result in results_base_json:
-                        name = result.get("name", '')
-                        items = result.get("items", [])
-
-                        for item in items:
-                            results_library.append({
-                                "Station ID": item,
-                                "Channel Collection Name": name
-                                })
-                        
-                    results_library = sorted(results_library, key=lambda x: (sort_key(x["Station ID"].casefold()), sort_key(x["Channel Collection Name"].casefold())))                       
-
-    return results_library
 
 # Webpage - Tools - Gracenote Search
 @app.route('/tools_gracenotesearch', methods=['GET', 'POST'])
@@ -4890,7 +4938,7 @@ def check_upgrade():
     current_version = None
     check_line = 'slm_version = "'
     start_index = len(check_line)
-    check_url = "https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/refs/heads/main/slm.py"
+    check_url = f"{github_url_raw}slm.py"
 
     response = fetch_url(check_url, 5, 10)
     if response:
@@ -4904,7 +4952,7 @@ def check_upgrade():
     if current_version == slm_version or current_version == None:
         gen_upgrade_flag = None
     else:
-        notification_add(f"\n{current_time()} Upgrade available ({current_version})! Please follow directions at 'https://github.com/babsonnexus/stream-link-manager-for-channels#upgrade'.\n")
+        notification_add(f"\n{current_time()} Upgrade available ({current_version})! Please follow directions at '{github_url}#upgrade'.\n")
         gen_upgrade_flag = True
 
 # SLM: End-to-End Update Process
@@ -9452,6 +9500,92 @@ def check_ip_range(start, end, base_ip, port):
 
     return machine_name
 
+# Gets JSON data from Channels DVR
+def get_channels_dvr_json(selection):
+    settings = read_data(csv_settings)
+    channels_url = settings[0]["settings"]
+    route = None
+    url = None
+    results_base = None
+    results_base_json = None
+    results_library = []
+
+    if selection == 'all_stations':
+        route = '/api/v1/channels'
+    elif selection == 'channel_collections':
+        route = '/dvr/collections/channels'
+
+    if route:
+        url = f"{channels_url}{route}"
+
+    if url:
+
+        channels_url_okay = check_channels_url(None)
+
+        if channels_url_okay:
+            try:
+                results_base = requests.get(url, headers=url_headers)
+            except requests.RequestException as e:
+                print(f"{current_time()} ERROR: While performing {selection}, received {e}.")
+
+            if results_base:
+                results_base_json = results_base.json()
+
+                if selection == 'all_stations':
+                    for result in results_base_json:
+                        id = result.get("id", '')
+                        name = result.get("name", '')
+                        number = result.get("number", '')
+                        logo_url = result.get("logo_url", '')
+                        hd = result.get("hd", '')
+                        favorited = result.get("favorited", '')
+                        source_name = result.get("source_name", '')
+                        source_id = result.get("source_id", '')
+                        station_id = result.get("station_id", '')
+                    
+                        results_library.append({
+                            "Station ID": id,
+                            "Station Name": name,
+                            "Station Number": number,
+                            "Station Logo": logo_url,
+                            "Is HD?": hd,
+                            "Is Favorite?": favorited,
+                            "Source Name": source_name,
+                            "Source ID": source_id,
+                            "Station Channels ID": station_id
+                        })
+
+                    results_library = sorted(results_library, key=lambda x: sort_key(x["Station Name"].casefold()))
+
+                elif selection == 'channel_collections':
+                    for result in results_base_json:
+                        name = result.get("name", '')
+                        items = result.get("items", [])
+
+                        for item in items:
+                            results_library.append({
+                                "Station ID": item,
+                                "Channel Collection Name": name
+                                })
+                        
+                    results_library = sorted(results_library, key=lambda x: (sort_key(x["Station ID"].casefold()), sort_key(x["Channel Collection Name"].casefold())))                       
+
+    return results_library
+
+# Puts JSON data into Channels DVR
+def put_channels_dvr_json(route, json_data):
+    settings = read_data(csv_settings)
+    channels_url = settings[0]["settings"]
+    full_url = f"{channels_url}{route}"
+    results = None
+
+    try:
+        results = requests.put(full_url, headers=url_headers, json=json_data)
+    except requests.RequestException as e:
+        print(f"{current_time()} ERROR: While performing action on '{route}', received {e}.")
+
+    return results
+
 # Calculate percentages or set to zero if total_records is zero
 def calc_percentage(count, total):
     return f"{round((count / total) * 100, 1)}%" if total > 0 else "0.0%"
@@ -9485,6 +9619,8 @@ csv_files = [
     # Add more rows as needed
 ]
 program_files = csv_files + [log_filename]
+github_url = "https://github.com/babsonnexus/stream-link-manager-for-channels"
+github_url_raw = "https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/refs/heads/main/"
 engine_url = "https://www.justwatch.com"
 url_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36'}
 _GRAPHQL_API_URL = "https://apis.justwatch.com/graphql"
@@ -9684,7 +9820,8 @@ bookmark_actions_default_show_only = [
 ]
 stream_formats = [
     "HLS",
-    "MPEG-TS"
+    "MPEG-TS",
+    "STRMLNK"
 ]
 select_program_to_bookmarks = []
 gen_upgrade_flag = None
