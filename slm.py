@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.01.28.1009"
+slm_version = "v2025.02.03.1751"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.01.28.1009"
+    slm_version = "v2025.02.03.1751"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -83,7 +83,7 @@ def notification_add(notification):
 @app.route('/addprograms', methods=['GET', 'POST'])
 def webpage_add_programs():
     global program_search_results_prior
-    global country_code_input_prior 
+    global country_code_input_prior
     global language_code_input_prior
     global entry_id_prior
     global season_episodes_prior
@@ -107,14 +107,17 @@ def webpage_add_programs():
 
     program_types = [
                         "MOVIE",
-                        "SHOW"
+                        "SHOW",
+                        "VIDEO"
                     ]
     program_type_default = "MOVIE"
 
     program_add_message = ""
     program_search_results = []
     season_episodes = []
+    video_season_episodes = []
     season_episode_manual_flag = None
+    video_manual_flag = None
     end_season = None
     season_episodes_manual = {}
     stream_link_override_movie_flag = None
@@ -287,7 +290,10 @@ def webpage_add_programs():
                     
                     if program_type_input == "SHOW":
                         season_episode_manual_flag = True
+                    elif program_type_input == "VIDEO":
+                        video_manual_flag = True
                     else:
+                        special_actions = special_actions_default.copy()
                         stream_link_override_movie_flag = True
                         done_generate_flag = True
                 
@@ -305,9 +311,28 @@ def webpage_add_programs():
             season_episodes = get_episode_list_manual(end_season, season_episodes_manual)
             season_episodes_prior = season_episodes
             done_generate_flag = True
+            special_actions = special_actions_default.copy()
             bookmark_actions = get_bookmark_actions("SHOW")
 
-        # Finish or Generate Stream Links. Also save Season/Episode statuses.
+        # Create a video list for a manual video group
+        elif add_programs_action == 'video_manual_next':
+            number_of_videos_input = int(request.form.get('number_of_videos'))
+
+            video_season_episodes = []
+
+            for i in range(1, int(number_of_videos_input) + 1):
+                video_season_episode = f"Input name for Video {i:02d}"
+                video_season_episodes.append({
+                    "season_episode_id": "VIDEO",
+                    "season_episode": video_season_episode
+                })
+
+            season_episodes_prior = video_season_episodes
+            done_generate_flag = True
+            special_actions = special_actions_default.copy()
+            bookmark_actions = get_bookmark_actions("VIDEO")
+
+        # Finish or Generate Stream Links/Files. Also save Season/Episode statuses.
         elif add_programs_action in [
                                     'program_add_done',
                                     'program_add_generate'
@@ -322,6 +347,7 @@ def webpage_add_programs():
                 field_stream_link_override_inputs = {}
                 field_season_episode_prefix_inputs = {}
                 field_special_action_inputs = {}
+                video_names = []
 
                 for key in request.form.keys():
                     if key.startswith('field_status_'):
@@ -347,18 +373,31 @@ def webpage_add_programs():
                 for index in field_season_episode_inputs.keys():
                     season_episode_id = None
                     season_episode_prefix = field_season_episode_prefix_inputs.get(index)
+                    
                     season_episode = field_season_episode_inputs.get(index)
+                    if season_episodes_prior[int(index) - 1]['season_episode_id'] == "VIDEO":
+                        if season_episode is None or season_episode == '':
+                            season_episode = season_episodes_prior[int(index) - 1]['season_episode']
+                        elif season_episode in video_names:
+                            season_episode = f"Duplicate Video Name {int(index):02d}"
+                        else:
+                            video_names.append(season_episode)
+                    
                     if field_status_inputs.get(index) == "unwatched":
                         status = field_status_inputs.get(index)
                     else:
                         status = "watched"
+                    
                     stream_link_override = field_stream_link_override_inputs.get(index)
                     special_action = field_special_action_inputs.get(index)
 
-                    for item in season_episodes_prior:
-                        if item["season_episode"] == season_episode:
-                            season_episode_id = item["season_episode_id"]
-                            break
+                    if season_episodes_prior[int(index) - 1]['season_episode_id'] == "VIDEO":
+                        pass
+                    else:
+                        for item in season_episodes_prior:
+                            if item["season_episode"] == season_episode:
+                                season_episode_id = item["season_episode_id"]
+                                break
 
                     bookmarks_statuses.append({
                         "entry_id": entry_id_prior,
@@ -505,7 +544,9 @@ def webpage_add_programs():
         html_program_add_message = program_add_message,
         html_program_search_results = program_search_results,
         html_season_episodes = season_episodes,
+        html_video_season_episodes = video_season_episodes,
         html_season_episode_manual_flag = season_episode_manual_flag,
+        html_video_manual_flag = video_manual_flag,
         html_stream_link_override_movie_flag = stream_link_override_movie_flag,
         html_done_generate_flag = done_generate_flag,
         html_date_new_default = date_new_default_prior,
@@ -1757,8 +1798,15 @@ def webpage_modify_programs():
                         if bookmark_status['entry_id'] == entry_id_prior:
                             bookmarks_statuses_selected.append(bookmark_status)
 
-                    bookmarks_statuses_selected_sorted = sorted(bookmarks_statuses_selected, key=lambda x: x["season_episode"].casefold())
+                    if object_type_selected_prior == "VIDEO":
+                        bookmarks_statuses_selected_sorted = bookmarks_statuses_selected
+                    else:
+                        bookmarks_statuses_selected_sorted = sorted(bookmarks_statuses_selected, key=lambda x: x["season_episode"].casefold())
+                    
                     bookmarks_statuses_selected_prior = bookmarks_statuses_selected_sorted
+
+                    if entry_id_prior.startswith('slm'):
+                        special_actions = special_actions_default.copy()
 
                 # Deletes the program
                 elif modify_programs_action == 'program_modify_delete':
@@ -1769,17 +1817,20 @@ def webpage_modify_programs():
                     sorted_bookmarks = sorted((bookmark for bookmark in bookmarks if bookmark['bookmark_action'] != 'Hide'), key=lambda x: sort_key(x["title"]))
                     bookmarks_statuses = read_data(csv_bookmarks_status)
 
-                    movie_path, tv_path = get_movie_tv_path()
+                    movie_path, tv_path, video_path = get_movie_tv_path()
 
                     print(f"\nRemoved files/directories:\n")
-                    remove_rogue_empty(movie_path, tv_path, bookmarks_statuses)
+                    remove_rogue_empty(movie_path, tv_path, video_path, bookmarks_statuses)
 
                     if object_type_selected_prior == "MOVIE":
                         program_modify_message = f"{current_time()} INFO: {title_selected_prior} ({release_year_selected_prior}) | {object_type_selected_prior} removed/deleted"
 
                     elif object_type_selected_prior == "SHOW":
                         program_modify_message = f"{current_time()} INFO: {title_selected_prior} ({release_year_selected_prior}) | {object_type_selected_prior} and all episodes removed/deleted"
-                    
+
+                    elif object_type_selected_prior == "VIDEO":
+                        program_modify_message = f"{current_time()} INFO: {title_selected_prior} ({release_year_selected_prior}) | {object_type_selected_prior} group and all videos removed/deleted"
+
                     else:
                         program_modify_message = f"{current_time()} ERROR: Invalid object_type"
 
@@ -1824,6 +1875,9 @@ def webpage_modify_programs():
                                                                                                               ]:
             edit_flag = True
 
+            if entry_id_prior.startswith('slm'):
+                special_actions = special_actions_default.copy()
+
             # Add an episode
             if modify_programs_action == 'program_modify_add_episode':
                 program_modify_add_episode_season_input = request.form.get('program_modify_add_episode_season')
@@ -1834,32 +1888,47 @@ def webpage_modify_programs():
 
                 new_season_episode_test = 0
 
-                try:
-                    new_episode_num = int(program_modify_add_episode_episode_input)
-                    if new_episode_num >= 0:
-                        new_season_episode_test = new_season_episode_test + 1
-                    else:
-                        program_modify_message = f"{current_time()} ERROR: For 'New Episode | Episode Number', please enter a valid numeric value."
-                except ValueError:
-                    program_modify_message = f"{current_time()} ERROR: Invalid input. For 'New Episode | Episode Number', please enter a numeric value."
+                if object_type_selected_prior == "SHOW":
 
-                try:
-                    new_season_num = int(program_modify_add_episode_season_input)
-                    if new_season_num >= 0:
-                        new_season_episode_test = new_season_episode_test + 1
+                    try:
+                        new_episode_num = int(program_modify_add_episode_episode_input)
+                        if new_episode_num >= 0:
+                            new_season_episode_test = new_season_episode_test + 1
+                        else:
+                            program_modify_message = f"{current_time()} ERROR: For 'New Episode | Episode Number', please enter a valid numeric value."
+                    except ValueError:
+                        program_modify_message = f"{current_time()} ERROR: Invalid input. For 'New Episode | Episode Number', please enter a numeric value."
+
+                    try:
+                        new_season_num = int(program_modify_add_episode_season_input)
+                        if new_season_num >= 0:
+                            new_season_episode_test = new_season_episode_test + 1
+                        else:
+                            program_modify_message = f"{current_time()} ERROR: For 'New Episode | Season Number', please enter a valid numeric value."
+                    except ValueError:
+                        program_modify_message = f"{current_time()} ERROR: Invalid input. For 'New Episode | Season Number', please enter a numeric value."
+
+                elif object_type_selected_prior == "VIDEO":
+
+                    if program_modify_add_episode_episode_input is None or program_modify_add_episode_episode_input == '':
+                        program_modify_message = f"{current_time()} ERROR: Video Name is required for new Videos."
                     else:
-                        program_modify_message = f"{current_time()} ERROR: For 'New Episode | Season Number', please enter a valid numeric value."
-                except ValueError:
-                    program_modify_message = f"{current_time()} ERROR: Invalid input. For 'New Episode | Season Number', please enter a numeric value."
+                        new_season_episode_test = 2
 
                 if new_season_episode_test == 2:
 
-                    formatted_season = f"S{new_season_num:02d}"
-                    formatted_episode = f"E{new_episode_num:02d}"
-
-                    new_season_episode = formatted_season + formatted_episode
-
                     new_season_episode_error = 0
+
+                    if object_type_selected_prior == "SHOW":
+
+                        formatted_season = f"S{new_season_num:02d}"
+                        formatted_episode = f"E{new_episode_num:02d}"
+
+                        new_season_episode = formatted_season + formatted_episode
+
+                    elif object_type_selected_prior == "VIDEO":
+
+                        new_season_episode = program_modify_add_episode_episode_input
 
                     for bookmark_status in bookmarks_statuses:
                         if bookmark_status['entry_id'] == entry_id_prior:
@@ -1906,10 +1975,10 @@ def webpage_modify_programs():
                                     bookmarks_statuses.remove(bookmark_status)
                                     break
 
-                            movie_path, tv_path = get_movie_tv_path()
+                            movie_path, tv_path, video_path = get_movie_tv_path()
 
                             print(f"\nRemoved files/directories:\n")
-                            remove_rogue_empty(movie_path, tv_path, bookmarks_statuses)
+                            remove_rogue_empty(movie_path, tv_path, video_path, bookmarks_statuses)
 
                             program_modify_message = f"{current_time()} INFO: {program_modify_delete_episode_season_episode} deleted."
 
@@ -1986,7 +2055,7 @@ def webpage_modify_programs():
                             index = key.split('_')[-1]
                             field_special_action_inputs[index] = request.form.get(key)
 
-                        if field_object_type_input == 'SHOW':
+                        if field_object_type_input == 'SHOW' or field_object_type_input == 'VIDEO':
                             if key.startswith('field_season_episode_'):
                                 index = key.split('_')[-1]
                                 field_season_episode_inputs[index] = request.form.get(key)
@@ -1995,22 +2064,7 @@ def webpage_modify_programs():
                                 index = key.split('_')[-1]
                                 field_season_episode_prefix_inputs[index] = request.form.get(key)
 
-                    if field_object_type_input == 'SHOW':
-                        for index in field_season_episode_inputs.keys():
-                            field_status_input = field_status_inputs.get(index)
-                            field_stream_link_override_input = field_stream_link_override_inputs.get(index)
-                            field_season_episode_input = field_season_episode_inputs.get(index)
-                            field_season_episode_prefix_input = field_season_episode_prefix_inputs.get(index)
-                            field_special_action_input = field_special_action_inputs.get(index)
-
-                            for bookmarks_status in bookmarks_statuses:
-                                if bookmarks_status['entry_id'] == entry_id_prior and bookmarks_status['season_episode'] == field_season_episode_input:
-                                    bookmarks_status['status'] = field_status_input
-                                    bookmarks_status['stream_link_override'] = field_stream_link_override_input
-                                    bookmarks_status['season_episode_prefix'] = field_season_episode_prefix_input
-                                    bookmarks_status['special_action'] = field_special_action_input
-
-                    elif field_object_type_input == 'MOVIE':
+                    if field_object_type_input == 'MOVIE':
                         for index in field_status_inputs.keys():
                             field_status_input = field_status_inputs.get(index)
                             field_stream_link_override_input = field_stream_link_override_inputs.get(index)
@@ -2021,6 +2075,37 @@ def webpage_modify_programs():
                                     bookmarks_status['status'] = field_status_input
                                     bookmarks_status['stream_link_override'] = field_stream_link_override_input
                                     bookmarks_status['special_action'] = field_special_action_input
+
+                    elif field_object_type_input == 'SHOW' or field_object_type_input == 'VIDEO':
+                        video_names = []
+
+                        for index in field_season_episode_inputs.keys():
+                            field_status_input = field_status_inputs.get(index)
+                            field_stream_link_override_input = field_stream_link_override_inputs.get(index)
+                            field_season_episode_input = field_season_episode_inputs.get(index)
+                            field_season_episode_prefix_input = field_season_episode_prefix_inputs.get(index)
+                            field_special_action_input = field_special_action_inputs.get(index)
+
+                            video_instance_counter = 0
+
+                            for bookmarks_status in bookmarks_statuses:
+
+                                if field_object_type_input == 'VIDEO' and bookmarks_status['entry_id'] == entry_id_prior:
+                                    video_instance_counter = int(video_instance_counter) + 1
+
+                                if ( field_object_type_input == 'SHOW' and bookmarks_status['entry_id'] == entry_id_prior and bookmarks_status['season_episode'] == field_season_episode_input ) or ( field_object_type_input == 'VIDEO' and bookmarks_status['entry_id'] == entry_id_prior and int(video_instance_counter) == int(index) ):
+                                    bookmarks_status['status'] = field_status_input
+                                    bookmarks_status['stream_link_override'] = field_stream_link_override_input
+                                    bookmarks_status['season_episode_prefix'] = field_season_episode_prefix_input
+                                    bookmarks_status['special_action'] = field_special_action_input
+                                    if field_object_type_input == 'VIDEO':
+                                        if field_season_episode_input is None or field_season_episode_input == '':
+                                            bookmarks_status['season_episode'] = f"Missing Video Name {int(index):02d}"
+                                        elif field_season_episode_input in video_names:
+                                            bookmarks_status['season_episode'] = f"Duplicate Video Name {int(index):02d}"
+                                        else:
+                                            bookmarks_status['season_episode'] = field_season_episode_input
+                                            video_names.append(field_season_episode_input)
 
                 write_data(csv_bookmarks_status, bookmarks_statuses)
 
@@ -2040,7 +2125,10 @@ def webpage_modify_programs():
                 if bookmark_status['entry_id'] == entry_id_prior:
                     bookmarks_statuses_selected.append(bookmark_status)
 
-            bookmarks_statuses_selected_sorted = sorted(bookmarks_statuses_selected, key=lambda x: x["season_episode"].casefold())
+            if object_type_selected_prior == "VIDEO":
+                bookmarks_statuses_selected_sorted = bookmarks_statuses_selected
+            else:
+                bookmarks_statuses_selected_sorted = sorted(bookmarks_statuses_selected, key=lambda x: x["season_episode"].casefold())
             bookmarks_statuses_selected_prior = bookmarks_statuses_selected_sorted
 
             bookmark_actions = get_bookmark_actions(object_type_selected_prior)
@@ -3361,8 +3449,17 @@ def get_m3u_field_value(field, combined_children, children):
     return field_value
 
 # Generates m3u content from the data list
-def generate_m3u_content(data_list):
-    m3u_content = "#EXTM3U\n"
+def generate_m3u_content(data_list, base_filename, index):
+    settings = read_data(csv_settings)
+    plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
+    plm_url_tag_in_m3us_preferred_url_root = settings[43]['settings']           # [43] PLM: URL Tag in m3u(s) Preferred URL Root
+    xml_guide = f"{plm_url_tag_in_m3us_preferred_url_root}playlists/files/{base_filename}_{index+1:02d}.xml"
+
+    if plm_url_tag_in_m3us == "On" and base_filename.startswith("plm_epg"):
+        m3u_content = f"#EXTM3U url-tvg=\"{xml_guide}\"\n"
+    else:
+        m3u_content = "#EXTM3U\n"
+    
     for item in data_list:
         m3u_content += f'\n#EXTINF:-1 tvc-guide-title="{item["tvc_guide_title"]}"'
         m3u_content += f' channel-id="{item["channel_id"]}"'
@@ -7245,10 +7342,11 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
 
     bookmarks_statuses = read_data(csv_bookmarks_status)
 
-    movie_path, tv_path = get_movie_tv_path()
+    movie_path, tv_path, video_path = get_movie_tv_path()
 
     create_directory(movie_path)
     create_directory(tv_path)
+    create_directory(video_path)
 
     for bookmark in bookmarks:
         for bookmark_status in bookmarks_statuses:
@@ -7272,6 +7370,9 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
                     season_number, episode_number = re.match(r"S(\d+)E(\d+)", bookmark_status['season_episode']).groups()
                     season_folder_name = f"Season {season_number}"
                     stream_link_path = os.path.join(tv_path, title_full, season_folder_name)
+                if bookmark['object_type'] == "VIDEO":
+                    stream_link_path = os.path.join(video_path, title_full)
+                    stream_link_file_name = sanitize_name(bookmark_status['season_episode'])
 
                 special_action = bookmark_status['special_action']
 
@@ -7287,8 +7388,9 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
 
                     if original_release_date_list is None or bookmark_status['entry_id'] in original_release_date_list or bookmark_status['season_episode_id'] in original_release_date_list:
 
-                        if bookmark['object_type'] == "SHOW":
-                            create_directory(os.path.join(tv_path, title_full))
+                        if bookmark['object_type'] == "SHOW" or bookmark['object_type'] == "VIDEO":
+                            if bookmark['object_type'] == "SHOW":
+                                create_directory(os.path.join(tv_path, title_full))
                             create_directory(stream_link_path)
 
                         file_path_return = create_file(stream_link_path, stream_link_file_name, stream_link_url, special_action)
@@ -7303,7 +7405,7 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
                     bookmark_status['stream_link_file'] = None
 
     if remove_choice:
-        remove_rogue_empty(movie_path, tv_path, bookmarks_statuses)
+        remove_rogue_empty(movie_path, tv_path, video_path, bookmarks_statuses)
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
@@ -7926,7 +8028,8 @@ def webpage_settings():
     station_start_number = settings[11]['settings']
     max_stations = settings[12]['settings']
     plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
-    plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u                                              
+    plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
+    plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
 
     streaming_services = read_data(csv_streaming_services)
 
@@ -7980,6 +8083,7 @@ def webpage_settings():
         plm_streaming_stations_input = request.form.get('plm_streaming_stations')
         station_start_number_input = request.form.get('station_start_number')
         max_stations_input = request.form.get('max_stations')
+        plm_url_tag_in_m3us_input = request.form.get('plm_url_tag_in_m3us')
         plm_streaming_stations_station_start_number_input = request.form.get('plm_streaming_stations_station_start_number')
         plm_streaming_stations_max_stations_input = request.form.get('plm_streaming_stations_max_stations')
         country_code_input = request.form.get('country_code')
@@ -8076,6 +8180,9 @@ def webpage_settings():
                                 settings[10]["settings"] = "On" if playlist_manager_input == 'on' else "Off"
                                 settings[11]['settings'] = int(station_start_number_input)
                                 settings[12]['settings'] = int(max_stations_input)
+                                settings[42]['settings'] = "On" if plm_url_tag_in_m3us_input == 'on' else "Off"
+                                if settings[42]['settings'] == "On":
+                                    settings[43]['settings'] = f"{request.url_root}"
 
                                 if playlist_manager_input == 'on':
                                     slm_playlist_manager = True
@@ -8291,7 +8398,8 @@ def webpage_settings():
         station_start_number = settings[11]['settings']
         max_stations = settings[12]['settings']
         plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
-        plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u 
+        plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
+        plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
 
         streaming_services = read_data(csv_streaming_services)
 
@@ -8331,6 +8439,7 @@ def webpage_settings():
         html_max_stations = max_stations,
         html_plm_streaming_stations_station_start_number = plm_streaming_stations_station_start_number,
         html_plm_streaming_stations_max_stations = plm_streaming_stations_max_stations,
+        html_plm_url_tag_in_m3us = plm_url_tag_in_m3us,
         html_advanced_experimental_message = advanced_experimental_message
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
@@ -8708,8 +8817,9 @@ def get_movie_tv_path():
 
     movie_path = os.path.join(channels_path, "Imports", "Movies", "slm")
     tv_path = os.path.join(channels_path, "Imports", "TV", "slm")
+    video_path = os.path.join(channels_path, "Imports", "Videos", "slm")
 
-    return movie_path, tv_path
+    return movie_path, tv_path, video_path
 
 # Create a directory if it doesn't exist.
 def create_directory(directory_path):
@@ -8764,7 +8874,7 @@ def create_file(path, name, url, special_action):
 def create_chunk_files(data_list, base_filename, extension, max):
     for index, chunk in enumerate(split_list(data_list, max)):
         if extension == "m3u":
-            content = generate_m3u_content(chunk)
+            content = generate_m3u_content(chunk, base_filename, index)
 
         filename = f"{base_filename}_{index+1:02d}.{extension}"
 
@@ -8845,9 +8955,9 @@ def reliable_remove(filepath):
     return False
 
 # Remove rogue files and empty directories
-def remove_rogue_empty(movie_path, tv_path, bookmarks_statuses):
+def remove_rogue_empty(movie_path, tv_path, video_path, bookmarks_statuses):
     all_files = []
-    for path in [movie_path, tv_path]:
+    for path in [movie_path, tv_path, video_path]:
         for dirpath, dirnames, filenames in os.walk(path):
             all_files.extend([normalize_path(os.path.join(dirpath, filename)) for filename in filenames])
 
@@ -8867,6 +8977,7 @@ def remove_rogue_empty(movie_path, tv_path, bookmarks_statuses):
 
     # Remove empty directories
     directory_delete(tv_path)
+    directory_delete(video_path)
 
 # Read data from a CSV file.
 def read_data(csv_file):
@@ -9281,6 +9392,8 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Off"}, 41, "PLM: Streaming Stations On/Off")
         check_and_append(csv_file, {"settings": 5000}, 42, "PLM: Streaming Stations Starting station number")
         check_and_append(csv_file, {"settings": 750}, 43, "PLM: Streaming Stations Max number of stations per m3u")
+        check_and_append(csv_file, {"settings": "Off"}, 44, "PLM: URL Tag in m3u(s) On/Off")
+        check_and_append(csv_file, {"settings": "http://localhost:5000"}, 45, "PLM: URL Tag in m3u(s) Preferred URL Root")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -9327,8 +9440,9 @@ def initial_data(csv_file):
                     {"settings": "Every 24 hours"},                                            # [38] MTM: Automation - Refresh Channels DVR m3u Playlists Frequency
                     {"settings": "Off"},                                                       # [39] PLM: Streaming Stations On/Off
                     {"settings": 5000},                                                        # [40] PLM: Streaming Stations Starting station number
-                    {"settings": 750} #                                                        # [41] PLM: Streaming Stations Max number of stations per m3u
-                    # Add more rows as needed
+                    {"settings": 750},                                                         # [41] PLM: Streaming Stations Max number of stations per m3u
+                    {"settings": "Off"},                                                       # [42] PLM: URL Tag in m3u(s) On/Off
+                    {"settings": "http://localhost:5000"}                                      # [43] PLM: URL Tag in m3u(s) Preferred URL Root
         ]        
     elif csv_file == csv_streaming_services:
         data = get_streaming_services()
