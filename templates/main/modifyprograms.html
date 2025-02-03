@@ -67,7 +67,7 @@
           <button type="submit" name="action" value="program_modify_edit" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag or html_sorted_bookmarks|length == 0 %}disabled{% endif %}>Edit</button>
           <button type="submit" name="action" value="program_modify_delete" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag or html_sorted_bookmarks|length == 0 %}disabled{% endif %}>Delete</button>
           <button type="submit" name="action" value="program_modify_available" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag or html_sorted_bookmarks|length == 0 %}disabled{% endif %}>Check Availability</button>
-          <button type="submit" name="action" value="program_modify_generate" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag or html_sorted_bookmarks|length == 0 %}disabled{% endif %}>Generate Stream Links</button>
+          <button type="submit" name="action" value="program_modify_generate" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag or html_sorted_bookmarks|length == 0 %}disabled{% endif %}>Generate Links/Files</button>
           <button type="submit" name="action" value="program_modify_show_hidden" style="width: calc(13%);" class="btn bg-gradient-primary my-2 mb-2" {% if html_edit_flag or html_sorted_bookmarks|length == 0 %}disabled{% endif %}>Show Hidden</button>
           <p><div id="html_program_modify_message">{{ html_program_modify_message }}</div></p>
           <hr>
@@ -102,136 +102,172 @@
           <div class="container-fluid">
             <input type="hidden" name="field_object_type" id="field_object_type" value="{{ html_object_type_selected }}">
             {% if html_object_type_selected == 'MOVIE' %}
-            <div class="grid-container" style="text-align: center;">
-              <div class="grid-item"><h6>Watched / Unwatched</h6></div>
-              <div class="grid-item"><h6>Current Stream Link</h6></div>
-              <div class="grid-item"><h6>Stream Link Override</h6></div>
-              <div class="grid-item"><h6>Special Action</h6></div>
-            </div>
+              <div class="grid-container" style="text-align: center;">
+                <div class="grid-item"><h6>Watched / Unwatched</h6></div>
+                <div class="grid-item"><h6>Current Stream Link/File</h6></div>
+                <div class="grid-item"><h6>Stream Link/File Override</h6></div>
+                <div class="grid-item"><h6>Special Action</h6></div>
+              </div>
             {% endif %}
             {% if html_object_type_selected == 'SHOW' %}
-            <div class="grid-container" style="text-align: center;">
-              <div class="grid-item"><h6>Watched / Unwatched</h6></div>
-              <div class="grid-item"><h6>Current Stream Link</h6></div>
-              <div class="grid-item"><h6>Stream Link Override</h6></div>
-              <div class="grid-item"><h6>Special Action</h6></div>
-              <div class="grid-item"><h6>Episode Prefix</h6></div>
-              <div class="grid-item"><h6>Action</h6></div>
-            </div>
-            <div class="grid-container" style="text-align: center;">
-              <div class="grid-item">
-                <div class="form-check form-switch ps-0 is-filled">
-                  <label class="form-check-label text-body text-truncate w-80 mb-0" for="check_all_global" style="font-weight: bold; font-size: 1.2em;">All Episodes</label>
-                  <input type="checkbox" class="form-check-input" id="check_all_global" onclick="toggleAllCheckboxes(this)" checked>
+              <div class="grid-container" style="text-align: center;">
+                <div class="grid-item"><h6>Watched / Unwatched</h6></div>
+                <div class="grid-item"><h6>Current Stream Link/File</h6></div>
+                <div class="grid-item"><h6>Stream Link/File Override</h6></div>
+                <div class="grid-item"><h6>Special Action</h6></div>
+                <div class="grid-item"><h6>Episode Prefix</h6></div>
+                <div class="grid-item"><h6>Action</h6></div>
+              </div>
+              <div class="grid-container" style="text-align: center;">
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <label class="form-check-label text-body text-truncate w-80 mb-0" for="check_all_global" style="font-weight: bold; font-size: 1.2em;">All Episodes</label>
+                    <input type="checkbox" class="form-check-input" id="check_all_global" onclick="toggleAllCheckboxes(this)" checked>
+                  </div>
+                </div>
+                <div class="grid-item">
+                  <hr style="border: 3px solid; width: 100%;">
+                </div>
+                <div class="grid-item">
+                  <hr style="border: 3px solid; width: 100%;">
+                </div>
+                <div class="grid-item">
+                  <select name="global_special_action" id="global_special_action" onchange="toggleAllDropdowns(this)" style="width: 100%; max-width: 100%;">
+                    {% for html_special_action in html_special_actions %}
+                      <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="global_episode_prefix" name="global_episode_prefix" placeholder="i.e., (SUB), (DUB)" oninput="toggleAllTextBoxes(this)">
+                </div>
+                <div class="grid-item">
+                  <hr style="border: 3px solid; width: 100%;">
                 </div>
               </div>
-              <div class="grid-item">
-                <hr style="border: 3px solid; width: 100%;">
+            {% endif %}
+            {% if html_object_type_selected == 'VIDEO' %}
+              <div class="grid-container" style="text-align: center;">
+                <div class="grid-item"><h6>Watched / Unwatched</h6></div>
+                <div class="grid-item"><h6>Video Name</h6></div>
+                <div class="grid-item"><h6>Stream Link/File Override</h6></div>
+                <div class="grid-item"><h6>Special Action</h6></div>
+                <div class="grid-item"><h6>Action</h6></div>
               </div>
-              <div class="grid-item">
-                <hr style="border: 3px solid; width: 100%;">
-              </div>
-              <div class="grid-item">
-                <select name="global_special_action" id="global_special_action" onchange="toggleAllDropdowns(this)" style="width: 100%; max-width: 100%;">
-                  {% for html_special_action in html_special_actions %}
-                    <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="grid-item">
-                <input type="text" id="global_episode_prefix" name="global_episode_prefix" placeholder="i.e., (SUB), (DUB)" oninput="toggleAllTextBoxes(this)">
-              </div>
-              <div class="grid-item">
-                <hr style="border: 3px solid; width: 100%;">
-              </div>
-            </div>
             {% endif %}
             {% set processed_seasons = {} %}
             {% for item in html_bookmarks_statuses_selected %}
               <!-- MOVIE: Edit Section -->
               {% if html_object_type_selected == 'MOVIE' %}
-              <div class="grid-container">
-                <div class="grid-item">
-                  <div class="form-check form-switch ps-0 is-filled">
-                    <input type="checkbox" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" class="form-check-input" {% if item.status|lower == 'unwatched' %}checked{% endif %}>
-                  </div>
-                </div>
-                <div class="grid-item">
-                  <input type="text" value="{{ item.stream_link }}" readonly style="background-color: #d1cdcde5;" title="{{ item.stream_link }}">
-                </div>
-                <div class="grid-item">
-                  <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="{{ item.stream_link_override }}">
-                </div>
-                <div class="grid-item">
-                  <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" style="width: 100%; max-width: 100%;">
-                    {% for html_special_action in html_special_actions %}
-                      <option {% if html_special_action == item.special_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-              {% endif %}
-              <!-- SHOW: Edit Section -->
-              {% if html_object_type_selected == 'SHOW' %}
-              {% set season = item.season_episode.split('E')[0] %}
-              {% if season not in processed_seasons %}
-                {% set processed_seasons = processed_seasons.update({season: True}) %}
-                <div class="grid-container" style="text-align: center;">
+                <div class="grid-container">
                   <div class="grid-item">
                     <div class="form-check form-switch ps-0 is-filled">
-                      <label class="form-check-label text-body text-truncate w-80 mb-0" for="check_all_{{ season }}" style="font-weight: bold; font-size: 1.1em;">All {{ season }}</label>
-                      <input type="checkbox" class="form-check-input" id="check_all_{{ season }}" onclick="toggleSeasonCheckboxes('{{ season }}', this)" checked>
+                      <input type="checkbox" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" class="form-check-input" {% if item.status|lower == 'unwatched' %}checked{% endif %}>
                     </div>
                   </div>
                   <div class="grid-item">
-                    <hr style="border: 3px solid; width: 100%;">
+                    <input type="text" value="{{ item.stream_link }}" readonly style="background-color: #d1cdcde5;" title="{{ item.stream_link }}">
                   </div>
                   <div class="grid-item">
-                    <hr style="border: 3px solid; width: 100%;">
+                    <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="{{ item.stream_link_override }}">
                   </div>
                   <div class="grid-item">
-                    <select name="season_special_action_{{ season }}" id="season_special_action_{{ season }}" class="{{ season }}" onchange="toggleSeasonDropdowns('{{ season }}', this)" style="width: 100%; max-width: 100%;">
+                    <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" style="width: 100%; max-width: 100%;">
                       {% for html_special_action in html_special_actions %}
-                        <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
+                        <option {% if html_special_action == item.special_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+              {% endif %}
+              <!-- SHOW: Edit Section -->
+              {% if html_object_type_selected == 'SHOW' %}
+                {% set season = item.season_episode.split('E')[0] %}
+                {% if season not in processed_seasons %}
+                  {% set processed_seasons = processed_seasons.update({season: True}) %}
+                  <div class="grid-container" style="text-align: center;">
+                    <div class="grid-item">
+                      <div class="form-check form-switch ps-0 is-filled">
+                        <label class="form-check-label text-body text-truncate w-80 mb-0" for="check_all_{{ season }}" style="font-weight: bold; font-size: 1.1em;">All {{ season }}</label>
+                        <input type="checkbox" class="form-check-input" id="check_all_{{ season }}" onclick="toggleSeasonCheckboxes('{{ season }}', this)" checked>
+                      </div>
+                    </div>
+                    <div class="grid-item">
+                      <hr style="border: 3px solid; width: 100%;">
+                    </div>
+                    <div class="grid-item">
+                      <hr style="border: 3px solid; width: 100%;">
+                    </div>
+                    <div class="grid-item">
+                      <select name="season_special_action_{{ season }}" id="season_special_action_{{ season }}" class="{{ season }}" onchange="toggleSeasonDropdowns('{{ season }}', this)" style="width: 100%; max-width: 100%;">
+                        {% for html_special_action in html_special_actions %}
+                          <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="grid-item">
+                      <input type="text" id="season_episode_prefix_{{ season }}" name="season_episode_prefix_{{ season }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}" oninput="toggleSeasonTextBoxes('{{ season }}', this)">
+                    </div>
+                    <div class="grid-item">
+                      <hr style="border: 3px solid; width: 100%;">
+                    </div>
+                  </div>
+                {% endif %}
+                <input type="hidden" name="field_season_episode_{{ loop.index }}" id="field_season_episode_{{ loop.index }}" value="{{ item.season_episode }}">
+                <div class="grid-container">
+                  <div class="grid-item">
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <label class="form-check-label text-body text-truncate w-80 mb-0" for="field_status_{{ loop.index }}">{{ item.season_episode }}</label>
+                      <input type="checkbox" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" class="form-check-input episode-checkbox {{ season }}" {% if item.status|lower == 'unwatched' %}checked{% endif %}>
+                    </div>
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" value="{{ item.stream_link }}" readonly style="background-color: #d1cdcde5;" title="{{ item.stream_link }}">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="{{ item.stream_link_override }}">
+                  </div>
+                  <div class="grid-item">
+                    <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" class="{{ season }}" style="width: 100%; max-width: 100%;">
+                      {% for html_special_action in html_special_actions %}
+                        <option {% if html_special_action == item.special_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                       {% endfor %}
                     </select>
                   </div>
                   <div class="grid-item">
-                    <input type="text" id="season_episode_prefix_{{ season }}" name="season_episode_prefix_{{ season }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}" oninput="toggleSeasonTextBoxes('{{ season }}', this)">
+                    <input type="text" id="field_episode_prefix_{{ loop.index }}" name="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}" title="{{ item.season_episode_prefix }}">
                   </div>
                   <div class="grid-item">
-                    <hr style="border: 3px solid; width: 100%;">
+                    <button type="submit" name="action" value="program_modify_delete_episode_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2" onclick="allowNavigation_save_cancel()">Delete</button>
                   </div>
                 </div>
               {% endif %}
-              <input type="hidden" name="field_season_episode_{{ loop.index }}" id="field_season_episode_{{ loop.index }}" value="{{ item.season_episode }}">
-              <div class="grid-container">
-                <div class="grid-item">
-                  <div class="form-check form-switch ps-0 is-filled">
-                    <label class="form-check-label text-body text-truncate w-80 mb-0" for="field_status_{{ loop.index }}">{{ item.season_episode }}</label>
-                    <input type="checkbox" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" class="form-check-input episode-checkbox {{ season }}" {% if item.status|lower == 'unwatched' %}checked{% endif %}>
+              <!-- VIDEO: Edit Section -->
+              {% if html_object_type_selected == 'VIDEO' %}
+                <input type="hidden" name="field_episode_prefix_{{ loop.index }}" id="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}">
+                <div class="grid-container">
+                  <div class="grid-item">
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" class="form-check-input" {% if item.status|lower == 'unwatched' %}checked{% endif %}>
+                    </div>
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="field_season_episode_{{ loop.index }}" name="field_season_episode_{{ loop.index }}" value="{{ item.season_episode }}" placeholder="i.e., Unique Video Name 01" title="{{ item.season_episode }}">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="{{ item.stream_link_override }}">
+                  </div>
+                  <div class="grid-item">
+                    <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                      {% for html_special_action in html_special_actions %}
+                        <option {% if html_special_action == item.special_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="grid-item">
+                    <button type="submit" name="action" value="program_modify_delete_episode_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2" onclick="allowNavigation_save_cancel()">Delete</button>
                   </div>
                 </div>
-                <div class="grid-item">
-                  <input type="text" value="{{ item.stream_link }}" readonly style="background-color: #d1cdcde5;" title="{{ item.stream_link }}">
-                </div>
-                <div class="grid-item">
-                  <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="{{ item.stream_link_override }}">
-                </div>
-                <div class="grid-item">
-                  <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" class="{{ season }}" style="width: 100%; max-width: 100%;">
-                    {% for html_special_action in html_special_actions %}
-                      <option {% if html_special_action == item.special_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <div class="grid-item">
-                  <input type="text" id="field_episode_prefix_{{ loop.index }}" name="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}" title="{{ item.season_episode_prefix }}">
-                </div>
-                <div class="grid-item">
-                  <button type="submit" name="action" value="program_modify_delete_episode_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2" onclick="allowNavigation_save_cancel()">Delete</button>
-                </div>
-              </div>
               {% endif %}
             {% endfor %}
           </div>
@@ -246,7 +282,7 @@
             <input type="text" id="program_modify_add_episode_episode" name="program_modify_add_episode_episode" placeholder="i.e., 1, 2, 3..." style="width: calc(5%);">
             <label for="program_modify_add_episode_episode_prefix">Episode Prefix:</label>
             <input type="text" id="program_modify_add_episode_episode_prefix" name="program_modify_add_episode_episode_prefix" placeholder="i.e., (SUB), (DUB)" style="width: calc(10%);">
-            <label for="program_modify_add_episode_stream_link_override">Stream Link Override:</label>
+            <label for="program_modify_add_episode_stream_link_override">Stream Link/File Override:</label>
             <input type="text" id="program_modify_add_episode_stream_link_override" name="program_modify_add_episode_stream_link_override" placeholder="i.e., https://link_to_website.com/path_to_streamlink" style="width: calc(25%);">
             <label for="program_modify_add_episode_special_action">Special Action:</label>
             <select name="program_modify_add_episode_special_action" id="program_modify_add_episode_special_action" style="width: calc(10%);">
@@ -256,6 +292,24 @@
             </select>
             <button type="submit" name="action" value="program_modify_add_episode" class="btn bg-gradient-primary w-20 my-2 mb-2" onclick="allowNavigation_save_cancel()">Add Episode</button>
           {% endif %}
+          <!-- VIDEOS: Add Videos -->
+          {% if html_object_type_selected == 'VIDEO' %}
+          <hr>
+          <h6>Add Episode</h6>
+          <input type="text" id="program_modify_add_episode_season" name="program_modify_add_episode_season" hidden>
+          <input type="text" id="program_modify_add_episode_episode_prefix" name="program_modify_add_episode_episode_prefix" hidden>
+          <label for="program_modify_add_episode_episode">Video Name:</label>
+          <input type="text" id="program_modify_add_episode_episode" name="program_modify_add_episode_episode" placeholder="i.e., Unique Video Name 2" style="width: calc(25%);">
+          <label for="program_modify_add_episode_stream_link_override">Stream Link/File Override:</label>
+          <input type="text" id="program_modify_add_episode_stream_link_override" name="program_modify_add_episode_stream_link_override" placeholder="i.e., https://link_to_website.com/path_to_streamlink" style="width: calc(25%);">
+          <label for="program_modify_add_episode_special_action">Special Action:</label>
+          <select name="program_modify_add_episode_special_action" id="program_modify_add_episode_special_action" style="width: calc(10%);">
+            {% for html_special_action in html_special_actions %}
+              <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" name="action" value="program_modify_add_episode" class="btn bg-gradient-primary w-20 my-2 mb-2" onclick="allowNavigation_save_cancel()">Add Video</button>
+        {% endif %}
           <!-- Save / Cancel Section -->
           {% if html_edit_flag %}
             <hr>
