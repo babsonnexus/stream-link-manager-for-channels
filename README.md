@@ -688,7 +688,7 @@ Out-of-the-box, several are included that are all functional as well as informat
 
 It is not required to set these immediately; they can be added, deleted, or modified at any time.
 
-### Search and Add Movies and Shows
+### Search and Add Movies, Shows, and Videos
 
 4. With this all in place, you can now navigate to ```Add Programs```.
 
@@ -759,7 +759,7 @@ There is also the option to select multiple results and do an action on all of t
 
 Checking off one or multiple programs will make buttons for `Bookmark All Selected` and `Hide All Selected` appear. Hiding will then do exactly that while bookmarking will give you a final screen for each of the programs you have selected. Otherwise, the activities are exactly the same as going one-by-one.
 
-Sometimes when searching, you still might not be able to find the Movie or Show you are looking for. While uncommon (see ```Troubleshooting / FAQ```), it may happen, especially for rare or foreign content. In these cases, you can always create a manual bookmark.
+Sometimes when searching, you still might not be able to find the Movie or Show you are looking for. While uncommon (see ```Troubleshooting / FAQ```), it may happen, especially for rare or foreign content. Also you may have Videos that do not fit neatly into the Movie or Show categories. In these cases, you can always create a manual bookmark.
 
 ![image](https://github.com/user-attachments/assets/c763e42f-8af8-4e0a-bad7-9e72caff7865)
 
@@ -777,9 +777,33 @@ Note that you will only be allowed to continue once you've correctly put in the 
 
 Here you will see the episodes created as designed by the user. It should be highlighted that manual entries require a ```Stream Link Override``` to be entered, otherwise they will not generate a Stream Link file.
 
+Videos are somewhat similar to Shows in that the user is creating a 'Video Group' name and must select how many individual videos they might want.
+
+![image](https://github.com/user-attachments/assets/e4bd1e27-eca3-43b7-a212-0251f0180b4c)
+
+A number is required before continuing.
+
+![image](https://github.com/user-attachments/assets/907babcf-e9a0-4559-aa74-20b60cbc6e36)
+
+Once this is done, the regular selections and controls will be made available:
+
+![image](https://github.com/user-attachments/assets/03dec435-b7a7-41b8-b8b5-627510d22cab)
+
+Videos within a Video Group must have unique names (names can be repeated in other groups). By default, they are just given generic names like 'Input name for Video 01', prompting you to change them. Should you remove the name and not put one in, that default name will be restored. If you give two or more videos the same name, all subsequent ones after the first will be given a name upon 'Done/Generate' that will let you know they are duplicates.
+
+Since these are manual entries, you must give them a 'Stream Link/File Override' in order for files to be generated. Remember that in order to make something a 'Stream File', you must choose `Make STRM` under 'Special Action'.
+
+![image](https://github.com/user-attachments/assets/4feb7340-453b-44de-b8c6-b5c2b1b29580)
+
+Unlike seen with 'episodes' for TV Shows, Videos are not reordered in **Stream Link Manager** to be shown alpha-numerically, but instead are just displayed by creation date. In Channels DVR, you can sort any way you want, but SLM is handling their creation and management in a different manner.
+
+![image](https://github.com/user-attachments/assets/22428150-2633-4b9c-854f-e385121b6fe6)
+
+Otherwise, they are exactly like other programs.
+
 ### Modify Programs
 
-5. Even if a Movie or Show is added through search or manual selection, that does not mean they are set in stone. You can use the ```Modify Programs``` area to make any update as desired.
+5. Even if a Movie, Show, or Video is added through search or manual selection, that does not mean they are set in stone. You can use the ```Modify Programs``` area to make any update as desired.
 
 ![image](https://github.com/user-attachments/assets/a0a4e244-0288-48f8-9a81-26705e034665)
 
@@ -806,6 +830,10 @@ The ```Current Stream Link``` field having the ```skipped_for_override``` or ```
 Movies are fairly similar to Shows in the options, including updating the ```Title``` and ```Release Year``` itself if the data is incorrect or not how you want it.
 
 ![image](https://github.com/user-attachments/assets/5512fe0c-d5ce-44be-ba16-313c31434314)
+
+Video options are also unique to its needs.
+
+![image](https://github.com/user-attachments/assets/ce451be4-8f4d-4e40-97fc-78e108a2f522)
 
 Programs that were previously hidden are not show in the list by default. However, you can select the ```Show Hidden``` button and they will then be in the list.
 
@@ -960,29 +988,43 @@ For now, this is a Channels DVR only function, but the code is built to allow th
 27. At this point, you have everything you need and can continue using PLM as a regular function. However, there are several settings and automated routines to consider before proceeding.
 
 ### Settings and Automation
-28. Back in the ```Settings``` area under ```Extensions, Advanced, and Experimental```, at the spot where you turned on PLM, there are two additional inputs. One is the station number you would like to start at, with a default of ```10000```. Each new Parent that is added will increase this value by one.
+28. Back in the ```Settings``` area under ```Extensions, Advanced, and Experimental```, at the spot where you turned on PLM, there are some additional inputs. One is the station number you would like to start at, with a default of ```10000```. Each new Parent that is added will increase this value by one.
 
 ![bc46bb2060f475b904d04176ab173352bb2dcd95](https://github.com/user-attachments/assets/7ced31ed-9352-49a7-8925-ebaf83266727)
 
-29. The other choice is the ```Max Stations per m3u```, with a default of ```750```. This is the number of stations that will be in an m3u file before it splits into a new file, 750 being the maximum Channels DVR allows at the time of this writing. This can be set to any positive integer. It should be noted the XML EPG data is split by the same stations in the end-result m3u(s).
+29. Another choice is the ```Max Stations per m3u```, with a default of ```750```. This is the number of stations that will be in an m3u file before it splits into a new file, 750 being the maximum Channels DVR allows at the time of this writing. This can be set to any positive integer. It should be noted the XML EPG data is split by the same stations in the end-result m3u(s).
 
-30. Further, under ```Automation``` in MTM (see details below) are two more things for you to set. The first is the equivalent of the ```Update Station List``` button. Turning this on will run a process once per day at the time you set to update the station list, thus giving you an automated way to handle changes and get new selections in the ```Unassigned Stations``` section.
+30. Additionally, there is one called `Add URL tag to m3u(s)`.
+
+![image](https://github.com/user-attachments/assets/2849244b-f8b2-4d14-a125-18927b0347ed)
+
+By default, this is off and things proceed normally.
+
+![image](https://github.com/user-attachments/assets/edce6361-3d0b-4cb6-b0e8-134ac74d6376)
+
+However, by selecting it on, a modified line is added to the m3u files for those connected to EPG XML:
+
+![image](https://github.com/user-attachments/assets/1c8a8f06-8a78-4144-94c7-f67968873f0c)
+
+Do note that these is a hidden setting that determines the 'url root' that is used for this link. It takes whatever the value is when you save the PLM options and `Add URL tag to m3u(s)` is on. As such, if you access the webpage at `http://localhost:5000`, then that is the 'url root'. However, if you did something like `http://127.0.0.0:8000`, then that will end up being your 'url root'.
+
+31. Further, under ```Automation``` in MTM (see details below) are two more things for you to set. The first is the equivalent of the ```Update Station List``` button. Turning this on will run a process once per day at the time you set to update the station list, thus giving you an automated way to handle changes and get new selections in the ```Unassigned Stations``` section.
 
 ![936126de4bb11635dc6f575b548c8f63f93c8ca1](https://github.com/user-attachments/assets/2f9ac1d2-8991-40bb-811d-556fc9c02dd0)
 
-31. When stations are updated, there are notices that are also made available in the ```Notifications``` pane in the ```Home``` area. You will get info on "Added", "Removed", and "Modified" stations, the latter meaning there has been a change in at least one field of provided data.
+32. When stations are updated, there are notices that are also made available in the ```Notifications``` pane in the ```Home``` area. You will get info on "Added", "Removed", and "Modified" stations, the latter meaning there has been a change in at least one field of provided data.
 
 ![ceb602109eadd02f18f731e8246ff6ce6aff2a1f](https://github.com/user-attachments/assets/3c2ddb87-e24b-43ad-94c7-a4ec29112caf)
 
-32. In the same vein, you can also turn on the process to update the m3u and EPG files at regular intervals.
+33. In the same vein, you can also turn on the process to update the m3u and EPG files at regular intervals.
 
 ![62eff4d47820765cfaf4accecb3a928ff0666318](https://github.com/user-attachments/assets/9853492b-17b5-4352-969b-ad69c9e2d6a6)
 
-33. Unlike the updating the station list, this one allows you to make a selection to how frequently you want the action to happen based upon a starting time. For instance, if we leave the time at ```02:01 PM``` and select ```Every 6 hours```, it will run at ```02:01 PM```, ```08:01 PM```, ```02:01 AM```, and ```08:01 AM```.
+34. Unlike the updating the station list, this one allows you to make a selection to how frequently you want the action to happen based upon a starting time. For instance, if we leave the time at ```02:01 PM``` and select ```Every 6 hours```, it will run at ```02:01 PM```, ```08:01 PM```, ```02:01 AM```, and ```08:01 AM```.
 
 ![1a5fe30027fe5e5072079da26e0e3aa1006799cf](https://github.com/user-attachments/assets/a70e379b-6b4f-4b50-b5d8-5d71c5bf2f9f)
 
-34. As with the previous automation, this one will also give you notifications. In all cases, there is additional detail available in the ```Logs``` area.
+35. As with the previous automation, this one will also give you notifications. In all cases, there is additional detail available in the ```Logs``` area.
 
 ![d06f0c709256037b1995f6ca47e10cff68e7084f](https://github.com/user-attachments/assets/499a632b-fd2c-47ce-b19b-d40232770091)
 
