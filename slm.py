@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.02.03.1751"
+slm_version = "v2025.02.10.1635"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.02.03.1751"
+    slm_version = "v2025.02.10.1635"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -54,7 +54,7 @@ class CustomRequest(Request):
         self.max_form_parts = 1000000 # Individual web components
 
 app.request_class = CustomRequest
-app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 25 # MB for submitting requests/files
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 200 # MB for submitting requests/files
 
 # Home webpage
 @app.route('/', methods=['GET', 'POST'])
@@ -2184,7 +2184,7 @@ def webpage_modify_programs():
     )
 
 # Playlists webpage and actions
-@app.route('/playlists', defaults={'sub_page': 'main'}, methods=['GET', 'POST'])
+@app.route('/playlists', defaults={'sub_page': 'plm_main'}, methods=['GET', 'POST'])
 @app.route('/playlists/<sub_page>', methods=['GET', 'POST'])
 def webpage_playlists(sub_page):
 
@@ -2217,10 +2217,10 @@ def webpage_playlists(sub_page):
     }
 
     preferred_playlists = []
-    preferred_playlists_default = [{
-        'm3u_id': 'None',
-        'prefer_name': 'None'
-    }]
+    preferred_playlists_default = [
+        {'m3u_id': 'None', 'prefer_name': 'None'},
+        {'m3u_id': 'Delete', 'prefer_name': 'Delete'}
+    ]
     preferred_playlists = get_preferred_playlists(preferred_playlists_default)
 
     child_to_parent_mappings = []
@@ -2234,7 +2234,7 @@ def webpage_playlists(sub_page):
     unassigned_child_to_parents = []
     assigned_child_to_parents = []
     all_child_to_parents_stats = {}
-    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents()
+    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents(sub_page)
 
     playlist_files = []
     playlist_files = get_playlist_files()
@@ -2440,6 +2440,8 @@ def webpage_playlists(sub_page):
 
                     if playlists_action == "parents_action_save" or playlists_action.startswith('parents_action_delete_'):
 
+                        parents_delete_on_save_flag = None
+
                         parents_parent_channel_id_inputs = {}
                         parents_parent_title_inputs = {}
                         parents_parent_tvg_id_override_inputs = {}
@@ -2490,6 +2492,8 @@ def webpage_playlists(sub_page):
                                 parents_parent_preferred_playlist_input = parents_parent_preferred_playlist_inputs.get(row)
                                 if parents_parent_preferred_playlist_input == "None":
                                     parents_parent_preferred_playlist_input = None
+                                elif parents_parent_preferred_playlist_input == "Delete":
+                                    parents_delete_on_save_flag = True
 
                                 temp_parents.append({
                                     'parent_channel_id': parents_parent_channel_id_input,
@@ -2511,14 +2515,24 @@ def webpage_playlists(sub_page):
                                         parent['parent_tvc_guide_stationid_override'] = temp_parent['parent_tvc_guide_stationid_override']
                                         parent['parent_preferred_playlist'] = temp_parent['parent_preferred_playlist']
 
-                        elif playlists_action.startswith('parents_action_delete_'):
-                            parents_action_delete_index = int(playlists_action.split('_')[-1])
-                            delete_parent_channel_id = parents_parent_channel_id_inputs[str(parents_action_delete_index)]
+                        if playlists_action.startswith('parents_action_delete_') or parents_delete_on_save_flag:
+                            
+                            parents_delete_list = []
+                            
+                            if playlists_action.startswith('parents_action_delete_'):
+                                parents_action_delete_index = int(playlists_action.split('_')[-1])
+                                parents_delete_list.append(parents_parent_channel_id_inputs[str(parents_action_delete_index)])
+                            elif parents_delete_on_save_flag:
+                                for parent in parents:
+                                    if parent['parent_preferred_playlist'] == "Delete":
+                                        parents_delete_list.append(parent['parent_channel_id'])
 
-                            # Create a temporary record with fields set to None
-                            temp_record = create_temp_record(parents[0].keys())
+                            for delete_parent_channel_id in parents_delete_list:
 
-                            if 0 <= parents_action_delete_index < len(parents):
+                                # Create a temporary record with fields set to None
+                                temp_record = create_temp_record(parents[0].keys())
+
+                                # Remove the record
                                 for parent in parents:
                                     if parent['parent_channel_id'] == delete_parent_channel_id:
                                         parents.remove(parent)
@@ -2529,19 +2543,19 @@ def webpage_playlists(sub_page):
                                     parents.append(temp_record)
                                     run_empty_row = True
 
-                            # Unassign children with that parent
-                            child_to_parents = read_data(csv_playlistmanager_child_to_parent)
-                            unassign_children = []
-                            
-                            for child_to_parent in child_to_parents:
-                                if child_to_parent['parent_channel_id'] == delete_parent_channel_id:
-                                    unassign_children.append(child_to_parent['child_m3u_id_channel_id'])
+                                # Unassign children with that parent
+                                child_to_parents = read_data(csv_playlistmanager_child_to_parent)
+                                unassign_children = []
+                                
+                                for child_to_parent in child_to_parents:
+                                    if child_to_parent['parent_channel_id'] == delete_parent_channel_id:
+                                        unassign_children.append(child_to_parent['child_m3u_id_channel_id'])
 
-                            if unassign_children:
-                                for unassign_child in unassign_children:
-                                    set_child_to_parent(unassign_child, "Unassigned")
+                                if unassign_children:
+                                    for unassign_child in unassign_children:
+                                        set_child_to_parent(unassign_child, "Unassigned")
 
-                                unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents()
+                            unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents(sub_page)
 
                     elif playlists_action == "parents_action_new" or '_make_parent_' in playlists_action:
                         
@@ -2564,6 +2578,8 @@ def webpage_playlists(sub_page):
                             parents_parent_tvc_guide_stationid_override_input = request.form.get('parents_parent_tvc_guide_stationid_override_new')
                             parents_parent_preferred_playlist_input = request.form.get('parents_parent_preferred_playlist_new')
                             if parents_parent_preferred_playlist_input == "None":
+                                parents_parent_preferred_playlist_input = None
+                            elif parents_parent_preferred_playlist_input == "Delete":
                                 parents_parent_preferred_playlist_input = None
 
                         elif '_make_parent_' in playlists_action:
@@ -2608,7 +2624,7 @@ def webpage_playlists(sub_page):
                             child_to_parents_channel_id = child_to_parents_channel_id_inputs[child_to_parents_action_make_parent_index]
 
                             set_child_to_parent(child_to_parents_channel_id, parents_parent_channel_id_input)
-                            unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents()
+                            unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents(sub_page)
 
                         parents.append({
                             "parent_channel_id": parents_parent_channel_id_input,
@@ -2747,13 +2763,13 @@ def webpage_playlists(sub_page):
                     write_data(csv_playlistmanager_parents, parents)
                     parents = read_data(csv_playlistmanager_parents)
                     child_to_parent_mappings = get_child_to_parent_mappings(child_to_parent_mappings_default)
-                    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents()
+                    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents(sub_page)
 
             elif '_update_' in playlists_action:
 
                 if playlists_action == 'final_playlists_action_update_station_list':
                     get_combined_m3us()
-                    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents()
+                    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents(sub_page)
 
                 elif playlists_action == 'final_playlists_action_update_m3u_epg':
                     get_final_m3us_epgs()
@@ -2898,6 +2914,8 @@ def get_combined_m3us():
 
 # Parse the m3u Playlist to get all the details
 def parse_m3u(m3u_id, m3u_name, response):
+    print(f"\n{current_time()} INFO: Beginning parse of {m3u_name} ({m3u_id}).")
+
     data = response.text.splitlines()
     cleaned_data = clean_m3u(data)
     
@@ -2988,6 +3006,22 @@ def parse_m3u(m3u_id, m3u_name, response):
     if current_record:
         records.append(current_record)
 
+    print(f"\n{current_time()} INFO: Initial parse of {m3u_name} ({m3u_id}) complete. Beginning check for unique 'channel-id' values.")
+
+    # Ensure unique channel-id
+    channel_id_counts = {}
+    for record in records:
+        channel_id = record['channel_id']
+        if channel_id in channel_id_counts:
+            channel_id_counts[channel_id] += 1
+            new_channel_id = f"{channel_id}_{channel_id_counts[channel_id]:04d}"
+            record['channel_id'] = new_channel_id
+            record['station_playlist'] = f"{record['title']} on {m3u_name} [{new_channel_id}]"
+        else:
+            channel_id_counts[channel_id] = 0
+
+    print(f"\n{current_time()} INFO: Finished parse of {m3u_name} ({m3u_id}).")
+
     return records
 
 # Removes extra carriage returns that mess up reading the data
@@ -3047,7 +3081,7 @@ def get_child_to_parent_mappings(child_to_parent_mappings_default):
     return final_child_to_parent_mappings
 
 # Creates the list of Unassigned and Assigned stations on the webpage
-def get_child_to_parents():
+def get_child_to_parents(sub_page):
     playlists = read_data(csv_playlistmanager_playlists)
     combined_m3us = read_data(csv_playlistmanager_combined_m3us)
     child_to_parents = read_data(csv_playlistmanager_child_to_parent)
@@ -3057,92 +3091,93 @@ def get_child_to_parents():
     sorted_all_child_to_parents = []
     unassigned_child_to_parents = []
     assigned_child_to_parents = []
+    all_child_to_parents_stats = {}
 
-    for playlist in playlists:
-        station_count = sum(1 for record in combined_m3us if record['m3u_id'] == playlist['m3u_id'])
-        playlists_station_count.append({
-            'm3u_id': playlist['m3u_id'],
-            'station_count': station_count
-        })
+    if sub_page == 'plm_manage':
+        for playlist in playlists:
+            station_count = sum(1 for record in combined_m3us if record['m3u_id'] == playlist['m3u_id'])
+            playlists_station_count.append({
+                'm3u_id': playlist['m3u_id'],
+                'station_count': station_count
+            })
 
-    for child_to_parent in child_to_parents:
-        for combined_m3u in combined_m3us:
-            check_m3u_id_channel_id = f"{combined_m3u['m3u_id']}_{combined_m3u['channel_id']}"
+    if sub_page is None or sub_page in ['plm_main', 'plm_modify_assigned_stations']:
+        combined_m3u_dict = {f"{m3u['m3u_id']}_{m3u['channel_id']}": m3u for m3u in combined_m3us}
+        playlist_dict = {playlist['m3u_id']: playlist for playlist in playlists}
 
-            if check_m3u_id_channel_id == child_to_parent['child_m3u_id_channel_id']:
-
+        for child_to_parent in child_to_parents:
+            check_m3u_id_channel_id = child_to_parent['child_m3u_id_channel_id']
+            if check_m3u_id_channel_id in combined_m3u_dict:
+                combined_m3u = combined_m3u_dict[check_m3u_id_channel_id]
                 child_to_parent_channel_id = f"{combined_m3u['m3u_id']}_{combined_m3u['channel_id']}"
                 child_to_parent_title = combined_m3u['title']
 
-                for playlist in playlists:
-                    if playlist['m3u_id'] == combined_m3u['m3u_id']:
-                        child_to_parent_m3u_name = f"{playlist['m3u_name']} [{child_to_parent_channel_id}]"
-                        if playlist['m3u_active'] == "On":
-                            all_child_to_parents_append = True
-                        else:
-                            all_child_to_parents_append = None
-                        break
+                playlist = playlist_dict.get(combined_m3u['m3u_id'])
+                if playlist:
+                    child_to_parent_m3u_name = f"{playlist['m3u_name']} [{child_to_parent_channel_id}]"
+                    all_child_to_parents_append = playlist['m3u_active'] == "On"
 
-                if combined_m3u['tvc_guide_description'] is not None and combined_m3u['tvc_guide_description'] != '':
-                    child_to_parent_description = combined_m3u['tvc_guide_description']
-                elif combined_m3u['tvg_description'] is not None and combined_m3u['tvg_description'] != '':
-                    child_to_parent_description = combined_m3u['tvg_description']
-                else:
-                    child_to_parent_description = "No description available..."
-        
-                child_to_parent_parent_channel_id = child_to_parent['parent_channel_id']
+                    if combined_m3u['tvc_guide_description']:
+                        child_to_parent_description = combined_m3u['tvc_guide_description']
+                    elif combined_m3u['tvg_description']:
+                        child_to_parent_description = combined_m3u['tvg_description']
+                    else:
+                        child_to_parent_description = "No description available..."
 
-                if all_child_to_parents_append:
-                    all_child_to_parents.append({
-                        'channel_id': child_to_parent_channel_id,
-                        'title': child_to_parent_title,
-                        'm3u_name': child_to_parent_m3u_name,
-                        'description': child_to_parent_description,
-                        'parent_channel_id': child_to_parent_parent_channel_id
-                    })
+                    child_to_parent_parent_channel_id = child_to_parent['parent_channel_id']
+
+                    if all_child_to_parents_append:
+                        all_child_to_parents.append({
+                            'channel_id': child_to_parent_channel_id,
+                            'title': child_to_parent_title,
+                            'm3u_name': child_to_parent_m3u_name,
+                            'description': child_to_parent_description,
+                            'parent_channel_id': child_to_parent_parent_channel_id
+                        })
+
+        # Split unassigned and assigned
+        sorted_all_child_to_parents = sorted(all_child_to_parents, key=lambda x: sort_key(x["title"].casefold()))
+        for sorted_all_child_to_parent in sorted_all_child_to_parents:
+            if sorted_all_child_to_parent['parent_channel_id'] == "Unassigned":
+                unassigned_child_to_parents.append({
+                    'channel_id': sorted_all_child_to_parent['channel_id'],
+                    'title': sorted_all_child_to_parent['title'],
+                    'm3u_name': sorted_all_child_to_parent['m3u_name'],
+                    'description': sorted_all_child_to_parent['description'],
+                    'parent_channel_id': sorted_all_child_to_parent['parent_channel_id']
+                })
+            else:
+                assigned_child_to_parents.append({
+                    'channel_id': sorted_all_child_to_parent['channel_id'],
+                    'title': sorted_all_child_to_parent['title'],
+                    'm3u_name': sorted_all_child_to_parent['m3u_name'],
+                    'description': sorted_all_child_to_parent['description'],
+                    'parent_channel_id': sorted_all_child_to_parent['parent_channel_id']
+                })
 
     # Create statistics
-    total_records = len(all_child_to_parents)
+    if sub_page is None or sub_page == 'plm_main':
+        total_records = len(all_child_to_parents)
 
-    unassigned_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Unassigned")
-    ignore_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Ignore")
+        unassigned_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Unassigned")
+        ignore_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Ignore")
 
-    assigned_to_parent_ids = {record['parent_channel_id'] for record in all_child_to_parents if record['parent_channel_id'] not in ["Unassigned", "Ignore"]}
-    assigned_to_parent_count = len(assigned_to_parent_ids)
+        assigned_to_parent_ids = {record['parent_channel_id'] for record in all_child_to_parents if record['parent_channel_id'] not in ["Unassigned", "Ignore"]}
+        assigned_to_parent_count = len(assigned_to_parent_ids)
 
-    redundant_count = total_records - (unassigned_count + ignore_count + assigned_to_parent_count)
-    
-    all_child_to_parents_stats = {
-        'total_records': total_records,
-        'unassigned_count': unassigned_count,
-        'unassigned_percentage': calc_percentage(unassigned_count, total_records),
-        'ignore_count': ignore_count,
-        'ignore_percentage': calc_percentage(ignore_count, total_records),
-        'assigned_to_parent_count': assigned_to_parent_count,
-        'assigned_to_parent_percentage': calc_percentage(assigned_to_parent_count, total_records),
-        'redundant_count': redundant_count,
-        'redundant_percentage': calc_percentage(redundant_count, total_records),
-    }
-
-    # Split unassigned and assigned
-    sorted_all_child_to_parents = sorted(all_child_to_parents, key=lambda x: sort_key(x["title"].casefold()))
-    for sorted_all_child_to_parent in sorted_all_child_to_parents:
-        if sorted_all_child_to_parent['parent_channel_id'] == "Unassigned":
-            unassigned_child_to_parents.append({
-                'channel_id': sorted_all_child_to_parent['channel_id'],
-                'title': sorted_all_child_to_parent['title'],
-                'm3u_name': sorted_all_child_to_parent['m3u_name'],
-                'description': sorted_all_child_to_parent['description'],
-                'parent_channel_id': sorted_all_child_to_parent['parent_channel_id']
-            })
-        else:
-            assigned_child_to_parents.append({
-                'channel_id': sorted_all_child_to_parent['channel_id'],
-                'title': sorted_all_child_to_parent['title'],
-                'm3u_name': sorted_all_child_to_parent['m3u_name'],
-                'description': sorted_all_child_to_parent['description'],
-                'parent_channel_id': sorted_all_child_to_parent['parent_channel_id']
-            })
+        redundant_count = total_records - (unassigned_count + ignore_count + assigned_to_parent_count)
+        
+        all_child_to_parents_stats = {
+            'total_records': total_records,
+            'unassigned_count': unassigned_count,
+            'unassigned_percentage': calc_percentage(unassigned_count, total_records),
+            'ignore_count': ignore_count,
+            'ignore_percentage': calc_percentage(ignore_count, total_records),
+            'assigned_to_parent_count': assigned_to_parent_count,
+            'assigned_to_parent_percentage': calc_percentage(assigned_to_parent_count, total_records),
+            'redundant_count': redundant_count,
+            'redundant_percentage': calc_percentage(redundant_count, total_records),
+        }
 
     return unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count
 
@@ -4551,6 +4586,7 @@ def webpage_tools_automation():
     auto_update_schedule_frequency = settings[18]["settings"]
     plm_update_stations_schedule = settings[13]["settings"]
     plm_update_stations_schedule_time = settings[14]["settings"]
+    plm_update_stations_schedule_frequency = settings[44]["settings"]    # [44] PLM: Update Stations Process Schedule Frequency
     plm_update_m3us_epgs_schedule = settings[15]["settings"]
     plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
     plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
@@ -4769,9 +4805,11 @@ def webpage_tools_automation():
                 elif action.startswith('plm_update_stations_process'):
                     plm_update_stations_schedule_input = request.form.get('plm_update_stations_schedule')
                     plm_update_stations_schedule_time_input = request.form.get('plm_update_stations_schedule_time')
+                    plm_update_stations_schedule_frequency_input = request.form.get('plm_update_stations_schedule_frequency')
 
                     settings[13]["settings"] = "On" if plm_update_stations_schedule_input == 'on' else "Off"
                     settings[14]["settings"] = plm_update_stations_schedule_time_input
+                    settings[44]["settings"] = plm_update_stations_schedule_frequency_input
 
                 elif action.startswith('plm_update_m3us_epgs_process'):
                     plm_update_m3us_epgs_schedule_input = request.form.get('plm_update_m3us_epgs_schedule')
@@ -4803,6 +4841,7 @@ def webpage_tools_automation():
             auto_update_schedule_frequency = settings[18]["settings"]
             plm_update_stations_schedule = settings[13]["settings"]
             plm_update_stations_schedule_time = settings[14]["settings"]
+            plm_update_stations_schedule_frequency = settings[44]["settings"]    # [44] PLM: Update Stations Process Schedule Frequency
             plm_update_m3us_epgs_schedule = settings[15]["settings"]
             plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
             plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
@@ -4837,6 +4876,7 @@ def webpage_tools_automation():
         html_auto_update_schedule_time = auto_update_schedule_time,
         html_plm_update_stations_schedule = plm_update_stations_schedule,
         html_plm_update_stations_schedule_time = plm_update_stations_schedule_time,
+        html_plm_update_stations_schedule_frequency = plm_update_stations_schedule_frequency,
         html_slm_end_to_end_frequencies = slm_end_to_end_frequencies,
         html_auto_update_schedule_frequency = auto_update_schedule_frequency,
         html_plm_update_m3us_epgs_schedule = plm_update_m3us_epgs_schedule,
@@ -4901,6 +4941,8 @@ def check_schedule():
         auto_update_schedule_frequency_parsed = int(re.search(r'\d+', auto_update_schedule_frequency).group())
         plm_update_stations_schedule = settings[13]["settings"]
         plm_update_stations_schedule_time = settings[14]["settings"]
+        plm_update_stations_schedule_frequency = settings[44]["settings"]    # [44] PLM: Update Stations Process Schedule Frequency
+        plm_update_stations_schedule_frequency_parsed = int(re.search(r'\d+', plm_update_stations_schedule_frequency).group())
         plm_update_m3us_epgs_schedule = settings[15]["settings"]
         plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
         plm_m3us_epgs_schedule_frequency = settings[17]["settings"]
@@ -4947,7 +4989,9 @@ def check_schedule():
                 wait_trigger = True
 
         if plm_update_stations_schedule == 'On' and plm_update_stations_schedule_time:
-            if current_time == plm_update_stations_schedule_time:
+            plm_update_stations_schedule_hour, plm_update_stations_schedule_minute = map(int, plm_update_stations_schedule_time.split(':'))
+
+            if current_minute == plm_update_stations_schedule_minute and (current_hour - plm_update_stations_schedule_hour) % plm_update_stations_schedule_frequency_parsed == 0:
                 threading.Thread(target=get_combined_m3us).start()
                 wait_trigger = True
         
@@ -5049,7 +5093,7 @@ def check_upgrade():
     if current_version == slm_version or current_version == None:
         gen_upgrade_flag = None
     else:
-        notification_add(f"\n{current_time()} Upgrade available ({current_version})! Please follow directions at '{github_url}#upgrade'.\n")
+        notification_add(f"\n{current_time()} Upgrade available ({current_version})! Please follow directions at '{github_url}/wiki/Upgrade-‐-Overview'.\n")
         gen_upgrade_flag = True
 
 # SLM: End-to-End Update Process
@@ -7235,7 +7279,7 @@ def clean_stream_link(stream_link_dirty, object_type):
 
         # Remove tracker elements
         not_remove_trackers = [
-            "amazon.com" #,
+            "amazon." #,
             # Add more as needed
         ]
         if '?' in stream_link_cleaned and not any(not_remove_tracker in stream_link_cleaned for not_remove_tracker in not_remove_trackers):
@@ -7250,12 +7294,14 @@ def clean_stream_link(stream_link_dirty, object_type):
         # Stream Link Mappings
         for slmapping in slmappings:
             if slmapping['active'].lower() == "on":
-                if stream_link.__contains__(slmapping['contains_string']):
-                    if slmapping['object_type'] == "MOVIE or SHOW" or slmapping['object_type'] == object_type:
+                if slmapping['object_type'] == "MOVIE or SHOW" or slmapping['object_type'] == object_type:
+                    if stream_link.__contains__(slmapping['contains_string']) and slmapping['replace_type'] in ["Replace string with...", "Replace entire Stream Link with..."]:
                         if slmapping['replace_type'] == "Replace string with...":
                             stream_link = stream_link.replace(slmapping['contains_string'], slmapping['replace_string'])
                         elif slmapping['replace_type'] == "Replace entire Stream Link with...":
                             stream_link = slmapping['replace_string']
+                    elif re.compile(slmapping['contains_string']).search(stream_link) and slmapping['replace_type'] == "Replace pattern (REGEX) with...":
+                        stream_link = re.sub(re.compile(slmapping['contains_string']), slmapping['replace_string'], stream_link)
 
     return stream_link
 
@@ -8041,6 +8087,7 @@ def webpage_settings():
     ]
     slmappings_replace_type = [
         "Replace string with...",
+        "Replace pattern (REGEX) with...",
         "Replace entire Stream Link with..."
     ]
 
@@ -8754,11 +8801,14 @@ def sort_key(title):
         "turkish": ["bir"]
     }
     
-    words = title.casefold().split()
+    # Remove non-alphabetic characters
+    cleaned_title = re.sub(r'[^a-zA-Z\s]', '', title)
+    words = cleaned_title.casefold().split()
+    
     for lang, art_list in articles.items():
-        if words[0] in art_list:
+        if words and words[0] in art_list:
             return " ".join(words[1:])
-    return title.casefold()
+    return cleaned_title.casefold()
 
 # Normalize the file path for systems that can't handle certain characters like 'é'
 def normalize_path(path):
@@ -9394,6 +9444,7 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": 750}, 43, "PLM: Streaming Stations Max number of stations per m3u")
         check_and_append(csv_file, {"settings": "Off"}, 44, "PLM: URL Tag in m3u(s) On/Off")
         check_and_append(csv_file, {"settings": "http://localhost:5000"}, 45, "PLM: URL Tag in m3u(s) Preferred URL Root")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 46, "PLM: Update Stations Process Schedule Frequency")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -9442,7 +9493,8 @@ def initial_data(csv_file):
                     {"settings": 5000},                                                        # [40] PLM: Streaming Stations Starting station number
                     {"settings": 750},                                                         # [41] PLM: Streaming Stations Max number of stations per m3u
                     {"settings": "Off"},                                                       # [42] PLM: URL Tag in m3u(s) On/Off
-                    {"settings": "http://localhost:5000"}                                      # [43] PLM: URL Tag in m3u(s) Preferred URL Root
+                    {"settings": "http://localhost:5000"},                                     # [43] PLM: URL Tag in m3u(s) Preferred URL Root
+                    {"settings": "Every 24 hours"}                                             # [44] PLM: Update Stations Process Schedule Frequency
         ]        
     elif csv_file == csv_streaming_services:
         data = get_streaming_services()
@@ -9504,7 +9556,7 @@ def check_website(url):
 
 # Used to loop through a URL that might error
 def fetch_url(url, retries, delay):
-    timeout_duration = 60
+    timeout_duration = 120
 
     for attempt in range(retries):
         try:
