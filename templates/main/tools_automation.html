@@ -208,6 +208,16 @@
                     <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_stations_schedule_time">Run at:</label>
                     <input type="time" id="plm_update_stations_schedule_time" name="plm_update_stations_schedule_time" value="{{ html_plm_update_stations_schedule_time }}" class="ms-3">
                   </div>
+                  <div style="margin-top: 10px;">
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_update_stations_schedule_frequency">And run:</label>
+                    <div style="margin-left: 15px;">
+                      <select class="select2" name="plm_update_stations_schedule_frequency" id="plm_update_stations_schedule_frequency">
+                        {% for html_automation_frequency in html_automation_frequencies %}
+                          <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_plm_update_stations_schedule_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
                   <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                     <button type="submit" name="action" value="plm_update_stations_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
                     <button type="submit" name="action" value="plm_update_stations_process_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
