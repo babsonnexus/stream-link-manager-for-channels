@@ -69,7 +69,7 @@ Included are a set of activities that can be done to help work with certain data
 
 # Installation, Setup, Management, and Usage
 
-Full details of installation, setup, management, usage, and other details are available [in the Wiki](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki).
+Full details of installation, setup, management, usage, and other concerns are available [in the Wiki](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki).
 
 ---
 # Support
