@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.02.10.1635"
+slm_version = "v2025.02.18.1434"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.02.10.1635"
+    slm_version = "v2025.02.18.1434"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -4567,6 +4567,132 @@ def is_valid_csv(content):
         # If the content raises a CSV parsing error, it's likely not a valid CSV
         return False
 
+# Webpage - Tools - Channels Clients
+@app.route('/tools_channelsclients', methods=['GET', 'POST'])
+def webpage_tools_channelsclients():
+    global local_channels_client_selected
+
+    # Connection Variables
+    client_port = ':57000'
+    retries = 3
+    delay = 5
+    # Non-API GET paths
+    client_log_path = '/log'
+    # API GET paths
+    client_api_status = '/api/status'                               # Player's current status
+    client_api_favorite_channels = '/api/favorite_channels'         # List of favorite channels
+    # API POST paths
+    client_api_toggle_mute = '/api/toggle_mute'                     # Toggle mute on and off
+    client_api_toggle_cc = '/api/toggle_cc'                         # Toggle captions on and off
+    client_api_toggle_pip = '/api/toggle_pip'                       # Toggle Picture in Picture on and off
+    client_api_channel_up = '/api/channel_up'                       # Change the channel
+    client_api_channel_down = '/api/channel_down'                   # Change the channel
+    client_api_previous_channel = '/api/previous_channel'           # Jump to the previous channel
+    client_api_toggle_pause = '/api/toggle_pause'                   # Pause or resume playback based on current playing state
+    client_api_toggle_record = '/api/toggle_record'                 # Record the program playing on the current channel
+    client_api_pause = '/api/pause'                                 # Pause playback
+    client_api_resume = '/api/resume'                               # Resume playback
+    client_api_stop = '/api/stop'                                   # Stop playback
+    client_api_seek = '/api/seek/'                                  # {seconds} Seek in timeline by seconds
+    client_api_seek_forward = '/api/seek_forward'                   # Seek ahead duration in settings
+    client_api_seek_backward = '/api/seek_backward'                 # Seek back duration in settings
+    client_api_skip_forward = '/api/skip_forward'                   # Skip to the next chapter mark
+    client_api_skip_backward = '/api/skip_backward'                 # Skip to the previous chapter mark
+    client_api_play_channel = '/api/play/channel/'                  # {channel_number} Play a channel
+    client_api_play_recording = '/api/play/recording/'              # {recording_id} Play a recording
+    client_api_navigate = '/api/navigate/'                          # {section_name} Change to a section of the app by providing its name. EX, Guide, Library, Live TV
+    client_api_notify = '/api/notify'                               # Present a notification while playing video' - example payload: {"title":"Arrived home", "message":"Jon has arrived home"} 
+
+    client_hostname = None
+    url_base = None
+    tools_channelsclients_message = ''
+    client_log = []
+    local_channels_client_notify_title = ''
+    local_channels_client_notify_message = ''
+    local_channels_client_notify_timeout = '30'
+    local_channels_client_notify_pass = None
+
+    channels_clients = get_channels_dvr_json('channels_clients')
+    local_channels_clients = [channels_client for channels_client in channels_clients if channels_client['Seen From'] == 'local']
+    csv_channels_clients = view_csv(channels_clients, "library", None)
+
+    if request.method == 'POST':
+        action = request.form['action']
+        local_channels_client_selected_input = request.form.get('local_channels_client_selected')
+        local_channels_client_selected = local_channels_client_selected_input
+
+        for channels_client in channels_clients:
+            if channels_client['Client ID'] == local_channels_client_selected_input:
+                url_base = f"http://{channels_client['Local IP']}{client_port}"
+                client_hostname = channels_client['Hostname']
+                break
+
+        if action == 'client_non_api_get_log':
+            url = f"{url_base}{client_log_path}"            
+            response = fetch_url(url, retries, delay)
+            
+            if response:
+                client_log = response.text.splitlines()
+                client_log = [line for line in client_log if line != '']
+            else:
+                tools_channelsclients_message = f"{current_time()} ERROR: Unable to retrieve log from {client_hostname}. Please try again."
+
+        elif action == 'client_api_post_notify':
+            local_channels_client_notify_title_input = request.form.get('local_channels_client_notify_title')
+            local_channels_client_notify_message_input = request.form.get('local_channels_client_notify_message')
+            local_channels_client_notify_timeout_input = request.form.get('local_channels_client_notify_timeout')
+
+            local_channels_client_notify_title = local_channels_client_notify_title_input
+            local_channels_client_notify_message = local_channels_client_notify_message_input
+            local_channels_client_notify_timeout = local_channels_client_notify_timeout_input
+
+            url = f"{url_base}{client_api_notify}"
+
+            if local_channels_client_notify_title_input is None or local_channels_client_notify_title_input == '':
+                tools_channelsclients_message = f"{current_time()} ERROR: 'Title' is empty. Please enter a valid value."
+            
+            elif local_channels_client_notify_message_input is None or local_channels_client_notify_message_input == '':
+                tools_channelsclients_message = f"{current_time()} ERROR: 'Message' is empty. Please enter a valid value."
+
+            else:
+                try:
+                    if int(local_channels_client_notify_timeout_input) > 0:
+                        local_channels_client_notify_pass = True
+                    else:
+                        tools_channelsclients_message = f"{current_time()} ERROR: For 'Display For', please enter a positive integer."
+                except ValueError:
+                    tools_channelsclients_message = f"{current_time()} ERROR: 'Display For' must be a number in seconds."
+
+                if local_channels_client_notify_pass:
+                    json_data = { "title": local_channels_client_notify_title_input, "message": local_channels_client_notify_message_input, "timeout": local_channels_client_notify_timeout_input }
+                    response = post_url(url, json_data, retries, delay)
+
+                    if response:
+                        tools_channelsclients_message = f"{current_time()} INFO: Notification sent to {client_hostname}."
+                    else:
+                        tools_channelsclients_message = f"{current_time()} ERROR: Unable to send notification to {client_hostname}. Please try again."
+
+    return render_template(
+        'main/tools_channelsclients.html',
+        segment = 'tools_channelsclients',
+        html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
+        html_tools_channelsclients_message = tools_channelsclients_message,
+        html_channels_clients = channels_clients,
+        html_local_channels_clients = local_channels_clients,
+        html_csv_channels_clients = csv_channels_clients,
+        html_local_channels_client_selected = local_channels_client_selected,
+        html_client_log = client_log,
+        html_local_channels_client_notify_title = local_channels_client_notify_title,
+        html_local_channels_client_notify_message = local_channels_client_notify_message,
+        html_local_channels_client_notify_timeout = local_channels_client_notify_timeout
+    )
+
 # Webpage - Tools - Automation
 @app.route('/tools_automation', methods=['GET', 'POST'])
 def webpage_tools_automation():
@@ -5090,7 +5216,7 @@ def check_upgrade():
                 current_version = line[start_index:start_index + 16]
                 break
 
-    if current_version == slm_version or current_version == None:
+    if current_version == slm_version or current_version == None or slm_environment_version == 'PRERELEASE':
         gen_upgrade_flag = None
     else:
         notification_add(f"\n{current_time()} Upgrade available ({current_version})! Please follow directions at '{github_url}/wiki/Upgrade-‐-Overview'.\n")
@@ -8758,6 +8884,7 @@ def web_errors(response):
             print(f"    Data: No data")
         if request.form:
             print(f"    Form Data: {request.form}")
+
     return response
 
 ### Administative Functions
@@ -9511,8 +9638,8 @@ def initial_data(csv_file):
             {"active": "Off", "contains_string": "hulu.com/watch", "object_type": "MOVIE or SHOW", "replace_type": "Replace string with...", "replace_string": "disneyplus.com/play"},
             {"active": "On", "contains_string": "netflix.com/title", "object_type": "MOVIE", "replace_type": "Replace string with...", "replace_string": "netflix.com/watch"},
             {"active": "On", "contains_string": "watch.amazon.com/detail?gti=", "object_type": "MOVIE or SHOW", "replace_type": "Replace string with...", "replace_string": "www.amazon.com/gp/video/detail/"},
-            {"active": "Off", "contains_string": "vudu.com", "object_type": "MOVIE or SHOW", "replace_type": "Replace entire Stream Link with...", "replace_string": "fandangonow://"} #,
-            # Add more rows as needed
+            {"active": "Off", "contains_string": "vudu.com", "object_type": "MOVIE or SHOW", "replace_type": "Replace entire Stream Link with...", "replace_string": "fandangonow://"},
+            {"active": "On", "contains_string": "peacocktv.com/watch/asset/.+?/([a-zA-Z0-9\\\\-]+)$", "object_type": "MOVIE or SHOW", "replace_type": "Replace pattern (REGEX) with...", "replace_string": 'peacocktv.com/deeplink?deeplinkData={"pvid":"\\1","type":"PROGRAMME","action":"PLAY"}'}
         ]
     # Playlist Manager
     elif csv_file == csv_playlistmanager_playlists:
@@ -9561,16 +9688,41 @@ def fetch_url(url, retries, delay):
     for attempt in range(retries):
         try:
             response = requests.get(url, headers=url_headers, timeout=timeout_duration)
+            
             if response.status_code == 200:
                 return response
             else:
                 raise Exception(f"HTTP Status Code {response.status_code}")
+            
         except Exception as e:
             if attempt < retries - 1:
                 print(f"\n{current_time()} WARNING: For '{url}', encountered an error ({e}). Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
                 notification_add(f"\n{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...")
+
+# Used to send a post command to a URL that might error
+def post_url(url, json_data, retries, delay):
+    timeout_duration = 120
+
+    for attempt in range(retries):
+        try:
+            if json_data:
+                response = requests.post(url, headers=url_headers, json=json_data, timeout=timeout_duration)
+            else:
+                response = requests.post(url, headers=url_headers, timeout=timeout_duration)
+
+            if response.status_code == 200:
+                return response
+            else:
+                raise Exception(f"HTTP Status Code {response.status_code}")
+            
+        except Exception as e:
+            if attempt < retries - 1:
+                print(f"\n{current_time()} WARNING: For '{url}', encountered an error ({e}). Retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                notification_add(f"\n{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...") 
 
 # Searches for an IP Address on the LAN that responds to Port 8089
 def get_channels_url():
@@ -9680,6 +9832,8 @@ def get_channels_dvr_json(selection):
         route = '/api/v1/channels'
     elif selection == 'channel_collections':
         route = '/dvr/collections/channels'
+    elif selection == 'channels_clients':
+        route = '/settings'
 
     if route:
         url = f"{channels_url}{route}"
@@ -9734,7 +9888,42 @@ def get_channels_dvr_json(selection):
                                 "Channel Collection Name": name
                                 })
                         
-                    results_library = sorted(results_library, key=lambda x: (sort_key(x["Station ID"].casefold()), sort_key(x["Channel Collection Name"].casefold())))                       
+                    results_library = sorted(results_library, key=lambda x: (sort_key(x["Station ID"].casefold()), sort_key(x["Channel Collection Name"].casefold())))
+
+                elif selection == 'channels_clients':
+                    clients_info = {}
+                    for key, value in results_base_json.items():
+                        if key.startswith('clients.info.'):
+                            parts = key.split('.')
+                            client_id = parts[2]
+                            field = parts[3]
+                            if client_id not in clients_info:
+                                clients_info[client_id] = {
+                                    'alias': '',
+                                    'hostname': '',
+                                    'local_ip': '',
+                                    'machine_id': '',
+                                    'remote_ip': '',
+                                    'seen_at': '',
+                                    'seen_from': '',
+                                    'user_agent': ''
+                                }
+                            clients_info[client_id][field] = value
+
+                    for client_id, client_data in clients_info.items():
+                        results_library.append({
+                            'Hostname': client_data['hostname'],
+                            'Alias': client_data['alias'],
+                            'User Agent': client_data['user_agent'],
+                            'Seen From': client_data['seen_from'],
+                            'Local IP': client_data['local_ip'],
+                            'Remote IP': client_data['remote_ip'],
+                            'Client ID': client_id,
+                            'Machine ID': client_data['machine_id'],
+                            'Seen At': client_data['seen_at']
+                        })
+
+                    results_library = sorted(results_library, key=lambda x: sort_key(x["Hostname"].casefold()))
 
     return results_library
 
@@ -9997,6 +10186,7 @@ csv_explorer_results = None
 csv_explorer_entry_prior = ''
 streaming_stations_source_test_prior = ''
 streaming_stations_url_test_prior = ''
+local_channels_client_selected = None
 
 ### Start-up process and safety checks
 # Program directories
