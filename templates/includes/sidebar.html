@@ -27,7 +27,8 @@
             </div>
             <span class="nav-link-text ms-1">Stream Links & Files</span>
           </a>
-          <div class="collapse {% if 'addprograms' in segment or 'modifyprograms' in segment %}show{% endif %}" id="collapseStreamLinkFileManager">
+          {% set stream_link_segments = ['addprograms', 'modifyprograms'] %}
+          <div class="collapse {% if segment in stream_link_segments %}show{% endif %}" id="collapseStreamLinkFileManager">
             <ul class="navbar-nav ms-3">
               <li class="nav-item">
                 <a class="nav-link text-white {% if 'addprograms' in segment %} active bg-gradient-primary {% endif %}" 
@@ -60,7 +61,8 @@
           </div>
           <span class="nav-link-text ms-1">Playlists</span>
         </a>
-        <div class="collapse {% if 'plm_main' in segment or 'plm_modify_assigned_stations' in segment or 'plm_parent_stations' in segment or 'plm_manage' in segment or 'plm_streams' in segment %}show{% endif %}" id="collapsePlaylistManager">
+        {% set playlist_segments = ['plm_main', 'plm_modify_assigned_stations', 'plm_parent_stations', 'plm_manage', 'plm_streams'] %}
+        <div class="collapse {% if segment in playlist_segments %}show{% endif %}" id="collapsePlaylistManager">
           <ul class="navbar-nav ms-3">
             <li class="nav-item">
               <a class="nav-link text-white {% if 'plm_main' in segment %} active bg-gradient-primary {% endif %}" 
@@ -122,8 +124,8 @@
             </div>
             <span class="nav-link-text ms-1">Tools</span>
           </a>
-          <div class="collapse {% if 'reports_queries' in segment or 'tools_gracenotesearch' in segment or 'tools_csvexplorer' in segment or 'tools_automation' in segment %}show{% endif %}" id="collapseTools">
-            <ul class="navbar-nav ms-3">
+          {% set tools_segments = ['reports_queries', 'tools_gracenotesearch', 'tools_csvexplorer', 'tools_channelsclients', 'tools_automation'] %}
+          <div class="collapse {% if segment in tools_segments %}show{% endif %}" id="collapseTools">            <ul class="navbar-nav ms-3">
               <li class="nav-item">
                 <a class="nav-link text-white {% if 'reports_queries' in segment %} active bg-gradient-primary {% endif %}" 
                     href="/reports_queries">
@@ -152,6 +154,15 @@
                     <span class="nav-link-text ms-1">CSV Explorer</span>
                   </a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link text-white {% if 'tools_channelsclients' in segment %} active bg-gradient-primary {% endif %}" 
+                      href="/tools_channelsclients">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                      <i class="material-icons opacity-10">candlestick_chart</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Channels DVR Clients</span>
+                  </a>
+                </li>
               {% endif %}
               <li class="nav-item">
                 <a class="nav-link text-white {% if 'tools_automation' in segment %} active bg-gradient-primary {% endif %}" 
@@ -174,7 +185,8 @@
           </div>
           <span class="nav-link-text ms-1">Controls</span>
         </a>
-        <div class="collapse {% if 'files' in segment or 'logs' in segment or 'settings' in segment %}show{% endif %}" id="collapseControls">
+        {% set control_segments = ['files', 'logs', 'settings'] %}
+        <div class="collapse {% if segment in control_segments %}show{% endif %}" id="collapseControls">
           <ul class="navbar-nav ms-3">
             <li class="nav-item">
               <a class="nav-link text-white {% if 'files' in segment %} active bg-gradient-primary {% endif %}" 
