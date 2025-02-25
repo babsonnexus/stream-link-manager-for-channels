@@ -13,9 +13,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
+    - name: Install pandoc
+      run: sudo apt-get install -y pandoc
+
     - name: Create README.html from README.md
       run: |
-        markdown README.md > README.html
+        pandoc README.md -o README.html
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
