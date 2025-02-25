@@ -3,7 +3,7 @@ name: Deploy GitHub Pages
 on:
   push:
     paths:
-      - 'README.md'
+      - README.md
 
 jobs:
   deploy:
@@ -16,8 +16,9 @@ jobs:
     - name: Install pandoc
       run: sudo apt-get update && sudo apt-get install -y pandoc
 
-    - name: Create README.html from README.md
-      run: pandoc README.md -o README.html
+    - name: Convert README.md to README.html
+      run: |
+        pandoc README.md -o README.html
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
