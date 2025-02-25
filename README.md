@@ -1,7 +1,7 @@
 ![slm_logo_v2](https://github.com/user-attachments/assets/caf56400-1523-4efa-b9be-7306942f9f06)
 
 ---
-# Streaming Library Manager
+# Program Overview
 Dealing with all the media options available nowadays is a massive pain! For instance, in <b>[Channels DVR](https://getchannels.com/)</b>, users have the ability to add movies and TV show episodes from "<b>[Stream Links](https://getchannels.com/docs/channels-dvr-server/how-to/stream-links/)</b>" and "<b>[Stream Files](https://getchannels.com/docs/channels-dvr-server/how-to/stream-files/)</b>" that are housed alongside all other sources (recordings, local files, etc...). They can also have additional <b>[custom linear stations](https://getchannels.com/custom-channels/)</b> by integrating streaming m3u playlists. And then there are even more ways to customize the experience! While these tools are powerful, they have limitations that often require a fair bit of maintenance and know-how. But what if we could make the whole process a little... easier?
 
 Making these tasks a seamless and simple experience is the purpose behind <b>Streaming Library Manager</b> and it's set of custom extensions. At this time, the available program options are:
