@@ -2,7 +2,8 @@ name: Docker
 
 on:
   push:
-    tags: [ 'v*.*.*' ]  # Only trigger on tagged versions
+    tags:
+      - 'v*.*.*'
 
 env:
   REGISTRY: ghcr.io
@@ -20,6 +21,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Determine Pre-release Status
+        id: prerelease-status
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const response = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: context.ref.replace('refs/tags/', ''),
+            });
+            return response.data.prerelease;
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
         with:
@@ -28,7 +41,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log into registry ${{ env.REGISTRY }}
+      - name: Log into registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -53,8 +66,10 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true  # Always push on tagged versions
-          tags: ${{ steps.meta.outputs.tags }}
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ${{ steps.prerelease-status.outputs.result == 'true' && 'prerelease' || 'latest' }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
