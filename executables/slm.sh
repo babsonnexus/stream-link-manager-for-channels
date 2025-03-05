@@ -13,12 +13,27 @@ file_spec="$dir_download/$executable.spec"
 dir_existing="$dir_current/_internal"
 dir_existing_upgrade="$dir_existing/program_files"
 dir_download_upgrade="$dir_download/_internal"
-link="https://www.dropbox.com/scl/fi/b5loo1yndyfasqgek1vv3/slm_python.zip?rlkey=g1wcyl22kewg05cu55nqssbt7&dl=1"
+latest="https://www.dropbox.com/scl/fi/b5loo1yndyfasqgek1vv3/slm_python.zip?rlkey=g1wcyl22kewg05cu55nqssbt7&dl=1"
+prerelease="https://www.dropbox.com/scl/fi/hzrvyl61wqn1o4zqbhyn8/slm_prerelease_python.zip?rlkey=iuxpkx6jqfua5hgstj2v9vc7y&dl=1"
 outfile="slm.zip"
 
 continue_install="false"
 continue_startup="false"
 continue_port="false"
+
+# Prerelease check
+if [ -n "$2" ]; then
+    case "$2" in
+        prerelease)
+            link=$prerelease
+            ;;
+        *)
+            link=$latest
+            ;;
+    esac
+else
+    link=$latest
+fi
 
 # Function to check if the OS is Synology
 is_synology() {

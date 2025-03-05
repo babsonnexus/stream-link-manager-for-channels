@@ -9,7 +9,8 @@ set "dir_existing=%dir_current%\_internal"
 set "dir_existing_upgrade=%dir_existing%\program_files"
 set "dir_donwload_upgrade=%dir_download%\_internal"
 set "handle=%~1"
-set "link=https://www.dropbox.com/scl/fi/apw33xi80jjivyjp9rxb4/slm_windows.zip?rlkey=1m5zj7qz9ittguispsi00nyar&dl=1"
+set "latest=https://www.dropbox.com/scl/fi/apw33xi80jjivyjp9rxb4/slm_windows.zip?rlkey=1m5zj7qz9ittguispsi00nyar&dl=1"
+set "prerelease=https://www.dropbox.com/scl/fi/iix5t9tl0a0yoxrd0w3m0/slm_prerelease_windows.zip?rlkey=p52sfq7mitmxdcjrnf49x2tof&dl=1"
 set "outfile=slm.zip"
 set "executable=slm.exe"
 set "executable_path=%dir_current%\%executable%"
@@ -19,6 +20,14 @@ set "run_command=powershell -NoProfile -ExecutionPolicy Bypass -Command ^"Start-
 set "scheduled_task=schtasks /create /tn "Streaming Library Manager^" /tr ^"%batch_path%^" /sc onlogon /rl highest /f"
 set "temp_batch=%dir_current%\temp.bat"
 
+:: Prerelease check
+if "%~2"=="prerelease" (
+    set "link=%prerelease%"
+) else (
+    set "link=%latest%"
+)
+
+:: Handle check
 if [%1] neq [] goto handles
 
 :: Check if the executable file exists
