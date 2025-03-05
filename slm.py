@@ -19,12 +19,12 @@ import stat
 import unicodedata
 import gzip
 import io
-from flask import Flask, render_template, render_template_string, request, redirect, url_for, Response, send_file, Request, make_response
+from flask import Flask, render_template, render_template_string, request, redirect, url_for, Response, send_file, Request, make_response, stream_with_context
 from jinja2 import TemplateNotFound
-import yt_dlp as youtube_dl
+import yt_dlp
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.02.18.1434"
+    slm_version = "v2025.03.05.1711"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -3710,7 +3710,7 @@ def webpage_playlists_streams():
         "Custom (HLS)",
         "Custom (MPEG-TS)",
         "Stream Link (STRMLNK)",
-        "YouTube Live (HLS)"
+        "Live Stream (HLS)"
     ]
 
     test_url = ''
@@ -3730,8 +3730,8 @@ def webpage_playlists_streams():
                 if streaming_stations_source_test_input.startswith('Custom'):
                     test_url = streaming_stations_url_test_input
 
-                elif streaming_stations_source_test_input.startswith('YouTube Live'):
-                    test_url = f"{request.url_root}playlists/streams/youtubelive?url={streaming_stations_url_test_input}"
+                elif streaming_stations_source_test_input.startswith('Live Stream'):
+                    test_url = f"{request.url_root}playlists/streams/stream?url={streaming_stations_url_test_input}"
 
         elif action.endswith('new') or action.endswith('save') or 'delete' in action:
 
@@ -3938,83 +3938,166 @@ def webpage_playlists_streams():
         html_test_url = test_url
     )
 
-# Creates an m3u8 for an individual YouTube Live stream
-@app.route('/playlists/streams/youtubelive', methods=['GET'])
-def streams_youtubelive():
-    youtubelive_url = request.args.get('url', type=str)
-    if not youtubelive_url:
-        return "YouTube Live URL is required"
+# Creates an m3u8 or video file for an individual live stream or static video
+@app.route('/playlists/streams/stream', methods=['GET'])
+@app.route('/playlists/streams/youtubelive', methods=['GET']) # Old method, to be removed in the future
+def streams_live():
+    url = request.args.get('url', type=str)
+    if not url:
+        return "URL is required"
     
-    m3u8_url = get_youtubelive_m3u8_manifest(youtubelive_url)
+    m3u8_url, m3u8_protocol = get_online_video(url)
     
     if m3u8_url:
-        # Extract the identifier from the URL
-        video_id_match = re.search(r'v=([a-zA-Z0-9_-]+)', youtubelive_url)
-        short_video_id_match = re.search(r'.be/([a-zA-Z0-9_-]+)', youtubelive_url)
-        channel_name_match = re.search(r'@([^/]+)/live', youtubelive_url)
+        sanitized_url = sanitize_name(url)
         
-        if video_id_match:
-            filename = f"{video_id_match.group(1)}.m3u8"
-        elif short_video_id_match:
-            filename = f"{short_video_id_match.group(1)}.m3u8"
-        elif channel_name_match:
-            filename = f"{channel_name_match.group(1)}.m3u8"
-        else:
-            filename = "youtubelive.m3u8"  # Fallback in case no match is found
+        if m3u8_protocol == 'm3u8':
+            filename = f"{sanitized_url}.m3u8"
+            playlist = f"#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1280000\n{m3u8_url}\n"
+            response = Response(playlist, content_type='application/vnd.apple.mpegurl')
         
-        playlist = f"#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1280000\n{m3u8_url}\n"
-        
-        # Return the Response with the filename
-        response = Response(playlist, content_type='application/vnd.apple.mpegurl')
-        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
-    else:
-        return "Failed to retrieve m3u8 manifest URL"
+        elif m3u8_protocol == 'http':
+            filename = f"{sanitized_url}.mp4"
+            response = Response(stream_with_context(stream_video(m3u8_url)), content_type='video/mp4')
 
-# Gets the manifest needed for the YouTube Live stream
-def get_youtubelive_m3u8_manifest(youtubelive_url):
-    print(f"{current_time()} INFO: Starting to retrieve manifest for {youtubelive_url}.")
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'        
+        return response
+    
+    else:
+        return f"Failed to retrieve manifest for URL {url}"
+
+# Streams the video content from the URL
+def stream_video(url):
+    with requests.get(url, stream=True) as r:
+        for chunk in r.iter_content(chunk_size=8192):
+            if chunk:
+                yield chunk
+
+# Gets the manifest needed for the live stream or static video
+def get_online_video(url):
+    print(f"{current_time()} INFO: Starting to retrieve manifest for {url}.")
+
+    m3u8_url = None
+    m3u8_protocol = None
+
     ydl_opts = {
         'verbose': True,                                    # Get verbose output
         'no_warnings': False,                               # Show warnings
-        'format': 'all',
+        'format': 'all',                                    # Download best video and audio for static videos
         'retries': 10,                                      # Retry up to 10 times in case of failure
         'fragment_retries': 10,                             # Retry up to 10 times for each fragment
         'logger': YTDLLogger(),                             # Pass the custom logger
         'extractor_args': {                                 # Set extractor args correctly
             'youtube': {
-                'player_client': ['web']                    # Force player API client to web
+                'player_client': ['all']                    # Force player API client to web
             }
         }
     }
-    
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
-            print(f"{current_time()} INFO: Extracting info from {youtubelive_url}...")
-            info_dict = ydl.extract_info(youtubelive_url, download=False)
+            print(f"{current_time()} INFO: Extracting info from {url}...")
+            info_dict = ydl.extract_info(url, download=False)
             if info_dict:
-                print(f"{current_time()} INFO: Extraction successful for {youtubelive_url}.")
+                print(f"{current_time()} INFO: Extraction successful for {url}.")
                 formats = info_dict.get('formats', None)
                 if formats:
                     print(f"{current_time()} INFO: Found {len(formats)} formats.")
                     best_format = None
+                    m3u8_protocol = None
                     for f in formats:
                         if 'm3u8' in f.get('protocol', '') and f.get('acodec') != 'none' and f.get('vcodec') != 'none':
                             if not best_format or f.get('tbr', 0) > best_format.get('tbr', 0):
                                 best_format = f
+                                m3u8_protocol = 'm3u8'
+                    if not best_format:
+                        for f in formats:
+                            if 'http' in f.get('protocol', '') and f.get('acodec') != 'none' and f.get('vcodec') != 'none':
+                                if not best_format or f.get('tbr', 0) > best_format.get('tbr', 0):
+                                    best_format = f
+                                    m3u8_protocol = 'http'
                     if best_format:
                         print(f"{current_time()} INFO: Best format URL: {best_format.get('url')}")
-                        return best_format.get('url')
+                        m3u8_url = best_format.get('url')
                     else:
-                        print(f"{current_time()} WARNING: No suitable m3u8 format found.")
+                        print(f"{current_time()} WARNING: No suitable format found.")
                 else:
                     print(f"{current_time()} WARNING: No formats found in info dictionary.")
             else:
-                print(f"{current_time()} ERROR: Failed to extract info for {youtubelive_url}. Info dictionary is empty.")
+                print(f"{current_time()} ERROR: Failed to extract info for {url}. Info dictionary is empty.")
         except Exception as e:
-            print(f"{current_time()} ERROR: While attempting to retrieve {youtubelive_url}, received {e}.")
-    print(f"{current_time()} ERROR: Manifest retrieval failed for {youtubelive_url}.")
-    return None
+            print(f"{current_time()} ERROR: While attempting to retrieve {url}, received {e}.")
+
+    return m3u8_url, m3u8_protocol
+
+# Gets the PO token for a YouTube static video
+### NOTICE: This is currently not needed, but saving here for the future as this solution did work when necessary
+# def get_youtube_po_token(url):
+#     po_token = 'unable_to_determine_po_token'
+#     video_id = None
+#     max_wait = 15
+#     parsed_url = urllib.parse.urlparse(url)
+
+#     if "youtu.be" in parsed_url.netloc:
+#         video_id = parsed_url.path[1:]
+
+#     elif "youtube.com" in parsed_url.netloc:
+#         query_params = urllib.parse.parse_qs(parsed_url.query)
+#         video_id = query_params.get("v", [""])[0]
+
+#     if not video_id:
+#         print(f"{current_time()} ERROR: Invalid video ID for {url}.")
+
+#     else:
+#         embed_url = f"https://www.youtube.com/embed/{video_id}"
+
+#         # Set up Selenium options and enable performance logging
+#         options = webdriver.ChromeOptions()
+#         options.add_argument("--headless")
+#         options.add_argument("--disable-gpu")
+#         options.add_argument("--no-sandbox")
+#         options.add_argument("--mute-audio") 
+#         options.add_experimental_option("excludeSwitches", ["enable-logging"])
+#         capabilities = DesiredCapabilities.CHROME.copy()
+#         capabilities["goog:loggingPrefs"] = {"performance": "ALL"}
+#         options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
+
+#         # Initialize the WebDriver with the updated options
+#         driver = webdriver.Chrome(options=options)
+
+#         try:
+#             # Open the embed URL
+#             driver.get(embed_url)
+
+#             try:
+#                 # Wait for the video player to load
+#                 play_button = WebDriverWait(driver, max_wait).until(
+#                     EC.element_to_be_clickable((By.CLASS_NAME, "ytp-large-play-button"))
+#                 )
+
+#                 # Simulate clicking the play button
+#                 ActionChains(driver).move_to_element(play_button).click(play_button).perform()
+
+#                 # Let the video play for a few seconds
+#                 time.sleep(2)
+
+#                 # Fetch logs and extract the PO token
+#                 logs = driver.get_log("performance")
+#                 for entry in logs:
+#                     log = entry["message"]
+#                     if "googlevideo.com" in log and "pot=" in log:
+#                         # Use regex to extract the `pot` parameter value
+#                         match = re.search(r"pot=([^&]+)", log)
+#                         if match:
+#                             po_token = match.group(1)
+
+#             except Exception as e:
+#                 print(f"{current_time()} ERROR: During playback simulation, saw {e}")
+
+#         finally:
+#             driver.quit()
+
+#     return po_token
 
 # Creates the m3u(s) for Streaming Stations
 def make_streaming_stations_m3us():
@@ -4069,8 +4152,8 @@ def make_streaming_stations_m3us():
         tvc_guide_placeholders = streaming_station['tvc_guide_placeholders']
         tvc_stream_vcodec = streaming_station['tvc_stream_vcodec']
         tvc_stream_acodec = streaming_station['tvc_stream_acodec']
-        if 'YouTube Live' in streaming_station['source']:
-            url = f"{request.url_root}playlists/streams/youtubelive?url={streaming_station['url']}"
+        if 'Live Stream' in streaming_station['source']:
+            url = f"{request.url_root}playlists/streams/stream?url={streaming_station['url']}"
         else:
             url = streaming_station['url']
         if 'HLS' in streaming_station['source']:
@@ -7118,6 +7201,10 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
 
                         stream_link_dirty = "https://strm_must_use_override"
 
+                    elif special_action == "Make SLM Stream" and original_release_date_list is None:
+
+                        stream_link_dirty = "http://slm_stream_must_use_override"
+
                     elif bookmarks_status['stream_link_override'] != "" and original_release_date_list is None:
 
                         stream_link_dirty = "https://skipped_for_override"
@@ -7405,8 +7492,7 @@ def clean_stream_link(stream_link_dirty, object_type):
 
         # Remove tracker elements
         not_remove_trackers = [
-            "amazon." #,
-            # Add more as needed
+            "amazon."
         ]
         if '?' in stream_link_cleaned and not any(not_remove_tracker in stream_link_cleaned for not_remove_tracker in not_remove_trackers):
             stream_link_cleaned = stream_link_cleaned.split('?')[0]
@@ -7507,6 +7593,10 @@ def get_stream_link_ids():
 
 # Creates Stream Link Files and removes invalid ones and empty directories (for TV)
 def create_stream_link_files(base_bookmarks, remove_choice, original_release_date_list):
+    settings = read_data(csv_settings)
+    slm_stream_address = settings[46]["settings"]
+    slm_stream_address_full = f"{slm_stream_address}/playlists/streams/stream?url="
+
     bookmarks = [
         base_bookmark for base_bookmark in base_bookmarks 
         if base_bookmark['bookmark_action'] not in ["Hide"]
@@ -7549,9 +7639,12 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
                 special_action = bookmark_status['special_action']
 
                 if bookmark_status['stream_link_override'] != "":
-                    stream_link_url = bookmark_status['stream_link_override']
+                    if special_action != "Make SLM Stream":
+                        stream_link_url = bookmark_status['stream_link_override']
+                    elif special_action == "Make SLM Stream":
+                        stream_link_url = f"{slm_stream_address_full}{bookmark_status['stream_link_override']}"
                 elif bookmark_status['stream_link'] != "":
-                    if special_action == "Make STRM":
+                    if special_action in ["Make STRM", "Make SLM Stream"]:
                         pass
                     else:
                         stream_link_url = bookmark_status['stream_link']
@@ -7569,7 +7662,7 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
                         file_path_return = normalize_path(file_path_return)
                         bookmark_status['stream_link_file'] = file_path_return
 
-                elif bookmark_status['status'].lower() == "watched" or bookmark_status['stream_link'] == "" or ( special_action == "Make STRM" and bookmark_status['stream_link_override'] == "" ):
+                elif bookmark_status['status'].lower() == "watched" or bookmark_status['stream_link'] == "" or ( special_action in ["Make STRM", "Make SLM Stream"] and bookmark_status['stream_link_override'] == "" ):
 
                     for condition in special_actions_default:
                         file_delete(stream_link_path, stream_link_file_name, condition)
@@ -7731,7 +7824,7 @@ def get_original_release_date_list():
             if auto_bookmark['entry_id'] == bookmarks_status['entry_id']:
                 if bookmarks_status['status'].lower() == "unwatched":
 
-                    if bookmarks_status['special_action'] == "Make STRM" or bookmarks_status['stream_link_override'] != "":
+                    if bookmarks_status['special_action'] in ["Make STRM", "Make SLM Stream"] or bookmarks_status['stream_link_override'] != "":
                         continue
 
                     else:
@@ -8179,6 +8272,7 @@ def webpage_logs():
 @app.route('/settings', methods=['GET', 'POST'])
 def webpage_settings():
     global channels_url_prior
+    global slm_stream_address_prior
     global slm_playlist_manager
     global slm_stream_link_file_manager
     global slm_channels_dvr_integration
@@ -8189,9 +8283,12 @@ def webpage_settings():
 
     settings = read_data(csv_settings)
     channels_url = settings[0]["settings"]
-    channels_directory = settings[1]["settings"]
     if channels_url_prior is None or channels_url_prior == '':
         channels_url_prior = channels_url
+    slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
+    if slm_stream_address_prior is None or slm_stream_address_prior == '':
+        slm_stream_address_prior = slm_stream_address
+    channels_directory = settings[1]["settings"]
     country_code = settings[2]["settings"]
     language_code = settings[3]["settings"]
     num_results = settings[4]["settings"]
@@ -8218,6 +8315,7 @@ def webpage_settings():
     ]
 
     channels_url_message = ""
+    slm_stream_address_message = ""
     channels_directory_message = ""
     search_defaults_message = ""
     advanced_experimental_message = ""
@@ -8227,6 +8325,7 @@ def webpage_settings():
         'search_defaults': 'search_defaults_anchor',
         'slmapping': 'slmapping_anchor',
         'channels_url': 'channels_url_anchor',
+        'slm_stream_address': 'slm_stream_address_anchor',
         'channels_directory': 'channels_directory_anchor',
         'channels_prune': 'advanced_experimental_anchor',
         'playlist_manager': 'advanced_experimental_anchor',
@@ -8246,6 +8345,7 @@ def webpage_settings():
     if request.method == 'POST':
         settings_action = request.form['action']
         channels_url_input = request.form.get('channels_url')
+        slm_stream_address_input = request.form.get('slm_stream_address')
         channels_directory_input = request.form.get('current_directory')
         channels_directory_manual_path = request.form.get('channels_directory_manual_path')
         channels_prune_input = request.form.get('channels_prune')
@@ -8271,6 +8371,7 @@ def webpage_settings():
                 break
 
         if settings_action.startswith('slmapping_') or settings_action in ['channels_url_cancel',
+                                                                           'slm_stream_address_cancel',
                                                                            'channels_directory_cancel',
                                                                            'channels_prune_cancel',
                                                                            'playlist_manager_cancel',
@@ -8281,6 +8382,7 @@ def webpage_settings():
                                                                            'search_defaults_cancel',
                                                                            'streaming_services_cancel',
                                                                            'channels_url_save',
+                                                                           'slm_stream_address_save',
                                                                            'channels_directory_save',
                                                                            'channels_prune_save',
                                                                            'playlist_manager_save',
@@ -8292,10 +8394,12 @@ def webpage_settings():
                                                                            'streaming_services_save',
                                                                            'streaming_services_update',
                                                                            'channels_url_test',
+                                                                           'slm_stream_address_test',
                                                                            'channels_url_scan'
                                                                         ]:
 
             if settings_action.startswith('slmapping_action_') or settings_action in ['channels_url_save',
+                                                                                      'slm_stream_address_save',
                                                                                       'channels_directory_save',
                                                                                       'channels_prune_save',
                                                                                       'playlist_manager_save',
@@ -8309,15 +8413,16 @@ def webpage_settings():
                                                                                     ]:
 
                 if settings_action in ['channels_url_save',
-                                    'channels_directory_save',
-                                    'channels_prune_save',
-                                    'playlist_manager_save',
-                                    'stream_link_file_manager_save',
-                                    'channels_dvr_integration_save',
-                                    'media_tools_manager_save',
-                                    'plm_streaming_stations_save',
-                                    'search_defaults_save',
-                                    'channels_url_scan'
+                                       'slm_stream_address_save',
+                                       'channels_directory_save',
+                                       'channels_prune_save',
+                                       'playlist_manager_save',
+                                       'stream_link_file_manager_save',
+                                       'channels_dvr_integration_save',
+                                       'media_tools_manager_save',
+                                       'plm_streaming_stations_save',
+                                       'search_defaults_save',
+                                       'channels_url_scan'
                                     ]:
 
                     if settings_action == 'channels_url_save':
@@ -8331,6 +8436,10 @@ def webpage_settings():
                     elif settings_action == 'channels_directory_save':
                         settings[1]["settings"] = channels_directory_input
                         current_directory = channels_directory_input
+
+                    elif settings_action == 'slm_stream_address_save':
+                        settings[46]["settings"] = slm_stream_address_input
+                        slm_stream_address_prior = slm_stream_address_input
 
                     elif settings_action == 'search_defaults_save':
                             settings[2]["settings"] = country_code_input
@@ -8529,6 +8638,9 @@ def webpage_settings():
             elif settings_action == 'channels_url_cancel':
                 channels_url_prior = channels_url
 
+            elif settings_action == 'slm_stream_address_cancel':
+                slm_stream_address_prior = slm_stream_address
+
             elif settings_action == 'channels_url_test':
                 channels_url_prior = channels_url_input
                 channels_url_okay = check_channels_url(channels_url_input)
@@ -8536,6 +8648,14 @@ def webpage_settings():
                     channels_url_message = f"{current_time()} INFO: '{channels_url_input}' responded as expected!"
                 else:
                     channels_url_message = f"{current_time()} WARNING: Channels URL not found at '{channels_url_input}'. Please update!"
+
+            elif settings_action == 'slm_stream_address_test':
+                slm_stream_address_prior = slm_stream_address_input
+                slm_stream_address_okay = check_channels_url(slm_stream_address_input)
+                if slm_stream_address_okay:
+                    slm_stream_address_message = f"{current_time()} INFO: '{slm_stream_address_input}' responded as expected!"
+                else:
+                    slm_stream_address_message = f"{current_time()} WARNING: Nothing found at '{slm_stream_address_input}'. Please update!"
 
         elif settings_action == 'channels_directory_nav_up':
             current_directory = os.path.dirname(channels_directory_input)
@@ -8560,9 +8680,12 @@ def webpage_settings():
 
         settings = read_data(csv_settings)
         channels_url = settings[0]["settings"]
-        channels_directory = settings[1]["settings"]
         if channels_url_prior is None or channels_url_prior == '':
             channels_url_prior = channels_url
+        slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
+        if slm_stream_address_prior is None or slm_stream_address_prior == '':
+            slm_stream_address_prior = slm_stream_address
+        channels_directory = settings[1]["settings"]
         country_code = settings[2]["settings"]
         language_code = settings[3]["settings"]
         num_results = settings[4]["settings"]
@@ -8589,8 +8712,10 @@ def webpage_settings():
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_settings_anchor_id = settings_anchor_id,
-        html_channels_url=channels_url,
+        html_channels_url = channels_url,
         html_channels_url_prior = channels_url_prior,
+        html_slm_stream_address = slm_stream_address,
+        html_slm_stream_address_prior = slm_stream_address_prior,
         html_channels_directory = channels_directory,
         html_valid_country_codes = valid_country_codes,
         html_country_code = country_code,
@@ -8600,6 +8725,7 @@ def webpage_settings():
         html_channels_prune = channels_prune,
         html_streaming_services = streaming_services,
         html_channels_url_message = channels_url_message,
+        html_slm_stream_address_message = slm_stream_address_message,
         html_current_directory = current_directory,
         html_subdirectories = get_subdirectories(current_directory),
         html_channels_directory_message = channels_directory_message,
@@ -8950,7 +9076,7 @@ def full_path(file):
 def get_file_path(path, name, special_action):
     file_name_base = f"{name}"
 
-    if special_action == "Make STRM":
+    if special_action in ["Make STRM", "Make SLM Stream"]:
         file_name_extension = "strm"
     elif special_action in ['m3u', 'xml', 'gz', 'm3u8']:
         file_name_extension = special_action
@@ -9572,6 +9698,8 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Off"}, 44, "PLM: URL Tag in m3u(s) On/Off")
         check_and_append(csv_file, {"settings": "http://localhost:5000"}, 45, "PLM: URL Tag in m3u(s) Preferred URL Root")
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 46, "PLM: Update Stations Process Schedule Frequency")
+        check_and_append(csv_file, {"settings": "On"}, 47, "PLM: One-time fix for YouTube Live to Live Streams On/Off")
+        check_and_append(csv_file, {"settings": f"http://{get_external_ip()}:{slm_port}"}, 48, "SLM: SLM Stream Address")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -9621,7 +9749,9 @@ def initial_data(csv_file):
                     {"settings": 750},                                                         # [41] PLM: Streaming Stations Max number of stations per m3u
                     {"settings": "Off"},                                                       # [42] PLM: URL Tag in m3u(s) On/Off
                     {"settings": "http://localhost:5000"},                                     # [43] PLM: URL Tag in m3u(s) Preferred URL Root
-                    {"settings": "Every 24 hours"}                                             # [44] PLM: Update Stations Process Schedule Frequency
+                    {"settings": "Every 24 hours"},                                            # [44] PLM: Update Stations Process Schedule Frequency
+                    {"settings": "Off"},                                                       # [45] PLM: One-time fix for YouTube Live to Live Streams On/Off
+                    {"settings": f"http://{get_external_ip()}:{slm_port}"}                      # [46] SLM: SLM Stream Address
         ]        
     elif csv_file == csv_streaming_services:
         data = get_streaming_services()
@@ -9818,6 +9948,19 @@ def check_ip_range(start, end, base_ip, port):
 
     return machine_name
 
+# Connects to an external server to determine the route
+def get_external_ip():
+    ip_address = None
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))  # Google's public DNS server
+            ip_address = s.getsockname()[0]
+    except Exception as e:
+        ip_address = "unable_to_determine_set_manually"
+
+    return ip_address
+
 # Gets JSON data from Channels DVR
 def get_channels_dvr_json(selection):
     settings = read_data(csv_settings)
@@ -9959,7 +10102,7 @@ csv_streaming_services = "StreamLinkManager_StreamingServices.csv"
 csv_bookmarks = "StreamLinkManager_Bookmarks.csv"
 csv_bookmarks_status = "StreamLinkManager_BookmarksStatus.csv"
 csv_slmappings = "StreamLinkManager_SLMappings.csv"
-# Playlist Manager files only get created when turned on in Settings
+### Playlist Manager files only get created when turned on in Settings
 csv_playlistmanager_playlists = "PlaylistManager_Playlists.csv"
 csv_playlistmanager_combined_m3us = "PlaylistManager_Combinedm3us.csv"
 csv_playlistmanager_parents = "PlaylistManager_Parents.csv"
@@ -9970,8 +10113,7 @@ csv_files = [
     csv_streaming_services,
     csv_bookmarks,
     csv_bookmarks_status,
-    csv_slmappings  #,
-    # Add more rows as needed
+    csv_slmappings
 ]
 program_files = csv_files + [log_filename]
 github_url = "https://github.com/babsonnexus/stream-link-manager-for-channels"
@@ -10102,7 +10244,7 @@ valid_country_codes = [
     "XK",
     "YE",
     "ZA",
-    "ZM" #, Add more as needed
+    "ZM"
 ]
 valid_language_codes = [
     "ar",
@@ -10136,11 +10278,12 @@ valid_language_codes = [
     "sw",
     "tr",
     "ur",
-    "zh" #, Add more as needed
+    "zh"
 ]
 special_actions_default = [
     "None",
-    "Make STRM" #, Add more as needed
+    "Make STRM",
+    "Make SLM Stream"
 ]
 notifications = []
 timeout_occurred = None
@@ -10157,6 +10300,7 @@ season_episodes_prior = []
 bookmarks_statuses_selected_prior = []
 edit_flag = None
 channels_url_prior = None
+slm_stream_address_prior = None
 date_new_default_prior = None
 program_add_prior = ''
 program_add_resort_panel = ''
@@ -10168,10 +10312,10 @@ offer_icons_flag = None
 select_file_prior = None
 bookmark_actions_default = [
     "None",
-    "Hide" #, Add more as needed
+    "Hide"
 ]
 bookmark_actions_default_show_only = [
-    "Disable Get New Episodes" #, Add more as needed
+    "Disable Get New Episodes"
 ]
 stream_formats = [
     "HLS",
@@ -10289,6 +10433,18 @@ if global_settings[28]['settings'] == "On":
 plm_streaming_stations = None
 if global_settings[39]['settings'] == "On":
     plm_streaming_stations = True
+    if global_settings[45]['settings'] == "On":
+        streaming_stations = read_data(csv_playlistmanager_streaming_stations)
+
+        for streaming_station in streaming_stations:
+            if streaming_station['source'] == 'YouTube Live (HLS)':
+                streaming_station['source'] = 'Live Stream (HLS)'
+
+        write_data(csv_playlistmanager_streaming_stations, streaming_stations)
+
+        # Turn off to not run again
+        global_settings[45]['settings'] = "Off"
+        write_data(csv_settings, global_settings)
 
 if slm_channels_dvr_integration:
     check_channels_url(None)
