@@ -281,6 +281,16 @@
             <input type="text" id="manual-path" name="channels_directory_manual_path" placeholder="Enter a path to manually navigate to... (i.e., 'D:\', '\\server\share', or '//server/share')" style="width: calc(65%);">
             <button type="submit" name="action" value="channels_directory_manual_go" class="btn bg-gradient-primary w-10 my-2 mb-2">Navigate</button>
             <hr>
+            <!-- SLM Stream Address -->
+            <h4 id="slm_stream_address_anchor">SLM Stream Address</h4>
+            <p>SLM Stream Address currently set to <b>{{ html_slm_stream_address }}</b></p>
+            <input type="text" id="slm_stream_address" name="slm_stream_address" value="{{ html_slm_stream_address_prior }}" style="width: calc(55%);" title="{{ html_slm_stream_address_prior }}">
+            <button type="submit" name="action" value="slm_stream_address_test" class="btn bg-gradient-primary w-10 my-2 mb-2">Test</button>
+            <button type="submit" name="action" value="slm_stream_address_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
+            <button type="submit" name="action" value="slm_stream_address_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
+            <p><em>WARNING: Do not use 'https' as it may cause Stream Files on Channels DVR clients to fail.</em></p>
+            <p><div id="html_slm_stream_address_message">{{ html_slm_stream_address_message }}</div></p>
+            <hr>
           {% endif %}
           <!-- Advanced / Experimental -->
           <h4 id="advanced_experimental_anchor">Extensions, Advanced, and Experimental</h4>
