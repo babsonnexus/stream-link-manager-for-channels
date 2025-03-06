@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.03.05.1855"
+    slm_version = "v2025.03.05.1934"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
