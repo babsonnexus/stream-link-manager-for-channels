@@ -24,16 +24,16 @@ from jinja2 import TemplateNotFound
 import yt_dlp
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.02.18.1434"
+slm_version = "v2025.03.05.2024"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.03.05.1934"
+    slm_version = "v2025.03.05.2024"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
