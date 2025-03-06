@@ -24,7 +24,7 @@ from jinja2 import TemplateNotFound
 import yt_dlp
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.03.05.2024"
+    slm_version = "v2025.03.06.0943"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -3979,6 +3979,8 @@ def get_online_video(url):
 
     m3u8_url = None
     m3u8_protocol = None
+    protocol_m3u8_formats = []
+    protocol_http_formats = []
 
     ydl_opts = {
         'verbose': True,                                    # Get verbose output
@@ -3997,34 +3999,50 @@ def get_online_video(url):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             print(f"{current_time()} INFO: Extracting info from {url}...")
+
             info_dict = ydl.extract_info(url, download=False)
             if info_dict:
                 print(f"{current_time()} INFO: Extraction successful for {url}.")
                 formats = info_dict.get('formats', None)
+
                 if formats:
                     print(f"{current_time()} INFO: Found {len(formats)} formats.")
+
+                    for format in formats:
+                        # print(f"{current_time()} INFO: Found format: {format}") # Keep this for testing but not production
+                        if format.get('acodec') != 'none' and format.get('vcodec') != 'none' and format.get('has_drm') is False:
+                            if 'm3u8' in format.get('protocol', ''):
+                                protocol_m3u8_formats.append(format)
+                            elif 'http' in format.get('protocol', ''):
+                                protocol_http_formats.append(format)
+
                     best_format = None
                     m3u8_protocol = None
-                    for f in formats:
-                        if 'm3u8' in f.get('protocol', '') and f.get('acodec') != 'none' and f.get('vcodec') != 'none':
-                            if not best_format or f.get('tbr', 0) > best_format.get('tbr', 0):
-                                best_format = f
-                                m3u8_protocol = 'm3u8'
+
+                    for protocol_m3u8_format in protocol_m3u8_formats:
+                        if not best_format or protocol_m3u8_format.get('tbr', 0) > best_format.get('tbr', 0):
+                            best_format = protocol_m3u8_format
+                            m3u8_protocol = 'm3u8'
+                    
                     if not best_format:
-                        for f in formats:
-                            if 'http' in f.get('protocol', '') and f.get('acodec') != 'none' and f.get('vcodec') != 'none':
-                                if not best_format or f.get('tbr', 0) > best_format.get('tbr', 0):
-                                    best_format = f
-                                    m3u8_protocol = 'http'
+                        for protocol_http_format in protocol_http_formats:
+                            if not best_format or protocol_http_format.get('tbr', 0) > best_format.get('tbr', 0):
+                                best_format = protocol_http_format
+                                m3u8_protocol = 'http'
+                    
                     if best_format:
-                        print(f"{current_time()} INFO: Best format URL: {best_format.get('url')}")
                         m3u8_url = best_format.get('url')
+                        print(f"{current_time()} INFO: Best format URL found using {m3u8_protocol} protocol: {m3u8_url}")
+                    
                     else:
                         print(f"{current_time()} WARNING: No suitable format found.")
+                
                 else:
                     print(f"{current_time()} WARNING: No formats found in info dictionary.")
+            
             else:
                 print(f"{current_time()} ERROR: Failed to extract info for {url}. Info dictionary is empty.")
+
         except Exception as e:
             print(f"{current_time()} ERROR: While attempting to retrieve {url}, received {e}.")
 
