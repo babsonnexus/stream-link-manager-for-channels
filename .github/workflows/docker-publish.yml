@@ -21,17 +21,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Determine Pre-release Status
-        id: prerelease-status
+      - name: Fetch Release Metadata
+        id: release-info
         uses: actions/github-script@v6
         with:
           script: |
+            const tag = context.ref.replace('refs/tags/', '');
             const response = await github.rest.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag: context.ref.replace('refs/tags/', ''),
+              tag: tag,
             });
-            return response.data.prerelease;
+            core.setOutput("is_prerelease", response.data.prerelease);
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -69,7 +70,7 @@ jobs:
           push: true
           tags: |
             ${{ steps.meta.outputs.tags }}
-            ${{ steps.prerelease-status.outputs.result == 'true' && 'prerelease' || 'latest' }}
+            ${{ steps.release-info.outputs.is_prerelease == 'true' && 'prerelease' || 'latest' }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
