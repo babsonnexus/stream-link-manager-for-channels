@@ -55,7 +55,7 @@
 
 {% block content %}
 
-<div class="container-fluid py-4"></div>
+<div class="container-fluid py-4">
   <div class="row min-vh-80 h-100">
     <div class="col-12">
       <form method="POST" action="streams" id="process-form">
@@ -166,37 +166,37 @@
           </div>
           <div class="grid-container" style="margin-right: 17px;">
             <div class="grid-item">
-              <input type="text" id="filter-source" placeholder="Filter">
+              <input type="text" id="filter-source" name="filter-source" placeholder="Filter" value="{{ html_filter_streams_source }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-url" placeholder="Filter">
+              <input type="text" id="filter-url" name="filter-url" placeholder="Filter" value="{{ html_filter_streams_url }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-title" placeholder="Filter">
+              <input type="text" id="filter-title" name="filter-title" placeholder="Filter" value="{{ html_filter_streams_title }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-tvg-logo" placeholder="Filter">
+              <input type="text" id="filter-tvg-logo" name="filter-tvg-logo" placeholder="Filter" value="{{ html_filter_streams_tvg_logo }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-tvg-description" placeholder="Filter">
+              <input type="text" id="filter-tvg-description" name="filter-tvg-description" placeholder="Filter" value="{{ html_filter_streams_tvg_description }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-tvc-guide-tags" placeholder="Filter">
+              <input type="text" id="filter-tvc-guide-tags" name="filter-tvc-guide-tags" placeholder="Filter" value="{{ html_filter_streams_tvc_guide_tags }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-tvc-guide-genres" placeholder="Filter">
+              <input type="text" id="filter-tvc-guide-genres" name="filter-tvc-guide-genres" placeholder="Filter" value="{{ html_filter_streams_tvc_guide_genres }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-tvc-guide-categories" placeholder="Filter">
+              <input type="text" id="filter-tvc-guide-categories" name="filter-tvc-guide-categories" placeholder="Filter" value="{{ html_filter_streams_tvc_guide_categories }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-tvc-guide-placeholders" placeholder="Filter">
+              <input type="text" id="filter-tvc-guide-placeholders" name="filter-tvc-guide-placeholders" placeholder="Filter" value="{{ html_filter_streams_tvc_guide_placeholders }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-tvc-stream-vcodec" placeholder="Filter">
+              <input type="text" id="filter-tvc-stream-vcodec" name="filter-tvc-stream-vcodec" placeholder="Filter" value="{{ html_filter_streams_tvc_stream_vcodec }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-tvc-stream-acodec" placeholder="Filter">
+              <input type="text" id="filter-tvc-stream-acodec" name="filter-tvc-stream-acodec" placeholder="Filter" value="{{ html_filter_streams_tvc_stream_acodec }}">
             </div>
             <div class="grid-item">
               <hr style="border: 3px solid; width: 100%;">
@@ -318,6 +318,7 @@
 
       function applyFilters(records) {
         return records.filter(item => {
+
             const StreamingStationOption = streamingStationOptions.find(option => option === item.source);
             const StreamingStationOptionName = StreamingStationOption ? StreamingStationOption.toLowerCase() : 'none';
 

@@ -124,7 +124,7 @@
 
 {% block content %}
 
-<div class="container-fluid py-4"></div>
+<div class="container-fluid py-4">
   <div class="row min-vh-80 h-100">
     <div class="col-12">
       <form method="POST" action="/playlists/plm_manage" id="process-form" enctype="multipart/form-data">
@@ -219,9 +219,7 @@
               <div class="grid-item">
                 <div class="form-check form-switch ps-0 is-filled">
                   <input type="checkbox" id="playlists_m3u_active_{{ loop.index }}" name="playlists_m3u_active_{{ loop.index }}" class="form-check-input" 
-                    {% if item.m3u_active|lower == 'on' %}checked{% endif %} 
-                    onchange="this.value = this.checked ? 'On' : 'Off'" 
-                    value="On">
+                    {% if item.m3u_active|lower == 'on' %}checked{% endif %}>
                 </div>
               </div>
               <div class="grid-item">
@@ -252,9 +250,7 @@
           <div class="grid-container">
             <div class="grid-item">
               <div class="form-check form-switch ps-0 is-filled">
-                <input type="checkbox" id="playlists_m3u_active_new" name="playlists_m3u_active_new" class="form-check-input" checked
-                  onchange="this.value = this.checked ? 'On' : 'Off'" 
-                  value="On">
+                <input type="checkbox" id="playlists_m3u_active_new" name="playlists_m3u_active_new" class="form-check-input" checked>
               </div>
             </div>
             <div class="grid-item">

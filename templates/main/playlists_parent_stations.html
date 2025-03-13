@@ -7,7 +7,7 @@
 <style> 
   .parents .grid-container {
       display: grid;
-      grid-template-columns: 3fr 1fr 2fr 1fr 1fr 2fr 1fr;
+      grid-template-columns: 0.5fr 2.5fr 1fr 2fr 1fr 1fr 2fr 1fr;
       gap: 10px;
   }
 
@@ -21,14 +21,8 @@
   .form-check {
       display: flex;
       align-items: center;
-      gap: 3.5em; /* Adjust the gap as needed */
-  }
-
-  .form-check-label {
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      justify-content: center;
+      margin-left: 2em;
   }
 
   .form-check-input {
@@ -49,7 +43,7 @@
 
 {% block content %}
 
-<div class="container-fluid py-4"></div>
+<div class="container-fluid py-4">
   <div class="row min-vh-80 h-100">
     <div class="col-12">
       <form method="POST" action="/playlists/plm_parent_stations" id="process-form">
@@ -61,6 +55,7 @@
         </div>
         <div class="parents container-fluid" style="width: 98%;">
           <div class="grid-container" style="text-align: center; margin-right: 17px;">
+            <div class="grid-item"><h6>Active</h6></div>
             <div class="grid-item"><h6>Station Name</h6></div>
             <div class="grid-item"><h6>[OPTIONAL]<br>Alternate XML EPG Guide ID (tvg-id)<br>Override</h6></div>
             <div class="grid-item"><h6>[OPTIONAL]<br>Guide Logo (tvg-logo)<br>Override</h6></div>
@@ -70,6 +65,11 @@
             <div class="grid-item"><h6>Action</h6></div>
           </div>
           <div class="grid-container" style="margin-right: 17px;">
+            <div class="grid-item">
+              <div class="form-check form-switch ps-0 is-filled">
+                <input type="checkbox" id="parents_parent_active_new" name="parents_parent_active_new" class="form-check-input" checked>
+              </div>
+            </div>
             <div class="grid-item">
               <input type="text" id="parents_parent_title_new" name="parents_parent_title_new" placeholder="i.e., The Pet Collective">
             </div>
@@ -98,22 +98,25 @@
           </div>
           <div class="grid-container" style="margin-right: 17px;">
             <div class="grid-item">
-              <input type="text" id="filter-parent-title" placeholder="Filter">
+              <hr style="border: 3px solid; width: 100%;">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-parent-tvg-id-override" placeholder="Filter">
+              <input type="text" id="filter-parent-title" placeholder="Filter" name="filter-parent-title" value="{{ html_filter_parent_title }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-parent-tvg-logo-override" placeholder="Filter">
+              <input type="text" id="filter-parent-tvg-id-override" placeholder="Filter" name="filter-parent-tvg-id-override" value="{{ html_filter_parent_tvg_id_override }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-parent-channel-number-override" placeholder="Filter">
+              <input type="text" id="filter-parent-tvg-logo-override" placeholder="Filter" name="filter-parent-tvg-logo-override" value="{{ html_filter_parent_tvg_logo_override }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-parent-tvc-guide-stationid-override" placeholder="Filter">
+              <input type="text" id="filter-parent-channel-number-override" placeholder="Filter" name="filter-parent-channel-number-override" value="{{ html_filter_parent_channel_number_override }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-parent-preferred-playlist" placeholder="Filter">
+              <input type="text" id="filter-parent-tvc-guide-stationid-override" placeholder="Filter" name="filter-parent-tvc-guide-stationid-override" value="{{ html_filter_parent_tvc_guide_stationid_override }}">
+            </div>
+            <div class="grid-item">
+              <input type="text" id="filter-parent-preferred-playlist" placeholder="Filter" name="filter-parent-preferred-playlist" value="{{ html_filter_parent_preferred_playlist }}">
             </div>
             <div class="grid-item">
               <hr style="border: 3px solid; width: 100%;">
@@ -265,7 +268,20 @@
               hiddenInput.name = `parents_parent_channel_id_${adjustedIndex}`;
               hiddenInput.id = `parents_parent_channel_id_${adjustedIndex}`;
               hiddenInput.value = item.parent_channel_id;
-  
+
+              const activeItem = document.createElement('div');
+              activeItem.className = 'grid-item';
+              const formCheckDiv = document.createElement('div');
+              formCheckDiv.className = 'form-check form-switch ps-0 is-filled';
+              const activeInput = document.createElement('input');
+              activeInput.type = 'checkbox';
+              activeInput.id = `parents_parent_active_${adjustedIndex}`;
+              activeInput.name = `parents_parent_active_${adjustedIndex}`;
+              activeInput.className = 'form-check-input';
+              activeInput.checked = item.parent_active.toLowerCase() === 'on';
+              formCheckDiv.appendChild(activeInput);
+              activeItem.appendChild(formCheckDiv);
+
               const titleItem = document.createElement('div');
               titleItem.className = 'grid-item';
               const titleInput = document.createElement('input');
@@ -347,6 +363,7 @@
               deleteParentButtonItem.appendChild(deleteParentButton);
   
               gridContainer.appendChild(hiddenInput);
+              gridContainer.appendChild(activeItem);
               gridContainer.appendChild(titleItem);
               gridContainer.appendChild(tvgidOverrideItem);
               gridContainer.appendChild(tvglogoOverrideItem);

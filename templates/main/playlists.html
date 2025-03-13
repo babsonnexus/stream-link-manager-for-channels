@@ -88,11 +88,15 @@
     padding-left: 5px;
     white-space: nowrap;
   }
+
+  .dark-version .bar-value {
+    color: black; /* Text color for dark mode */
+  }
 </style>
 {% endblock stylesheets %}
 
 {% block content %}
-<div class="container-fluid py-4"></div>
+<div class="container-fluid py-4">
   <div class="row min-vh-80 h-100">
     <div class="col-12">
       <form method="POST" action="/playlists/plm_main" id="process-form">
@@ -195,8 +199,8 @@
                 <div class="grid-item"><h6>Playlist [ID]</h6></div>
                 <div class="grid-item"><h6>Description</h6></div>
                 <div class="grid-item"><h6>Parent Station</h6></div>
-                <div class="grid-item"><h6>Choice 1</h6></div>
-                <div class="grid-item"><h6>Choice 2</h6></div>
+                <div class="grid-item"><h6>Stream Format Override</h6></div>
+                <div class="grid-item"><h6>Action</h6></div>
               </div>
               <div class="grid-container" style="margin-right: 17px;">
                 <div class="grid-item">
@@ -216,27 +220,31 @@
                   </select>
                 </div>
                 <div class="grid-item">
-                  <button type="submit" name="action" value="unassigned_child_to_parents_action_set_parent_all" class="btn bg-gradient-primary my-2 mb-2">Set Visible</button>
+                  <select class="select2" name="unassigned_child_to_parents_stream_format_override_all" id="unassigned_child_to_parents_stream_format_override_all" style="width: 100%; max-width: 100%;">
+                    {% for html_stream_format_override in html_stream_formats_overrides %}
+                      <option value="{{ html_stream_format_override }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_stream_format_override }}</option>
+                    {% endfor %}
+                  </select>
                 </div>
                 <div class="grid-item">
-                  <hr style="border: 3px solid; width: 100%;">
+                  <button type="submit" name="action" value="unassigned_child_to_parents_action_set_parent_all" class="btn bg-gradient-primary my-2 mb-2">Set Visible</button>
                 </div>
               </div>
               <div class="grid-container" style="margin-right: 17px;">
                 <div class="grid-item">
-                  <input type="text" id="filter-title" placeholder="Filter">
+                  <input type="text" id="filter-title" placeholder="Filter" name="filter-title" value="{{ html_filter_title_unassigned }}">
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="filter-m3u-name" placeholder="Filter">
+                  <input type="text" id="filter-m3u-name" placeholder="Filter" name="filter-m3u-name" value="{{ html_filter_m3u_name_unassigned }}">
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="filter-description" placeholder="Filter">
+                  <input type="text" id="filter-description" placeholder="Filter" name="filter-description" value="{{ html_filter_description_unassigned }}">
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="filter-parent" placeholder="Filter">
+                  <input type="text" id="filter-parent" placeholder="Filter" name="filter-parent" value="{{ html_filter_parent_unassigned }}">
                 </div>
                 <div class="grid-item">
-                  <hr style="border: 3px solid; width: 100%;">
+                  <input type="text" id="filter-stream-format-override" placeholder="Filter" name="filter-stream-format-override" value="{{ html_filter_stream_format_override_unassigned }}">
                 </div>
                 <div class="grid-item">
                   <hr style="border: 3px solid; width: 100%;">
@@ -369,6 +377,7 @@
     const loadingSpinner = document.getElementById('loading-spinner');
     const allRecords = {{ html_unassigned_child_to_parents|tojson }};
     const parentMappings = {{ html_child_to_parent_mappings|tojson }};
+    const streamFormatOverrideOptions = {{ html_stream_formats_overrides|tojson }};
     const limit = 100;
     let offset = 0;
     let filteredRecords = allRecords;  // Store filtered records
@@ -378,6 +387,7 @@
     const filterM3UName = document.getElementById('filter-m3u-name');
     const filterDescription = document.getElementById('filter-description');
     const filterParent = document.getElementById('filter-parent');
+    const filterStreamFormatOverride = document.getElementById('filter-stream-format-override');
 
     function applyFilters(records) {
         return records.filter(item => {
@@ -385,7 +395,8 @@
                 item.title.toLowerCase().includes(filterTitle.value.toLowerCase()) &&
                 item.m3u_name.toLowerCase().includes(filterM3UName.value.toLowerCase()) &&
                 item.description.toLowerCase().includes(filterDescription.value.toLowerCase()) &&
-                parentMappings.find(mapping => mapping.parent_channel_id === item.parent_channel_id)?.parent_title.toLowerCase().includes(filterParent.value.toLowerCase())
+                parentMappings.find(mapping => mapping.parent_channel_id === item.parent_channel_id)?.parent_title.toLowerCase().includes(filterParent.value.toLowerCase()) &&
+                item.stream_format_override.toLowerCase().includes(filterStreamFormatOverride.value.toLowerCase())
             );
         });
     }
@@ -459,6 +470,25 @@
             });
             selectItem.appendChild(select);
 
+            const streamFormatOverrideItem = document.createElement('div');
+            streamFormatOverrideItem.className = 'grid-item';
+            const streamFormatOverrideInput = document.createElement('select');
+            streamFormatOverrideInput.className = 'select2';
+            streamFormatOverrideInput.name = `unassigned_child_to_parents_stream_format_override_${adjustedIndex}`;
+            streamFormatOverrideInput.id = `unassigned_child_to_parents_stream_format_override_${adjustedIndex}`;
+            streamFormatOverrideInput.style.width = '100%';
+            streamFormatOverrideInput.style.maxWidth = '100%';
+            streamFormatOverrideOptions.forEach(stream_format_override => {
+                const option = document.createElement('option');
+                option.value = stream_format_override;
+                option.text = stream_format_override;
+                if (stream_format_override === item.stream_format_override) {
+                    option.selected = true;
+                }
+                streamFormatOverrideInput.appendChild(option);
+            });
+            streamFormatOverrideItem.appendChild(streamFormatOverrideInput);            
+
             const setParentButtonItem = document.createElement('div');
             setParentButtonItem.className = 'grid-item';
             const setParentButton = document.createElement('button');
@@ -466,26 +496,16 @@
             setParentButton.name = 'action';
             setParentButton.value = `unassigned_child_to_parents_action_set_parent_${adjustedIndex}`;
             setParentButton.className = 'btn bg-gradient-primary my-2 mb-2';
-            setParentButton.textContent = 'Set Parent';
+            setParentButton.textContent = 'Save';
             setParentButtonItem.appendChild(setParentButton);
-
-            const makeParentButtonItem = document.createElement('div');
-            makeParentButtonItem.className = 'grid-item';
-            const makeParentButton = document.createElement('button');
-            makeParentButton.type = 'submit';
-            makeParentButton.name = 'action';
-            makeParentButton.value = `unassigned_child_to_parents_action_make_parent_${adjustedIndex}`;
-            makeParentButton.className = 'btn bg-gradient-primary my-2 mb-2';
-            makeParentButton.textContent = 'Make Parent';
-            makeParentButtonItem.appendChild(makeParentButton);
 
             gridContainer.appendChild(hiddenInput);
             gridContainer.appendChild(titleItem);
             gridContainer.appendChild(m3uNameItem);
             gridContainer.appendChild(descriptionItem);
             gridContainer.appendChild(selectItem);
+            gridContainer.appendChild(streamFormatOverrideItem);
             gridContainer.appendChild(setParentButtonItem);
-            gridContainer.appendChild(makeParentButtonItem);
 
             recordContainer.appendChild(gridContainer);
         });
@@ -531,6 +551,7 @@
     filterM3UName.addEventListener('input', resetAndLoadRecords);
     filterDescription.addEventListener('input', resetAndLoadRecords);
     filterParent.addEventListener('input', resetAndLoadRecords);
+    filterStreamFormatOverride.addEventListener('input', resetAndLoadRecords);
 
     recordContainer.addEventListener('scroll', onScroll);
 
