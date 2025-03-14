@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.03.13.1706"
+    slm_version = "v2025.03.14.1658"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -7536,31 +7536,33 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
 
                     stream_link_reason = "None due to 'Watched' status"
 
-                if stream_link_dirty:
-                    stream_link = clean_stream_link(stream_link_dirty, auto_bookmark['object_type'])
-                else:
-                    stream_link = ''
+                if original_release_date_list is None or node_id in original_release_date_list:
 
-                bookmarks_status['stream_link'] = stream_link
+                    if stream_link_dirty:
+                        stream_link = clean_stream_link(stream_link_dirty, auto_bookmark['object_type'])
+                    else:
+                        stream_link = ''
 
-                if auto_bookmark['object_type'] == "MOVIE":
-                    if stream_link_reason:
-                        print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) assigned Stream Link: {stream_link_reason}")
-                    else:
-                        print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) assigned Stream Link: {stream_link}")
-                elif auto_bookmark['object_type'] == "SHOW":
-                    if stream_link_reason:
-                        if bookmarks_status['season_episode_prefix'] != "":
-                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode_prefix']} {bookmarks_status['season_episode']} assigned Stream Link: {stream_link_reason}")
+                    bookmarks_status['stream_link'] = stream_link
+
+                    if auto_bookmark['object_type'] == "MOVIE":
+                        if stream_link_reason:
+                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) assigned Stream Link: {stream_link_reason}")
                         else:
-                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode']} assigned Stream Link: {stream_link_reason}")
-                    else:
-                        if bookmarks_status['season_episode_prefix'] != "":
-                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode_prefix']} {bookmarks_status['season_episode']} assigned Stream Link: {stream_link}")
+                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) assigned Stream Link: {stream_link}")
+                    elif auto_bookmark['object_type'] == "SHOW":
+                        if stream_link_reason:
+                            if bookmarks_status['season_episode_prefix'] != "":
+                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode_prefix']} {bookmarks_status['season_episode']} assigned Stream Link: {stream_link_reason}")
+                            else:
+                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode']} assigned Stream Link: {stream_link_reason}")
                         else:
-                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode']} assigned Stream Link: {stream_link}")
-                else:
-                    print(f"\n{current_time()} ERROR: Invalid object_type\n")
+                            if bookmarks_status['season_episode_prefix'] != "":
+                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode_prefix']} {bookmarks_status['season_episode']} assigned Stream Link: {stream_link}")
+                            else:
+                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode']} assigned Stream Link: {stream_link}")
+                    else:
+                        print(f"\n{current_time()} ERROR: Invalid object_type\n")
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
