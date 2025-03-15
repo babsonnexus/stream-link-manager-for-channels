@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.03.14.1658"
+    slm_version = "v2025.03.15.1425"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -3761,27 +3761,14 @@ def get_uploaded_playlist_files():
 # Gets the XML EPG for each m3u that needs one
 def get_epgs_for_m3us():
     playlists = read_data(csv_playlistmanager_playlists)
-    temp_file_path = full_path("temp.txt")
-    
-    with open(temp_file_path, "a", encoding="utf-8") as temp_file:
-        for playlist in playlists:
-            if playlist['m3u_active'] == "On":
-                if playlist['epg_xml'] is not None and playlist['epg_xml'] != '':
-                    response = None
-                    response = fetch_url(playlist['epg_xml'], 5, 10)
-            
-                    if response:
-                        # Get the final URL after redirection
-                        final_url = response.url
+    temp_content = ""
 
-                        # Handle .gz files
-                        if final_url.endswith('.gz'):
-                            gz = gzip.GzipFile(fileobj=io.BytesIO(response.content))
-                            response_text = gz.read().decode('utf-8')
-                        else:
-                            response_text = response.content.decode('utf-8')
-                        
-                        temp_file.write(response_text + "\n")
+    # Fetch EPG XML data
+    for playlist in playlists:
+        if playlist['m3u_active'] == "On" and playlist['epg_xml']:
+            response = fetch_url(playlist['epg_xml'], 5, 10)
+            if response:
+                temp_content += response.text
 
     extensions = ['m3u']
     m3u_files = get_all_prior_files(program_files_dir, extensions)
@@ -3791,6 +3778,9 @@ def get_epgs_for_m3us():
 
     for filtered_file in filtered_files:
         tvg_ids = []  # Reset the list for each playlist
+        channel_patterns = []
+        programme_patterns = []
+        all_patterns = []
         playlist_extension = filtered_file['extension']
         playlist_filename = f"{filtered_file['filename']}.{playlist_extension}"
         epg_filename = f"{filtered_file['filename']}.xml"
@@ -3800,43 +3790,34 @@ def get_epgs_for_m3us():
         with open(full_path(playlist_filename), "r", encoding="utf-8") as file:
             content = file.read()
             # Extract tvg-id values
-            ids = re.findall(r'tvg-id="(.*?)"', content)
-            tvg_ids.extend(ids)
+            tvg_ids.extend(re.findall(r'tvg-id="(.*?)"', content))
 
-        # Ensure temp.txt exists before attempting to read it
-        if os.path.exists(temp_file_path):
-            # Write the EPG data to epg_filename
-            with open(full_path(epg_filename_tmp), "w", encoding="utf-8") as epg_file:
-                # Write the initial lines
-                epg_file.write("<?xml version='1.0' encoding='utf-8'?>\n")
-                epg_file.write("<!DOCTYPE tv SYSTEM \"xmltv.dtd\">\n")
-                epg_file.write("<tv generator-info-name=\"SLM\" generated-ts=\"\">\n")
-                
-                # Read temp.txt and extract relevant sections
-                with open(temp_file_path, "r", encoding="utf-8") as temp_file:
-                    temp_content = temp_file.read()
-                    
-                    # Extract <channel> sections
-                    for tvg_id in tvg_ids:
-                        channel_pattern = re.compile(rf'<channel\b[^>]*\bid="{tvg_id}"[^>]*>.*?</channel>', re.DOTALL)
-                        channels = channel_pattern.findall(temp_content)
-                        for channel in channels:
-                            epg_file.write("  " + channel + "\n")  # 2 spaces for indentation
-                        
-                        # Extract <programme> sections
-                        programme_pattern = re.compile(rf'<programme\b[^>]*\bchannel="{tvg_id}"[^>]*>.*?</programme>', re.DOTALL)
-                        programmes = programme_pattern.findall(temp_content)
-                        for programme in programmes:
-                            epg_file.write("  " + programme + "\n")  # 2 spaces for indentation
-                
-                # Write the closing tag
-                epg_file.write("</tv>\n")
+        # Write the EPG data to a variable
+        epg_content = [
+            "<?xml version='1.0' encoding='utf-8'?>",
+            "<!DOCTYPE tv SYSTEM \"xmltv.dtd\">",
+            "<tv generator-info-name=\"SLM\" generated-ts=\"\">"
+        ]
 
-    # Delete temp.txt after processing
-    reliable_remove(temp_file_path)
+        # Extract relevant sections from temp_content
+        for tvg_id in tvg_ids:
+            channel_patterns.append(re.compile(rf'<channel\b[^>]*\bid="{tvg_id}"[^>]*>.*?</channel>', re.DOTALL))
+            programme_patterns.append(re.compile(rf'<programme\b[^>]*\bchannel="{tvg_id}"[^>]*>.*?</programme>', re.DOTALL))
+        all_patterns = channel_patterns + programme_patterns
+
+        for all_pattern in all_patterns:
+            for match in all_pattern.finditer(temp_content):
+                epg_content.append("  " + match.group(0))  # 2 spaces for indentation
+            time.sleep(0.2)  # Small delay between processing each pattern to release system resources
+
+        # Write the closing tag
+        epg_content.append("</tv>")
+
+        # Write the EPG content to the physical file
+        with open(full_path(epg_filename_tmp), "w", encoding="utf-8") as epg_file:
+            epg_file.write("\n".join(epg_content))
 
     extensions = ['xml']
-    all_prior_files = []
     all_prior_files = get_all_prior_files(program_files_dir, extensions)
     for all_prior_file in all_prior_files:
         file_delete(program_files_dir, all_prior_file['filename'], all_prior_file['extension'])
@@ -4169,36 +4150,59 @@ def stream_video(url):
 def get_online_video(url):
     print(f"{current_time()} INFO: Starting to retrieve manifest for {url}.")
 
+    youtube_player_clients = ['web_safari', 'web']
+
+    m3u8_url = None
+    m3u8_protocol = None
+
+    for youtube_player_client in youtube_player_clients:
+
+        ydl_opts = {
+            'verbose': True,                                        # Get verbose output
+            'no_warnings': False,                                   # Show warnings
+            'format': 'all',                                        # Check all formats
+            'retries': 0,                                           # Retry up to 0 times in case of failure
+            'fragment_retries': 0,                                  # Retry up to 0 times for each fragment
+            'logger': YTDLLogger(),                                 # Pass the custom logger
+            'extractor_args': {                                     # Set extractor arguments for specific websites
+                'youtube': {
+                    'player_client': [youtube_player_client],       # Force player API client to specific client(s) in order to speed up finding a compatible format
+                    'formats': ['missing_pot'],                     # Stop testing for PO token
+                    'player_skip': ['configs', 'webpage', 'js'],    # Skip player configuration, webpage, and JavaScript
+                    'skip': ['dash', 'translated_subs']             # Skip DASH manifests and translated subtitles
+                }
+            }
+        }
+
+        m3u8_url, m3u8_protocol = parse_online_video(url, ydl_opts)
+
+        if (m3u8_url and m3u8_protocol) or (not 'youtu' in url):
+            break
+
+    return m3u8_url, m3u8_protocol
+
+# Parse through the yt_dlp options for faster processing
+def parse_online_video(url, ydl_opts):
     m3u8_url = None
     m3u8_protocol = None
     protocol_m3u8_formats = []
     protocol_http_formats = []
 
-    ydl_opts = {
-        'verbose': True,                                        # Get verbose output
-        'no_warnings': False,                                   # Show warnings
-        'format': 'all',                                        # Check all formats
-        'retries': 0,                                           # Retry up to 0 times in case of failure
-        'fragment_retries': 0,                                  # Retry up to 0 times for each fragment
-        'logger': YTDLLogger(),                                 # Pass the custom logger
-        'extractor_args': {                                     # Set extractor arguments for specific websites
-            'youtube': {
-                'player_client': ['web_safari'],                # Force player API client to web_safari in order to speed up finding a compatible format
-                'formats': ['missing_pot'],                     # Stop testing for PO token
-                'player_skip': ['configs', 'webpage', 'js'],    # Skip player configuration, webpage, and JavaScript
-                'skip': ['dash', 'translated_subs']             # Skip DASH manifests and translated subtitles
-            }
-        }
-    }
-
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             print(f"{current_time()} INFO: Extracting info from {url}...")
 
-            info_dict = ydl.extract_info(url, download=False, process=False)
+            info_dict, formats = parse_online_video_info_dict_formats(ydl, url)
+
+            if info_dict and not formats:
+                url_override = info_dict.get('url', None)
+                if url_override:
+                    print(f"{current_time()} INFO: URL redirected to {url_override}.")
+                    url = url_override
+                    info_dict, formats = parse_online_video_info_dict_formats(ydl, url)
+
             if info_dict:
                 print(f"{current_time()} INFO: Extraction successful for {url}.")
-                formats = info_dict.get('formats', None)
 
                 if formats:
                     print(f"{current_time()} INFO: Found {len(formats)} formats.")
@@ -4242,6 +4246,16 @@ def get_online_video(url):
             print(f"{current_time()} ERROR: While attempting to retrieve {url}, received {e}.")
 
     return m3u8_url, m3u8_protocol
+
+def parse_online_video_info_dict_formats(ydl, url):
+    info_dict = None
+    formats = None
+
+    info_dict = ydl.extract_info(url, download=False, process=False)
+    if info_dict:
+        formats = info_dict.get('formats', None)
+
+    return info_dict, formats
 
 # Gets the PO token for a YouTube static video
 ### NOTICE: This is currently not needed, but saving here for the future as this solution did work when necessary
@@ -5497,14 +5511,6 @@ def check_schedule():
             
             if current_minute == plm_update_m3us_epgs_schedule_minute and (current_hour - plm_update_m3us_epgs_schedule_hour) % plm_m3us_epgs_schedule_frequency_parsed == 0:
                 threading.Thread(target=get_final_m3us_epgs).start()
-                wait_trigger = True
-
-            plm_update_m3us_epgs_schedule_minute_offset = (plm_update_m3us_epgs_schedule_minute + 30) % 60
-            plm_update_m3us_epgs_schedule_hour_offset = (plm_update_m3us_epgs_schedule_hour + (plm_update_m3us_epgs_schedule_minute + 30) // 60) % 24
-
-            if current_minute == plm_update_m3us_epgs_schedule_minute_offset and (current_hour - plm_update_m3us_epgs_schedule_hour_offset) % plm_m3us_epgs_schedule_frequency_parsed == 0:
-                temp_file_path = full_path("temp.txt")
-                reliable_remove(temp_file_path)
                 wait_trigger = True
 
         if reset_channels_passes == 'On' and reset_channels_passes_time:
