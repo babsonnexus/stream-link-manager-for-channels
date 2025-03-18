@@ -24,16 +24,16 @@ from jinja2 import TemplateNotFound
 import yt_dlp
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.03.05.2024"
+slm_version = "v2025.03.18.1154"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.03.15.1425"
+    slm_version = "v2025.03.18.1154"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -3768,7 +3768,17 @@ def get_epgs_for_m3us():
         if playlist['m3u_active'] == "On" and playlist['epg_xml']:
             response = fetch_url(playlist['epg_xml'], 5, 10)
             if response:
-                temp_content += response.text
+                # Get the final URL after redirection
+                final_url = response.url
+
+                # Handle .gz files
+                if final_url.endswith('.gz'):
+                    gz = gzip.GzipFile(fileobj=io.BytesIO(response.content))
+                    response_text = gz.read().decode('utf-8')
+                else:
+                    response_text = response.content.decode('utf-8')
+
+                temp_content += response_text
 
     extensions = ['m3u']
     m3u_files = get_all_prior_files(program_files_dir, extensions)
