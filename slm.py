@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.03.18.1154"
+slm_version = "v2025.03.26.1909"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.03.18.1154"
+    slm_version = "v2025.03.26.1909"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
