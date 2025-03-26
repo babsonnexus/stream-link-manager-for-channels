@@ -17466,3 +17466,7 @@ pre[class*="language-"] {
 .select2-dropdown.no-wrap .select2-results__option {
   white-space: nowrap;
 }
+
+.dark-version .select2-dropdown.no-wrap .select2-results__option {
+  color: #6A6A6A;
+}
