@@ -51,7 +51,7 @@
   
   .table-wrapper.special-table {
       overflow-y: auto;
-      max-height: 400px; /* Adjust as needed */
+      max-height: 65vh; /* Adjust as needed */
       border: 2px solid #4c2588;
       border-radius: 0.25em;
       background: linear-gradient(195deg, #4c2588 0%, #4c278a 100%) !important;
@@ -222,23 +222,23 @@
               <label for="file_file">Browse...</label>
             </div>
           </div>
+          <div id="table-container">
+            {% if table_html %}
+              <div class="table-wrapper special-table">
+                <table id="myTable" class="display">
+                  {{ table_html|safe }}
+                </table>
+              </div>
+            {% endif %}
+            {% if replace_message %}
+              <p>{{ replace_message }}</p>
+            {% endif %}
+          </div>
         </div>
       </form>
-      <div id="table-container">
-        {% if table_html %}
-          <div class="table-wrapper special-table">
-            <table id="myTable" class="display">
-              {{ table_html|safe }}
-            </table>
-          </div>
-        {% endif %}
-        {% if replace_message %}
-          <p>{{ replace_message }}</p>
-        {% endif %}
-      </div>
     </div>
 
-    {% include 'includes/footer.html' %}
+    <!-- {% include 'includes/footer.html' %} -->
 
   </div>
 {% endblock content %}

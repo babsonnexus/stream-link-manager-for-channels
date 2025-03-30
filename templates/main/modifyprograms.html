@@ -102,7 +102,7 @@
           <div class="container-fluid">
             <input type="hidden" name="field_object_type" id="field_object_type" value="{{ html_object_type_selected }}">
             {% if html_object_type_selected == 'MOVIE' %}
-              <div class="grid-container" style="text-align: center;">
+              <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
                 <div class="grid-item"><h6>Watched / Unwatched</h6></div>
                 <div class="grid-item"><h6>Current Stream Link/File</h6></div>
                 <div class="grid-item"><h6>Stream Link/File Override</h6></div>
@@ -110,7 +110,7 @@
               </div>
             {% endif %}
             {% if html_object_type_selected == 'SHOW' %}
-              <div class="grid-container" style="text-align: center;">
+              <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
                 <div class="grid-item"><h6>Watched / Unwatched</h6></div>
                 <div class="grid-item"><h6>Current Stream Link/File</h6></div>
                 <div class="grid-item"><h6>Stream Link/File Override</h6></div>
@@ -147,7 +147,7 @@
               </div>
             {% endif %}
             {% if html_object_type_selected == 'VIDEO' %}
-              <div class="grid-container" style="text-align: center;">
+              <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
                 <div class="grid-item"><h6>Watched / Unwatched</h6></div>
                 <div class="grid-item"><h6>Video Name</h6></div>
                 <div class="grid-item"><h6>Stream Link/File Override</h6></div>
@@ -347,7 +347,7 @@
       </div>
     </div>
 
-    {% include 'includes/footer.html' %}
+    <!-- {% include 'includes/footer.html' %} -->
 
   </div>
 
@@ -482,6 +482,33 @@
         });
       }, 500); // Adjust the delay as needed
     });
+  });
+</script>
+<!-- Background Color of Header Labels -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const darkModeToggle = document.getElementById('dark-version');
+
+    // Function to update the background color of the specific grid-container
+    function updateGridContainerBackground() {
+      const bodyStyle = getComputedStyle(document.body);
+      const bodyBgColor = bodyStyle.backgroundColor;
+
+      // Apply the background color to the specific grid-container
+      document.querySelectorAll('.dynamic-bg').forEach(container => {
+        container.style.backgroundColor = bodyBgColor;
+      });
+    }
+
+    // Initial update of the grid-container background color
+    updateGridContainerBackground();
+
+    // Listen for changes to the dark mode toggle
+    if (darkModeToggle) {
+      darkModeToggle.addEventListener('change', function () {
+        updateGridContainerBackground();
+      });
+    }
   });
 </script>
 {% endblock javascripts %}

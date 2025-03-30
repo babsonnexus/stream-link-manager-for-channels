@@ -204,7 +204,7 @@
         <h4 id="playlists_anchor">Enter Playlists</h4>
         <p><em>WARNING: It is not recommended to use 'https' as it may result in the link failing to be read.</em></p>
         <div class="playlists container-fluid">
-          <div class="grid-container" style="text-align: center;">
+          <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
             <div class="grid-item"><h6>Active</h6></div>
             <div class="grid-item"><h6>Name</h6></div>
             <div class="grid-item"><h6>m3u URL</h6></div>
@@ -337,7 +337,7 @@
     </div>
   </div>
 
-    {% include 'includes/footer.html' %}
+    <!-- {% include 'includes/footer.html' %} -->
 
 </div>
 
@@ -505,5 +505,32 @@
 
   populateLists();
   playlists_updateHiddenInput();
+</script>
+<!-- Background Color of Header Labels -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const darkModeToggle = document.getElementById('dark-version');
+
+    // Function to update the background color of the specific grid-container
+    function updateGridContainerBackground() {
+      const bodyStyle = getComputedStyle(document.body);
+      const bodyBgColor = bodyStyle.backgroundColor;
+
+      // Apply the background color to the specific grid-container
+      document.querySelectorAll('.dynamic-bg').forEach(container => {
+        container.style.backgroundColor = bodyBgColor;
+      });
+    }
+
+    // Initial update of the grid-container background color
+    updateGridContainerBackground();
+
+    // Listen for changes to the dark mode toggle
+    if (darkModeToggle) {
+      darkModeToggle.addEventListener('change', function () {
+        updateGridContainerBackground();
+      });
+    }
+  });
 </script>
 {% endblock javascripts %}

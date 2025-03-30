@@ -307,7 +307,7 @@
               <li>Override any potentially generated Stream Link/File by entering an address. NOTE: This is required for manual programs and STRM links.</li>
               <li>If desired, select a 'Special Action' such as making the selection a STRM link or picking a preferred Streaming Service</li>
             </ul>
-            <div class="grid-container" style="text-align: center;">
+            <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
               <div class="grid-item"><h6>Watched / Unwatched</h6></div>
               <div class="grid-item"><h6>Stream Link/File Override</h6></div>
               <div class="grid-item"><h6>Special Action</h6></div>
@@ -342,7 +342,7 @@
                 <li>If desired, select a 'Special Action' such as making the selection a STRM link or picking a preferred Streaming Service</li>
                 <li>Add a prefix to Stream Link/File file names for tracking purposes (i.e., [DUB] vs. [SUB]) by entering a value.</li>
               </ul>
-              <div class="grid-container" style="text-align: center;">
+              <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
                 <div class="grid-item"><h6>Watched / Unwatched</h6></div>
                 <div class="grid-item"><h6>Stream Link/File Override</h6></div>
                 <div class="grid-item"><h6>Special Action</h6></div>
@@ -432,7 +432,7 @@
                 <li>Input a 'Stream Link Override' by entering an address, whether a Stream Link or a Stream File.</li>
                 <li>If desired, select a 'Special Action' such as making the selection a Stream Link (STRM).</li>
               </ul>
-              <div class="grid-container" style="text-align: center;">
+              <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
                 <div class="grid-item"><h6>Watched / Unwatched</h6></div>
                 <div class="grid-item"><h6>Video Name</h6></div>
                 <div class="grid-item"><h6>Stream Link/File Override</h6></div>
@@ -506,7 +506,7 @@
       </div>
     </div>
 
-    {% include 'includes/footer.html' %}
+    <!-- {% include 'includes/footer.html' %} -->
 
   </div>
 
@@ -644,5 +644,32 @@
       floatingButtons.style.display = 'none';
     }
   }
+</script>
+<!-- Background Color of Header Labels -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const darkModeToggle = document.getElementById('dark-version');
+
+    // Function to update the background color of the specific grid-container
+    function updateGridContainerBackground() {
+      const bodyStyle = getComputedStyle(document.body);
+      const bodyBgColor = bodyStyle.backgroundColor;
+
+      // Apply the background color to the specific grid-container
+      document.querySelectorAll('.dynamic-bg').forEach(container => {
+        container.style.backgroundColor = bodyBgColor;
+      });
+    }
+
+    // Initial update of the grid-container background color
+    updateGridContainerBackground();
+
+    // Listen for changes to the dark mode toggle
+    if (darkModeToggle) {
+      darkModeToggle.addEventListener('change', function () {
+        updateGridContainerBackground();
+      });
+    }
+  });
 </script>
 {% endblock javascripts %}

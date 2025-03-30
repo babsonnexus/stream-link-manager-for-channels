@@ -11,6 +11,8 @@
       padding: 10px;
       height: 73vh;
       overflow-y: scroll;
+      contain: strict;
+      overscroll-behavior: contain;
   }
   .left-div {
       width: 31%;
@@ -28,10 +30,14 @@
     <div class="row min-vh-80 h-100">
       <div class="col-12">
         <form method="POST" action="/tools_automation" id="process-form">
+          {% if html_automation_message %}
+            <p><div id="html_automation_message"><b>NOTIFICATION: </b>{{ html_automation_message }}</div></p>
+          {% endif %}
           <div class="row">
             <!-- Scheduler -->
             <div class="common-div left-div">
               <h4>Scheduler</h4>
+              <p><em>WARNING: A buffer of at least 1 minute is required between automated processes, otherwise they may not run.</em></p>
               <hr>
               <h5>Streaming Library Manager</h5>
               <div id="anchor_gen_backup_process" class="settings-box" style="width: 99%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
@@ -329,8 +335,6 @@
               <div id="log-output" style="text-align: left; white-space: pre-wrap;"></div>
             </div>
           </div>
-          <p><div id="html_automation_message"><b>NOTIFICATION: </b>{% if html_automation_message %}{{ html_automation_message }}{% else %}None{% endif %}</div></p>
-          <p><em>WARNING: A buffer of at least 1 minute is required between automated processes, otherwise they may not run.</em></p>
         </form>
       </div>
     </div>
@@ -347,7 +351,7 @@
       </div>
     </div>
     
-    {% include 'includes/footer.html' %}
+    <!-- {% include 'includes/footer.html' %} -->
 
   </div>
 
