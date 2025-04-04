@@ -24,7 +24,7 @@ from jinja2 import TemplateNotFound
 import yt_dlp
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.03.30.1116"
+    slm_version = "v2025.04.04.1758"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -95,12 +95,34 @@ def webpage_add_programs():
     global release_year_selected_prior
     global bookmark_action_prior
     global select_program_to_bookmarks
+    global provider_status_input_prior
 
     settings = read_data(csv_settings)
     country_code = settings[2]["settings"]
     language_code = settings[3]["settings"]
     num_results = settings[4]["settings"]
     hide_bookmarked = settings[9]["settings"]
+    provider_status = settings[47]["settings"]
+
+    provider_statuses = []
+    provider_statuses = provider_statuses_default.copy()
+    # Append Groups
+    provider_groups = read_data(csv_provider_groups)
+    if provider_groups:
+        provider_groups = sorted(provider_groups, key=lambda x: sort_key(x["provider_group_name"].casefold()))
+        for provider_group in provider_groups:
+            if provider_group["provider_group_active"] == "On":
+                provider_statuses.append(f"GROUP: {provider_group['provider_group_name']}")
+    # Append Streaming Services
+    streaming_services = read_data(csv_streaming_services)
+    streaming_services_subscribed_raw = [streaming_service for streaming_service in streaming_services if streaming_service['streaming_service_subscribe'] == 'True']
+    streaming_services_subscribed = sorted(streaming_services_subscribed_raw, key=lambda x: sort_key(x["streaming_service_name"]))
+    for streaming_service in streaming_services_subscribed:
+        provider_statuses.append(f"PROVIDER (MOVIES & SHOWS): {streaming_service['streaming_service_name']}")
+    # Append Video Providers (Future Functionality)
+
+    # Future functitionality placeholder for searching YouTube/Twitch/Etc... videos
+    search_videos_disabled = True
 
     special_actions = []
     special_actions = get_special_actions()
@@ -141,22 +163,50 @@ def webpage_add_programs():
             program_add_filter_panel = ''
         
         # Search for a program
-        elif add_programs_action in ['program_add_search', 'program_new_search', 'program_new_today']:
+        elif add_programs_action in ['program_add_search', 'program_add_search_videos', 'program_new_search', 'program_new_today', 'search_defaults_save']:
             country_code_input = request.form.get('country_code')
             language_code_input = request.form.get('language_code')
             hide_bookmarked_input = request.form.get('hide_bookmarked')
-            hide_bookmarked_input = "On" if hide_bookmarked_input == 'on' else "Off"
+            hide_bookmarked_input = "On" if hide_bookmarked_input.lower() == 'on' else "Off"
+            provider_status_input = request.form.get('provider_status')
 
-            if add_programs_action == 'program_add_search':
+            if add_programs_action in ['program_add_search', 'program_add_search_videos', 'search_defaults_save']:
                 num_results_input = request.form.get('num_results')
                 num_results_test = get_num_results(num_results_input)
 
                 if num_results_test == "pass":
-                    program_search_results = search_bookmark(country_code_input, language_code_input, num_results_input, program_add_input)
-                    country_code_input_prior = country_code_input
-                    language_code_input_prior = language_code_input
-                    program_add_resort_panel = 'on'
-                    program_add_filter_panel = 'on'
+                    if add_programs_action == 'search_defaults_save':
+                        settings[2]["settings"] = country_code_input
+                        settings[3]["settings"] = language_code_input
+                        settings[4]["settings"] = int(num_results_input)
+                        settings[9]["settings"] = "On" if hide_bookmarked_input.lower() == 'on' else "Off"
+                        settings[47]["settings"] = provider_status_input
+
+                        write_data(csv_settings, settings)
+                        program_add_message = f"{current_time()} INFO: Search defaults saved!"
+
+                        settings = read_data(csv_settings)
+                        country_code = settings[2]["settings"]
+                        language_code = settings[3]["settings"]
+                        num_results = settings[4]["settings"]
+                        hide_bookmarked = settings[9]["settings"]
+                        provider_status = settings[47]["settings"]
+
+                        update_streaming_services()
+
+                    elif add_programs_action.startswith('program_add_search'):
+
+                        country_code_input_prior = country_code_input
+                        language_code_input_prior = language_code_input
+                        program_add_resort_panel = 'on'
+                        program_add_filter_panel = 'on'
+
+                        program_add_message = f"{current_time()} INFO: Showing {num_results_input} results for search in Movies & Shows."
+
+                        if add_programs_action == 'program_add_search':
+                            program_search_results = search_bookmark(country_code_input, language_code_input, num_results_input, program_add_input)
+
+                        #elif add_programs_action == 'program_add_search_videos':
 
                 else:
                     program_add_message = num_results_test
@@ -170,10 +220,13 @@ def webpage_add_programs():
                 date_new_default_prior = date_new_input
                 num_results_input = 100 # Maximum number of new programs
 
-                program_search_results = get_program_new(date_new_input, country_code_input, language_code_input, num_results_input)
+                program_add_message = f"{current_time()} INFO: Showing New & Updated from '{provider_status_input}' on {date_new_input}."
+
+                program_search_results = get_program_new(date_new_input, country_code_input, language_code_input, num_results_input, provider_status_input)
                 program_search_results = sorted(program_search_results, key=lambda x: sort_key(x["title"].casefold()))
                 country_code_input_prior = country_code_input
                 language_code_input_prior = language_code_input
+                provider_status_input_prior = provider_status_input
                 program_add_resort_panel = ''
                 program_add_filter_panel = 'on'
 
@@ -201,14 +254,21 @@ def webpage_add_programs():
             if add_programs_action == 'program_add_resort_alpha':
                 program_search_results = sorted(program_search_results_prior, key=lambda x: sort_key(x["title"].casefold()))
                 program_add_resort_panel = ''
+                program_add_message = f"{current_time()} INFO: Resorted alphabetically."
 
             elif add_programs_action.startswith('program_add_resort_filter_'):
 
                 if add_programs_action == 'program_add_resort_filter_movie':
                     program_search_results = [item for item in program_search_results_prior if item['object_type'] == 'MOVIE']
+                    program_add_message = f"{current_time()} INFO: Filtered for only Movies."
 
                 elif add_programs_action == 'program_add_resort_filter_show':
                     program_search_results = [item for item in program_search_results_prior if item['object_type'] == 'SHOW']
+                    program_add_message = f"{current_time()} INFO: Filtered for only Shows."
+
+                elif add_programs_action == 'program_add_resort_filter_video':
+                    program_search_results = [item for item in program_search_results_prior if item['object_type'] == 'VIDEO']
+                    program_add_message = f"{current_time()} INFO: Filtered for only Videos."
 
                 program_add_filter_panel = ''
 
@@ -314,6 +374,8 @@ def webpage_add_programs():
             special_actions = special_actions_default.copy()
             bookmark_actions = get_bookmark_actions("SHOW")
 
+            program_add_message = f"{current_time()} INFO: Created season(s)/episode(s)."
+
         # Create a video list for a manual video group
         elif add_programs_action == 'video_manual_next':
             number_of_videos_input = int(request.form.get('number_of_videos'))
@@ -331,6 +393,8 @@ def webpage_add_programs():
             done_generate_flag = True
             special_actions = special_actions_default.copy()
             bookmark_actions = get_bookmark_actions("VIDEO")
+
+            program_add_message = f"{current_time()} INFO: Created video placeholder(s)."
 
         # Finish or Generate Stream Links/Files. Also save Season/Episode statuses.
         elif add_programs_action in [
@@ -480,6 +544,7 @@ def webpage_add_programs():
             program_search_results_prior = []
             country_code_input_prior = None
             language_code_input_prior = None
+            provider_status_input_prior = None
             entry_id_prior = None
             season_episodes_prior = []
             program_add_prior = ''
@@ -557,8 +622,54 @@ def webpage_add_programs():
         html_bookmark_actions = bookmark_actions,
         html_title_selected = title_selected_prior,
         html_release_year_selected = release_year_selected_prior,
-        html_bookmark_action_selected = bookmark_action_prior
+        html_bookmark_action_selected = bookmark_action_prior,
+        html_search_videos_disabled = search_videos_disabled,
+        html_provider_statuses = provider_statuses,
+        html_provider_status = provider_status
     )
+
+# Search for country code
+def get_country_code():
+    settings = read_data(csv_settings)
+    country_code = settings[2]["settings"]
+    country_code_input = None
+    country_code_new = None
+
+    global timeout_occurred
+    timeout_occurred = False
+    print(f"\n{current_time()} Searching for country code for Streaming Services...")
+    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
+
+    # Search times out after 30 seconds
+    timer = threading.Timer(30, timeout_handler)
+    timer.start()
+
+    try:
+        response = requests.get('https://ipinfo.io', headers=url_headers)
+        data = response.json()
+        user_country_code = data.get('country').upper()
+        
+        if user_country_code in valid_country_codes:
+            country_code_input = user_country_code
+    except TimeoutError:
+        print(f"{current_time()} INFO: Search timed out. Continuing to next step...\n")
+    except KeyboardInterrupt:
+        print(f"{current_time()} INFO: Search interrupted by user. Continuing to next step...\n")
+    except Exception as e:
+        print(f"{current_time()} INFO: Error getting geolocation: {e}. Continuing to next step...\n")
+    finally:
+        timer.cancel()  # Disable the timer
+
+    if country_code_input:
+        print(f"{current_time()} INFO: Country found!")
+        country_code_new = country_code_input.upper()
+    else:
+        print(f"{current_time()} INFO: Country not found, using default value. Please set your Country in 'Settings'.")
+        country_code_new = country_code
+
+    print(f"{current_time()} INFO: Country Code set to '{country_code_new}'\n")
+
+    return country_code_new
 
 # Creates the dropdown list of 'Special Actions'
 def get_special_actions():
@@ -1000,10 +1111,13 @@ def extract_program_search(program_search_json):
     return extracted_data
 
 # Find new programs on selected Streaming Services
-def get_program_new(date_new, country_code, language_code, num_results):
+def get_program_new(date_new, country_code, language_code, num_results, provider_status):
     services = read_data(csv_streaming_services)
     check_services = [service for service in services if service["streaming_service_subscribe"] == "True"]
     check_services.sort(key=lambda x: int(x.get("streaming_service_priority", float("inf"))))
+
+    provider_groups = read_data(csv_provider_groups)
+
     streaming_services_map = []
     check_services_codes = []
 
@@ -1011,8 +1125,20 @@ def get_program_new(date_new, country_code, language_code, num_results):
 
     for check_service in check_services:
         for streaming_service in streaming_services_map:
-            if check_service['streaming_service_name'] == streaming_service['streaming_service_name']: 
-                check_services_codes.append(streaming_service['streaming_service_code'])
+            if check_service['streaming_service_name'] == streaming_service['streaming_service_name']:
+                provider_group_name = next(
+                    (provider_group['provider_group_name'] for provider_group in provider_groups if provider_group['provider_group_id'] == check_service['streaming_service_group']),
+                    None
+                )
+
+                if (
+                    ( provider_status == "All Providers" ) or
+                    ( provider_status == "Active Providers" and check_service['streaming_service_active'] == "On" ) or
+                    ( provider_status == "Inactive Providers" and check_service['streaming_service_active'] == "Off" ) or
+                    ( provider_status.startswith("GROUP: ") and provider_group_name == provider_status.split(": ")[1] ) or
+                    ( provider_status.startswith("PROVIDER (MOVIES & SHOWS): ") and check_service['streaming_service_name'] == provider_status.split(": ")[1] )
+                ):
+                    check_services_codes.append(streaming_service['streaming_service_code'])
 
     program_new_results = []
     program_new_results_json = []
@@ -2183,6 +2309,442 @@ def webpage_modify_programs():
         html_bookmark_action_selected = bookmark_action_prior
     )
 
+# Manage Providers Webpage
+@app.route('/manage_providers', methods=['GET', 'POST'])
+def webpage_manage_providers():
+    global slm_stream_address_prior
+    settings_anchor_id = None
+    run_empty_row = None
+
+    settings = read_data(csv_settings)
+    slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
+    if slm_stream_address_prior is None or slm_stream_address_prior == '':
+        slm_stream_address_prior = slm_stream_address
+
+    streaming_services = read_data(csv_streaming_services)
+    streaming_services_subscribed_raw = [streaming_service for streaming_service in streaming_services if streaming_service['streaming_service_subscribe'] == 'True']
+    streaming_services_subscribed = sorted(streaming_services_subscribed_raw, key=lambda x: sort_key(x["streaming_service_name"]))
+
+    provider_groups_raw = read_data(csv_provider_groups)
+    provider_groups = provider_groups_default.copy()
+    if provider_groups_raw:
+        provider_groups_raw = sorted(provider_groups_raw, key=lambda x: sort_key(x["provider_group_name"].casefold()))
+        for provider_group_raw in provider_groups_raw:
+            if provider_group_raw["provider_group_active"] == "On":
+                provider_groups.append({
+                    "provider_group_id": provider_group_raw["provider_group_id"],
+                    "provider_group_name": f"GROUP: {provider_group_raw['provider_group_name']}"
+                })
+
+    slmappings = read_data(csv_slmappings)
+    slmappings_object_type = [
+        "MOVIE or SHOW",
+        "MOVIE",
+        "SHOW"
+    ]
+    slmappings_replace_type = [
+        "Replace string with...",
+        "Replace pattern (REGEX) with...",
+        "Replace entire Stream Link with..."
+    ]
+
+    slm_stream_address_message = ""
+
+    action_to_anchor = {
+        'streaming_services': 'streaming_services_anchor',
+        'ssss': 'ssss_anchor',
+        'provider_group': 'provider_group_anchor',
+        'slmapping': 'slmapping_anchor',
+        'slm_stream_address': 'slm_stream_address_anchor'
+    }
+
+    if request.method == 'POST':
+        settings_action = request.form['action']
+        slm_stream_address_input = request.form.get('slm_stream_address')
+        streaming_services_input = request.form.get('streaming_services')
+
+        for prefix, anchor_id in action_to_anchor.items():
+            if settings_action.startswith(prefix):
+                settings_anchor_id = anchor_id
+                break
+
+        checks = ['slmapping_', 'slm_stream_address_', 'streaming_services_', 'ssss_', 'provider_group_']
+        if any(settings_action.startswith(check) for check in checks):
+
+            interior_checks = ['slmapping_', 'provider_group_']
+            if ( any(settings_action.startswith(interior_check) for interior_check in interior_checks) or '_save' in settings_action ) and ( 'cancel' not in settings_action ):
+
+                if settings_action in ['slm_stream_address_save'
+                                      ]:
+
+                    if settings_action == 'slm_stream_address_save':
+                        settings[46]["settings"] = slm_stream_address_input
+                        slm_stream_address_prior = slm_stream_address_input
+
+                    csv_to_write = csv_settings
+                    data_to_write = settings
+
+                elif 'ssss_save' in settings_action or settings_action in ['streaming_services_save'
+                                                                          ]:
+
+                    csv_to_write = csv_streaming_services
+
+                    if settings_action == 'streaming_services_save':
+                        streaming_services_input_json = json.loads(streaming_services_input)
+                        data_to_write = streaming_services_input_json
+
+                    elif 'ssss_save' in settings_action:
+                        ssss_inputs = []
+                        
+                        ssss_streaming_service_active_inputs = {}
+                        ssss_streaming_service_name_inputs = {}
+                        ssss_streaming_service_group_inputs = {}
+
+                        total_number_of_checkboxes = len(streaming_services_subscribed)
+                        ssss_streaming_service_active_inputs = {str(i): 'Off' for i in range(1, total_number_of_checkboxes + 1)}
+
+                        for key in request.form.keys():
+                            if key.startswith('ssss_streaming_service_active_'):
+                                index = key.split('_')[-1]
+                                ssss_streaming_service_active_inputs[index] = request.form.get(key)
+                            
+                            if key.startswith('ssss_streaming_service_name_'):
+                                index = key.split('_')[-1]
+                                ssss_streaming_service_name_inputs[index] = request.form.get(key)
+                            
+                            if key.startswith('ssss_streaming_service_group_'):
+                                index = key.split('_')[-1]
+                                ssss_streaming_service_group_inputs[index] = request.form.get(key)
+
+                        for row in ssss_streaming_service_active_inputs:
+                            ssss_streaming_service_active_input = ssss_streaming_service_active_inputs.get(row)
+                            ssss_streaming_service_name_input = ssss_streaming_service_name_inputs.get(row)
+                            ssss_streaming_service_group_input = ssss_streaming_service_group_inputs.get(row)
+
+                            for idx, streaming_service in enumerate(streaming_services_subscribed):
+                                if idx == int(row) - 1:
+                                    ssss_inputs.append({
+                                        "streaming_service_name": ssss_streaming_service_name_input,
+                                        "streaming_service_active": ssss_streaming_service_active_input,
+                                        "streaming_service_group": ssss_streaming_service_group_input
+                                    })
+
+                        if settings_action.endswith('all'):
+                            for streaming_service in streaming_services:
+                                for ssss_input in ssss_inputs:
+                                    if streaming_service['streaming_service_name'] == ssss_input['streaming_service_name']:
+                                        streaming_service['streaming_service_active'] = ssss_input['streaming_service_active']
+                                        streaming_service['streaming_service_group'] = ssss_input['streaming_service_group']
+                        
+                        else:
+                            ssss_index = int(settings_action.split('_')[-1]) - 1
+                            for streaming_service in streaming_services:
+                                if streaming_service['streaming_service_name'] == ssss_inputs[ssss_index]['streaming_service_name']:
+                                    streaming_service['streaming_service_active'] = ssss_inputs[ssss_index]['streaming_service_active']
+                                    streaming_service['streaming_service_group'] = ssss_inputs[ssss_index]['streaming_service_group']
+
+                        data_to_write = streaming_services
+
+                elif settings_action.startswith('provider_group_'):
+
+                    # Add a record
+                    if settings_action == 'provider_group_new':
+                        provider_group_id_new_input = f"slmpg_{max((int(provider_group_raw['provider_group_id'].split('_')[1]) for provider_group_raw in provider_groups_raw), default=0) + 1:04d}"
+                        provider_group_active_new_input = 'On' if request.form.get('provider_group_active_new') == 'on' else 'Off'
+                        provider_group_name_new_input = request.form.get('provider_group_name_new')
+                        provider_group_description_new_input = request.form.get('provider_group_description_new')
+
+                        provider_groups_raw.append({
+                            "provider_group_id": provider_group_id_new_input,
+                            "provider_group_active": provider_group_active_new_input,
+                            "provider_group_name": provider_group_name_new_input,
+                            "provider_group_description": provider_group_description_new_input
+                        })
+
+                    # Delete a record
+                    elif settings_action.startswith('provider_group_delete_'):
+                        provider_group_delete_index = int(settings_action.split('_')[-1]) - 1
+
+                        # Create a temporary record with fields set to None
+                        temp_record = create_temp_record(provider_groups_raw[0].keys())
+
+                        if 0 <= provider_group_delete_index < len(provider_groups_raw):
+                            provider_groups_raw.pop(provider_group_delete_index)
+
+                            # If the list is now empty, add the temp record to keep headers
+                            if not provider_groups_raw:
+                                provider_groups_raw.append(temp_record)
+                                run_empty_row = True
+
+                    # Save record modifications
+                    elif settings_action == 'provider_group_save':
+                        provider_group_id_inputs = {}
+                        provider_group_active_inputs = {}
+                        provider_group_name_inputs = {}
+                        provider_group_description_inputs = {}
+
+                        total_number_of_checkboxes = len(provider_groups_raw)
+                        provider_group_active_inputs = {str(i): 'Off' for i in range(1, total_number_of_checkboxes + 1)}
+
+                        for key in request.form.keys():
+                            if key.startswith('provider_group_id_'):
+                                index = key.split('_')[-1]
+                                provider_group_id_inputs[index] = request.form.get(key)
+
+                            if key.startswith('provider_group_active_'):
+                                index = key.split('_')[-1]
+                                provider_group_active_inputs[index] = request.form.get(key)
+
+                            if key.startswith('provider_group_name_'):
+                                index = key.split('_')[-1]
+                                provider_group_name_inputs[index] = request.form.get(key)
+
+                            if key.startswith('provider_group_description_'):
+                                index = key.split('_')[-1]
+                                provider_group_description_inputs[index] = request.form.get(key)
+
+                        provider_groups_raw = []
+
+                        for row in provider_group_id_inputs:
+                            provider_group_id_input = provider_group_id_inputs.get(row)
+                            provider_group_active_input = provider_group_active_inputs.get(row)
+                            provider_group_name_input = provider_group_name_inputs.get(row)
+                            provider_group_description_input = provider_group_description_inputs.get(row)
+
+                            provider_groups_raw.append({
+                                'provider_group_id': provider_group_id_input,
+                                'provider_group_active': provider_group_active_input,
+                                'provider_group_name': provider_group_name_input,
+                                'provider_group_description': provider_group_description_input
+                            })
+
+                    if not run_empty_row:
+                        provider_groups_raw = sorted(provider_groups_raw, key=lambda x: sort_key(x["provider_group_name"].casefold()))
+
+                    csv_to_write = csv_provider_groups
+                    data_to_write = provider_groups_raw
+
+                elif settings_action.startswith('slmapping_action_'):
+
+                    # Add a map
+                    if settings_action == 'slmapping_action_new':
+                        slmapping_active_new_input = 'On' if request.form.get('slmapping_active_new') == 'on' else 'Off'
+                        slmapping_contains_string_new_input = request.form.get('slmapping_contains_string_new')
+                        slmapping_object_type_new_input = request.form.get('slmapping_object_type_new')
+                        slmapping_replace_type_new_input = request.form.get('slmapping_replace_type_new')
+                        slmapping_replace_string_new_input = request.form.get('slmapping_replace_string_new')
+
+                        slmappings.append({
+                            "active": slmapping_active_new_input,
+                            "contains_string": slmapping_contains_string_new_input,
+                            "object_type": slmapping_object_type_new_input,
+                            "replace_type": slmapping_replace_type_new_input,
+                            "replace_string": slmapping_replace_string_new_input
+                        })
+
+                    # Delete a map
+                    elif settings_action.startswith('slmapping_action_delete_'):
+                        slmapping_action_delete_index = int(settings_action.split('_')[-1]) - 1
+
+                        # Create a temporary record with fields set to None
+                        temp_record = create_temp_record(slmappings[0].keys())
+
+                        if 0 <= slmapping_action_delete_index < len(slmappings):
+                            slmappings.pop(slmapping_action_delete_index)
+
+                            # If the list is now empty, add the temp record to keep headers
+                            if not slmappings:
+                                slmappings.append(temp_record)
+                                run_empty_row = True
+
+                    # Save map modifications
+                    elif settings_action == 'slmapping_action_save':
+                        slmapping_active_existing_inputs = {}
+                        slmapping_contains_string_existing_inputs = {}
+                        slmapping_object_type_existing_inputs = {}
+                        slmapping_replace_type_existing_inputs = {}
+                        slmapping_replace_string_existing_inputs = {}
+
+                        total_number_of_checkboxes = len(slmappings)
+                        slmapping_active_existing_inputs = {str(i): 'Off' for i in range(1, total_number_of_checkboxes + 1)}
+
+                        for key in request.form.keys():
+                            if key.startswith('slmapping_active_existing_'):
+                                index = key.split('_')[-1]
+                                slmapping_active_existing_inputs[index] = request.form.get(key)
+
+                            if key.startswith('slmapping_contains_string_existing_'):
+                                index = key.split('_')[-1]
+                                slmapping_contains_string_existing_inputs[index] = request.form.get(key)
+
+                            if key.startswith('slmapping_object_type_existing_'):
+                                index = key.split('_')[-1]
+                                slmapping_object_type_existing_inputs[index] = request.form.get(key)
+
+                            if key.startswith('slmapping_replace_type_existing_'):
+                                index = key.split('_')[-1]
+                                slmapping_replace_type_existing_inputs[index] = request.form.get(key)
+
+                            if key.startswith('slmapping_replace_string_existing_'):
+                                index = key.split('_')[-1]
+                                slmapping_replace_string_existing_inputs[index] = request.form.get(key)
+
+                        for row in slmapping_active_existing_inputs:
+                            slmapping_active_existing_input = slmapping_active_existing_inputs.get(row)
+                            slmapping_contains_string_existing_input = slmapping_contains_string_existing_inputs.get(row)
+                            slmapping_object_type_existing_input = slmapping_object_type_existing_inputs.get(row)
+                            slmapping_replace_type_existing_input = slmapping_replace_type_existing_inputs.get(row)
+                            slmapping_replace_string_existing_input = slmapping_replace_string_existing_inputs.get(row)
+
+                            for idx, slmapping in enumerate(slmappings):
+                                if idx == int(row) - 1:
+                                    slmapping['active'] = slmapping_active_existing_input
+                                    slmapping['contains_string'] = slmapping_contains_string_existing_input
+                                    slmapping['object_type'] = slmapping_object_type_existing_input
+                                    slmapping['replace_type'] = slmapping_replace_type_existing_input
+                                    slmapping['replace_string'] = slmapping_replace_string_existing_input
+
+                    csv_to_write = csv_slmappings
+                    data_to_write = slmappings
+
+                write_data(csv_to_write, data_to_write)
+                if run_empty_row:
+                    remove_empty_row(csv_to_write)
+
+            elif settings_action == 'streaming_services_update':
+                update_streaming_services()
+                time.sleep(2)
+
+            elif settings_action == 'slm_stream_address_cancel':
+                slm_stream_address_prior = slm_stream_address
+
+            elif settings_action == 'slm_stream_address_test':
+                slm_stream_address_prior = slm_stream_address_input
+                slm_stream_address_okay = check_channels_url(slm_stream_address_input)
+                if slm_stream_address_okay:
+                    slm_stream_address_message = f"{current_time()} INFO: '{slm_stream_address_input}' responded as expected!"
+                else:
+                    slm_stream_address_message = f"{current_time()} WARNING: Nothing found at '{slm_stream_address_input}'. Please update!"
+
+        settings = read_data(csv_settings)
+        slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
+        if slm_stream_address_prior is None or slm_stream_address_prior == '':
+            slm_stream_address_prior = slm_stream_address
+
+        streaming_services = read_data(csv_streaming_services)
+        streaming_services_subscribed_raw = [streaming_service for streaming_service in streaming_services if streaming_service['streaming_service_subscribe'] == 'True']
+        streaming_services_subscribed = sorted(streaming_services_subscribed_raw, key=lambda x: sort_key(x["streaming_service_name"]))
+
+        provider_groups_raw = read_data(csv_provider_groups)
+        provider_groups = provider_groups_default.copy()
+        if provider_groups_raw:
+            provider_groups_raw = sorted(provider_groups_raw, key=lambda x: sort_key(x["provider_group_name"].casefold()))
+            for provider_group_raw in provider_groups_raw:
+                if provider_group_raw["provider_group_active"] == "On":
+                    provider_groups.append({
+                        "provider_group_id": provider_group_raw["provider_group_id"],
+                        "provider_group_name": f"GROUP: {provider_group_raw['provider_group_name']}"
+                    })
+
+        slmappings = read_data(csv_slmappings)
+
+    response = make_response(render_template(
+        'main/manage_providers.html',
+        segment='manage_providers',
+        html_slm_version=slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
+        html_settings_anchor_id = settings_anchor_id,
+        html_slm_stream_address = slm_stream_address,
+        html_slm_stream_address_prior = slm_stream_address_prior,
+        html_streaming_services = streaming_services,
+        html_streaming_services_subscribed = streaming_services_subscribed,
+        html_slm_stream_address_message = slm_stream_address_message,
+        html_slmappings = slmappings,
+        html_slmappings_object_type = slmappings_object_type,
+        html_slmappings_replace_type = slmappings_replace_type,
+        html_provider_groups = provider_groups,
+        html_provider_groups_raw = provider_groups_raw
+    ))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+
+    return response
+
+# Find all available streaming services for the country
+def get_streaming_services():
+    settings = read_data(csv_settings)
+    country_code = settings[2]['settings']
+    
+    provider_results = []
+    provider_results_json = []
+    provider_results_json_array = []
+    provider_results_json_array_results = []
+
+    _GRAPHQL_GetProviders = """
+    query GetProviders($country: Country!, $platform: Platform!) {
+      packages(country: $country, platform: $platform) {
+        clearName
+        addons(country: $country, platform: $platform) {
+          clearName
+        }
+      }
+    }
+    """
+
+    json_data = {
+        'query': _GRAPHQL_GetProviders,
+        'variables': {
+            "country": country_code,
+            "platform": "WEB"
+        },
+        'operationName': 'GetProviders',
+    }
+
+    try:
+        provider_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+    except requests.RequestException as e:
+        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
+
+    if provider_results:
+        provider_results_json = provider_results.json()
+        provider_results_json_array = provider_results_json["data"]["packages"]
+
+        for provider in provider_results_json_array :
+            provider_addons = []
+
+            entry = {
+                "streaming_service_name": provider["clearName"],
+                "streaming_service_subscribe": False,
+                "streaming_service_priority": None
+            }
+            provider_results_json_array_results.append(entry)
+
+            provider_addons = provider["addons"]
+
+            if provider_addons:
+                for provider_addon in provider_addons:
+                    entry = {
+                        "streaming_service_name": provider_addon["clearName"],
+                        "streaming_service_subscribe": False,
+                        "streaming_service_priority": None,
+                        "streaming_service_active": "On",
+                        "streaming_service_group": "None"
+                    }
+                    provider_results_json_array_results.append(entry)
+
+    return provider_results_json_array_results
+
+# Update Streaming Services
+def update_streaming_services():
+    data = get_streaming_services()
+    update_rows(csv_streaming_services, data, "streaming_service_name", None)
+
 # Playlists webpage and actions
 @app.route('/playlists', defaults={'sub_page': 'plm_main'}, methods=['GET', 'POST'])
 @app.route('/playlists/<sub_page>', methods=['GET', 'POST'])
@@ -2206,6 +2768,7 @@ def webpage_playlists(sub_page):
 
     templates = {
         'plm_main': 'main/playlists.html',
+        'plm_modify_unassigned_stations': 'main/playlists_modify_unassigned_stations.html',
         'plm_modify_assigned_stations': 'main/playlists_modify_assigned_stations.html',
         'plm_parent_stations': 'main/playlists_parent_stations.html',
         'plm_manage': 'main/playlists_manage.html'
@@ -2277,7 +2840,7 @@ def webpage_playlists(sub_page):
 
             filter_inposts = ['_save', '_new', '_delete_', '_set_parent_']
             if any(filter_inpost in playlists_action for filter_inpost in filter_inposts):
-                if sub_page is None or sub_page == 'plm_main':
+                if sub_page is None or sub_page == 'plm_modify_unassigned_stations':
                     filter_title_unassigned = request.form.get('filter-title')
                     filter_m3u_name_unassigned = request.form.get('filter-m3u-name')
                     filter_description_unassigned = request.form.get('filter-description')
@@ -2925,6 +3488,9 @@ def webpage_playlists(sub_page):
             elif '_cancel' in playlists_action:
 
                 if sub_page is None or sub_page == 'plm_main':
+                    pass
+                
+                elif sub_page == 'plm_modify_unassigned_stations':
                     filter_title_unassigned = ''
                     filter_m3u_name_unassigned = ''
                     filter_description_unassigned = ''
@@ -3227,7 +3793,7 @@ def get_child_to_parents(sub_page):
                 'station_count': station_count
             })
 
-    if sub_page is None or sub_page in ['plm_main', 'plm_modify_assigned_stations']:
+    if sub_page is None or sub_page in ['plm_main', 'plm_modify_unassigned_stations', 'plm_modify_assigned_stations']:
         combined_m3u_dict = {f"{m3u['m3u_id']}_{m3u['channel_id']}": m3u for m3u in combined_m3us}
         playlist_dict = {playlist['m3u_id']: playlist for playlist in playlists}
 
@@ -4459,7 +5025,9 @@ def webpage_reports_queries():
     if slm_stream_link_file_manager:
         reports_queries_lists.append({'name': 'Movies / Shows: Currently Unavailable', 'value': 'query_currently_unavailable'})
         reports_queries_lists.append({'name': 'Movies / Shows: Previously Watched', 'value': 'query_previously_watched'})
-        reports_queries_lists.append({'name': "Movies / Shows: Not on JustWatch (Must run 'Stream Links: New & Recent Releases' first)", 'value': 'query_not_on_justwatch'})
+        reports_queries_lists.append({'name': "Movies / Shows: Last 30 Days Original Release Date with Availablity*", 'value': 'query_slm_recent_releases_30_days'})
+        reports_queries_lists.append({'name': "Movies / Shows: Last 90 Days Original Release Date with Availablity*", 'value': 'query_slm_recent_releases_90_days'})
+        reports_queries_lists.append({'name': "Movies / Shows: Not on JustWatch*", 'value': 'query_not_on_justwatch'})
 
     if slm_channels_dvr_integration:
         reports_queries_lists.append({'name': 'Movies / Shows: By Library Collection', 'value': 'query_mtm_programs_by_library_collection'})
@@ -4537,6 +5105,8 @@ def run_query(query_name):
     if query_name in [
                         'query_currently_unavailable',
                         'query_previously_watched',
+                        'query_slm_recent_releases_30_days',
+                        'query_slm_recent_releases_90_days',
                         'query_not_on_justwatch'
                      ]:
 
@@ -4578,32 +5148,105 @@ def run_query(query_name):
                     bookmarks.title || " (" || bookmarks.release_year || ")"
                 """
 
-            elif query_name == 'query_previously_watched':
-                # Add a new column for the season using string slicing
-                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
+            elif query_name in ['query_slm_recent_releases_30_days', 'query_slm_recent_releases_90_days']:
+                # Step 1: Filter bookmarks_status_data for entries within the last xxx days
+                if query_name == 'query_slm_recent_releases_30_days':
+                    query_days = 30
+                elif query_name == 'query_slm_recent_releases_90_days':
+                    query_days = 90
 
+                days_ago = (datetime.datetime.today() - datetime.timedelta(days=query_days)).strftime('%Y-%m-%d')
+                today = datetime.datetime.today().strftime('%Y-%m-%d')
+
+                bookmarks_status_filtered_data = (
+                    bookmarks_status[
+                        (bookmarks_status['original_release_date'] >= days_ago) &
+                        (bookmarks_status['original_release_date'] <= today) &
+                        (bookmarks_status['original_release_date'] != '')
+                    ]
+                    .sort_values(by='original_release_date', ascending=False)
+                )
+
+                # Step 2: Add node_id, country_code, and language_code
+                bookmarks_status_filtered_data['node_id'] = bookmarks_status_filtered_data.apply(
+                    lambda row: row['season_episode_id'] if row['season_episode_id'] != '' else row['entry_id'], axis=1
+                )
+
+                bookmarks_status_filtered_data['country_code'] = bookmarks_status_filtered_data['entry_id'].map(
+                    bookmarks.set_index('entry_id')['country_code']
+                )
+
+                bookmarks_status_filtered_data['language_code'] = bookmarks_status_filtered_data['entry_id'].map(
+                    bookmarks.set_index('entry_id')['language_code']
+                )
+
+                # Step 3: Fetch and process stream link offers
+                bookmarks_status_filtered_data['offer_icons'] = None
+
+                for index, row in bookmarks_status_filtered_data.iterrows():
+                    node_id = row['node_id']
+                    country_code = row['country_code']
+                    language_code = row['language_code']
+
+                    # Fetch stream link details
+                    stream_link_details = get_offers(node_id, country_code, language_code)
+                    stream_link_offers = extract_offer_info(stream_link_details)
+
+                    # Sort offers and extract unique icons
+                    stream_link_offers_sorted = sorted(stream_link_offers, key=lambda x: sort_key(x["name"]))
+                    offer_icons = [offer['icon'] for offer in stream_link_offers_sorted]
+                    offer_icons = list(dict.fromkeys(offer_icons))  # Remove duplicates
+
+                    # Add offer icons to the row
+                    bookmarks_status_filtered_data.at[index, 'offer_icons'] = offer_icons
+
+                # Step 4: Convert the processed data back into a DataFrame
+                bookmarks_status_filtered = pd.DataFrame(bookmarks_status_filtered_data)
+
+                # Step 5: Preprocess the offer_icons column for rendering
+                bookmarks_status_filtered['offer_icons'] = bookmarks_status_filtered['offer_icons'].apply(
+                    lambda icons: ''.join(
+                        f'<img src="{icon}" style="width: 55px; height: 55px; margin-right: 5px; margin-top: 5px; object-fit: contain;">'
+                        for icon in icons
+                    ) if isinstance(icons, list) else ''
+                )
+
+                # Step 6: Final Query
                 query = """
                 SELECT 
+                    bookmarks_status_filtered.original_release_date AS "Original Release Date",
                     bookmarks.object_type AS "Type", 
-                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
-                    bookmarks_status.Season, 
+                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name",  
                     CASE 
-                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
-                        ELSE ''
-                    END AS "# Episodes"
+                        WHEN bookmarks.object_type = 'MOVIE'
+                        THEN ''
+                        ELSE bookmarks_status_filtered.season_episode
+                    END AS "Season/Episode",
+                    CASE 
+                        WHEN bookmarks_status_filtered.stream_link != '' OR bookmarks_status_filtered.stream_link_override != '' 
+                        THEN 'TRUE'
+                        ELSE 'FALSE'
+                    END AS "Has Stream Link/File",
+                    bookmarks_status_filtered.offer_icons AS "Available On"
                 FROM 
                     bookmarks 
                 INNER JOIN 
-                    bookmarks_status 
+                    bookmarks_status_filtered
                 ON 
-                    bookmarks.entry_id = bookmarks_status.entry_id
+                    bookmarks.entry_id = bookmarks_status_filtered.entry_id
                 WHERE 
-                    bookmarks_status.status = 'watched'
-                GROUP BY 
+                    bookmarks_status_filtered.original_release_date <= DATE('now') 
+                    AND bookmarks_status_filtered.original_release_date != ''
+                GROUP BY
+                    bookmarks_status_filtered.original_release_date,
                     bookmarks.object_type, 
                     bookmarks.title || " (" || bookmarks.release_year || ")", 
-                    bookmarks_status.Season
-                ORDER BY 
+                    bookmarks_status_filtered.season_episode,
+                    bookmarks_status_filtered.stream_link,
+                    bookmarks_status_filtered.stream_link_override,
+                    bookmarks_status_filtered.offer_icons
+                ORDER BY
+                    bookmarks_status_filtered.original_release_date DESC,
                     bookmarks.object_type, 
                     bookmarks.title || " (" || bookmarks.release_year || ")"
                 """
@@ -7758,7 +8401,7 @@ def get_stream_link(offers, special_action):
         check_services_final.append(special_action_extract)
 
     services = read_data(csv_streaming_services)
-    check_services = [service for service in services if service["streaming_service_subscribe"] == "True"]
+    check_services = [service for service in services if service["streaming_service_subscribe"] == "True" and service["streaming_service_active"] == "On"]
     check_services.sort(key=lambda x: int(x.get("streaming_service_priority", float("inf"))))
 
     for check_service in check_services:
@@ -8580,7 +9223,6 @@ def webpage_logs():
 @app.route('/settings', methods=['GET', 'POST'])
 def webpage_settings():
     global channels_url_prior
-    global slm_stream_address_prior
     global slm_playlist_manager
     global slm_stream_link_file_manager
     global slm_channels_dvr_integration
@@ -8593,14 +9235,7 @@ def webpage_settings():
     channels_url = settings[0]["settings"]
     if channels_url_prior is None or channels_url_prior == '':
         channels_url_prior = channels_url
-    slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
-    if slm_stream_address_prior is None or slm_stream_address_prior == '':
-        slm_stream_address_prior = slm_stream_address
     channels_directory = settings[1]["settings"]
-    country_code = settings[2]["settings"]
-    language_code = settings[3]["settings"]
-    num_results = settings[4]["settings"]
-    hide_bookmarked = settings[9]["settings"]
     channels_prune = settings[7]["settings"]
     station_start_number = settings[11]['settings']
     max_stations = settings[12]['settings']
@@ -8608,32 +9243,12 @@ def webpage_settings():
     plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
     plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
 
-    streaming_services = read_data(csv_streaming_services)
-
-    slmappings = read_data(csv_slmappings)
-    slmappings_object_type = [
-        "MOVIE or SHOW",
-        "MOVIE",
-        "SHOW"
-    ]
-    slmappings_replace_type = [
-        "Replace string with...",
-        "Replace pattern (REGEX) with...",
-        "Replace entire Stream Link with..."
-    ]
-
     channels_url_message = ""
-    slm_stream_address_message = ""
     channels_directory_message = ""
-    search_defaults_message = ""
     advanced_experimental_message = ""
 
     action_to_anchor = {
-        'streaming_services': 'streaming_services_anchor',
-        'search_defaults': 'search_defaults_anchor',
-        'slmapping': 'slmapping_anchor',
         'channels_url': 'channels_url_anchor',
-        'slm_stream_address': 'slm_stream_address_anchor',
         'channels_directory': 'channels_directory_anchor',
         'channels_prune': 'advanced_experimental_anchor',
         'playlist_manager': 'advanced_experimental_anchor',
@@ -8653,7 +9268,6 @@ def webpage_settings():
     if request.method == 'POST':
         settings_action = request.form['action']
         channels_url_input = request.form.get('channels_url')
-        slm_stream_address_input = request.form.get('slm_stream_address')
         channels_directory_input = request.form.get('current_directory')
         channels_directory_manual_path = request.form.get('channels_directory_manual_path')
         channels_prune_input = request.form.get('channels_prune')
@@ -8667,61 +9281,44 @@ def webpage_settings():
         plm_url_tag_in_m3us_input = request.form.get('plm_url_tag_in_m3us')
         plm_streaming_stations_station_start_number_input = request.form.get('plm_streaming_stations_station_start_number')
         plm_streaming_stations_max_stations_input = request.form.get('plm_streaming_stations_max_stations')
-        country_code_input = request.form.get('country_code')
-        language_code_input = request.form.get('language_code')
-        num_results_input = request.form.get('num_results')
-        hide_bookmarked_input = request.form.get('hide_bookmarked')
-        streaming_services_input = request.form.get('streaming_services')
 
         for prefix, anchor_id in action_to_anchor.items():
             if settings_action.startswith(prefix):
                 settings_anchor_id = anchor_id
                 break
 
-        if settings_action.startswith('slmapping_') or settings_action in ['channels_url_cancel',
-                                                                           'slm_stream_address_cancel',
-                                                                           'channels_directory_cancel',
-                                                                           'channels_prune_cancel',
-                                                                           'playlist_manager_cancel',
-                                                                           'stream_link_file_manager_cancel',
-                                                                           'channels_dvr_integration_cancel',
-                                                                           'media_tools_manager_cancel',
-                                                                           'plm_streaming_stations_cancel',
-                                                                           'search_defaults_cancel',
-                                                                           'streaming_services_cancel',
-                                                                           'channels_url_save',
-                                                                           'slm_stream_address_save',
-                                                                           'channels_directory_save',
-                                                                           'channels_prune_save',
-                                                                           'playlist_manager_save',
-                                                                           'stream_link_file_manager_save',
-                                                                           'channels_dvr_integration_save',
-                                                                           'media_tools_manager_save',
-                                                                           'plm_streaming_stations_save',
-                                                                           'search_defaults_save',
-                                                                           'streaming_services_save',
-                                                                           'streaming_services_update',
-                                                                           'channels_url_test',
-                                                                           'slm_stream_address_test',
-                                                                           'channels_url_scan'
-                                                                        ]:
+        if settings_action in ['channels_url_cancel',
+                               'channels_directory_cancel',
+                               'channels_prune_cancel',
+                               'playlist_manager_cancel',
+                               'stream_link_file_manager_cancel',
+                               'channels_dvr_integration_cancel',
+                               'media_tools_manager_cancel',
+                               'plm_streaming_stations_cancel',
+                               'channels_url_save',
+                               'channels_directory_save',
+                               'channels_prune_save',
+                               'playlist_manager_save',
+                               'stream_link_file_manager_save',
+                               'channels_dvr_integration_save',
+                               'media_tools_manager_save',
+                               'plm_streaming_stations_save',
+                               'channels_url_test',
+                               'channels_url_scan'
+                              ]:
 
-            if settings_action.startswith('slmapping_action_') or settings_action in ['channels_url_save',
-                                                                                      'slm_stream_address_save',
-                                                                                      'channels_directory_save',
-                                                                                      'channels_prune_save',
-                                                                                      'playlist_manager_save',
-                                                                                      'stream_link_file_manager_save',
-                                                                                      'channels_dvr_integration_save',
-                                                                                      'media_tools_manager_save',
-                                                                                      'plm_streaming_stations_save',
-                                                                                      'search_defaults_save',
-                                                                                      'streaming_services_save',
-                                                                                      'channels_url_scan'
-                                                                                    ]:
+            if settings_action in ['channels_url_save',
+                                   'channels_directory_save',
+                                   'channels_prune_save',
+                                   'playlist_manager_save',
+                                   'stream_link_file_manager_save',
+                                   'channels_dvr_integration_save',
+                                   'media_tools_manager_save',
+                                   'plm_streaming_stations_save',
+                                   'channels_url_scan'
+                                  ]:
 
                 if settings_action in ['channels_url_save',
-                                       'slm_stream_address_save',
                                        'channels_directory_save',
                                        'channels_prune_save',
                                        'playlist_manager_save',
@@ -8729,7 +9326,6 @@ def webpage_settings():
                                        'channels_dvr_integration_save',
                                        'media_tools_manager_save',
                                        'plm_streaming_stations_save',
-                                       'search_defaults_save',
                                        'channels_url_scan'
                                     ]:
 
@@ -8744,22 +9340,6 @@ def webpage_settings():
                     elif settings_action == 'channels_directory_save':
                         settings[1]["settings"] = channels_directory_input
                         current_directory = channels_directory_input
-
-                    elif settings_action == 'slm_stream_address_save':
-                        settings[46]["settings"] = slm_stream_address_input
-                        slm_stream_address_prior = slm_stream_address_input
-
-                    elif settings_action == 'search_defaults_save':
-                            settings[2]["settings"] = country_code_input
-                            settings[3]["settings"] = language_code_input
-                            try:
-                                if int(num_results_input) > 0:
-                                    settings[4]["settings"] = int(num_results_input)
-                                else:
-                                    search_defaults_message = f"{current_time()} ERROR: For 'Number of Results', please enter a positive integer."
-                            except ValueError:
-                                search_defaults_message = f"{current_time()} ERROR: 'Number of Results' must be a number."
-                            settings[9]["settings"] = "On" if hide_bookmarked_input == 'on' else "Off"
 
                     elif settings_action == 'channels_prune_save':
                         settings[7]["settings"] = "On" if channels_prune_input == 'on' else "Off"
@@ -8843,111 +9423,12 @@ def webpage_settings():
                     csv_to_write = csv_settings
                     data_to_write = settings
 
-                elif settings_action == 'streaming_services_save':
-                    streaming_services_input_json = json.loads(streaming_services_input)
-                    csv_to_write = csv_streaming_services
-                    data_to_write = streaming_services_input_json
-
-                elif settings_action.startswith('slmapping_action_'):
-
-                    # Add a map
-                    if settings_action == 'slmapping_action_new':
-                        slmapping_active_new_input = 'On' if request.form.get('slmapping_active_new') == 'on' else 'Off'
-                        slmapping_contains_string_new_input = request.form.get('slmapping_contains_string_new')
-                        slmapping_object_type_new_input = request.form.get('slmapping_object_type_new')
-                        slmapping_replace_type_new_input = request.form.get('slmapping_replace_type_new')
-                        slmapping_replace_string_new_input = request.form.get('slmapping_replace_string_new')
-
-                        slmappings.append({
-                            "active": slmapping_active_new_input,
-                            "contains_string": slmapping_contains_string_new_input,
-                            "object_type": slmapping_object_type_new_input,
-                            "replace_type": slmapping_replace_type_new_input,
-                            "replace_string": slmapping_replace_string_new_input
-                        })
-
-                    # Delete a map
-                    elif settings_action.startswith('slmapping_action_delete_'):
-                        slmapping_action_delete_index = int(settings_action.split('_')[-1]) - 1
-
-                        # Create a temporary record with fields set to None
-                        temp_record = create_temp_record(slmappings[0].keys())
-
-                        if 0 <= slmapping_action_delete_index < len(slmappings):
-                            slmappings.pop(slmapping_action_delete_index)
-
-                            # If the list is now empty, add the temp record to keep headers
-                            if not slmappings:
-                                slmappings.append(temp_record)
-                                run_empty_row = True
-
-                    # Save map modifications
-                    elif settings_action == 'slmapping_action_save':
-                        slmapping_active_existing_inputs = {}
-                        slmapping_contains_string_existing_inputs = {}
-                        slmapping_object_type_existing_inputs = {}
-                        slmapping_replace_type_existing_inputs = {}
-                        slmapping_replace_string_existing_inputs = {}
-
-                        total_number_of_checkboxes = len(slmappings)
-                        slmapping_active_existing_inputs = {str(i): 'Off' for i in range(1, total_number_of_checkboxes + 1)}
-
-                        for key in request.form.keys():
-                            if key.startswith('slmapping_active_existing_'):
-                                index = key.split('_')[-1]
-                                slmapping_active_existing_inputs[index] = request.form.get(key)
-
-                            if key.startswith('slmapping_contains_string_existing_'):
-                                index = key.split('_')[-1]
-                                slmapping_contains_string_existing_inputs[index] = request.form.get(key)
-
-                            if key.startswith('slmapping_object_type_existing_'):
-                                index = key.split('_')[-1]
-                                slmapping_object_type_existing_inputs[index] = request.form.get(key)
-
-                            if key.startswith('slmapping_replace_type_existing_'):
-                                index = key.split('_')[-1]
-                                slmapping_replace_type_existing_inputs[index] = request.form.get(key)
-
-                            if key.startswith('slmapping_replace_string_existing_'):
-                                index = key.split('_')[-1]
-                                slmapping_replace_string_existing_inputs[index] = request.form.get(key)
-
-                        for row in slmapping_active_existing_inputs:
-                            slmapping_active_existing_input = slmapping_active_existing_inputs.get(row)
-                            slmapping_contains_string_existing_input = slmapping_contains_string_existing_inputs.get(row)
-                            slmapping_object_type_existing_input = slmapping_object_type_existing_inputs.get(row)
-                            slmapping_replace_type_existing_input = slmapping_replace_type_existing_inputs.get(row)
-                            slmapping_replace_string_existing_input = slmapping_replace_string_existing_inputs.get(row)
-
-                            for idx, slmapping in enumerate(slmappings):
-                                if idx == int(row) - 1:
-                                    slmapping['active'] = slmapping_active_existing_input
-                                    slmapping['contains_string'] = slmapping_contains_string_existing_input
-                                    slmapping['object_type'] = slmapping_object_type_existing_input
-                                    slmapping['replace_type'] = slmapping_replace_type_existing_input
-                                    slmapping['replace_string'] = slmapping_replace_string_existing_input
-
-                    csv_to_write = csv_slmappings
-                    data_to_write = slmappings
-
                 write_data(csv_to_write, data_to_write)
                 if run_empty_row:
                     remove_empty_row(csv_to_write)
 
-                if settings_action == 'search_defaults_save':
-                    update_streaming_services()
-                    time.sleep(5)
-
-            elif settings_action == 'streaming_services_update':
-                update_streaming_services()
-                time.sleep(5)
-
             elif settings_action == 'channels_url_cancel':
                 channels_url_prior = channels_url
-
-            elif settings_action == 'slm_stream_address_cancel':
-                slm_stream_address_prior = slm_stream_address
 
             elif settings_action == 'channels_url_test':
                 channels_url_prior = channels_url_input
@@ -8956,14 +9437,6 @@ def webpage_settings():
                     channels_url_message = f"{current_time()} INFO: '{channels_url_input}' responded as expected!"
                 else:
                     channels_url_message = f"{current_time()} WARNING: Channels URL not found at '{channels_url_input}'. Please update!"
-
-            elif settings_action == 'slm_stream_address_test':
-                slm_stream_address_prior = slm_stream_address_input
-                slm_stream_address_okay = check_channels_url(slm_stream_address_input)
-                if slm_stream_address_okay:
-                    slm_stream_address_message = f"{current_time()} INFO: '{slm_stream_address_input}' responded as expected!"
-                else:
-                    slm_stream_address_message = f"{current_time()} WARNING: Nothing found at '{slm_stream_address_input}'. Please update!"
 
         elif settings_action == 'channels_directory_nav_up':
             current_directory = os.path.dirname(channels_directory_input)
@@ -8990,24 +9463,13 @@ def webpage_settings():
         channels_url = settings[0]["settings"]
         if channels_url_prior is None or channels_url_prior == '':
             channels_url_prior = channels_url
-        slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
-        if slm_stream_address_prior is None or slm_stream_address_prior == '':
-            slm_stream_address_prior = slm_stream_address
         channels_directory = settings[1]["settings"]
-        country_code = settings[2]["settings"]
-        language_code = settings[3]["settings"]
-        num_results = settings[4]["settings"]
-        hide_bookmarked = settings[9]["settings"]
         channels_prune = settings[7]["settings"]
         station_start_number = settings[11]['settings']
         max_stations = settings[12]['settings']
         plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
         plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
         plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
-
-        streaming_services = read_data(csv_streaming_services)
-
-        slmappings = read_data(csv_slmappings)
 
     response = make_response(render_template(
         'main/settings.html',
@@ -9022,26 +9484,12 @@ def webpage_settings():
         html_settings_anchor_id = settings_anchor_id,
         html_channels_url = channels_url,
         html_channels_url_prior = channels_url_prior,
-        html_slm_stream_address = slm_stream_address,
-        html_slm_stream_address_prior = slm_stream_address_prior,
         html_channels_directory = channels_directory,
-        html_valid_country_codes = valid_country_codes,
-        html_country_code = country_code,
-        html_valid_language_codes = valid_language_codes,
-        html_language_code = language_code,
-        html_num_results = num_results,
         html_channels_prune = channels_prune,
-        html_streaming_services = streaming_services,
         html_channels_url_message = channels_url_message,
-        html_slm_stream_address_message = slm_stream_address_message,
         html_current_directory = current_directory,
         html_subdirectories = get_subdirectories(current_directory),
         html_channels_directory_message = channels_directory_message,
-        html_search_defaults_message = search_defaults_message,
-        html_slmappings = slmappings,
-        html_slmappings_object_type = slmappings_object_type,
-        html_slmappings_replace_type = slmappings_replace_type,
-        html_hide_bookmarked = hide_bookmarked,
         html_station_start_number = station_start_number,
         html_max_stations = max_stations,
         html_plm_streaming_stations_station_start_number = plm_streaming_stations_station_start_number,
@@ -9054,116 +9502,6 @@ def webpage_settings():
     response.headers['Expires'] = '-1'
 
     return response
-
-# Find all available streaming services for the country
-def get_streaming_services():
-    settings = read_data(csv_settings)
-    country_code = settings[2]['settings']
-    
-    provider_results = []
-    provider_results_json = []
-    provider_results_json_array = []
-    provider_results_json_array_results = []
-
-    _GRAPHQL_GetProviders = """
-    query GetProviders($country: Country!, $platform: Platform!) {
-      packages(country: $country, platform: $platform) {
-        clearName
-        addons(country: $country, platform: $platform) {
-          clearName
-        }
-      }
-    }
-    """
-
-    json_data = {
-        'query': _GRAPHQL_GetProviders,
-        'variables': {
-            "country": country_code,
-            "platform": "WEB"
-        },
-        'operationName': 'GetProviders',
-    }
-
-    try:
-        provider_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
-    except requests.RequestException as e:
-        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
-
-    if provider_results:
-        provider_results_json = provider_results.json()
-        provider_results_json_array = provider_results_json["data"]["packages"]
-
-        for provider in provider_results_json_array :
-            provider_addons = []
-
-            entry = {
-                "streaming_service_name": provider["clearName"],
-                "streaming_service_subscribe": False,
-                "streaming_service_priority": None
-            }
-            provider_results_json_array_results.append(entry)
-
-            provider_addons = provider["addons"]
-
-            if provider_addons:
-                for provider_addon in provider_addons:
-                    entry = {
-                        "streaming_service_name": provider_addon["clearName"],
-                        "streaming_service_subscribe": False,
-                        "streaming_service_priority": None
-                    }
-                    provider_results_json_array_results.append(entry)
-
-    return provider_results_json_array_results
-
-# Update Streaming Services
-def update_streaming_services():
-    data = get_streaming_services()
-    update_rows(csv_streaming_services, data, "streaming_service_name", None)
-
-# Search for country code
-def get_country_code():
-    settings = read_data(csv_settings)
-    country_code = settings[2]["settings"]
-    country_code_input = None
-    country_code_new = None
-
-    global timeout_occurred
-    timeout_occurred = False
-    print(f"\n{current_time()} Searching for country code for Streaming Services...")
-    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
-
-    # Search times out after 30 seconds
-    timer = threading.Timer(30, timeout_handler)
-    timer.start()
-
-    try:
-        response = requests.get('https://ipinfo.io', headers=url_headers)
-        data = response.json()
-        user_country_code = data.get('country').upper()
-        
-        if user_country_code in valid_country_codes:
-            country_code_input = user_country_code
-    except TimeoutError:
-        print(f"{current_time()} INFO: Search timed out. Continuing to next step...\n")
-    except KeyboardInterrupt:
-        print(f"{current_time()} INFO: Search interrupted by user. Continuing to next step...\n")
-    except Exception as e:
-        print(f"{current_time()} INFO: Error getting geolocation: {e}. Continuing to next step...\n")
-    finally:
-        timer.cancel()  # Disable the timer
-
-    if country_code_input:
-        print(f"{current_time()} INFO: Country found!")
-        country_code_new = country_code_input.upper()
-    else:
-        print(f"{current_time()} INFO: Country not found, using default value. Please set your Country in 'Settings'.")
-        country_code_new = country_code
-
-    print(f"{current_time()} INFO: Country Code set to '{country_code_new}'\n")
-
-    return country_code_new
 
 # Check if Channels URL is correct
 def check_channels_url(channels_url_input):
@@ -9974,6 +10312,10 @@ def check_and_create_csv(csv_file):
     if csv_file == csv_playlistmanager_child_to_parent:
         check_and_add_column(csv_file, 'stream_format_override', 'None')
 
+    if csv_file == csv_streaming_services:
+        check_and_add_column(csv_file, 'streaming_service_active', 'On')
+        check_and_add_column(csv_file, 'streaming_service_group', 'None')
+
     # Add rows for new functionality
     if csv_file == csv_settings:
         check_and_append(csv_file, {"settings": "Off"}, 11, "Search Defaults: Filter out already bookmarked")
@@ -10014,6 +10356,7 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 46, "PLM: Update Stations Process Schedule Frequency")
         check_and_append(csv_file, {"settings": "On"}, 47, "PLM: One-time fix for YouTube Live to Live Streams On/Off")
         check_and_append(csv_file, {"settings": f"http://{get_external_ip()}:{slm_port}"}, 48, "SLM: SLM Stream Address")
+        check_and_append(csv_file, {"settings": "Active Providers"}, 49, "SLM: Search Default for Provider Status")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -10065,8 +10408,10 @@ def initial_data(csv_file):
                     {"settings": "http://localhost:5000"},                                     # [43] PLM: URL Tag in m3u(s) Preferred URL Root
                     {"settings": "Every 24 hours"},                                            # [44] PLM: Update Stations Process Schedule Frequency
                     {"settings": "Off"},                                                       # [45] PLM: One-time fix for YouTube Live to Live Streams On/Off
-                    {"settings": f"http://{get_external_ip()}:{slm_port}"}                     # [46] SLM: SLM Stream Address
+                    {"settings": f"http://{get_external_ip()}:{slm_port}"},                    # [46] SLM: SLM Stream Address
+                    {"settings": "Active Providers"}                                           # [47] SLM: Search Default for Provider Status
         ]        
+    # Stream Link/File Manager
     elif csv_file == csv_streaming_services:
         data = get_streaming_services()
     elif csv_file == csv_bookmarks:
@@ -10084,6 +10429,10 @@ def initial_data(csv_file):
             {"active": "On", "contains_string": "watch.amazon.com/detail?gti=", "object_type": "MOVIE or SHOW", "replace_type": "Replace string with...", "replace_string": "www.amazon.com/gp/video/detail/"},
             {"active": "Off", "contains_string": "vudu.com", "object_type": "MOVIE or SHOW", "replace_type": "Replace entire Stream Link with...", "replace_string": "fandangonow://"},
             {"active": "On", "contains_string": "peacocktv.com/watch/asset/.+?/([a-zA-Z0-9\\\\-]+)$", "object_type": "MOVIE or SHOW", "replace_type": "Replace pattern (REGEX) with...", "replace_string": 'peacocktv.com/deeplink?deeplinkData={"pvid":"\\1","type":"PROGRAMME","action":"PLAY"}'}
+        ]
+    elif csv_file == csv_provider_groups:
+        data = [
+            {"provider_group_id": None, "provider_group_active": None, "provider_group_name": None, "provider_group_description": None}
         ]
     # Playlist Manager
     elif csv_file == csv_playlistmanager_playlists:
@@ -10430,6 +10779,7 @@ csv_streaming_services = "StreamLinkManager_StreamingServices.csv"
 csv_bookmarks = "StreamLinkManager_Bookmarks.csv"
 csv_bookmarks_status = "StreamLinkManager_BookmarksStatus.csv"
 csv_slmappings = "StreamLinkManager_SLMappings.csv"
+csv_provider_groups = "StreamLinkManager_ProviderGroups.csv"
 csv_playlistmanager_playlists = "PlaylistManager_Playlists.csv"
 csv_playlistmanager_combined_m3us = "PlaylistManager_Combinedm3us.csv"
 csv_playlistmanager_parents = "PlaylistManager_Parents.csv"
@@ -10441,6 +10791,7 @@ csv_files = [
     csv_bookmarks,
     csv_bookmarks_status,
     csv_slmappings,
+    csv_provider_groups,
     csv_playlistmanager_playlists,
     csv_playlistmanager_combined_m3us,
     csv_playlistmanager_parents,
@@ -10690,6 +11041,13 @@ filter_streams_tvc_guide_placeholders = ''
 filter_streams_tvc_stream_vcodec = ''
 filter_streams_tvc_stream_acodec = ''
 select_report_query_prior = 'reports_queries_cancel'
+provider_statuses_default = [
+    "All Providers",
+    "Active Providers",
+    "Inactive Providers"
+]
+provider_status_input_prior = None
+provider_groups_default = [{"provider_group_id": "None","provider_group_name": "None"}]
 
 ### Start-up process and safety checks
 # Program directories
