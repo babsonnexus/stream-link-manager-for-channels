@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.04.1923"
+    slm_version = "v2025.04.04.1941"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -251,6 +251,9 @@ def webpage_add_programs():
                 for entry in program_search_results:
                     if entry['poster'] is None:
                         entry['poster'] = default_poster_url
+
+                if not program_search_results:
+                    program_add_message = f"{current_time()} INFO: After filtering for bookmarked and hidden content, no additional programs available."
 
                 program_search_results_prior = program_search_results
 
