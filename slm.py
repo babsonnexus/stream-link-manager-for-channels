@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.04.1758"
+    slm_version = "v2025.04.04.1923"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -201,10 +201,13 @@ def webpage_add_programs():
                         program_add_resort_panel = 'on'
                         program_add_filter_panel = 'on'
 
-                        program_add_message = f"{current_time()} INFO: Showing {num_results_input} results for search in Movies & Shows."
-
                         if add_programs_action == 'program_add_search':
                             program_search_results = search_bookmark(country_code_input, language_code_input, num_results_input, program_add_input)
+
+                            if program_search_results:
+                                program_add_message = f"{current_time()} INFO: Showing {num_results_input} results for search in Movies & Shows."
+                            else:
+                                program_add_message = f"{current_time()} INFO: No results for search in Movies & Shows."
 
                         #elif add_programs_action == 'program_add_search_videos':
 
@@ -220,8 +223,6 @@ def webpage_add_programs():
                 date_new_default_prior = date_new_input
                 num_results_input = 100 # Maximum number of new programs
 
-                program_add_message = f"{current_time()} INFO: Showing New & Updated from '{provider_status_input}' on {date_new_input}."
-
                 program_search_results = get_program_new(date_new_input, country_code_input, language_code_input, num_results_input, provider_status_input)
                 program_search_results = sorted(program_search_results, key=lambda x: sort_key(x["title"].casefold()))
                 country_code_input_prior = country_code_input
@@ -229,6 +230,11 @@ def webpage_add_programs():
                 provider_status_input_prior = provider_status_input
                 program_add_resort_panel = ''
                 program_add_filter_panel = 'on'
+
+                if program_search_results:
+                    program_add_message = f"{current_time()} INFO: Showing New & Updated from '{provider_status_input}' on {date_new_input}."
+                else:
+                    program_add_message = f"{current_time()} INFO: No New & Updated content from '{provider_status_input}' on {date_new_input}."
 
             if program_search_results:
                 bookmarks = read_data(csv_bookmarks)
