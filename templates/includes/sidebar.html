@@ -25,9 +25,9 @@
             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
               <i class="material-icons opacity-10">connected_tv</i>
             </div>
-            <span class="nav-link-text ms-1">Stream Links & Files</span>
+            <span class="nav-link-text ms-1">On-Demand</span>
           </a>
-          {% set stream_link_segments = ['addprograms', 'modifyprograms'] %}
+          {% set stream_link_segments = ['addprograms', 'modifyprograms', 'manage_providers'] %}
           <div class="collapse {% if segment in stream_link_segments %}show{% endif %}" id="collapseStreamLinkFileManager">
             <ul class="navbar-nav ms-3">
               <li class="nav-item">
@@ -48,6 +48,15 @@
                   <span class="nav-link-text ms-1">Modify Programs</span>
                 </a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link text-white {% if 'manage_providers' in segment %} active bg-gradient-primary {% endif %}" 
+                    href="/manage_providers">
+                  <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                    <i class="material-icons opacity-10">movie_filter</i>
+                  </div>
+                  <span class="nav-link-text ms-1">Manage Providers</span>
+                </a>
+              </li>
             </ul>
           </div>
         </li>
@@ -59,9 +68,9 @@
           <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
             <i class="material-icons opacity-10">playlist_play</i>
           </div>
-          <span class="nav-link-text ms-1">Playlists</span>
+          <span class="nav-link-text ms-1">Linear</span>
         </a>
-        {% set playlist_segments = ['plm_main', 'plm_modify_assigned_stations', 'plm_parent_stations', 'plm_manage', 'plm_streams'] %}
+        {% set playlist_segments = ['plm_main', 'plm_modify_assigned_stations', 'plm_modify_unassigned_stations', 'plm_parent_stations', 'plm_manage', 'plm_streams'] %}
         <div class="collapse {% if segment in playlist_segments %}show{% endif %}" id="collapsePlaylistManager">
           <ul class="navbar-nav ms-3">
             <li class="nav-item">
@@ -70,20 +79,29 @@
                 <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                   <i class="material-icons opacity-10">playlist_add_check</i>
                 </div>
-                <span class="nav-link-text ms-1">Main</span>
+                <span class="nav-link-text ms-1">Final Playlists</span>
               </a>
             </li>
             {% if html_plm_streaming_stations %}
+              <li class="nav-item">
+                <a class="nav-link text-white {% if 'plm_streams' in segment %} active bg-gradient-primary {% endif %}" 
+                    href="/playlists/streams">
+                  <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                    <i class="material-icons opacity-10">queue_play_next</i>
+                  </div>
+                  <span class="nav-link-text ms-1">Streaming Stations</span>
+                </a>
+              </li>
+            {% endif %}
             <li class="nav-item">
-              <a class="nav-link text-white {% if 'plm_streams' in segment %} active bg-gradient-primary {% endif %}" 
-                  href="/playlists/streams">
+              <a class="nav-link text-white {% if 'plm_modify_unassigned_stations' in segment %} active bg-gradient-primary {% endif %}" 
+                  href="/playlists/plm_modify_unassigned_stations">
                 <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                  <i class="material-icons opacity-10">queue_play_next</i>
+                  <i class="material-icons opacity-10">assignment_late</i>
                 </div>
-                <span class="nav-link-text ms-1">Streaming Stations</span>
+                <span class="nav-link-text ms-1">Unassigned Stations</span>
               </a>
             </li>
-          {% endif %}
             <li class="nav-item">
               <a class="nav-link text-white {% if 'plm_modify_assigned_stations' in segment %} active bg-gradient-primary {% endif %}" 
                   href="/playlists/plm_modify_assigned_stations">
