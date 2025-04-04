@@ -1,49 +1,11 @@
 {% extends "layouts/base.html" %}
 
-{% block title %} Settings {% endblock %} 
+{% block title %} Controls - Settings {% endblock %} 
 
 <!-- Specific Page CSS goes HERE  -->
 {% block stylesheets %}
 <style>
-  .stream-link-mappings .grid-container {
-      display: grid;
-      grid-template-columns: 1fr 3fr 2fr 3fr 3fr 1fr;
-      gap: 10px;
-  }
 
-  .stream-link-mappings .grid-item {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 0;
-  }
-
-  .stream-link-mappings .form-check {
-      display: flex;
-      align-items: center;
-      gap: 3.5em; /* Adjust the gap as needed */
-  }
-
-  .stream-link-mappings .form-check-label {
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-  }
-
-  .stream-link-mappings .form-check-input {
-      flex-shrink: 0;
-  }
-
-  .stream-link-mappings input[type="text"] {
-      width: 100%;
-      box-sizing: border-box;
-  }
-
-  .stream-link-mappings .btn {
-      width: 100%;
-      box-sizing: border-box;
-  }
 </style>
 {% endblock stylesheets %}
 
@@ -53,247 +15,8 @@
     <div class="row min-vh-80 h-100">
       <div class="col-12">
         <form method="POST" action="/settings">
-          {% if html_slm_stream_link_file_manager %}
-            <!-- Streaming Services -->
-            <h4 id="streaming_services_anchor">Streaming Services</h4>
-            <div class="container">
-              <style>
-                .listbox {
-                  width: 400px;
-                  height: 300px;
-                  overflow-y: scroll;
-                  border: 1px solid #ccc;
-                }
-                .container {
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                }
-                .buttons {
-                  display: flex;
-                  flex-direction: column;
-                  justify-content: center;
-                  align-items: center;
-                }
-                .right-container {
-                  display: flex;
-                  align-items: center;
-                }
-                .centered-button {
-                  display: flex;
-                  justify-content: center;
-                  align-items: center;
-                }
-                .box-container {
-                  border: 1px solid #ccc;
-                  padding: 10px;
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                  position: relative;
-                  width: 100%;
-                  max-width: 975px;
-                }
-                .form-buttons {
-                  display: flex;
-                  justify-content: center;
-                  margin-top: 5px;
-                  width: 100%;
-                  margin-left: -72px;
-                }
-              </style>
-              <div class="box-container">
-                <div>
-                  <h6 style="text-align: center;">Available</h6>
-                  <select id="leftList" class="listbox" multiple>
-                    <!-- Left list options will be populated by JavaScript -->
-                  </select>
-                </div>
-                <div class="buttons">
-                  <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveRight()">
-                    <i class="material-icons opacity-10">keyboard_arrow_right</i>
-                  </button>
-                  <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveLeft()">
-                    <i class="material-icons opacity-10">keyboard_arrow_left</i>
-                  </button>
-                </div>
-                <div class="right-container">
-                  <div>
-                    <h6 style="text-align: center;">Subscribed by Priority</h6>
-                    <select id="rightList" class="listbox" multiple>
-                      <!-- Right list options will be populated by JavaScript -->
-                    </select>
-                  </div>
-                  <div class="buttons">
-                    <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveUp()">
-                      <i class="material-icons opacity-10">keyboard_arrow_up</i>
-                    </button>
-                    <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="streaming_services_moveDown()">
-                      <i class="material-icons opacity-10">keyboard_arrow_down</i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div class="form-buttons">
-                <button type="submit" name="action" value="streaming_services_update" class="btn bg-gradient-primary w-10 my-2 mb-2" style="margin-right: 2px;">Update</button>
-                <button type="submit" name="action" value="streaming_services_save" class="btn bg-gradient-primary w-10 my-2 mb-2" style="margin-left: 2px; margin-right: 2px;">Save</button>
-                <button type="submit" name="action" value="streaming_services_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2" style="margin-left: 2px;">Cancel</button>
-              </div>
-            </div>
-            <input type="hidden" id="streaming_services" name="streaming_services">
-            <hr>
-            <!-- Search Defaults -->
-            <div class="search-defaults-container" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px;">
-              <h4 id="search_defaults_anchor" style="flex-basis: 100%;">Search Defaults</h4>
-              <label for="country_code" style="margin-top: 8px;">Country Code:</label>
-              <select class="select2" name="country_code" id="country_code" style="width: calc(13%);">
-                {% for country_code_item in html_valid_country_codes %}
-                  <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %} style="width: auto; min-width: 100%;">{{ country_code_item }}</option>
-                {% endfor %}
-              </select>
-              <label for="language_code" style="margin-left: 15px; margin-top: 8px;">Language Code:</label>
-              <select class="select2" name="language_code" id="language_code" style="width: calc(13%);">
-                {% for language_code_item in html_valid_language_codes %}
-                  <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %} style="width: auto; min-width: 100%;">{{ language_code_item }}</option>
-                {% endfor %}
-              </select>
-              <label for="num_results" style="margin-left: 15px; margin-top: 8px;">Number of Results:</label>
-              <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(13%);" title="{{ html_num_results }}">
-              <span class="form-check form-switch ps-0 is-filled" style="display: flex; align-items: center; width: calc(13%);">
-                <label class="form-check-label text-body text-truncate w-80 mb-0" for="hide_bookmarked" style="margin-right: 5px; margin-left: 15px;">Hide Bookmarked</label>
-                <input type="checkbox" class="form-check-input" id="hide_bookmarked" name="hide_bookmarked" {% if html_hide_bookmarked == "On" %}checked{% endif %}>
-              </span>
-              <button type="submit" name="action" value="search_defaults_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
-              <button type="submit" name="action" value="search_defaults_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
-              <p><div id="search_defaults_message">{{ html_search_defaults_message }}</div></p>
-            </div>
-            <hr>
-            <!-- Stream Link Mappings -->
-            <h4 id="slmapping_anchor">Stream Link Mappings</h4>
-            <div class="stream-link-mappings container-fluid">
-              <div class="grid-container" style="text-align: center;">
-                <div class="grid-item"><h6>Active</h6></div>
-                <div class="grid-item"><h6>If 'Stream Link' contains</h6></div>
-                <div class="grid-item"><h6>For 'Object Type'</h6></div>
-                <div class="grid-item"><h6>Do this activity</h6></div>
-                <div class="grid-item"><h6>Using this</h6></div>
-                <div class="grid-item"><h6>Action</h6></div>
-              </div>
-              {% for item in html_slmappings %}
-                {% set object_type = item.object_type %}
-                {% set replace_type = item.replace_type %}
-                <div class="grid-container">
-                  <div class="grid-item">
-                    <div class="form-check form-switch ps-0 is-filled">
-                      <input type="checkbox" id="slmapping_active_existing_{{ loop.index }}" name="slmapping_active_existing_{{ loop.index }}" class="form-check-input" 
-                        {% if item.active|lower == 'on' %}checked{% endif %} 
-                        onchange="this.value = this.checked ? 'On' : 'Off'" 
-                        value="On">
-                    </div>
-                  </div>
-                  <div class="grid-item">
-                    <input type="text" id="slmapping_contains_string_existing_{{ loop.index }}" name="slmapping_contains_string_existing_{{ loop.index }}" value="{{ item.contains_string }}" title="{{ item.contains_string }}">
-                  </div>
-                  <div class="grid-item">
-                    <select class="select2" name="slmapping_object_type_existing_{{ loop.index }}" id="slmapping_object_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
-                      {% for object_type_item in html_slmappings_object_type %}
-                        <option value="{{ object_type_item }}" {% if object_type_item == object_type %}selected{% endif %} style="width: auto; min-width: 100%;">{{ object_type_item }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                  <div class="grid-item">
-                    <select class="select2" name="slmapping_replace_type_existing_{{ loop.index }}" id="slmapping_replace_type_existing_{{ loop.index }}" style="width: 100%; max-width: 100%;">
-                      {% for replace_type_item in html_slmappings_replace_type %}
-                        <option value="{{ replace_type_item }}" {% if replace_type_item == replace_type %}selected{% endif %} style="width: auto; min-width: 100%;">{{ replace_type_item }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                  <div class="grid-item">
-                    <input type="text" id="slmapping_replace_string_existing_{{ loop.index }}" name="slmapping_replace_string_existing_{{ loop.index }}" value="{{ item.replace_string }}" title="{{ item.replace_string }}">
-                  </div>
-                  <div class="grid-item">
-                    <button type="submit" name="action" value="slmapping_action_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
-                  </div>
-                </div>
-              {% endfor %}                                 
-              <div class="grid-container">
-                <div class="grid-item">
-                  <div class="form-check form-switch ps-0 is-filled">
-                    <input type="checkbox" id="slmapping_active_new" name="slmapping_active_new" class="form-check-input" checked>
-                  </div>
-                </div>
-                <div class="grid-item">
-                  <input type="text" id="slmapping_contains_string_new" name="slmapping_contains_string_new">
-                </div>
-                <div class="grid-item">
-                  <select class="select2" name="slmapping_object_type_new" id="slmapping_object_type_new" style="width: 100%; max-width: 100%;">
-                    {% for object_type_item in html_slmappings_object_type %}
-                      <option value="{{ object_type_item }}" style="width: auto; min-width: 100%;">{{ object_type_item }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <div class="grid-item">
-                  <select class="select2" name="slmapping_replace_type_new" id="slmapping_replace_type_new" style="width: 100%; max-width: 100%;">
-                    {% for replace_type_item in html_slmappings_replace_type %}
-                      <option value="{{ replace_type_item }}" style="width: auto; min-width: 100%;">{{ replace_type_item }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <div class="grid-item">
-                  <input type="text" id="slmapping_replace_string_new" name="slmapping_replace_string_new">
-                </div>
-                <div class="grid-item">
-                  <button type="submit" name="action" value="slmapping_action_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
-                </div>
-              </div>
-              <button type="submit" name="action" value="slmapping_action_save" class="btn bg-gradient-primary w-25 my-2 mb-2" disabled>Save</button>
-              <button type="submit" name="action" value="slmapping_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
-            </div>
-            <hr>
-          {% endif %}
-          {% if html_slm_channels_dvr_integration %}
-            <!-- Channels URL -->
-            <h4 id="channels_url_anchor">Channels URL</h4>
-            <p>Channel URL currently set to <b>{{ html_channels_url }}</b></p>
-            <input type="text" id="channels_url" name="channels_url" value="{{ html_channels_url_prior }}" style="width: calc(55%);" title="{{ html_channels_url_prior }}">
-            <button type="submit" name="action" value="channels_url_test" class="btn bg-gradient-primary w-10 my-2 mb-2">Test</button>
-            <button type="submit" name="action" value="channels_url_scan" class="btn bg-gradient-primary w-10 my-2 mb-2">Scan</button>
-            <button type="submit" name="action" value="channels_url_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
-            <button type="submit" name="action" value="channels_url_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
-            <p><em>WARNING: Do not use 'https' as it may cause Channels functions to fail.</em></p>
-            <p><div id="html_channels_url_message">{{ html_channels_url_message }}</div></p>
-            <hr>
-            <!-- Channels Directory -->
-            <h4 id="channels_directory_anchor">Channels Directory</h4>
-            <p>The Channels Directory is currently set to: <b><span id="channels_directory">{{ html_channels_directory }}</span></b></p>
-            <p><div id="html_channels_directory_message">{{ html_channels_directory_message }}</div></p>
-            <input type="text" id="current_directory" name="current_directory" value="{{ html_current_directory }}" readonly style="width: calc(65%); background-color: #d1cdcde5;" title="{{ html_current_directory }}">
-            <button type="submit" name="action" value="channels_directory_nav_up" class="btn bg-gradient-primary w-10 my-2 mb-2">Nav Up</button>
-            <button type="submit" name="action" value="channels_directory_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Select</button>
-            <button type="submit" name="action" value="channels_directory_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Reset</button>
-            <ul id="subdirectories">
-              <div class="settings-box" style="width: calc(50%); display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; height: 150px; overflow-y: scroll; overflow-x: auto;"> 
-                {% for subdir in html_subdirectories %}
-                  <button type="submit" name="action" value="channels_directory_nav_{{ loop.index }}" class="btn btn-link" style="display: block; margin: 0px 0;">{{ subdir }}</button>
-                {% endfor %}
-              </div>
-            </ul>
-            <input type="text" id="manual-path" name="channels_directory_manual_path" placeholder="Enter a path to manually navigate to... (i.e., 'D:\', '\\server\share', or '//server/share')" style="width: calc(65%);">
-            <button type="submit" name="action" value="channels_directory_manual_go" class="btn bg-gradient-primary w-10 my-2 mb-2">Navigate</button>
-            <hr>
-            <!-- SLM Stream Address -->
-            <h4 id="slm_stream_address_anchor">SLM Stream Address</h4>
-            <p>SLM Stream Address currently set to <b>{{ html_slm_stream_address }}</b></p>
-            <input type="text" id="slm_stream_address" name="slm_stream_address" value="{{ html_slm_stream_address_prior }}" style="width: calc(55%);" title="{{ html_slm_stream_address_prior }}">
-            <button type="submit" name="action" value="slm_stream_address_test" class="btn bg-gradient-primary w-10 my-2 mb-2">Test</button>
-            <button type="submit" name="action" value="slm_stream_address_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
-            <button type="submit" name="action" value="slm_stream_address_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
-            <p><em>WARNING: Do not use 'https' as it may cause Stream Files on Channels DVR clients to fail.</em></p>
-            <p><div id="html_slm_stream_address_message">{{ html_slm_stream_address_message }}</div></p>
-            <hr>
-          {% endif %}
           <!-- Advanced / Experimental -->
-          <h4 id="advanced_experimental_anchor">Extensions, Advanced, and Experimental</h4>
+          <h4 id="advanced_experimental_anchor">Manage Extensions and Main Controls</h4>
           <p><div id="html_advanced_experimental_message">{{ html_advanced_experimental_message }}</div></p>
           <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
             <div class="form-check form-switch ps-0 is-filled">
@@ -380,6 +103,37 @@
             </div>
           </div>
           <hr>
+          {% if html_slm_channels_dvr_integration %}
+            <!-- Channels URL -->
+            <h4 id="channels_url_anchor">Channels URL</h4>
+            <p>Channel URL currently set to <b>{{ html_channels_url }}</b></p>
+            <input type="text" id="channels_url" name="channels_url" value="{{ html_channels_url_prior }}" style="width: calc(55%);" title="{{ html_channels_url_prior }}">
+            <button type="submit" name="action" value="channels_url_test" class="btn bg-gradient-primary w-10 my-2 mb-2">Test</button>
+            <button type="submit" name="action" value="channels_url_scan" class="btn bg-gradient-primary w-10 my-2 mb-2">Scan</button>
+            <button type="submit" name="action" value="channels_url_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
+            <button type="submit" name="action" value="channels_url_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
+            <p><em>WARNING: Do not use 'https' as it may cause Channels functions to fail.</em></p>
+            <p><div id="html_channels_url_message">{{ html_channels_url_message }}</div></p>
+            <hr>
+            <!-- Channels Directory -->
+            <h4 id="channels_directory_anchor">Channels Directory</h4>
+            <p>The Channels Directory is currently set to: <b><span id="channels_directory">{{ html_channels_directory }}</span></b></p>
+            <p><div id="html_channels_directory_message">{{ html_channels_directory_message }}</div></p>
+            <input type="text" id="current_directory" name="current_directory" value="{{ html_current_directory }}" readonly style="width: calc(65%); background-color: #d1cdcde5;" title="{{ html_current_directory }}">
+            <button type="submit" name="action" value="channels_directory_nav_up" class="btn bg-gradient-primary w-10 my-2 mb-2">Nav Up</button>
+            <button type="submit" name="action" value="channels_directory_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Select</button>
+            <button type="submit" name="action" value="channels_directory_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Reset</button>
+            <ul id="subdirectories">
+              <div class="settings-box" style="width: calc(50%); display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; height: 150px; overflow-y: scroll; overflow-x: auto;"> 
+                {% for subdir in html_subdirectories %}
+                  <button type="submit" name="action" value="channels_directory_nav_{{ loop.index }}" class="btn btn-link" style="display: block; margin: 0px 0;">{{ subdir }}</button>
+                {% endfor %}
+              </div>
+            </ul>
+            <input type="text" id="manual-path" name="channels_directory_manual_path" placeholder="Enter a path to manually navigate to... (i.e., 'D:\', '\\server\share', or '//server/share')" style="width: calc(65%);">
+            <button type="submit" name="action" value="channels_directory_manual_go" class="btn bg-gradient-primary w-10 my-2 mb-2">Navigate</button>
+            <hr>
+          {% endif %}
         </form>
       </div>
     </div>
@@ -392,6 +146,7 @@
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
+<!-- Directory Navigator -->
 <script>
   async function select_channels_directory(action) {
       const currentDirectory = document.getElementById('current_directory').value;
@@ -419,155 +174,13 @@
       }
   }
 </script>
-<script>
-  const streamingServices = {{ html_streaming_services | tojson }};
-  const leftList = document.getElementById('leftList');
-  const rightList = document.getElementById('rightList');
-  const streamingServicesInput = document.getElementById('streaming_services');
-
-  function populateLists() {
-      leftList.innerHTML = '';
-      rightList.innerHTML = '';
-      streamingServices.sort((a, b) => a.streaming_service_name.toLowerCase().localeCompare(b.streaming_service_name.toLowerCase()));
-      streamingServices.forEach(service => {
-          const option = document.createElement('option');
-          option.value = service.streaming_service_name;
-          option.text = service.streaming_service_name;
-          if (service.streaming_service_subscribe === 'True') {
-              rightList.appendChild(option);
-          } else {
-              leftList.appendChild(option);
-          }
-      });
-      sortRightListByPriority();
-  }
-
-  function sortRightListByPriority() {
-      const options = Array.from(rightList.options);
-      options.sort((a, b) => {
-          const serviceA = streamingServices.find(s => s.streaming_service_name === a.value);
-          const serviceB = streamingServices.find(s => s.streaming_service_name === b.value);
-          return (serviceA.streaming_service_priority || 0) - (serviceB.streaming_service_priority || 0);
-      });
-      options.forEach(option => rightList.appendChild(option));
-  }
-
-  function streaming_services_moveRight() {
-      const selectedOptions = Array.from(leftList.selectedOptions);
-      selectedOptions.forEach(option => {
-          rightList.appendChild(option);
-          streaming_services_updateService(option.value, true);
-      });
-      sortRightListByPriority();
-  }
-
-  function streaming_services_moveLeft() {
-      const selectedOptions = Array.from(rightList.selectedOptions);
-      selectedOptions.forEach(option => {
-          leftList.appendChild(option);
-          streaming_services_updateService(option.value, false);
-      });
-  }
-
-  function streaming_services_moveUp() {
-      const selectedOptions = Array.from(rightList.selectedOptions);
-      selectedOptions.forEach(option => {
-          const previousOption = option.previousElementSibling;
-          if (previousOption) {
-              rightList.insertBefore(option, previousOption);
-              streaming_services_updateServicePriority();
-          }
-      });
-  }
-
-  function streaming_services_moveDown() {
-      const selectedOptions = Array.from(rightList.selectedOptions);
-      selectedOptions.reverse().forEach(option => {
-          const nextOption = option.nextElementSibling;
-          if (nextOption) {
-              rightList.insertBefore(nextOption, option);
-              streaming_services_updateServicePriority();
-          }
-      });
-  }
-
-  function streaming_services_updateService(name, subscribe) {
-      const service = streamingServices.find(s => s.streaming_service_name === name);
-      service.streaming_service_subscribe = subscribe ? 'True' : 'False';
-      if (subscribe) {
-          service.streaming_service_priority = Math.max(...streamingServices.map(s => s.streaming_service_priority || 0)) + 1;
-      } else {
-          service.streaming_service_priority = '';
-      }
-      streaming_services_updateHiddenInput();
-  }
-
-  function streaming_services_updateServicePriority() {
-      Array.from(rightList.options).forEach((option, index) => {
-          const service = streamingServices.find(s => s.streaming_service_name === option.value);
-          service.streaming_service_priority = index + 1;
-      });
-      streaming_services_updateHiddenInput();
-  }
-
-  function streaming_services_updateHiddenInput() {
-      streamingServicesInput.value = JSON.stringify(streamingServices.map(service => ({
-          streaming_service_name: service.streaming_service_name,
-          streaming_service_subscribe: service.streaming_service_subscribe,
-          streaming_service_priority: service.streaming_service_priority
-      })));
-  }
-
-  populateLists();
-  streaming_services_updateHiddenInput();
-</script>
+<!-- Anchor Control -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
       const anchorId = "{{ html_settings_anchor_id }}";
       if (anchorId) {
           window.location.hash = anchorId;
       }
-  });
-</script>
-<!-- Stream Link Mapping Buttons -->
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const addButton = document.querySelector('button[name="action"][value="slmapping_action_new"]');
-    const saveButton = document.querySelector('button[name="action"][value="slmapping_action_save"]');
-
-    const checkNewInputs = () => {
-      const newName = document.getElementById('slmapping_contains_string_new').value.trim();
-      const newUrl = document.getElementById('slmapping_replace_string_new').value.trim();
-      addButton.disabled = !newName || !newUrl;
-    };
-
-    const checkExistingInputs = () => {
-      let allValid = true;
-      let hasExistingRecords = false;
-      document.querySelectorAll('input[id^="slmapping_contains_string_"]').forEach(input => {
-        if (input.id.includes('_new')) return;
-        hasExistingRecords = true;
-        if (!input.value.trim()) allValid = false;
-      });
-      document.querySelectorAll('input[id^="slmapping_replace_string_"]').forEach(input => {
-        if (input.id.includes('_new')) return;
-        hasExistingRecords = true;
-        if (!input.value.trim()) allValid = false;
-      });
-      saveButton.disabled = !allValid || !hasExistingRecords;
-    };
-
-    document.getElementById('slmapping_contains_string_new').addEventListener('input', checkNewInputs);
-    document.getElementById('slmapping_replace_string_new').addEventListener('input', checkNewInputs);
-
-    document.querySelectorAll('input[id^="slmapping_contains_string_"], input[id^="slmapping_replace_string_"]').forEach(input => {
-      if (!input.id.includes('_new')) {
-        input.addEventListener('input', checkExistingInputs);
-      }
-    });
-
-    checkNewInputs();
-    checkExistingInputs(); // Ensure initial state is checked
   });
 </script>
 {% endblock javascripts %}

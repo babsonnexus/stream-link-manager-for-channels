@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
 
-{% block title %} Reports & Queries {% endblock %} 
+{% block title %} Tools - Reports & Queries {% endblock %} 
 
 {% block stylesheets %}
 <style>
@@ -238,6 +238,9 @@
               <button type="submit" name="action" value="reports_queries_view" class="btn bg-gradient-primary w-20 h-15 my-2 mb-2" style="margin-left: 10px;">View</button>
               <button type="submit" name="action" value="reports_queries_cancel" class="btn bg-gradient-primary w-20 h-15 my-2 mb-2" style="margin-left: 10px;">Cancel / Clear</button>
             </div>
+            {% if not html_slm_query %}
+              <div><em>* Must run Automtion 'Stream Links: New & Recent Releases' first</em></div>
+            {% endif %}
           </div>
           <div id="table-container">
             {% if html_slm_query %}

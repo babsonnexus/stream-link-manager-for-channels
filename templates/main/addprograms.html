@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
 
-{% block title %} Add Programs {% endblock %} 
+{% block title %} On-Demand - Add Programs {% endblock %} 
 
 <!-- Specific Page CSS goes HERE  -->
 {% block stylesheets %}
@@ -57,6 +57,32 @@
   .program-content {
     overflow: hidden;
   }
+
+  .common-div {
+      overflow-x: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      overflow-y: scroll;
+      contain: strict;
+      overscroll-behavior: contain;
+  }
+  .column-div-1 {
+      width: 27%;
+  }
+  .column-div-2 {
+      width: 27%;
+      margin-left: 1%;
+  }
+
+  .column-div-3 {
+      width: 27%;
+      margin-left: 1%;
+  }
+
+  .column-div-4 {
+      width: 14%;
+      margin-left: 1%;
+  }
 </style>
 {% endblock stylesheets %}
 
@@ -66,62 +92,121 @@
     <div class="row min-vh-80 h-100">
       <div class="col-12">
         <form method="POST" action="/addprograms" id="process-form" enctype="multipart/form-data">
-          <!-- Search / Manual Options -->
-          <div class="settings-box" style="width: calc(55%); display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
-            <h6 style="text-align: center;">Search Options</h6>
-            <div class="search-defaults-container" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px;">
-              <label for="country_code" style="margin-top: 8px;">Country Code:</label>
-              <select class="select2" name="country_code" id="country_code" style="width: calc(10%);">
+          <!-- Add Programs Area -->
+          {% if html_program_add_message %}
+            <div id="html_program_add_message">
+              <button type="submit" name="action" value="program_add_cancel" class="btn bg-gradient-primary my-2 mb-2" style="width: 27%; margin-right: 10px;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Cancel / Clear</button>
+              {{ html_program_add_message }}
+            </div>
+            <hr>
+          {% endif %}
+          <div class="row" {% if html_program_search_results or html_season_episode_manual_flag or html_video_manual_flag or html_done_generate_flag or html_stream_link_override_movie_flag or html_season_episodes or html_video_season_episodes %}hidden{% else %}style="height: 75vh;"{% endif %}>
+            <!-- Search Fields -->
+            <div class="common-div column-div-1">
+              <hr>
+              <h4 style="text-align: center;">Search Selections</h6>
+              <hr>
+              <div style="margin-top: 8px;">
+                <label for="program_add"><b>Search / Manual Term</b></label>
+                <input type="text" id="program_add" name="program_add" placeholder="i.e., Golden Girls" value="{{ html_program_add_prior }}" style="width: 99%;"{% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>
+              </div>
+              <div style="margin-top: 8px;">
+                <label for="num_results"><b>Number of Results</b></label>
+                <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" placeholder="i.e., 9" title="{{ html_num_results }}" style="width: 98%;">
+              </div>
+              <hr>
+              <div>
+                <button type="submit" name="action" value="program_add_search" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Search Movies & Shows</button>
+                <button type="submit" name="action" value="program_add_search_videos" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag or html_search_videos_disabled %}disabled{% endif %}>Search Videos</button>
+              </div>
+            </div>
+            <!-- Provider Fields -->
+            <div class="common-div column-div-2">
+              <hr>
+              <h4 style="text-align: center;">New & Updated On My Providers</h6>
+              <hr>
+              <div style="margin-top: 8px;">
+                <label for="date_new"><b>Check Date</b></label>
+                <input type="date" id="date_new" name="date_new" value="{{ html_date_new_default }}" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>
+              </div>
+              <div style="margin-top: 8px;">
+                <label for="provider_status"><b>Provider Status</b></label>
+                <select class="select2" name="provider_status" id="provider_status" style="width: 98%;">
+                  {% for provider_status_item in html_provider_statuses %}
+                      <option value="{{ provider_status_item }}" {% if provider_status_item == html_provider_status %}selected{% endif %}>{{ provider_status_item }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <hr>
+              <div>
+                <button type="submit" name="action" value="program_new_search" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Selected Date</button>
+                <button type="submit" name="action" value="program_new_today" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Today</button>
+              </div>
+            </div>
+            <!-- Manual Fields -->
+            <div class="common-div column-div-3">
+              <hr>
+              <h4 style="text-align: center;">Manual Selections</h6>
+              <hr>
+              <div style="margin-top: 8px;">
+                <label for="release_year"><b>Release Year</b></label>
+                <input type="text" id="release_year" name="release_year" placeholder="i.e., 2024" style="width: 98%;">
+              </div>
+              <div style="margin-top: 8px;">
+                <label for="program_type"><b>Program Type</b></label>
+                <select class="select2" name="program_type" id="program_type" style="width: 98%;">
+                  {% for program_type_item in html_program_types %}
+                      <option value="{{ program_type_item }}" {% if program_type_item == html_program_type_default %}selected{% endif %} style="width: auto; min-width: 100%;">{{ program_type_item }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <hr>
+              <div>
+                <button type="submit" name="action" value="program_add_manual" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Add Manual</button>
+              </div>
+            </div>
+            <!-- Search Options -->
+            <div class="common-div column-div-4">
+              <hr>
+              <h4 style="text-align: center;">Options</h6>
+              <hr>
+              <h6 style="text-align: center;">General</h6>
+              <div style="margin-top: 8px;">
+                <label for="hide_bookmarked"><b>Hide Bookmarked</b></label>
+                <div class="form-check form-switch ps-0 is-filled" style="margin-left: 2.7em;">
+                  <input type="checkbox" class="form-check-input" id="hide_bookmarked" name="hide_bookmarked"{% if html_hide_bookmarked == "On" %}checked{% endif %}>
+                </div>
+              </div>
+              <hr>
+              <h6 style="text-align: center;">Movies & Shows</h6>
+              <div style="margin-top: 8px;">
+                <label for="country_code"><b>Country Code</b></label>
+                <select class="select2" name="country_code" id="country_code" style="width: 98%;">
+                  {% if html_country_code == "US" %}
+                    <option value="US" selected>US</option>
+                  {% else %}
+                    <option value="US">US</option>
+                  {% endif %}
                   {% for country_code_item in html_valid_country_codes %}
                       <option value="{{ country_code_item }}" {% if country_code_item == html_country_code %}selected{% endif %}>{{ country_code_item }}</option>
                   {% endfor %}
-              </select>
-              <label for="language_code" style="margin-left: 15px; margin-top: 8px;">Language Code:</label>
-              <select class="select2" name="language_code" id="language_code" style="width: calc(10%);">
+                </select>
+              </div>
+              <div style="margin-top: 8px;">
+                <label for="language_code"><b>Language Code</b></label>
+                <select class="select2" name="language_code" id="language_code" style="width: 98%;">
                   {% for language_code_item in html_valid_language_codes %}
                       <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %}>{{ language_code_item }}</option>
                   {% endfor %}
               </select>
-              <label for="num_results" style="margin-left: 15px; margin-top: 8px;">Number of Results:</label>
-              <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" style="width: calc(10%);" title="{{ html_num_results }}">
-              <span class="form-check form-switch ps-0 is-filled" style="display: flex; align-items: center; width: calc(21%);">
-                <label class="form-check-label text-body text-truncate w-80 mb-0" for="hide_bookmarked" style="margin-left: 15px;">Hide Bookmarked</label>
-                <input type="checkbox" class="form-check-input" id="hide_bookmarked" name="hide_bookmarked" {% if html_hide_bookmarked == "On" %}checked{% endif %}>
-              </span>
+              </div>
+              <hr>
+              <div>
+                <button type="submit" name="action" value="search_defaults_save" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Save Default</button>
+                <button type="submit" name="action" value="program_add_cancel" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Cancel / Clear</button>
+              </div>
             </div>
           </div>
-          <div class="settings-box" style="width: calc(40%); display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
-            <h6 style="text-align: center;">Manual Options</h6>
-            <label for="release_year">Release Year:</label>
-            <input type="text" id="release_year" name="release_year" placeholder="Enter year (i.e., 2024)" style="width: calc(30%);">
-            <label for="program_type">Program Type:</label>
-            <select class="select2" name="program_type" id="program_type" style="width: calc(25%);">
-                {% for program_type_item in html_program_types %}
-                    <option value="{{ program_type_item }}" {% if program_type_item == html_program_type_default %}selected{% endif %} style="width: auto; min-width: 100%;">{{ program_type_item }}</option>
-                {% endfor %}
-            </select>
-          </div>
-          <!-- Spacer row -->
-          <div class="row">
-            <div class="col-12 my-2"></div>
-          </div>
-          <!-- Search / Add Manual -->
-          <div>
-            <input type="text" id="program_add" name="program_add" placeholder="Enter the name of a program to search for or add manually..." value="{{ html_program_add_prior }}" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %} style="width: calc(65%);">
-            <button type="submit" name="action" value="program_add_search" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Search</button>
-            <button type="submit" name="action" value="program_add_manual" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Add Manual</button>
-            <button type="submit" name="action" value="program_add_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Cancel / Clear</button>
-          </div>
-          <div>
-            <p>Or see
-            <button type="submit" name="action" value="program_new_search" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>New & Updated</button>
-            programs from your Streaming Services on
-            <input type="date" id="date_new" name="date_new" value="{{ html_date_new_default }}" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}> or 
-            <button type="submit" name="action" value="program_new_today" class="btn bg-gradient-primary w-10 my-2 mb-2" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Today</button>
-            </p>
-          </div>
-          <p><div id="html_program_add_message">{{ html_program_add_message }}</div></p>
-          <hr>
           <!-- Display search results -->
           <div class="text-center">
             {% if html_program_search_results %}
@@ -130,6 +215,7 @@
                   <div>
                     <button type="submit" name="action" value="program_add_resort_filter_movie" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Movies</button>
                     <button type="submit" name="action" value="program_add_resort_filter_show" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Shows</button>
+                    <button type="submit" name="action" value="program_add_resort_filter_video" class="btn bg-gradient-primary w-15 my-2 mb-2" {% if html_search_videos_disabled %}disabled{% endif %}>Only Videos</button>
                   </div>
                 {% endif %}
                 {% if html_program_add_resort_panel == 'on' %}

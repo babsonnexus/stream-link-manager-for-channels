@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
 
-{% block title %} Linear - Assigned Stations {% endblock %} 
+{% block title %} Linear - Set Unassigned Stations {% endblock %} 
 
 <!-- Specific Page CSS goes HERE  -->
 {% block stylesheets %}
@@ -52,9 +52,9 @@
 <div class="container-fluid py-4">
   <div class="row min-vh-80 h-100">
     <div class="col-12">
-      <form method="POST" action="/playlists/plm_modify_assigned_stations" id="process-form">
-        <!-- Modify Assigned Stations -->
-        <h4 id="assigned_child_to_parents_anchor" style="margin: 0;">Modify Assigned Stations</h4>
+      <form method="POST" action="/playlists/plm_modify_unassigned_stations" id="process-form">
+        <!-- Modify unassigned Stations -->
+        <h4 id="unassigned_child_to_parents_anchor" style="margin: 0;">Set Unassigned Stations</h4>
         <!-- Spacer row -->
         <div class="row">
           <div class="col-12 my-2"></div>
@@ -79,38 +79,38 @@
               <hr style="border: 3px solid; width: 100%;">
             </div>
             <div class="grid-item">
-              <select class="select2" name="assigned_child_to_parents_parent_channel_id_all" id="assigned_child_to_parents_parent_channel_id_all" style="width: 100%; max-width: 100%;">
+              <select class="select2" name="unassigned_child_to_parents_parent_channel_id_all" id="unassigned_child_to_parents_parent_channel_id_all" style="width: 100%; max-width: 100%;">
                 {% for html_child_to_parent_mapping in html_child_to_parent_mappings %}
                   <option value="{{ html_child_to_parent_mapping.parent_channel_id }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_child_to_parent_mapping.parent_title }}</option>
                 {% endfor %}
               </select>
             </div>
             <div class="grid-item">
-              <select class="select2" name="assigned_child_to_parents_stream_format_override_all" id="assigned_child_to_parents_stream_format_override_all" style="width: 100%; max-width: 100%;">
+              <select class="select2" name="unassigned_child_to_parents_stream_format_override_all" id="unassigned_child_to_parents_stream_format_override_all" style="width: 100%; max-width: 100%;">
                 {% for html_stream_format_override in html_stream_formats_overrides %}
                   <option value="{{ html_stream_format_override }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_stream_format_override }}</option>
                 {% endfor %}
               </select>
             </div>
             <div class="grid-item">
-              <button type="submit" name="action" value="assigned_child_to_parents_action_set_parent_all" class="btn bg-gradient-primary my-2 mb-2">Set Visible</button>
+              <button type="submit" name="action" value="unassigned_child_to_parents_action_set_parent_all" class="btn bg-gradient-primary my-2 mb-2">Set Visible</button>
             </div>
           </div>
           <div class="grid-container" style="margin-right: 17px;">
             <div class="grid-item">
-              <input type="text" id="filter-title" placeholder="Filter" name="filter-title" value="{{ html_filter_title_assigned }}">
+              <input type="text" id="filter-title" placeholder="Filter" name="filter-title" value="{{ html_filter_title_unassigned }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-m3u-name" placeholder="Filter" name="filter-m3u-name" value="{{ html_filter_m3u_name_assigned }}">
+              <input type="text" id="filter-m3u-name" placeholder="Filter" name="filter-m3u-name" value="{{ html_filter_m3u_name_unassigned }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-description" placeholder="Filter" name="filter-description" value="{{ html_filter_description_assigned }}">
+              <input type="text" id="filter-description" placeholder="Filter" name="filter-description" value="{{ html_filter_description_unassigned }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-parent" placeholder="Filter" name="filter-parent" value="{{ html_filter_parent_assigned }}">
+              <input type="text" id="filter-parent" placeholder="Filter" name="filter-parent" value="{{ html_filter_parent_unassigned }}">
             </div>
             <div class="grid-item">
-              <input type="text" id="filter-stream-format-override" placeholder="Filter" name="filter-stream-format-override" value="{{ html_filter_stream_format_override_assigned }}">
+              <input type="text" id="filter-stream-format-override" placeholder="Filter" name="filter-stream-format-override" value="{{ html_filter_stream_format_override_unassigned }}">
             </div>
             <div class="grid-item">
               <hr style="border: 3px solid; width: 100%;">
@@ -119,8 +119,8 @@
           <div id="record-container" style="height: 100vh; overflow-y: scroll; contain: strict; overscroll-behavior: contain;"><!-- Records handled by 'Infinite Scroll' --></div>
           <div id="loading-spinner" style="display: none; text-align: center;">Loading...</div>
           <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
-            <button type="submit" name="action" value="assigned_child_to_parents_action_save_all" class="btn bg-gradient-primary w-25 my-2 mb-2">Save All</button>
-            <button type="submit" name="action" value="assigned_child_to_parents_action_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
+            <button type="submit" name="action" value="unassigned_child_to_parents_action_save_all" class="btn bg-gradient-primary w-25 my-2 mb-2">Save All</button>
+            <button type="submit" name="action" value="unassigned_child_to_parents_action_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
           </div>
         </div>
       </form>
@@ -195,7 +195,7 @@
   document.addEventListener('DOMContentLoaded', function() {
     const recordContainer = document.getElementById('record-container');
     const loadingSpinner = document.getElementById('loading-spinner');
-    const allRecords = {{ html_assigned_child_to_parents|tojson }};
+    const allRecords = {{ html_unassigned_child_to_parents|tojson }};
     const parentMappings = {{ html_child_to_parent_mappings|tojson }};
     const streamFormatOverrideOptions = {{ html_stream_formats_overrides|tojson }};
     const limit = 100;
@@ -230,16 +230,16 @@
 
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
-            hiddenInput.name = `assigned_child_to_parents_channel_id_${adjustedIndex}`;
-            hiddenInput.id = `assigned_child_to_parents_channel_id_${adjustedIndex}`;
+            hiddenInput.name = `unassigned_child_to_parents_channel_id_${adjustedIndex}`;
+            hiddenInput.id = `unassigned_child_to_parents_channel_id_${adjustedIndex}`;
             hiddenInput.value = item.channel_id;
 
             const titleItem = document.createElement('div');
             titleItem.className = 'grid-item';
             const titleInput = document.createElement('input');
             titleInput.type = 'text';
-            titleInput.id = `assigned_child_to_parents_title_${adjustedIndex}`;
-            titleInput.name = `assigned_child_to_parents_title_${adjustedIndex}`;
+            titleInput.id = `unassigned_child_to_parents_title_${adjustedIndex}`;
+            titleInput.name = `unassigned_child_to_parents_title_${adjustedIndex}`;
             titleInput.value = item.title;
             titleInput.readOnly = true;
             titleInput.style.backgroundColor = '#d1cdcde5';
@@ -250,8 +250,8 @@
             m3uNameItem.className = 'grid-item';
             const m3uNameInput = document.createElement('input');
             m3uNameInput.type = 'text';
-            m3uNameInput.id = `assigned_child_to_parents_m3u_name_${adjustedIndex}`;
-            m3uNameInput.name = `assigned_child_to_parents_m3u_name_${adjustedIndex}`;
+            m3uNameInput.id = `unassigned_child_to_parents_m3u_name_${adjustedIndex}`;
+            m3uNameInput.name = `unassigned_child_to_parents_m3u_name_${adjustedIndex}`;
             m3uNameInput.value = item.m3u_name;
             m3uNameInput.readOnly = true;
             m3uNameInput.style.backgroundColor = '#d1cdcde5';
@@ -262,8 +262,8 @@
             descriptionItem.className = 'grid-item';
             const descriptionInput = document.createElement('input');
             descriptionInput.type = 'text';
-            descriptionInput.id = `assigned_child_to_parents_description_${adjustedIndex}`;
-            descriptionInput.name = `assigned_child_to_parents_description_${adjustedIndex}`;
+            descriptionInput.id = `unassigned_child_to_parents_description_${adjustedIndex}`;
+            descriptionInput.name = `unassigned_child_to_parents_description_${adjustedIndex}`;
             descriptionInput.value = item.description;
             descriptionInput.readOnly = true;
             descriptionInput.style.backgroundColor = '#d1cdcde5';
@@ -274,8 +274,8 @@
             selectItem.className = 'grid-item';
             const select = document.createElement('select');
             select.className = 'select2';
-            select.name = `assigned_child_to_parents_parent_channel_id_${adjustedIndex}`;
-            select.id = `assigned_child_to_parents_parent_channel_id_${adjustedIndex}`;
+            select.name = `unassigned_child_to_parents_parent_channel_id_${adjustedIndex}`;
+            select.id = `unassigned_child_to_parents_parent_channel_id_${adjustedIndex}`;
             select.style.width = '100%';
             select.style.maxWidth = '100%';
             parentMappings.forEach(mapping => {
@@ -293,8 +293,8 @@
             streamFormatOverrideItem.className = 'grid-item';
             const streamFormatOverrideInput = document.createElement('select');
             streamFormatOverrideInput.className = 'select2';
-            streamFormatOverrideInput.name = `assigned_child_to_parents_stream_format_override_${adjustedIndex}`;
-            streamFormatOverrideInput.id = `assigned_child_to_parents_stream_format_override_${adjustedIndex}`;
+            streamFormatOverrideInput.name = `unassigned_child_to_parents_stream_format_override_${adjustedIndex}`;
+            streamFormatOverrideInput.id = `unassigned_child_to_parents_stream_format_override_${adjustedIndex}`;
             streamFormatOverrideInput.style.width = '100%';
             streamFormatOverrideInput.style.maxWidth = '100%';
             streamFormatOverrideOptions.forEach(stream_format_override => {
@@ -313,7 +313,7 @@
             const setParentButton = document.createElement('button');
             setParentButton.type = 'submit';
             setParentButton.name = 'action';
-            setParentButton.value = `assigned_child_to_parents_action_set_parent_${adjustedIndex}`;
+            setParentButton.value = `unassigned_child_to_parents_action_set_parent_${adjustedIndex}`;
             setParentButton.className = 'btn bg-gradient-primary my-2 mb-2';
             setParentButton.textContent = 'Save';
             setParentButtonItem.appendChild(setParentButton);
