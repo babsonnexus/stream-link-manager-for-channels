@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.04.1941"
+    slm_version = "v2025.04.04.2249"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -167,7 +167,7 @@ def webpage_add_programs():
             country_code_input = request.form.get('country_code')
             language_code_input = request.form.get('language_code')
             hide_bookmarked_input = request.form.get('hide_bookmarked')
-            hide_bookmarked_input = "On" if hide_bookmarked_input.lower() == 'on' else "Off"
+            hide_bookmarked_input = "On" if hide_bookmarked_input in ['on', 'On'] else "Off"
             provider_status_input = request.form.get('provider_status')
 
             if add_programs_action in ['program_add_search', 'program_add_search_videos', 'search_defaults_save']:
@@ -179,7 +179,7 @@ def webpage_add_programs():
                         settings[2]["settings"] = country_code_input
                         settings[3]["settings"] = language_code_input
                         settings[4]["settings"] = int(num_results_input)
-                        settings[9]["settings"] = "On" if hide_bookmarked_input.lower() == 'on' else "Off"
+                        settings[9]["settings"] = "On" if hide_bookmarked_input in ['on', 'On'] else "Off"
                         settings[47]["settings"] = provider_status_input
 
                         write_data(csv_settings, settings)
