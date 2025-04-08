@@ -70,6 +70,24 @@
         <div class="row">
           <div class="col-12 my-2"></div>
         </div>
+        <!-- Streaming Stations Settings -->
+        {% if html_settings_message %}
+          <em>{{ html_settings_message}}</em>
+          <div class="row">
+            <div class="col-12 my-2"></div>
+          </div>
+        {% endif %}
+        <div class="settings-box" style="width: 98%; display: flex; justify-content: center; align-items: center; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+          <label for="plm_streaming_stations_station_start_number" style="margin-top: 8px; margin-right: 5px;"><b>Station Start Number:</b></label>
+          <input type="text" id="plm_streaming_stations_station_start_number" name="plm_streaming_stations_station_start_number" style="width: 5%; margin-right: 10px;" value="{{ html_plm_streaming_stations_station_start_number }}">
+          <label for="plm_streaming_stations_max_stations" style="margin-top: 8px; margin-right: 5px;"><b>Max Stations per m3u:</b></label>
+          <input type="text" id="plm_streaming_stations_max_stations" name="plm_streaming_stations_max_stations" style="width: 5%; margin-right: 25px;" value="{{ html_plm_streaming_stations_max_stations }}">
+          <button type="submit" name="action" value="plm_streaming_stations_save_settings" class="btn bg-gradient-primary w-15 my-2 mb-2">Save Settings</button>
+        </div>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
         <div class="streaming_stations container-fluid" style="width: 98%;">
           <div class="grid-container dynamic-bg" style="text-align: center; margin-right: 17px; position: sticky; top: 0; z-index: 10;">
             <div class="grid-item" title="Only certain types of streams are acceptable to be consumed."><h6>Source</h6></div>

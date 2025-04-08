@@ -65,9 +65,9 @@
   <div class="row min-vh-80 h-100">
     <div class="col-12">
       <form method="POST" action="/playlists/plm_main" id="process-form">
+        <h4>Station Statistics and Settings</h4>
         <!-- Stat Chart -->
         <div class="chart-container">
-          <h6>Station Statistics</h6>
           <div class="bar">
             <div class="bar-label">Unassigned</div>
             <div class="bar-graph">
@@ -109,9 +109,23 @@
         <div class="row">
           <div class="col-12 my-2"></div>
         </div>
-        <div class="container-fluid">
-          <button type="submit" name="action" value="final_playlists_action_update_station_list" class="btn bg-gradient-primary w-25 my-2 mb-2">Update Station List</button>
-          <button type="submit" name="action" value="final_playlists_action_update_m3u_epg" class="btn bg-gradient-primary w-25 my-2 mb-2">Update m3u(s) & XML EPG(s)</button>
+        <!-- Final Playlist Settings -->
+        {% if html_settings_message %}
+          <em>{{ html_settings_message}}</em>
+          <div class="row">
+            <div class="col-12 my-2"></div>
+          </div>
+        {% endif %}
+        <div class="settings-box form-check form-switch ps-0 is-filled" style="width: 98%; display: flex; justify-content: center; align-items: center; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+          <label for="station_start_number" style="margin-top: 8px; margin-right: 5px;"><b>Station Start Number:</b></label>
+          <input type="text" id="station_start_number" name="station_start_number" style="width: 5%; margin-right: 10px;" value="{{ html_station_start_number }}">
+          <label for="max_stations" style="margin-top: 8px; margin-right: 5px;"><b>Max Stations per m3u:</b></label>
+          <input type="text" id="max_stations" name="max_stations" style="width: 5%; margin-right: 10px;" value="{{ html_max_stations }}">
+          <label for="plm_url_tag_in_m3us" style="margin-top: 8px; margin-right: 5px;"><b>Add URL tag to m3u(s):</b></label>
+          <input type="checkbox" class="form-check-input ms-1" id="plm_url_tag_in_m3us" name="plm_url_tag_in_m3us" {% if html_plm_url_tag_in_m3us == 'On' %}checked{% endif %}>
+          <button type="submit" name="action" value="playlist_manager_save_settings" class="btn bg-gradient-primary w-15 my-2 mb-2" style="margin-left: 25px; margin-right: 5px;">Save Settings</button>
+          <button type="submit" name="action" value="final_playlists_action_update_station_list" class="btn bg-gradient-primary w-15 my-2 mb-2" style="margin-right: 5px;">Update Station List</button>
+          <button type="submit" name="action" value="final_playlists_action_update_m3u_epg" class="btn bg-gradient-primary w-15 my-2 mb-2">Update m3u(s) & XML EPG(s)</button>
         </div>
         <hr>
         <!-- Spacer row -->

@@ -15,92 +15,48 @@
     <div class="row min-vh-80 h-100">
       <div class="col-12">
         <form method="POST" action="/settings">
-          <!-- Advanced / Experimental -->
-          <h4 id="advanced_experimental_anchor">Manage Extensions and Main Controls</h4>
+          <!-- Manage Extensions and Add-Ons -->
+          <h4 id="advanced_experimental_anchor">Manage Extensions and Add-Ons</h4>
           <p><div id="html_advanced_experimental_message">{{ html_advanced_experimental_message }}</div></p>
-          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-            <div class="form-check form-switch ps-0 is-filled">
+          <div class="form-check form-switch ps-0 is-filled">
+            <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
               <input type="checkbox" class="form-check-input ms-auto" id="channels_dvr_integration" name="channels_dvr_integration" {% if html_slm_channels_dvr_integration %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_dvr_integration">Channels DVR Integration</label>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_dvr_integration"><b>Channels DVR Integration</b></label>
+              <p><em>Users of Channels DVR have tightly controlled integrations between it and this program. For those who are not Channels DVR users or have a special use case, you have the option to turn this off. Doing so will hide everything related to Channels DVR (including mentions of it in text and logos), reverting this program into ‘Streaming Library Manager Solo Edition’. As should be expected, any actions that try to connect to Channels DVR are disabled.</em></p>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-              <button type="submit" name="action" value="channels_dvr_integration_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-              <button type="submit" name="action" value="channels_dvr_integration_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
-            </div>
-          </div>
-          {% if html_slm_channels_dvr_integration %}
-            <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-              <div class="form-check form-switch ps-0 is-filled">
+            {% if html_slm_channels_dvr_integration %}
+              <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
                 <input type="checkbox" class="form-check-input ms-auto" id="channels_prune" name="channels_prune" {% if html_channels_prune == "On" %}checked{% endif %}>
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_prune">Run 'Prune' function in Channels DVR</label>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_prune"><b>'Prune' function in Channels DVR</b></label>
+                <p><em>When on, this program will initiate a delete in Channels DVR for any missing personal media, not just Stream Links/Files. You may decide that you do not want this to run automatically.</em></p>
               </div>
-              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-                <button type="submit" name="action" value="channels_prune_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-                <button type="submit" name="action" value="channels_prune_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
-              </div>
-            </div>
-          {% endif %}
-          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-            <div class="form-check form-switch ps-0 is-filled">
+            {% endif %}
+            <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
               <input type="checkbox" class="form-check-input ms-auto" id="stream_link_file_manager" name="stream_link_file_manager" {% if html_slm_stream_link_file_manager %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="stream_link_file_manager">Use Stream Link/File Manager</label>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="stream_link_file_manager"><b>On-Demand: Stream Link/File Manager Extension [SLM]</b></label>
+              <p><em>On-Demand movies, TV shows, and videos can be made available to stream without having to keep track of their sources by using ‘Stream Links’ and ‘Stream Files’. The Stream Link/File Manager Extension makes this possible by allowing users to simply ‘bookmark’ this content and letting the program handle the ‘where’ and ‘how’ questions. For users who are not consuming any on-demand media, they can turn this off.</em></p>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-              <button type="submit" name="action" value="stream_link_file_manager_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-              <button type="submit" name="action" value="stream_link_file_manager_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
-            </div>
-          </div>
-          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-            <div class="form-check form-switch ps-0 is-filled">
+            <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
               <input type="checkbox" class="form-check-input ms-auto" id="playlist_manager" name="playlist_manager" {% if html_slm_playlist_manager %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="playlist_manager">Use Playlist Manager</label>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="playlist_manager"><b>Linear: Playlist Manager Extension [PLM]</b></label>
+              <p><em>There are many sources for linear content including places like OTA (over-the-air with an antenna), TVE (TV Everywhere, i.e., streaming websites for cable stations), FAST (Free Ad-Supported Streaming Television, i.e., Pluto, Plex, Tubi), and plenty more. The Playlist Manger Extension allows users to bring all these disparate sources together into one unified front in order to eliminate repetition and resolve all other issues associated with just being able to consume the content. For users who are not integrating linear content like this, they can turn this feature off.</em></p>
             </div>
-            <div>
-              <label for="station_start_number" style="margin-left: 15px; margin-top: 8px; margin-right: 10px;">Station Start Number:</label>
-              <input type="text" id="station_start_number" name="station_start_number" value="{{ html_station_start_number }}">
-            </div>
-            <div>
-              <label for="max_stations" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Max Stations per m3u:</label>
-              <input type="text" id="max_stations" name="max_stations" value="{{ html_max_stations }}">
-            </div>
-            <div class="form-check form-switch ps-0 is-filled" style="margin-top: 10px;">
-              <input type="checkbox" class="form-check-input ms-auto" id="plm_url_tag_in_m3us" name="plm_url_tag_in_m3us" {% if html_plm_url_tag_in_m3us == 'On' %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_url_tag_in_m3us">Add URL tag to m3u(s)</label>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-              <button type="submit" name="action" value="playlist_manager_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-              <button type="submit" name="action" value="playlist_manager_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
+            {% if html_slm_playlist_manager %}
+              <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+                <input type="checkbox" class="form-check-input ms-auto" id="plm_streaming_stations" name="plm_streaming_stations" {% if html_plm_streaming_stations %}checked{% endif %}>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_streaming_stations"><b>Linear: PLM Streaming Stations Add-on</b></label>
+                <p><em>As an add-on for linear stations through Playlist Manager, users can create their own stations from places like YouTube, Twitch, news websites, and other similar sources using Streaming Stations. If users are not planning on adding content like this, they can turn this off.</em></p>
+              </div>
+            {% endif %}
+            <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+              <input type="checkbox" class="form-check-input ms-auto" id="media_tools_manager" name="media_tools_manager" {% if html_slm_media_tools_manager %}checked{% endif %}>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="media_tools_manager"><b>Tools: Media Tools Manager Extension [MTM]</b></label>
+              <p><em>With so many shows, movies, videos, stations, and more available, keeping track and managing them all can be quite difficult. Even using this program can add layers of concerns, considerations, and questions. To resolve this quandary and quagmire is the tools included with the Media Tools Manager Extension. It is not recommended to turn this off as it will limit the functionality of this program—notably around Automation—however, it is still up the end-user whether they want these features available.</em></p>
             </div>
           </div>
-          {% if html_slm_playlist_manager %}
-            <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-              <div class="form-check form-switch ps-0 is-filled">
-                <input type="checkbox" class="form-check-input ms-auto" id="plm_streaming_stations" name="plm_streaming_stations" {% if html_plm_streaming_stations %}checked{% endif %}>
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_streaming_stations">Use PLM Streaming Stations</label>
-              </div>
-              <div>
-                <label for="plm_streaming_stations_station_start_number" style="margin-left: 15px; margin-top: 8px; margin-right: 10px;">Station Start Number:</label>
-                <input type="text" id="plm_streaming_stations_station_start_number" name="plm_streaming_stations_station_start_number" value="{{ html_plm_streaming_stations_station_start_number }}">
-              </div>
-              <div>
-                <label for="plm_streaming_stations_max_stations" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Max Stations per m3u:</label>
-                <input type="text" id="plm_streaming_stations_max_stations" name="plm_streaming_stations_max_stations" value="{{ html_plm_streaming_stations_max_stations }}">
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-                <button type="submit" name="action" value="plm_streaming_stations_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-                <button type="submit" name="action" value="plm_streaming_stations_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
-              </div>
-            </div>
-          {% endif %}
-          <div class="settings-box" style="width: 30%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-            <div class="form-check form-switch ps-0 is-filled">
-              <input type="checkbox" class="form-check-input ms-auto" id="media_tools_manager" name="media_tools_manager" {% if html_slm_media_tools_manager %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="media_tools_manager">Use Media Tools Manager</label>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-              <button type="submit" name="action" value="media_tools_manager_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
-              <button type="submit" name="action" value="media_tools_manager_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-left: 5px;">Cancel</button>
-            </div>
+          <div style="display: flex; margin-top: 10px; width: 98%;">
+            <button type="submit" name="action" value="channels_dvr_integration_save" class="btn bg-gradient-primary w-20 my-2 mb-2" style="margin-right: 5px;">Save</button>
+            <button type="submit" name="action" value="channels_dvr_integration_cancel" class="btn bg-gradient-primary w-20 my-2 mb-2" style="margin-left: 5px;">Cancel</button>
           </div>
           <hr>
           {% if html_slm_channels_dvr_integration %}
