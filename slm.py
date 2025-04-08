@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.04.2249"
+    slm_version = "v2025.04.08.1551"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -2785,6 +2785,12 @@ def webpage_playlists(sub_page):
 
     template = templates.get(sub_page, 'main/playlists.html')
 
+    settings = read_data(csv_settings)
+    station_start_number = settings[11]['settings']
+    max_stations = settings[12]['settings']
+    plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
+    settings_message = ''
+
     playlists_anchor_id = None
     run_empty_row = None
 
@@ -2845,7 +2851,34 @@ def webpage_playlists(sub_page):
 
         posts = ['_cancel', '_save', 'save_all', '_new']
         inposts = ['_delete_', '_update_','_make_parent_', '_set_parent_', '_add_to_']
-        if any(playlists_action.endswith(post) for post in posts) or any(inpost in playlists_action for inpost in inposts):
+        if playlists_action.endswith('_settings'):
+
+            if playlists_action == 'playlist_manager_save_settings':
+                station_start_number_input = request.form.get('station_start_number')
+                max_stations_input = request.form.get('max_stations')
+                plm_url_tag_in_m3us_input = request.form.get('plm_url_tag_in_m3us')
+
+                try:
+                    if int(station_start_number_input) > 0 and int(max_stations_input) > 0:
+                        
+                        settings[11]['settings'] = int(station_start_number_input)
+                        settings[12]['settings'] = int(max_stations_input)
+                        settings[42]['settings'] = "On" if plm_url_tag_in_m3us_input == 'on' else "Off"
+                        if settings[42]['settings'] == "On":
+                            settings[43]['settings'] = f"{request.url_root}"
+
+                    else:
+                        settings_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
+                except ValueError:
+                    settings_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be numbers."
+        
+                write_data(csv_settings, settings)
+                read_data(csv_settings)
+                station_start_number = settings[11]['settings']
+                max_stations = settings[12]['settings']
+                plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
+
+        elif any(playlists_action.endswith(post) for post in posts) or any(inpost in playlists_action for inpost in inposts):
 
             filter_inposts = ['_save', '_new', '_delete_', '_set_parent_']
             if any(filter_inpost in playlists_action for filter_inpost in filter_inposts):
@@ -3564,7 +3597,11 @@ def webpage_playlists(sub_page):
         html_filter_parent_tvg_logo_override = filter_parent_tvg_logo_override,
         html_filter_parent_channel_number_override = filter_parent_channel_number_override,
         html_filter_parent_tvc_guide_stationid_override = filter_parent_tvc_guide_stationid_override,
-        html_filter_parent_preferred_playlist = filter_parent_preferred_playlist
+        html_filter_parent_preferred_playlist = filter_parent_preferred_playlist,
+        html_station_start_number = station_start_number,
+        html_max_stations = max_stations,
+        html_plm_url_tag_in_m3us = plm_url_tag_in_m3us,
+        html_settings_message = settings_message
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -4426,6 +4463,11 @@ def webpage_playlists_streams():
     global filter_streams_tvc_stream_vcodec
     global filter_streams_tvc_stream_acodec
 
+    settings = read_data(csv_settings)
+    plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
+    plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
+    settings_message = ''
+
     streaming_stations = read_data(csv_playlistmanager_streaming_stations)
 
     streaming_station_options = [
@@ -4441,7 +4483,29 @@ def webpage_playlists_streams():
     if request.method == 'POST':
         action = request.form['action']
 
-        if action.endswith('test'):
+        if action.endswith('settings'):
+
+            if action == 'plm_streaming_stations_save_settings':
+                plm_streaming_stations_station_start_number_input = request.form.get('plm_streaming_stations_station_start_number')
+                plm_streaming_stations_max_stations_input = request.form.get('plm_streaming_stations_max_stations')
+
+                try:
+                    if int(plm_streaming_stations_station_start_number_input) > 0 and int(plm_streaming_stations_max_stations_input) > 0:
+                        settings[40]['settings'] = int(plm_streaming_stations_station_start_number_input)
+                        settings[41]['settings'] = int(plm_streaming_stations_max_stations_input)
+
+                    else:
+                        settings_message = f"{current_time()} ERROR: For Streaming Stations, 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
+                
+                except ValueError:
+                    settings_message = f"{current_time()} ERROR: For Streaming Stations, 'Station Start Number' and 'Max Stations per m3u' must be numbers."
+
+                write_data(csv_settings, settings)
+                settings = read_data(csv_settings)
+                plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
+                plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
+
+        elif action.endswith('test'):
             streaming_stations_source_test_input = request.form.get('streaming_stations_source_test')
             streaming_stations_url_test_input = request.form.get('streaming_stations_url_test')
 
@@ -4690,7 +4754,10 @@ def webpage_playlists_streams():
         html_filter_streams_tvc_guide_categories = filter_streams_tvc_guide_categories,
         html_filter_streams_tvc_guide_placeholders = filter_streams_tvc_guide_placeholders,
         html_filter_streams_tvc_stream_vcodec = filter_streams_tvc_stream_vcodec,
-        html_filter_streams_tvc_stream_acodec = filter_streams_tvc_stream_acodec        
+        html_filter_streams_tvc_stream_acodec = filter_streams_tvc_stream_acodec,
+        html_plm_streaming_stations_station_start_number = plm_streaming_stations_station_start_number,
+        html_plm_streaming_stations_max_stations = plm_streaming_stations_max_stations,
+        html_settings_message = settings_message
     )
 
 # Creates an m3u8 or video file for an individual live stream or static video
@@ -8653,41 +8720,65 @@ def prune_scan_channels():
     if channels_url_okay:
         # Prune
         if channels_prune == "On":
-            notification_add(f"\n{current_time()} Beginning Prune request...")
+            print(f"{current_time()} Beginning Prune request...")
             try:
                 requests.put(prune_url)
             except requests.RequestException as e:
-                notification_add(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
-            notification_add(f"\n{current_time()} Prune requested.")
+                print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
+            print(f"{current_time()} Prune requested.")
         else:
-            notification_add(f"\n{current_time()} INFO: Prune disabled, skipping step.")
+            print(f"{current_time()} INFO: Prune disabled, skipping step.")
 
         # Scan
-        notification_add(f"\n{current_time()} Beginning scan request...")
+        print(f"{current_time()} Beginning scan request...")
         try:
             requests.put(scan_url)
         except requests.RequestException as e:
-            notification_add(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
-        notification_add(f"\n{current_time()} Scan requested.")
+            print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
+        print(f"{current_time()} Scan requested.")
 
         # Reprocess
         if stream_link_ids_changed:
-            notification_add(f"\n{current_time()} Beginning Reprocess requests...")
+            print(f"{current_time()} Beginning Reprocess requests...")
             asyncio.run(get_reprocess_requests(channels_url))
-            notification_add(f"\n{current_time()} Finished Reprocess requests")
+            print(f"{current_time()} Finished Reprocess requests")
         else:
-            notification_add(f"\n{current_time()} INFO: Nothing to reprocess, skipping step.")
+            print(f"{current_time()} INFO: Nothing to reprocess, skipping step.")
 
         if channels_prune == "On":
             if stream_link_ids_changed:
-                notification_add(f"\n{current_time()} Prune, Scan, and Reprocess underway. Check Channels for status.\n")
+                print(f"{current_time()} Prune, Scan, and Reprocess underway.")
             else:
-                notification_add(f"\n{current_time()} Prune and Scan underway. Check Channels for status.\n")
+                print(f"{current_time()} Prune and Scan underway.")
         else:
             if stream_link_ids_changed:
-                notification_add(f"\n{current_time()} Scan and Reprocess underway. Check Channels for status.\n")
+                print(f"{current_time()} Scan and Reprocess underway.")
             else:
-                notification_add(f"\n{current_time()} Scan underway. Check Channels for status.\n")
+                print(f"{current_time()} Scan underway.")
+
+        while True:
+            time.sleep(5)
+            channels_dvr_activity = get_channels_dvr_activity()
+
+            if '6-scanner' in channels_dvr_activity or '5-pruner' in channels_dvr_activity:
+                if channels_prune == "On":
+                    print(f"{current_time()} INFO: Prune and/or Scan still active. Checking again in 5 seconds...")
+                else:
+                    print(f"{current_time()} INFO: Scan still active. Checking again in 5 seconds...")
+                
+            else:
+                if channels_prune == "On":
+                    if stream_link_ids_changed:
+                        notification_add(f"\n{current_time()} Prune and Scan complete. Check Channels DVR for Reprocess status.\n")
+                    else:
+                        notification_add(f"\n{current_time()} Prune and Scan complete.\n")
+                else:
+                    if stream_link_ids_changed:
+                        notification_add(f"\n{current_time()} Scan complete. Check Channels DVR for Reprocess status.\n")
+                    else:
+                        notification_add(f"\n{current_time()} Scan complete.\n")
+                break
+
     else:
         notification_add(f"\n{current_time()} INFO: Skipped Prune, Scan, and Reprocess due to Channels URL error.\n")
 
@@ -9246,11 +9337,6 @@ def webpage_settings():
         channels_url_prior = channels_url
     channels_directory = settings[1]["settings"]
     channels_prune = settings[7]["settings"]
-    station_start_number = settings[11]['settings']
-    max_stations = settings[12]['settings']
-    plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
-    plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
-    plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
 
     channels_url_message = ""
     channels_directory_message = ""
@@ -9285,11 +9371,6 @@ def webpage_settings():
         channels_dvr_integration_input = request.form.get('channels_dvr_integration')
         media_tools_manager_input = request.form.get('media_tools_manager')
         plm_streaming_stations_input = request.form.get('plm_streaming_stations')
-        station_start_number_input = request.form.get('station_start_number')
-        max_stations_input = request.form.get('max_stations')
-        plm_url_tag_in_m3us_input = request.form.get('plm_url_tag_in_m3us')
-        plm_streaming_stations_station_start_number_input = request.form.get('plm_streaming_stations_station_start_number')
-        plm_streaming_stations_max_stations_input = request.form.get('plm_streaming_stations_max_stations')
 
         for prefix, anchor_id in action_to_anchor.items():
             if settings_action.startswith(prefix):
@@ -9298,43 +9379,23 @@ def webpage_settings():
 
         if settings_action in ['channels_url_cancel',
                                'channels_directory_cancel',
-                               'channels_prune_cancel',
-                               'playlist_manager_cancel',
-                               'stream_link_file_manager_cancel',
                                'channels_dvr_integration_cancel',
-                               'media_tools_manager_cancel',
-                               'plm_streaming_stations_cancel',
                                'channels_url_save',
                                'channels_directory_save',
-                               'channels_prune_save',
-                               'playlist_manager_save',
-                               'stream_link_file_manager_save',
                                'channels_dvr_integration_save',
-                               'media_tools_manager_save',
-                               'plm_streaming_stations_save',
                                'channels_url_test',
                                'channels_url_scan'
                               ]:
 
             if settings_action in ['channels_url_save',
                                    'channels_directory_save',
-                                   'channels_prune_save',
-                                   'playlist_manager_save',
-                                   'stream_link_file_manager_save',
                                    'channels_dvr_integration_save',
-                                   'media_tools_manager_save',
-                                   'plm_streaming_stations_save',
                                    'channels_url_scan'
                                   ]:
 
                 if settings_action in ['channels_url_save',
                                        'channels_directory_save',
-                                       'channels_prune_save',
-                                       'playlist_manager_save',
-                                       'stream_link_file_manager_save',
                                        'channels_dvr_integration_save',
-                                       'media_tools_manager_save',
-                                       'plm_streaming_stations_save',
                                        'channels_url_scan'
                                     ]:
 
@@ -9348,86 +9409,57 @@ def webpage_settings():
 
                     elif settings_action == 'channels_directory_save':
                         settings[1]["settings"] = channels_directory_input
-                        current_directory = channels_directory_input
-
-                    elif settings_action == 'channels_prune_save':
-                        settings[7]["settings"] = "On" if channels_prune_input == 'on' else "Off"
-
-                    elif settings_action == 'playlist_manager_save':
-                        try:
-                            if int(station_start_number_input) > 0 and int(max_stations_input) > 0:
-                                settings[10]["settings"] = "On" if playlist_manager_input == 'on' else "Off"
-                                settings[11]['settings'] = int(station_start_number_input)
-                                settings[12]['settings'] = int(max_stations_input)
-                                settings[42]['settings'] = "On" if plm_url_tag_in_m3us_input == 'on' else "Off"
-                                if settings[42]['settings'] == "On":
-                                    settings[43]['settings'] = f"{request.url_root}"
-
-                                if playlist_manager_input == 'on':
-                                    slm_playlist_manager = True
-                                    plm_csv_files = [
-                                        csv_playlistmanager_playlists,
-                                        csv_playlistmanager_parents,
-                                        csv_playlistmanager_child_to_parent,
-                                        csv_playlistmanager_combined_m3us
-                                    ]
-
-                                    for plm_csv_file in plm_csv_files:
-                                        check_and_create_csv(plm_csv_file)
-                                    
-                                    create_directory(playlists_uploads_dir)
-                                
-                                else:
-                                    slm_playlist_manager = None
-
-                            else:
-                                advanced_experimental_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
-                        except ValueError:
-                            advanced_experimental_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be numbers."
-
-                    elif settings_action == 'stream_link_file_manager_save':
-                        settings[23]["settings"] = "On" if stream_link_file_manager_input == 'on' else "Off"
-
-                        if stream_link_file_manager_input == 'on':
-                            slm_stream_link_file_manager = True
-                        else:
-                            slm_stream_link_file_manager = None
+                        current_directory = channels_directory_input                       
 
                     elif settings_action == 'channels_dvr_integration_save':
+                        # Channels DVR Integration
                         settings[24]["settings"] = "On" if channels_dvr_integration_input == 'on' else "Off"
-
                         if channels_dvr_integration_input == 'on':
                             slm_channels_dvr_integration = True
                         else:
                             slm_channels_dvr_integration = None
 
-                    elif settings_action == 'media_tools_manager_save':
-                        settings[28]["settings"] = "On" if media_tools_manager_input == 'on' else "Off"
+                        # Channels DVR Prune
+                        settings[7]["settings"] = "On" if channels_prune_input == 'on' else "Off"
 
+                        # On-Demand: Stream Link/File Manager [SLM]
+                        settings[23]["settings"] = "On" if stream_link_file_manager_input == 'on' else "Off"
+                        if stream_link_file_manager_input == 'on':
+                            slm_stream_link_file_manager = True
+                        else:
+                            slm_stream_link_file_manager = None
+
+                        # Linear: Playlist Manager [PLM]
+                        settings[10]["settings"] = "On" if playlist_manager_input == 'on' else "Off"
+                        if playlist_manager_input == 'on':
+                            slm_playlist_manager = True
+                            plm_csv_files = [
+                                csv_playlistmanager_playlists,
+                                csv_playlistmanager_parents,
+                                csv_playlistmanager_child_to_parent,
+                                csv_playlistmanager_combined_m3us
+                            ]
+                            for plm_csv_file in plm_csv_files:
+                                check_and_create_csv(plm_csv_file)
+                            create_directory(playlists_uploads_dir)
+                        else:
+                            slm_playlist_manager = None
+
+                        # Linear: PLM Streaming Stations
+                        settings[39]["settings"] = "On" if plm_streaming_stations_input == 'on' else "Off"
+                        if plm_streaming_stations_input == 'on':
+                            plm_streaming_stations = True
+                            plm_csv_file = csv_playlistmanager_streaming_stations
+                            check_and_create_csv(plm_csv_file)
+                        else:
+                            plm_streaming_stations = None
+
+                        # Tools: Media Tools Manager [MTM]
+                        settings[28]["settings"] = "On" if media_tools_manager_input == 'on' else "Off"
                         if media_tools_manager_input == 'on':
                             slm_media_tools_manager = True
                         else:
                             slm_media_tools_manager = None
-
-                    elif settings_action == 'plm_streaming_stations_save':
-                        try:
-                            if int(plm_streaming_stations_station_start_number_input) > 0 and int(plm_streaming_stations_max_stations_input) > 0:
-                                settings[39]["settings"] = "On" if plm_streaming_stations_input == 'on' else "Off"
-                                settings[40]['settings'] = int(plm_streaming_stations_station_start_number_input)
-                                settings[41]['settings'] = int(plm_streaming_stations_max_stations_input)
-
-                                if plm_streaming_stations_input == 'on':
-                                    plm_streaming_stations = True
-                                    plm_csv_file = csv_playlistmanager_streaming_stations
-                                    check_and_create_csv(plm_csv_file)
-                                else:
-                                    plm_streaming_stations = None
-
-                            else:
-                                advanced_experimental_message = f"{current_time()} ERROR: For Streaming Stations, 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
-                        
-                        except ValueError:
-                            advanced_experimental_message = f"{current_time()} ERROR: For Streaming Stations, 'Station Start Number' and 'Max Stations per m3u' must be numbers."
 
                     csv_to_write = csv_settings
                     data_to_write = settings
@@ -9474,11 +9506,6 @@ def webpage_settings():
             channels_url_prior = channels_url
         channels_directory = settings[1]["settings"]
         channels_prune = settings[7]["settings"]
-        station_start_number = settings[11]['settings']
-        max_stations = settings[12]['settings']
-        plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
-        plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
-        plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
 
     response = make_response(render_template(
         'main/settings.html',
@@ -9499,11 +9526,6 @@ def webpage_settings():
         html_current_directory = current_directory,
         html_subdirectories = get_subdirectories(current_directory),
         html_channels_directory_message = channels_directory_message,
-        html_station_start_number = station_start_number,
-        html_max_stations = max_stations,
-        html_plm_streaming_stations_station_start_number = plm_streaming_stations_station_start_number,
-        html_plm_streaming_stations_max_stations = plm_streaming_stations_max_stations,
-        html_plm_url_tag_in_m3us = plm_url_tag_in_m3us,
         html_advanced_experimental_message = advanced_experimental_message
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
@@ -10651,6 +10673,8 @@ def get_channels_dvr_json(selection):
         route = '/settings'
     elif selection == 'items_by_library_collection':
         route = '/dvr/collections/content'
+    elif selection == 'dvr_status':
+        route = '/dvr'
 
     if route:
         url = f"{channels_url}{route}"
@@ -10754,7 +10778,75 @@ def get_channels_dvr_json(selection):
 
                     results_library = sorted(results_library, key=lambda x: sort_key(x["library_collection_name"].casefold()))                    
 
+                elif selection == 'dvr_status':
+                    activity = results_base_json.get("activity", '')
+                    busy = results_base_json.get("busy", '')
+                    disk_free = results_base_json.get("disk", '').get("free", '')
+                    disk_total = results_base_json.get("disk", '').get("total", '')
+                    disk_used = results_base_json.get("disk", '').get("used", '')
+                    enabled = results_base_json.get("enabled", '')
+                    extra_paths = results_base_json.get("extra_paths", [])
+                    guide_num_lineups = results_base_json.get("guide", {}).get("num_lineups", '')
+                    guide_num_shows = results_base_json.get("guide", {}).get("num_shows", '')
+                    guide_num_airings = results_base_json.get("guide", {}).get("num_airings", '')
+                    guide_disk_size = results_base_json.get("guide", {}).get("disk_size", '')
+                    guide_updated_at = results_base_json.get("guide", {}).get("updated_at", '')
+                    has_live_tv_sources = results_base_json.get("has_live_tv_sources", '')
+                    has_scannable_sources = results_base_json.get("has_scannable_sources", '')
+                    keep_num = results_base_json.get("keep", '').get("num", '')
+                    keep_only = results_base_json.get("keep", '').get("only", '')
+                    last_backup = results_base_json.get("last_backup", '')
+                    padding_end = results_base_json.get("padding", {}).get("end", '')
+                    padding_start = results_base_json.get("padding", {}).get("start", '')
+                    path = results_base_json.get("path", '')
+                    stats_groups = results_base_json.get("stats", {}).get("groups", [])
+                    stats_files = results_base_json.get("stats", {}).get("files", [])
+                    stats_jobs = results_base_json.get("stats", {}).get("jobs", [])
+                    stats_rules = results_base_json.get("stats", {}).get("rules", [])
+                    status = results_base_json.get("status", '')
+                    transcoder_cache_size = results_base_json.get("transcoder_cache", {}).get("size", '')
+                    trash_after = results_base_json.get("trash", {}).get("after", '')
+
+                    results_library.append({
+                        "activity": activity,
+                        "busy": busy,
+                        "disk_free": disk_free,
+                        "disk_total": disk_total,
+                        "disk_used": disk_used,
+                        "enabled": enabled,
+                        "extra_paths": extra_paths,
+                        "guide_num_lineups": guide_num_lineups,
+                        "guide_num_shows": guide_num_shows,
+                        "guide_num_airings": guide_num_airings,
+                        "guide_disk_size": guide_disk_size,
+                        "guide_updated_at": guide_updated_at,
+                        "has_live_tv_sources": has_live_tv_sources,
+                        "has_scannable_sources": has_scannable_sources,
+                        "keep_num": keep_num,
+                        "keep_only": keep_only,
+                        "last_backup": last_backup,
+                        "padding_end": padding_end,
+                        "padding_start": padding_start,
+                        "path": path,
+                        "stats_groups": stats_groups,
+                        "stats_files": stats_files,
+                        "stats_jobs": stats_jobs,
+                        "stats_rules": stats_rules,
+                        "status": status,
+                        "transcoder_cache_size": transcoder_cache_size,
+                        "trash_after": trash_after
+                    })
+
     return results_library
+
+def get_channels_dvr_activity():
+    results_library = []
+    results_library = get_channels_dvr_json('dvr_status')
+
+    results = None
+    results = results_library[0]['activity']
+
+    return results
 
 # Puts JSON data into Channels DVR
 def put_channels_dvr_json(route, json_data):
