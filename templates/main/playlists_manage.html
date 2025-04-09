@@ -13,7 +13,7 @@
 
   .uploaded_playlists .grid-container {
     display: grid;
-      grid-template-columns: 3.5fr 5.5fr 2fr;
+      grid-template-columns: 3fr 4fr 2fr 2fr;
       gap: 10px;
   }
 
@@ -289,7 +289,8 @@
             <div class="grid-container" style="text-align: center;">
               <div class="grid-item"><h6>File Type</h6></div>
               <div class="grid-item"><h6>File Link</h6></div>
-              <div class="grid-item"><h6>Action</h6></div>
+              <div class="grid-item"><h6>Action 1</h6></div>
+              <div class="grid-item"><h6>Action 2</h6></div>
             </div>
           {% endif %} 
           {% for html_uploaded_playlist_file in html_uploaded_playlist_files %}
@@ -299,6 +300,13 @@
               </div>
               <div class="grid-item">
                 <input type="text" id="uploaded_playlists_file_{{ loop.index }}" name="uploaded_playlists_file_{{ loop.index }}" value="{{ request.url_root }}playlists/uploads/{{ html_uploaded_playlist_file.file_link }}" readonly style="background-color: #d1cdcde5;" title="{{ request.url_root }}playlists/uploads/{{ html_uploaded_playlist_file.file_link }}">
+              </div>
+              <div class="grid-item">
+                {% if 'Guide Data' in html_uploaded_playlist_file.file_type %}
+                  <button type="submit" name="action" value="generated_playlists_action_add_to_plm_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2" disabled>Guide Data</button>
+                {% else %}
+                  <button type="submit" name="action" value="generated_playlists_action_add_to_plm_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Add to Playlists</button>
+                {% endif %}
               </div>
               <div class="grid-item">
                 {% if 'plmss' in html_uploaded_playlist_file.file_link %}
