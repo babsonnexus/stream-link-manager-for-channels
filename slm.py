@@ -24,16 +24,16 @@ from jinja2 import TemplateNotFound
 import yt_dlp
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.03.30.1116"
+slm_version = "v2025.04.09.1203"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.08.1551"
+    slm_version = "v2025.04.09.1203"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -3032,7 +3032,7 @@ def webpage_playlists(sub_page):
 
                     if playlists_action.startswith('uploaded_playlists_action_delete_'):
                         uploaded_playlists_action_delete_index = int(playlists_action.split('_')[-1]) - 1
-                        uploaded_playlists_action_delete_filename = uploaded_playlist_files[uploaded_playlists_action_delete_index]
+                        uploaded_playlists_action_delete_filename = uploaded_playlist_files[uploaded_playlists_action_delete_index]['file_link']
                         uploaded_playlists_action_delete_filename_combined = os.path.join(playlists_uploads_dir_name, uploaded_playlists_action_delete_filename)
 
                         last_period_index = uploaded_playlists_action_delete_filename_combined.rfind('.')
@@ -3525,7 +3525,38 @@ def webpage_playlists(sub_page):
                     make_playlist_name_clean = re.sub(r'[^a-zA-Z0-9]', '', make_playlist_name)
                     make_playlist_route = f"/providers/m3u/sources/{make_playlist_name_clean}"
 
-                    put_channels_dvr_json(make_playlist_route, json_data)
+                    if 'add_to_channels' in playlists_action:
+                        put_channels_dvr_json(make_playlist_route, json_data)
+
+                    elif 'add_to_plm' in playlists_action:
+
+                        for playlist in playlists:
+                            if make_playlist_url in playlist['m3u_url']:
+                                uploaded_playlists_message = f"'{make_playlist_url}' is already assigned to '{playlist['m3u_name']}'."
+                                break
+
+                        if not uploaded_playlists_message:
+                            playlists_m3u_id_input = f"m3u_{max((int(playlist['m3u_id'].split('_')[1]) for playlist in playlists), default=0) + 1:04d}"
+                            playlists_m3u_name_input = make_playlist_name
+                            playlists_m3u_url_input = make_playlist_url
+                            playlists_epg_xml_input = None
+                            playlists_stream_format_input = make_playlist_type
+                            playlists_m3u_active_input = "On"
+                            playlists_m3u_priority_input = max((int(playlist['m3u_priority']) for playlist in playlists), default=0) + 1
+
+                            playlists.append({
+                                "m3u_id": playlists_m3u_id_input,
+                                "m3u_name": playlists_m3u_name_input,
+                                "m3u_url": playlists_m3u_url_input,
+                                "epg_xml": playlists_epg_xml_input,
+                                "stream_format": playlists_stream_format_input,
+                                "m3u_active": playlists_m3u_active_input,
+                                "m3u_priority": playlists_m3u_priority_input
+                            })
+
+                            playlists = sorted(playlists, key=lambda x: sort_key(x["m3u_name"].casefold()))
+                            write_data(csv_playlistmanager_playlists, playlists)
+                            playlists = read_data(csv_playlistmanager_playlists)
 
             elif '_cancel' in playlists_action:
 
