@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.04.09.1203"
+slm_version = "v2025.04.11.1411"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.09.1203"
+    slm_version = "v2025.04.11.1411"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -2730,7 +2730,9 @@ def get_streaming_services():
             entry = {
                 "streaming_service_name": provider["clearName"],
                 "streaming_service_subscribe": False,
-                "streaming_service_priority": None
+                "streaming_service_priority": None,
+                "streaming_service_active": "On",
+                "streaming_service_group": "None"
             }
             provider_results_json_array_results.append(entry)
 
@@ -2774,6 +2776,7 @@ def webpage_playlists(sub_page):
     global filter_parent_channel_number_override
     global filter_parent_tvc_guide_stationid_override
     global filter_parent_preferred_playlist
+    global parent_channel_id_prior
 
     templates = {
         'plm_main': 'main/playlists.html',
@@ -2850,7 +2853,7 @@ def webpage_playlists(sub_page):
                 break
 
         posts = ['_cancel', '_save', 'save_all', '_new']
-        inposts = ['_delete_', '_update_','_make_parent_', '_set_parent_', '_add_to_']
+        inposts = ['_delete_', '_update_','_make_parent_', '_set_parent_', '_add_to_', '_more_']
         if playlists_action.endswith('_settings'):
 
             if playlists_action == 'playlist_manager_save_settings':
@@ -2880,7 +2883,7 @@ def webpage_playlists(sub_page):
 
         elif any(playlists_action.endswith(post) for post in posts) or any(inpost in playlists_action for inpost in inposts):
 
-            filter_inposts = ['_save', '_new', '_delete_', '_set_parent_']
+            filter_inposts = ['_save', '_new', '_delete_', '_set_parent_', '_more_']
             if any(filter_inpost in playlists_action for filter_inpost in filter_inposts):
                 if sub_page is None or sub_page == 'plm_modify_unassigned_stations':
                     filter_title_unassigned = request.form.get('filter-title')
@@ -2908,7 +2911,7 @@ def webpage_playlists(sub_page):
                     pass
 
             this_posts = ['_save', '_new']
-            this_inposts = ['_delete_', '_upload_', '_make_parent_']
+            this_inposts = ['_delete_', '_upload_', '_make_parent_', '_more_']
             if any(playlists_action.endswith(this_post) for this_post in this_posts) or any(this_inpost in playlists_action for this_inpost in this_inposts):
 
                 if playlists_action.startswith('playlists_action_') or playlists_action.startswith('priority_playlists_action_'):
@@ -3090,7 +3093,7 @@ def webpage_playlists(sub_page):
 
                 elif playlists_action.startswith('parents_action_') or '_make_parent_' in playlists_action:
 
-                    if playlists_action == "parents_action_save" or playlists_action.startswith('parents_action_delete_'):
+                    if playlists_action == "parents_action_save" or playlists_action.startswith('parents_action_delete_') or playlists_action.startswith('parents_action_more_'):
 
                         parents_delete_on_save_flag = None
 
@@ -3136,7 +3139,7 @@ def webpage_playlists(sub_page):
                                 index = key.split('_')[-1]
                                 parents_parent_preferred_playlist_inputs[index] = request.form.get(key)
 
-                        if playlists_action == "parents_action_save":
+                        if playlists_action == "parents_action_save" or playlists_action.startswith('parents_action_more_'):
                             temp_parents = []
 
                             for row in parents_parent_channel_id_inputs:
@@ -3164,16 +3167,23 @@ def webpage_playlists(sub_page):
                                     'parent_preferred_playlist': parents_parent_preferred_playlist_input
                                 })
 
-                            for parent in parents:
-                                for temp_parent in temp_parents:
-                                    if parent['parent_channel_id'] == temp_parent['parent_channel_id']:
-                                        parent['parent_active'] = temp_parent['parent_active']
-                                        parent['parent_title'] = temp_parent['parent_title']
-                                        parent['parent_tvg_id_override'] = temp_parent['parent_tvg_id_override']
-                                        parent['parent_tvg_logo_override'] = temp_parent['parent_tvg_logo_override']
-                                        parent['parent_channel_number_override'] = temp_parent['parent_channel_number_override']
-                                        parent['parent_tvc_guide_stationid_override'] = temp_parent['parent_tvc_guide_stationid_override']
-                                        parent['parent_preferred_playlist'] = temp_parent['parent_preferred_playlist']
+                            if playlists_action.startswith('parents_action_more_'):
+                                parents_action_more_index = int(playlists_action.split('_')[-1]) - 1
+                                parent_channel_id_prior = temp_parents[parents_action_more_index]['parent_channel_id']
+                                return redirect('/playlists/plm_parent_stations_more')
+
+                            elif playlists_action == "parents_action_save":
+
+                                for parent in parents:
+                                    for temp_parent in temp_parents:
+                                        if parent['parent_channel_id'] == temp_parent['parent_channel_id']:
+                                            parent['parent_active'] = temp_parent['parent_active']
+                                            parent['parent_title'] = temp_parent['parent_title']
+                                            parent['parent_tvg_id_override'] = temp_parent['parent_tvg_id_override']
+                                            parent['parent_tvg_logo_override'] = temp_parent['parent_tvg_logo_override']
+                                            parent['parent_channel_number_override'] = temp_parent['parent_channel_number_override']
+                                            parent['parent_tvc_guide_stationid_override'] = temp_parent['parent_tvc_guide_stationid_override']
+                                            parent['parent_preferred_playlist'] = temp_parent['parent_preferred_playlist']
 
                         if playlists_action.startswith('parents_action_delete_') or parents_delete_on_save_flag:
                             
@@ -3221,7 +3231,7 @@ def webpage_playlists(sub_page):
                         
                         parents_parent_channel_id_input = f"plm_{max((int(parent['parent_channel_id'].split('_')[1]) for parent in parents), default=0) + 1:04d}"
 
-                        # Placeholder values for potential future functionality expansion
+                        # Placeholder values for extended functionality
                         parents_parent_tvc_guide_art_override_input = None
                         parents_parent_tvc_guide_tags_override_input = None
                         parents_parent_tvc_guide_genres_override_input = None
@@ -3229,6 +3239,8 @@ def webpage_playlists(sub_page):
                         parents_parent_tvc_guide_placeholders_override_input = None
                         parents_parent_tvc_stream_vcodec_override_input = None
                         parents_parent_tvc_stream_acodec_override_input = None
+                        parents_parent_tvg_description_override_input = None
+                        parents_parent_group_title_override_input = None
 
                         if playlists_action == "parents_action_new":
                             parents_parent_active_input = "On" if request.form.get('parents_parent_active_new') == 'on' else "Off"
@@ -3313,7 +3325,9 @@ def webpage_playlists(sub_page):
                             "parent_tvc_stream_vcodec_override": parents_parent_tvc_stream_vcodec_override_input,
                             "parent_tvc_stream_acodec_override": parents_parent_tvc_stream_acodec_override_input,
                             "parent_preferred_playlist": parents_parent_preferred_playlist_input,
-                            "parent_active": parents_parent_active_input
+                            "parent_active": parents_parent_active_input,
+                            "parent_tvg_description_override": parents_parent_tvg_description_override_input,
+                            "parent_group_title_override": parents_parent_group_title_override_input
                         })
 
                     if len(parents) > 1:
@@ -3412,7 +3426,9 @@ def webpage_playlists(sub_page):
                                 "parent_tvc_stream_vcodec_override": None,
                                 "parent_tvc_stream_acodec_override": None,
                                 "parent_preferred_playlist": None,
-                                "parent_active": "On"
+                                "parent_active": "On",
+                                "parent_tvg_description_override": None,
+                                "parent_group_title_override": None
                             })
 
                             child_to_parents_parent_channel_id_input = save_all_parent_channel_id
@@ -4080,7 +4096,10 @@ def get_final_m3us_epgs():
                         tvg_logo = field_value
 
                 elif field == "tvg_description":
-                    tvg_description = field_value
+                    if parent['parent_tvg_description_override'] is not None and parent['parent_tvg_description_override'] != '':
+                        tvg_description = parent['parent_tvg_description_override']
+                    else:
+                        tvg_description = field_value
                 
                 elif field == "tvc_guide_description":
                     tvc_guide_description = field_value
@@ -4094,7 +4113,10 @@ def get_final_m3us_epgs():
                         tvc_guide_description = tvg_description
 
                 elif field == "group_title":
-                    group_title = field_value
+                    if parent['parent_group_title_override'] is not None and parent['parent_group_title_override'] != '':
+                        group_title = parent['parent_group_title_override']
+                    else:
+                        group_title = field_value
 
                 elif field == "tvc_guide_stationid":
                     if parent['parent_tvc_guide_stationid_override'] is not None and parent['parent_tvc_guide_stationid_override'] != '':
@@ -4476,6 +4498,199 @@ def get_epgs_for_m3us():
         file_delete(program_files_dir, all_prior_file['filename'], all_prior_file['extension'])
 
     rename_files_suffix(program_files_dir, ".xml.tmp", ".xml")
+
+# More parent station settings
+@app.route('/playlists/plm_parent_stations_more', methods=['GET', 'POST'])
+def webpage_playlists_parent_stations_more():
+    global parent_channel_id_prior
+
+    preferred_playlists = []
+    preferred_playlists_default = [
+        {'m3u_id': 'None', 'prefer_name': 'None'}    ]
+    preferred_playlists = get_preferred_playlists(preferred_playlists_default)
+
+    parents = read_data(csv_playlistmanager_parents)
+    parent_title = ''
+    parent_tvg_id_override = ''
+    parent_tvg_logo_override = ''
+    parent_channel_number_override = ''
+    parent_tvc_guide_stationid_override = ''
+    parent_tvc_guide_art_override = ''
+    parent_tvc_guide_tags_override = ''
+    parent_tvc_guide_genres_override = ''
+    parent_tvc_guide_categories_override = ''
+    parent_tvc_guide_placeholders_override = ''
+    parent_tvc_stream_vcodec_override = ''
+    parent_tvc_stream_acodec_override = ''
+    parent_preferred_playlist = ''
+    parent_active = ''
+    parent_tvg_description_override = ''
+    parent_group_title_override = ''
+
+    if parent_channel_id_prior:
+        for parent in parents:
+            if parent['parent_channel_id'] == parent_channel_id_prior:
+                parent_title = parent['parent_title']
+                parent_tvg_id_override = parent['parent_tvg_id_override']
+                parent_tvg_logo_override = parent['parent_tvg_logo_override']
+                parent_channel_number_override = parent['parent_channel_number_override']
+                parent_tvc_guide_stationid_override = parent['parent_tvc_guide_stationid_override']
+                parent_tvc_guide_art_override = parent['parent_tvc_guide_art_override']
+                parent_tvc_guide_tags_override = parent['parent_tvc_guide_tags_override']
+                parent_tvc_guide_genres_override = parent['parent_tvc_guide_genres_override']
+                parent_tvc_guide_categories_override = parent['parent_tvc_guide_categories_override']
+                parent_tvc_guide_placeholders_override = parent['parent_tvc_guide_placeholders_override']
+                parent_tvc_stream_vcodec_override = parent['parent_tvc_stream_vcodec_override']
+                parent_tvc_stream_acodec_override = parent['parent_tvc_stream_acodec_override']
+                parent_preferred_playlist = parent['parent_preferred_playlist']
+                parent_active = parent['parent_active']
+                parent_tvg_description_override = parent['parent_tvg_description_override']
+                parent_group_title_override = parent['parent_group_title_override']
+                break
+
+    if request.method == 'POST':
+        action = request.form['action']
+
+        if action.endswith('_cancel'):
+            parent_channel_id_prior = None
+            parent_title = ''
+            parent_tvg_id_override = ''
+            parent_tvg_logo_override = ''
+            parent_channel_number_override = ''
+            parent_tvc_guide_stationid_override = ''
+            parent_tvc_guide_art_override = ''
+            parent_tvc_guide_tags_override = ''
+            parent_tvc_guide_genres_override = ''
+            parent_tvc_guide_categories_override = ''
+            parent_tvc_guide_placeholders_override = ''
+            parent_tvc_stream_vcodec_override = ''
+            parent_tvc_stream_acodec_override = ''
+            parent_preferred_playlist = ''
+            parent_active = ''
+            parent_tvg_description_override = ''
+            parent_group_title_override = ''
+
+        elif action.endswith('_save') or action.endswith('_edit'):
+            parent_channel_id_input = request.form.get('more_parent_channel_id')
+            parent_channel_id_prior = parent_channel_id_input
+
+            if action.endswith('_edit'):
+
+                for parent in parents:
+                    if parent['parent_channel_id'] == parent_channel_id_prior:
+                        parent_title = parent['parent_title']
+                        parent_tvg_id_override = parent['parent_tvg_id_override']
+                        parent_tvg_logo_override = parent['parent_tvg_logo_override']
+                        parent_channel_number_override = parent['parent_channel_number_override']
+                        parent_tvc_guide_stationid_override = parent['parent_tvc_guide_stationid_override']
+                        parent_tvc_guide_art_override = parent['parent_tvc_guide_art_override']
+                        parent_tvc_guide_tags_override = parent['parent_tvc_guide_tags_override']
+                        parent_tvc_guide_genres_override = parent['parent_tvc_guide_genres_override']
+                        parent_tvc_guide_categories_override = parent['parent_tvc_guide_categories_override']
+                        parent_tvc_guide_placeholders_override = parent['parent_tvc_guide_placeholders_override']
+                        parent_tvc_stream_vcodec_override = parent['parent_tvc_stream_vcodec_override']
+                        parent_tvc_stream_acodec_override = parent['parent_tvc_stream_acodec_override']
+                        parent_preferred_playlist = parent['parent_preferred_playlist']
+                        parent_active = parent['parent_active']
+                        parent_tvg_description_override = parent['parent_tvg_description_override']
+                        parent_group_title_override = parent['parent_group_title_override']
+                        break
+
+            elif action.endswith('_save'):
+
+                parent_title_input = request.form.get('more_parent_title')
+                parent_tvg_id_override_input = request.form.get('more_parent_tvg_id_override')
+                parent_tvg_logo_override_input = request.form.get('more_parent_tvg_logo_override')
+                parent_channel_number_override_input = request.form.get('more_parent_channel_number_override')
+                parent_tvc_guide_stationid_override_input = request.form.get('more_parent_tvc_guide_stationid_override')
+                parent_tvc_guide_art_override_input = request.form.get('more_parent_tvc_guide_art_override')
+                parent_tvc_guide_tags_override_input = request.form.get('more_parent_tvc_guide_tags_override')
+                parent_tvc_guide_genres_override_input = request.form.get('more_parent_tvc_guide_genres_override')
+                parent_tvc_guide_categories_override_input = request.form.get('more_parent_tvc_guide_categories_override')
+                parent_tvc_guide_placeholders_override_input = request.form.get('more_parent_tvc_guide_placeholders_override')
+                parent_tvc_stream_vcodec_override_input = request.form.get('more_parent_tvc_stream_vcodec_override')
+                parent_tvc_stream_acodec_override_input = request.form.get('more_parent_tvc_stream_acodec_override')
+                parent_preferred_playlist_input = request.form.get('more_parent_preferred_playlist')
+                if parent_preferred_playlist_input == "None":
+                    parent_preferred_playlist_input = None
+                parent_active_input = "On" if request.form.get('more_parent_active') == 'on' else "Off"
+                parent_tvg_description_override_input = request.form.get('more_parent_tvg_description_override')
+                parent_group_title_override_input = request.form.get('more_parent_group_title_override')
+
+                for parent in parents:
+                    if parent['parent_channel_id'] == parent_channel_id_prior:
+                        parent['parent_title'] = parent_title_input
+                        parent['parent_tvg_id_override'] = parent_tvg_id_override_input
+                        parent['parent_tvg_logo_override'] = parent_tvg_logo_override_input
+                        parent['parent_channel_number_override'] = parent_channel_number_override_input
+                        parent['parent_tvc_guide_stationid_override'] = parent_tvc_guide_stationid_override_input
+                        parent['parent_tvc_guide_art_override'] = parent_tvc_guide_art_override_input
+                        parent['parent_tvc_guide_tags_override'] = parent_tvc_guide_tags_override_input
+                        parent['parent_tvc_guide_genres_override'] = parent_tvc_guide_genres_override_input
+                        parent['parent_tvc_guide_categories_override'] = parent_tvc_guide_categories_override_input
+                        parent['parent_tvc_guide_placeholders_override'] = parent_tvc_guide_placeholders_override_input
+                        parent['parent_tvc_stream_vcodec_override'] = parent_tvc_stream_vcodec_override_input
+                        parent['parent_tvc_stream_acodec_override'] = parent_tvc_stream_acodec_override_input
+                        parent['parent_preferred_playlist'] = parent_preferred_playlist_input
+                        parent['parent_active'] = parent_active_input
+                        parent['parent_tvg_description_override'] = parent_tvg_description_override_input
+                        parent['parent_group_title_override'] = parent_group_title_override_input
+                        break
+
+                parents = sorted(parents, key=lambda x: sort_key(x["parent_title"].casefold()))
+                write_data(csv_playlistmanager_parents, parents)
+                parents = read_data(csv_playlistmanager_parents)
+
+                for parent in parents:
+                    if parent['parent_channel_id'] == parent_channel_id_prior:
+                        parent_title = parent['parent_title']
+                        parent_tvg_id_override = parent['parent_tvg_id_override']
+                        parent_tvg_logo_override = parent['parent_tvg_logo_override']
+                        parent_channel_number_override = parent['parent_channel_number_override']
+                        parent_tvc_guide_stationid_override = parent['parent_tvc_guide_stationid_override']
+                        parent_tvc_guide_art_override = parent['parent_tvc_guide_art_override']
+                        parent_tvc_guide_tags_override = parent['parent_tvc_guide_tags_override']
+                        parent_tvc_guide_genres_override = parent['parent_tvc_guide_genres_override']
+                        parent_tvc_guide_categories_override = parent['parent_tvc_guide_categories_override']
+                        parent_tvc_guide_placeholders_override = parent['parent_tvc_guide_placeholders_override']
+                        parent_tvc_stream_vcodec_override = parent['parent_tvc_stream_vcodec_override']
+                        parent_tvc_stream_acodec_override = parent['parent_tvc_stream_acodec_override']
+                        parent_preferred_playlist = parent['parent_preferred_playlist']
+                        parent_active = parent['parent_active']
+                        parent_tvg_description_override = parent['parent_tvg_description_override']
+                        parent_group_title_override = parent['parent_group_title_override']
+                        break                
+
+    return render_template(
+        'main/playlists_parent_stations_more.html',
+        segment = 'plm_parent_stations_more',
+        html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
+        html_parents = parents,
+        html_parent_channel_id_prior = parent_channel_id_prior,
+        html_parent_title = parent_title,
+        html_parent_tvg_id_override = parent_tvg_id_override,
+        html_parent_tvg_logo_override = parent_tvg_logo_override,
+        html_parent_channel_number_override = parent_channel_number_override,
+        html_parent_tvc_guide_stationid_override = parent_tvc_guide_stationid_override,
+        html_parent_tvc_guide_art_override = parent_tvc_guide_art_override,
+        html_parent_tvc_guide_tags_override = parent_tvc_guide_tags_override,
+        html_parent_tvc_guide_genres_override = parent_tvc_guide_genres_override,
+        html_parent_tvc_guide_categories_override = parent_tvc_guide_categories_override,
+        html_parent_tvc_guide_placeholders_override = parent_tvc_guide_placeholders_override,
+        html_parent_tvc_stream_vcodec_override = parent_tvc_stream_vcodec_override,
+        html_parent_tvc_stream_acodec_override = parent_tvc_stream_acodec_override,
+        html_parent_preferred_playlist = parent_preferred_playlist,
+        html_parent_active = parent_active,
+        html_parent_tvg_description_override = parent_tvg_description_override,
+        html_parent_group_title_override = parent_group_title_override,
+        html_preferred_playlists = preferred_playlists
+    )
 
 # Add streaming stations from particular sources
 @app.route('/playlists/streams', methods=['GET', 'POST'])
@@ -10355,11 +10570,6 @@ def check_and_create_csv(csv_file):
             
             write_data(csv_settings, settings)
 
-    # Append/Remove rows to data that may update
-    if csv_file == csv_streaming_services:
-        id_field = "streaming_service_name"
-        update_rows(csv_file, data, id_field, None)
-
     # Add columns for new functionality
     if csv_file == csv_bookmarks_status:
         check_and_add_column(csv_file, 'special_action', 'None')
@@ -10370,6 +10580,8 @@ def check_and_create_csv(csv_file):
 
     if csv_file == csv_playlistmanager_parents:
         check_and_add_column(csv_file, 'parent_active', 'On')
+        check_and_add_column(csv_file, 'parent_tvg_description_override', '')
+        check_and_add_column(csv_file, 'parent_group_title_override', '')
 
     if csv_file == csv_playlistmanager_child_to_parent:
         check_and_add_column(csv_file, 'stream_format_override', 'None')
@@ -10377,6 +10589,24 @@ def check_and_create_csv(csv_file):
     if csv_file == csv_streaming_services:
         check_and_add_column(csv_file, 'streaming_service_active', 'On')
         check_and_add_column(csv_file, 'streaming_service_group', 'None')
+
+        # Fix in case records are missing a value
+        streaming_services_update_flag = False
+        streaming_services = read_data(csv_file)
+        for streaming_service in streaming_services:
+            if streaming_service['streaming_service_active'] == '':
+                streaming_service['streaming_service_active'] = 'On'
+                streaming_services_update_flag = True
+            if streaming_service['streaming_service_group'] == '':
+                streaming_service['streaming_service_group'] = 'None'
+                streaming_services_update_flag = True
+        if streaming_services_update_flag:
+            write_data(csv_file, streaming_services)
+
+    # Append/Remove rows to data that may update
+    if csv_file == csv_streaming_services:
+        id_field = "streaming_service_name"
+        update_rows(csv_file, data, id_field, None)
 
     # Add rows for new functionality
     if csv_file == csv_settings:
@@ -10503,7 +10733,7 @@ def initial_data(csv_file):
         ]
     elif csv_file == csv_playlistmanager_parents:
         data = [
-            {"parent_channel_id": None, "parent_title": None, "parent_tvg_id_override": None, "parent_tvg_logo_override": None, "parent_channel_number_override": None, "parent_tvc_guide_stationid_override": None, "parent_tvc_guide_art_override": None, "parent_tvc_guide_tags_override": None, "parent_tvc_guide_genres_override": None, "parent_tvc_guide_categories_override": None, "parent_tvc_guide_placeholders_override": None, "parent_tvc_stream_vcodec_override": None, "parent_tvc_stream_acodec_override": None, "parent_preferred_playlist": None, "parent_active": None}
+            {"parent_channel_id": None, "parent_title": None, "parent_tvg_id_override": None, "parent_tvg_logo_override": None, "parent_channel_number_override": None, "parent_tvc_guide_stationid_override": None, "parent_tvc_guide_art_override": None, "parent_tvc_guide_tags_override": None, "parent_tvc_guide_genres_override": None, "parent_tvc_guide_categories_override": None, "parent_tvc_guide_placeholders_override": None, "parent_tvc_stream_vcodec_override": None, "parent_tvc_stream_acodec_override": None, "parent_preferred_playlist": None, "parent_active": None, "parent_tvg_description_override": None, "parent_group_title_override": None}
         ]
     elif csv_file == csv_playlistmanager_child_to_parent:
         data = [
@@ -11180,6 +11410,7 @@ provider_statuses_default = [
 ]
 provider_status_input_prior = None
 provider_groups_default = [{"provider_group_id": "None","provider_group_name": "None"}]
+parent_channel_id_prior = None
 
 ### Start-up process and safety checks
 # Program directories
