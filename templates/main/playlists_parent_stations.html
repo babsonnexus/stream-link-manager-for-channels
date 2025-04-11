@@ -7,7 +7,7 @@
 <style> 
   .parents .grid-container {
       display: grid;
-      grid-template-columns: 0.5fr 2.5fr 1fr 2fr 1fr 1fr 2fr 1fr;
+      grid-template-columns: 0.5fr 2fr 1fr 2fr 1fr 1fr 1.5fr 1fr 1fr;
       gap: 10px;
   }
 
@@ -62,6 +62,7 @@
             <div class="grid-item"><h6>[OPTIONAL]<br>Channel Number (channel-number | tvg-chno)<br>Override</h6></div>
             <div class="grid-item"><h6>[OPTIONAL]<br>Gracenote ID (tvc-guide-stationid)<br>Override</h6></div>
             <div class="grid-item"><h6>Preferred Playlist</h6></div>
+            <div class="grid-item"><h6>More Fields</h6></div>
             <div class="grid-item"><h6>Action</h6></div>
           </div>
           <div class="grid-container" style="margin-right: 17px;">
@@ -93,6 +94,9 @@
               </select>
             </div>
             <div class="grid-item">
+              <hr style="border: 3px solid; width: 100%;">
+            </div>
+            <div class="grid-item">
               <button type="submit" name="action" value="parents_action_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
             </div>
           </div>
@@ -117,6 +121,9 @@
             </div>
             <div class="grid-item">
               <input type="text" id="filter-parent-preferred-playlist" placeholder="Filter" name="filter-parent-preferred-playlist" value="{{ html_filter_parent_preferred_playlist }}">
+            </div>
+            <div class="grid-item">
+              <hr style="border: 3px solid; width: 100%;">
             </div>
             <div class="grid-item">
               <hr style="border: 3px solid; width: 100%;">
@@ -351,7 +358,17 @@
                   select.appendChild(option);
               });
               selectItem.appendChild(select);
-  
+
+              const moreParentButtonItem = document.createElement('div');
+              moreParentButtonItem.className = 'grid-item';
+              const moreParentButton = document.createElement('button');
+              moreParentButton.type = 'submit';
+              moreParentButton.name = 'action';
+              moreParentButton.value = `parents_action_more_${adjustedIndex}`;
+              moreParentButton.className = 'btn bg-gradient-primary my-2 mb-2';
+              moreParentButton.textContent = 'Edit';
+              moreParentButtonItem.appendChild(moreParentButton);
+
               const deleteParentButtonItem = document.createElement('div');
               deleteParentButtonItem.className = 'grid-item';
               const deleteParentButton = document.createElement('button');
@@ -370,6 +387,7 @@
               gridContainer.appendChild(channelnumberOverrideItem);
               gridContainer.appendChild(tvcguidestationidOverrideItem);
               gridContainer.appendChild(selectItem);
+              gridContainer.appendChild(moreParentButtonItem);
               gridContainer.appendChild(deleteParentButtonItem);
   
               recordContainer.appendChild(gridContainer);

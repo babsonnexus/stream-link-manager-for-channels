@@ -1,0 +1,322 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Linear - Parent Stations - More Settings {% endblock %} 
+
+{% block stylesheets %}
+<style>
+  .file-input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 2px solid #4c2588;
+    border-radius: 0.25em;
+    padding: 0.5em;
+    background: linear-gradient(195deg, #6a4ca8 0%, #6a4eaa 100%);
+  }
+
+  .file-input-wrapper input[type="file"] {
+    display: none;
+  }
+
+  .file-input-wrapper label {
+    background: linear-gradient(195deg, #4c2588 0%, #4c278a 100%);
+    color: white;
+    border: none;
+    padding: 0.5em 1em;
+    border-radius: 0.25em;
+    cursor: pointer;
+    margin-right: 1em;
+    margin-left: 10px;
+    box-shadow: 0 3px 3px 0 rgba(76, 37, 136, 0.15), 0 3px 1px -2px rgba(76, 37, 136, 0.2), 0 1px 5px 0 rgba(76, 37, 136, 0.15);
+  }
+
+  .file-input-wrapper label:hover {
+    background-color: #4c2588;
+    border-color: #4c2588;
+    box-shadow: 0 14px 26px -12px rgba(76, 37, 136, 0.4), 0 4px 23px 0 rgba(76, 37, 136, 0.15), 0 8px 10px -5px rgba(76, 37, 136, 0.2);
+  }
+
+  .file-input-wrapper label:focus {
+    color: #fff;
+  }
+
+  .file-input-wrapper .file-name {
+    flex-grow: 1;
+    padding: 0.5em;
+    background: #dcc4ff;
+    border: 2px solid #4c2588;
+    border-radius: 0.25em;
+    color: #4c2588;
+    width: calc(100% - 1em - 2px);
+  }
+  
+  .dark-version .file-input-wrapper {
+    background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+    border-color: #2c1a4a;
+  }
+
+  .dark-version .file-input-wrapper label {
+    background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+    color: #ccc;
+    box-shadow: 0 3px 3px 0 rgba(44, 26, 74, 0.15), 0 3px 1px -2px rgba(44, 26, 74, 0.2), 0 1px 5px 0 rgba(44, 26, 74, 0.15);
+  }
+
+  .dark-version .file-input-wrapper label:hover {
+    background-color: #2c1a4a;
+    border-color: #2c1a4a;
+    box-shadow: 0 14px 26px -12px rgba(44, 26, 74, 0.4), 0 4px 23px 0 rgba(44, 26, 74, 0.15), 0 8px 10px -5px rgba(44, 26, 74, 0.2);
+  }
+
+  .dark-version .file-input-wrapper .file-name {
+    background: #3c2a6a;
+    border-color: #2c1a4a;
+    color: #ccc;
+  }
+  
+  .grid-container {
+      display: grid;
+      grid-template-columns: 4fr 7fr;
+      gap: 10px;
+  }
+
+  .grid-item {
+      display: flex;
+      min-width: 0;
+  }
+
+  .form-check {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 2em;
+  }
+
+  .form-check-input {
+      flex-shrink: 0;
+  }
+
+  input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+  }
+
+  .btn {
+      width: 100%;
+      box-sizing: border-box;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="row min-vh-80 h-100 justify-content-center">
+      <form method="POST" action="/playlists/plm_parent_stations_more" id="process-form" enctype="multipart/form-data">
+        <!-- Manage Parent Stations -->
+        <h4 style="margin: 0;">More Parent Stations Settings</h4>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
+        <div class="row justify-content-center">
+          <div style="width: 80%;">
+            <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+              <select class="select2" name="more_parent_channel_id" id="more_parent_channel_id" style="width: calc(55%);">
+                {% for html_parent in html_parents %}
+                  <option value="{{ html_parent.parent_channel_id }}" {% if html_parent_channel_id_prior == html_parent.parent_channel_id %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_parent.parent_title }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" name="action" value="more_parent_edit" class="btn bg-gradient-primary w-15 h-15 my-2 mb-2" style="margin-left: 10px;">Edit</button>
+              <button type="submit" name="action" value="more_parent_save" class="btn bg-gradient-primary w-15 h-15 my-2 mb-2" style="margin-left: 10px;" disabled>Save</button>
+              <button type="submit" name="action" value="more_parent_cancel" class="btn bg-gradient-primary w-15 h-15 my-2 mb-2" style="margin-left: 10px;">Cancel / Clear</button>
+            </div>
+          </div>
+          {% if html_parent_channel_id_prior %}
+            <div><em>* Required Field</em></div>
+            <!-- Spacer row -->
+            <div class="row">
+              <div class="col-12 my-2"></div>
+            </div>
+            <div class="container-fluid" style="width: 98%;">
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>* Active</b>
+                </div>
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" id="more_parent_active" name="more_parent_active" class="form-check-input" 
+                          {% if html_parent_active == "On" %}checked{% else %}unchecked{% endif %}>
+                  </div>
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>* Station Name</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_title" name="more_parent_title" value="{{ html_parent_title }}" title="{{ html_parent_title }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Description (tvg-description) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_tvg_description_override" name="more_parent_tvg_description_override" value="{{ html_parent_tvg_description_override }}" title="{{ html_parent_tvg_description_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Alternate XML EPG Guide ID (tvg-id) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_tvg_id_override" name="more_parent_tvg_id_override" value="{{ html_parent_tvg_id_override }}" title="{{ html_parent_tvg_id_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Guide Logo (tvg-logo) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_tvg_logo_override" name="more_parent_tvg_logo_override" value="{{ html_parent_tvg_logo_override }}" title="{{ html_parent_tvg_logo_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Guide Art (tvc-guide-art) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_tvc_guide_art_override" name="more_parent_tvc_guide_art_override" value="{{ html_parent_tvc_guide_art_override }}" title="{{ html_parent_tvc_guide_art_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Channel Number (channel-number | tvg-chno) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_channel_number_override" name="more_parent_channel_number_override" value="{{ html_parent_channel_number_override }}" title="{{ html_parent_channel_number_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Gracenote ID (tvc-guide-stationid) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_tvc_guide_stationid_override" name="more_parent_tvc_guide_stationid_override" value="{{ html_parent_tvc_guide_stationid_override }}" title="{{ html_parent_tvc_guide_stationid_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Guide Placeholders (tvc-guide-placeholders) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_tvc_guide_placeholders_override" name="more_parent_tvc_guide_placeholders_override" value="{{ html_parent_tvc_guide_placeholders_override }}" title="{{ html_parent_tvc_guide_placeholders_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Categories (group-title) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_group_title_override" name="more_parent_group_title_override" value="{{ html_parent_group_title_override }}" title="{{ html_parent_group_title_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Guide Categories (tvc-guide-categories) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_tvc_guide_categories_override" name="more_parent_tvc_guide_categories_override" value="{{ html_parent_tvc_guide_categories_override }}" title="{{ html_parent_tvc_guide_categories_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Guide Tags (tvc-guide-tags) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_tvc_guide_tags_override" name="more_parent_tvc_guide_tags_override" value="{{ html_parent_tvc_guide_tags_override }}" title="{{ html_parent_tvc_guide_tags_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Guide Genres (tvc-guide-genres) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_tvc_guide_genres_override" name="more_parent_tvc_guide_genres_override" value="{{ html_parent_tvc_guide_genres_override }}" title="{{ html_parent_tvc_guide_genres_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Stream Video Codec (tvc-stream-vcodec) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_tvc_stream_vcodec_override" name="more_parent_tvc_stream_vcodec_override" value="{{ html_parent_tvc_stream_vcodec_override }}" title="{{ html_parent_tvc_stream_vcodec_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Stream Audio Codec (tvc-stream-acodec) Override</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="more_parent_tvc_stream_acodec_override" name="more_parent_tvc_stream_acodec_override" value="{{ html_parent_tvc_stream_acodec_override }}" title="{{ html_parent_tvc_stream_acodec_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>* Preferred Playlist</b>
+                </div>
+                <div class="grid-item">
+                  <select class="select2" name="more_parent_preferred_playlist" id="more_parent_preferred_playlist" style="width: 100%; max-width: 100%;">
+                    {% for playlist in html_preferred_playlists %}
+                      <option value="{{ playlist.m3u_id }}" {% if playlist.m3u_id == html_parent_preferred_playlist %}selected{% endif %}>
+                        {{ playlist.prefer_name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              <hr>
+            </div>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <!-- {% include 'includes/footer.html' %} -->
+
+  </div>
+{% endblock content %}
+
+{% block javascripts %}
+<!-- Save Button Check -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const saveButton = document.querySelector('button[name="action"][value="more_parent_save"]');
+
+    const checkMoreInputs = () => {
+          const moreParentTitle = document.getElementById('more_parent_title').value.trim();
+          const moreParentPreferredPlaylist = document.getElementById('more_parent_preferred_playlist').value.trim();
+          saveButton.disabled = !moreParentTitle || !moreParentPreferredPlaylist;
+      };
+
+    document.getElementById('more_parent_title').addEventListener('input', checkMoreInputs);
+    document.getElementById('more_parent_preferred_playlist').addEventListener('input', checkMoreInputs);
+
+    checkMoreInputs();
+  });
+</script>
+{% endblock javascripts %}
