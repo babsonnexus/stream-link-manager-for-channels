@@ -1,4 +1,4 @@
-﻿channel_id,call_sign,clean_name,original_name,city_state,city,state,station_num,unique_station_num,gracenote_id,station_id,logo_color,logo_white,Status
+﻿channel_id,call_sign,clean_name,original_name,city_state,city,state,station_num,unique_station_num,gracenote_id,station_id,logo_color,logo_white,status
 PBS_KAKM,KAKM,PBS AK Anchorage (KAKM) [7.1],Alaska Public Media,"Anchorage, AK",Anchorage,AK,7.1,100071,48022,241f6bfb-7b98-4cbd-af3a-3bf219bdb80f,https://image.pbs.org/stations/kakm-color-single-brand-logo-CKvfnQs.png,https://image.pbs.org/stations/kakm-white-single-brand-logo-pglOdRQ.png,Good
 PBS_KUAC,KUAC,PBS AK Fairbanks (KUAC) [9.1],KUAC,"Fairbanks, AK",Fairbanks,AK,9.1,100091,44779,8d23bf48-ba7a-449b-97a4-324117f98238,https://image.pbs.org/stations/kuac-color-single-brand-logo-PWUHIg2.png,https://image.pbs.org/stations/kuac-white-single-brand-logo-uYiVvh8.png,Good
 PBS_WBIQ,WBIQ,PBS AL Birmingham (WBIQ) [10.1],APT PBS,"Birmingham, AL",Birmingham,AL,10.1,110101,35108,fa2db1d4-85a0-4a75-aa3d-1f5028578d52,https://image.pbs.org/stations/wbiq-color-single-brand-logo-N8IgxM1.png,https://image.pbs.org/stations/wbiq-white-single-brand-logo-nX5hgKr.png,Good
