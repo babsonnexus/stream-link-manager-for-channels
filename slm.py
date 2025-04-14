@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.04.11.1411"
+slm_version = "v2025.04.14.1925"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.11.1411"
+    slm_version = "v2025.04.14.1925"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -2777,6 +2777,7 @@ def webpage_playlists(sub_page):
     global filter_parent_tvc_guide_stationid_override
     global filter_parent_preferred_playlist
     global parent_channel_id_prior
+    global plm_streaming_stations
 
     templates = {
         'plm_main': 'main/playlists.html',
@@ -2792,6 +2793,8 @@ def webpage_playlists(sub_page):
     station_start_number = settings[11]['settings']
     max_stations = settings[12]['settings']
     plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
+    plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
+    plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
     settings_message = ''
 
     playlists_anchor_id = None
@@ -2810,7 +2813,8 @@ def webpage_playlists(sub_page):
         'final_playlists': 'final_playlists_anchor',
         'playlist_file_add_to': 'final_playlists_anchor',
         'uploaded_playlists': 'uploaded_playlists_anchor',
-        'generated_playlists': 'uploaded_playlists_anchor'
+        'generated_playlists': 'uploaded_playlists_anchor',
+        'internal_playlists': 'internal_playlists_anchor'
     }
 
     preferred_playlists = []
@@ -2856,30 +2860,55 @@ def webpage_playlists(sub_page):
         inposts = ['_delete_', '_update_','_make_parent_', '_set_parent_', '_add_to_', '_more_']
         if playlists_action.endswith('_settings'):
 
-            if playlists_action == 'playlist_manager_save_settings':
-                station_start_number_input = request.form.get('station_start_number')
-                max_stations_input = request.form.get('max_stations')
-                plm_url_tag_in_m3us_input = request.form.get('plm_url_tag_in_m3us')
+            if playlists_action in ['playlist_manager_save_settings', 'internal_playlists_save_settings']:
 
-                try:
-                    if int(station_start_number_input) > 0 and int(max_stations_input) > 0:
-                        
-                        settings[11]['settings'] = int(station_start_number_input)
-                        settings[12]['settings'] = int(max_stations_input)
-                        settings[42]['settings'] = "On" if plm_url_tag_in_m3us_input == 'on' else "Off"
-                        if settings[42]['settings'] == "On":
-                            settings[43]['settings'] = f"{request.url_root}"
+                if playlists_action == 'playlist_manager_save_settings':
+                    station_start_number_input = request.form.get('station_start_number')
+                    max_stations_input = request.form.get('max_stations')
+                    plm_url_tag_in_m3us_input = request.form.get('plm_url_tag_in_m3us')
 
+                    try:
+                        if int(station_start_number_input) > 0 and int(max_stations_input) > 0:
+                            
+                            settings[11]['settings'] = int(station_start_number_input)
+                            settings[12]['settings'] = int(max_stations_input)
+                            settings[42]['settings'] = "On" if plm_url_tag_in_m3us_input == 'on' else "Off"
+                            if settings[42]['settings'] == "On":
+                                settings[43]['settings'] = f"{request.url_root}"
+
+                        else:
+                            settings_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
+                    except ValueError:
+                        settings_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be numbers."
+
+                elif playlists_action == 'internal_playlists_save_settings':
+                    plm_streaming_stations_input = request.form.get('plm_streaming_stations')
+                    plm_internal_pbs_stations_input = request.form.get('plm_internal_pbs_stations')
+                    plm_internal_pbs_url_base_input = request.form.get('plm_internal_pbs_url_base')
+                    if plm_internal_pbs_url_base_input == '' or plm_internal_pbs_url_base_input is None:
+                        plm_internal_pbs_url_base_input = 'http://[address_required]:[port_required]'
+
+                    # Streaming Stations
+                    settings[39]["settings"] = "On" if plm_streaming_stations_input == 'on' else "Off"
+                    if plm_streaming_stations_input == 'on':
+                        plm_streaming_stations = True
+                        check_and_create_csv(csv_playlistmanager_streaming_stations)
                     else:
-                        settings_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
-                except ValueError:
-                    settings_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be numbers."
-        
+                        plm_streaming_stations = None
+
+                    # PBS Stations
+                    settings[48]['settings'] = "On" if plm_internal_pbs_stations_input == 'on' else "Off"
+                    settings[49]['settings'] = plm_internal_pbs_url_base_input
+
                 write_data(csv_settings, settings)
                 read_data(csv_settings)
                 station_start_number = settings[11]['settings']
                 max_stations = settings[12]['settings']
                 plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
+                plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
+                plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
+
+                uploaded_playlist_files = get_uploaded_playlist_files()
 
         elif any(playlists_action.endswith(post) for post in posts) or any(inpost in playlists_action for inpost in inposts):
 
@@ -3500,28 +3529,49 @@ def webpage_playlists(sub_page):
                 elif playlists_action.startswith('generated_playlists_action_add_to_'):
                     make_playlist_url = f"{request.url_root}playlists/uploads/{uploaded_playlist_files[playlists_action_add_to_index]['file_link']}"
 
-                make_playlist_number = make_playlist_url.split('_')[-1].split('.')[0]
+                if make_playlist_url:
 
-                if make_playlist_number:
+                    make_playlist_number = None
+                    if 'plm' in make_playlist_url:
+                        make_playlist_number = make_playlist_url.split('_')[-1].split('.')[0]
 
-                    if 'hls' in make_playlist_url:
+                    if make_playlist_number:
+                        if 'hls' in make_playlist_url:
+                            make_playlist_type = 'HLS'
+                        elif 'mpeg_ts' in make_playlist_url:
+                            make_playlist_type = 'MPEG-TS'
+                        elif 'strmlnk' in make_playlist_url:
+                            make_playlist_type = 'STRMLNK'
+
+                        if 'gracenote_' in make_playlist_url:
+                            make_playlist_name_base = f"Gracenote"
+                        elif 'epg_' in make_playlist_url:
+                            make_playlist_name_base = f"Non-Gracenote"
+                        elif 'plmss_' in make_playlist_url:
+                            make_playlist_name_base = f"Streaming Stations"
+                        elif 'int_' in make_playlist_url:
+                            if 'pbs' in make_playlist_url:
+                                make_playlist_name_base = f"PBS Stations"
+
+                        make_playlist_name = f"PLM - {make_playlist_name_base} ({make_playlist_type}) [{make_playlist_number}]"
+
+                        if 'epg_' in make_playlist_url:
+                            make_playlist_xmltv_url = make_playlist_url.replace('.m3u', '.xml')
+
+                    else:
+                        file_check = uploaded_playlist_files[playlists_action_add_to_index]['file_link']
                         make_playlist_type = 'HLS'
-                    elif 'mpeg_ts' in make_playlist_url:
-                        make_playlist_type = 'MPEG-TS'
-                    elif 'strmlnk' in make_playlist_url:
-                        make_playlist_type = 'STRMLNK'
-
-                    if 'gracenote_' in make_playlist_url:
-                        make_playlist_name_base = f"Gracenote"
-                    elif 'epg_' in make_playlist_url:
-                        make_playlist_name_base = f"Non-Gracenote"
-                    elif 'plmss_' in make_playlist_url:
-                        make_playlist_name_base = f"Streaming Stations"
-
-                    make_playlist_name = f"PLM - {make_playlist_name_base} ({make_playlist_type}) [{make_playlist_number}]"
-
-                    if 'epg_' in make_playlist_url:
-                        make_playlist_xmltv_url = make_playlist_url.replace('.m3u', '.xml')
+                        make_playlist_name_base = f"Uploaded Playlist"
+                        make_playlist_name = f"PLM - {make_playlist_name_base} ({make_playlist_type}) [{file_check}]"
+                        
+                        if file_check.endswith('.m3u'):
+                            guide_check = file_check.replace('.m3u', '.xml')
+                        elif file_check.endswith('.m3u8'):
+                            guide_check = file_check.replace('.m3u8', '.xml')
+                        
+                        guide_check_path = full_path(os.path.join(playlists_uploads_dir_name, guide_check))
+                        if os.path.exists(guide_check_path):
+                            make_playlist_xmltv_url = f"{request.url_root}playlists/uploads/{guide_check}"
 
                     json_data = {
                         "name": make_playlist_name,
@@ -3555,7 +3605,7 @@ def webpage_playlists(sub_page):
                             playlists_m3u_id_input = f"m3u_{max((int(playlist['m3u_id'].split('_')[1]) for playlist in playlists), default=0) + 1:04d}"
                             playlists_m3u_name_input = make_playlist_name
                             playlists_m3u_url_input = make_playlist_url
-                            playlists_epg_xml_input = None
+                            playlists_epg_xml_input = make_playlist_xmltv_url
                             playlists_stream_format_input = make_playlist_type
                             playlists_m3u_active_input = "On"
                             playlists_m3u_priority_input = max((int(playlist['m3u_priority']) for playlist in playlists), default=0) + 1
@@ -3648,7 +3698,9 @@ def webpage_playlists(sub_page):
         html_station_start_number = station_start_number,
         html_max_stations = max_stations,
         html_plm_url_tag_in_m3us = plm_url_tag_in_m3us,
-        html_settings_message = settings_message
+        html_settings_message = settings_message,
+        html_plm_internal_pbs_stations = plm_internal_pbs_stations,
+        html_plm_internal_pbs_url_base = plm_internal_pbs_url_base
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -3664,11 +3716,136 @@ def webpage_playlists(sub_page):
 def download_m3u_epg(filename):
     return export_csv(filename)
 
-# Used to download an m3u or XML EPG
+# Used to retrieve an uploaded or generated file
 @app.route('/playlists/uploads/<filename>')
 def download_uploads(filename):
     filename = os.path.join(playlists_uploads_dir_name, filename)
     return export_csv(filename)
+
+# Used to dynamically create an internal file
+@app.route('/playlists/uploads/internal/<filename>')
+def download_internal(filename):
+    settings = read_data(csv_settings)
+    plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
+    plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
+    pbs_csv_url = 'https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/refs/heads/main/executables/pbs_stations.csv'
+
+    source_records = []
+    final_m3us = []
+
+    if filename == 'plmint_pbs_mpeg_ts_m3u_01.m3u' and plm_internal_pbs_stations == "On":
+        waste_results, source_records, waste_message = parse_csv_url(pbs_csv_url)
+
+    if source_records:
+
+        for source_record in source_records:
+            title = None
+            tvc_guide_title = None
+            channel_id = None
+            tvg_id = None
+            tvg_name = None
+            tvg_logo = None
+            tvg_chno = None
+            channel_number = None
+            tvg_description = None
+            tvc_guide_description = None
+            group_title = None
+            tvc_guide_stationid = None
+            tvc_guide_art = None
+            tvc_guide_tags = None
+            tvc_guide_genres = None
+            tvc_guide_categories = None
+            tvc_guide_placeholders = None
+            tvc_stream_vcodec = None
+            tvc_stream_acodec = None
+            url = None
+            stream_format = None
+            run_append = True
+
+            if filename == 'plmint_pbs_mpeg_ts_m3u_01.m3u':
+
+                if source_record['status'] == "Good":
+                    title = source_record['clean_name']
+                    tvc_guide_title = title
+                    channel_id = source_record['channel_id']
+                    tvg_id = ''
+                    tvg_name = title
+                    tvg_logo = source_record['logo_color']
+                    tvg_chno = source_record['unique_station_num']
+                    channel_number = tvg_chno
+                    tvg_description = ''
+                    tvc_guide_description = tvg_description
+                    group_title = ''
+                    tvc_guide_stationid = source_record['gracenote_id']
+                    tvc_guide_art = tvg_logo
+                    tvc_guide_tags =''
+                    tvc_guide_genres = ''
+                    tvc_guide_categories = ''
+                    tvc_guide_placeholders = ''
+                    tvc_stream_vcodec = ''
+                    tvc_stream_acodec = ''
+                    url = f"{plm_internal_pbs_url_base}/pbs/watch/{source_record['station_id']}"
+                    stream_format = "MPEG-TS"
+
+                else:
+                    run_append = False
+
+            if run_append:
+                final_m3us.append({
+                    "title": title,
+                    "tvc_guide_title": tvc_guide_title,
+                    "channel_id": channel_id,
+                    "tvg_id": tvg_id,
+                    "tvg_name": tvg_name,
+                    "tvg_logo": tvg_logo,
+                    "tvg_chno": tvg_chno,
+                    "channel_number": channel_number,
+                    "tvg_description": tvg_description,
+                    "tvc_guide_description": tvc_guide_description,
+                    "group_title": group_title,
+                    "tvc_guide_stationid": tvc_guide_stationid,
+                    "tvc_guide_art": tvc_guide_art,
+                    "tvc_guide_tags": tvc_guide_tags,
+                    "tvc_guide_genres": tvc_guide_genres,
+                    "tvc_guide_categories": tvc_guide_categories,
+                    "tvc_guide_placeholders": tvc_guide_placeholders,
+                    "tvc_stream_vcodec": tvc_stream_vcodec,
+                    "tvc_stream_acodec": tvc_stream_acodec,
+                    "url": url,
+                    "stream_format": stream_format
+                })
+
+    if final_m3us:
+        m3u_content = "#EXTM3U\n"
+    
+        for item in final_m3us:
+            m3u_content += f'\n#EXTINF:-1 tvc-guide-title="{item["tvc_guide_title"]}"'
+            m3u_content += f' channel-id="{item["channel_id"]}"'
+            m3u_content += f' tvg-id="{item["tvg_id"]}"'
+            m3u_content += f' tvg-name="{item["tvg_name"]}"'
+            m3u_content += f' tvg-logo="{item["tvg_logo"]}"'
+            m3u_content += f' tvg-chno="{item["tvg_chno"]}"'
+            m3u_content += f' channel-number="{item["channel_number"]}"'
+            m3u_content += f' tvg-description="{item["tvg_description"]}"'
+            m3u_content += f' tvc-guide-description="{item["tvc_guide_description"]}"'
+            m3u_content += f' group-title="{item["group_title"]}"'
+            m3u_content += f' tvc-guide-stationid="{item["tvc_guide_stationid"]}"'
+            m3u_content += f' tvc-guide-art="{item["tvc_guide_art"]}"'
+            m3u_content += f' tvc-guide-tags="{item["tvc_guide_tags"]}"'
+            m3u_content += f' tvc-guide-genres="{item["tvc_guide_genres"]}"'
+            m3u_content += f' tvc-guide-categories="{item["tvc_guide_categories"]}"'
+            m3u_content += f' tvc-guide-placeholders="{item["tvc_guide_placeholders"]}"'
+            m3u_content += f' tvc-stream-vcodec="{item["tvc_stream_vcodec"]}"'
+            m3u_content += f' tvc-stream-acodec="{item["tvc_stream_acodec"]}"'
+            m3u_content += f',{item["title"]}\n'
+            m3u_content += f'{item["url"]}\n'
+
+        m3u_content = m3u_content.replace('"None"', '""')
+
+        return m3u_content
+
+    else:
+        return f"\n{current_time()} ERROR: '{filename}' does not exist or is not turned on."
 
 # Goes through each of the playlists and combines all m3us together into a single list
 def get_combined_m3us():
@@ -4385,7 +4562,7 @@ def get_playlist_files():
     playlist_files = sorted(playlist_files, key=lambda x: (not "gracenote" in x['playlist_filename'], x['playlist_filename']))
     return playlist_files
 
-# Wrapper for getting uploaded m3u and XML EPG files
+# Wrapper for getting uploaded and generated m3u and XML EPG files
 def get_uploaded_playlist_files():
     extensions = ['m3u', 'xml', 'gz', 'm3u8']
     all_prior_files = get_all_prior_files(playlists_uploads_dir, extensions)
@@ -4403,14 +4580,21 @@ def get_uploaded_playlist_files():
 
         elif 'plmss' in playlist_filename:
 
-            if 'hls' in playlist_filename:
-                playlist_filetype = "Generated Streaming Stations Playlist (HLS)"
+            playlist_number = playlist_filename.split('_')[-1].split('.')[0]
 
-            elif 'mpeg_ts' in playlist_filename:
-                playlist_filetype = "Generated Streaming Stations Playlist (MPEG-TS)"
+            if playlist_number:
 
-            elif 'strmlnk' in playlist_filename:
-                playlist_filetype = "Generated Stream Link Stations Playlist (STRMLNK)"
+                if 'hls' in playlist_filename:
+                    playlist_type = 'HLS'
+                elif 'mpeg_ts' in playlist_filename:
+                    playlist_type = 'MPEG-TS'
+                elif 'strmlnk' in playlist_filename:
+                    playlist_type = 'STRMLNK'
+
+                if 'plmss_' in playlist_filename:
+                    playlist_name_base = f"Streaming Stations"
+
+                playlist_filetype = f"PLM - {playlist_name_base} ({playlist_type}) [{playlist_number}]"
 
         else:
             playlist_filetype = "Uploaded Playlist"
@@ -4420,7 +4604,16 @@ def get_uploaded_playlist_files():
             'file_link': playlist_filename
             })
     
-    playlist_files = sorted(playlist_files, key=lambda x: ['file_link'])
+    settings = read_data(csv_settings)
+    plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
+
+    if plm_internal_pbs_stations == "On":
+        playlist_files.append({
+            'file_type': "PLM - PBS Stations (MPEG-TS) [01]",
+            'file_link': "internal/plmint_pbs_mpeg_ts_m3u_01.m3u"
+        })
+
+    playlist_files = sorted(playlist_files, key=lambda x: sort_key(x['file_type'].casefold()))
     return playlist_files
 
 # Gets the XML EPG for each m3u that needs one
@@ -5897,7 +6090,7 @@ def parse_csv_url(url):
     results_base = fetch_url(url, 3, 5)
 
     if results_base:
-        results_text = results_base.content.decode('utf-8')
+        results_text = results_base.content.decode('utf-8-sig')
         
         if is_valid_csv(results_text):
             results_library = [row for row in csv.DictReader(io.StringIO(results_text))]
@@ -9573,7 +9766,6 @@ def webpage_settings():
     global slm_stream_link_file_manager
     global slm_channels_dvr_integration
     global slm_media_tools_manager
-    global plm_streaming_stations
     settings_anchor_id = None
     run_empty_row = None
 
@@ -9595,8 +9787,7 @@ def webpage_settings():
         'playlist_manager': 'advanced_experimental_anchor',
         'stream_link_file_manager': 'advanced_experimental_anchor',
         'channels_dvr_integration': 'advanced_experimental_anchor',
-        'media_tools_manager': 'advanced_experimental_anchor',
-        'plm_streaming_stations': 'advanced_experimental_anchor'
+        'media_tools_manager': 'advanced_experimental_anchor'
     }
 
     if not os.path.exists(channels_directory):
@@ -9616,7 +9807,6 @@ def webpage_settings():
         stream_link_file_manager_input = request.form.get('stream_link_file_manager')
         channels_dvr_integration_input = request.form.get('channels_dvr_integration')
         media_tools_manager_input = request.form.get('media_tools_manager')
-        plm_streaming_stations_input = request.form.get('plm_streaming_stations')
 
         for prefix, anchor_id in action_to_anchor.items():
             if settings_action.startswith(prefix):
@@ -9690,15 +9880,6 @@ def webpage_settings():
                             create_directory(playlists_uploads_dir)
                         else:
                             slm_playlist_manager = None
-
-                        # Linear: PLM Streaming Stations
-                        settings[39]["settings"] = "On" if plm_streaming_stations_input == 'on' else "Off"
-                        if plm_streaming_stations_input == 'on':
-                            plm_streaming_stations = True
-                            plm_csv_file = csv_playlistmanager_streaming_stations
-                            check_and_create_csv(plm_csv_file)
-                        else:
-                            plm_streaming_stations = None
 
                         # Tools: Media Tools Manager [MTM]
                         settings[28]["settings"] = "On" if media_tools_manager_input == 'on' else "Off"
@@ -10649,6 +10830,8 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "On"}, 47, "PLM: One-time fix for YouTube Live to Live Streams On/Off")
         check_and_append(csv_file, {"settings": f"http://{get_external_ip()}:{slm_port}"}, 48, "SLM: SLM Stream Address")
         check_and_append(csv_file, {"settings": "Active Providers"}, 49, "SLM: Search Default for Provider Status")
+        check_and_append(csv_file, {"settings": "Off"}, 50, "PLM: Internal PBS Stations On/Off")
+        check_and_append(csv_file, {"settings": "http://localhost:[PORT]"}, 51, "PLM: VLC Bridge PBS Base URL")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -10701,7 +10884,9 @@ def initial_data(csv_file):
                     {"settings": "Every 24 hours"},                                            # [44] PLM: Update Stations Process Schedule Frequency
                     {"settings": "Off"},                                                       # [45] PLM: One-time fix for YouTube Live to Live Streams On/Off
                     {"settings": f"http://{get_external_ip()}:{slm_port}"},                    # [46] SLM: SLM Stream Address
-                    {"settings": "Active Providers"}                                           # [47] SLM: Search Default for Provider Status
+                    {"settings": "Active Providers"},                                          # [47] SLM: Search Default for Provider Status
+                    {"settings": "Off"},                                                       # [48] PLM: Internal PBS Stations On/Off
+                    {"settings": "http://localhost:[PORT]"}                                    # [49] PLM: VLC Bridge PBS Base URL
         ]        
     # Stream Link/File Manager
     elif csv_file == csv_streaming_services:
