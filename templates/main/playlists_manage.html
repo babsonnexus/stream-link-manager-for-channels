@@ -24,20 +24,20 @@
       min-width: 0;
   }
 
-  .form-check {
+  .enter-playlists .form-check {
       display: flex;
       align-items: center;
       gap: 3.5em; /* Adjust the gap as needed */
   }
 
-  .form-check-label {
+  .enter-playlists .form-check-label {
       flex: 1;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
   }
 
-  .form-check-input {
+  .enter-playlists .form-check-input {
       flex-shrink: 0;
   }
 
@@ -217,8 +217,8 @@
             <input type="hidden" name="playlists_m3u_id_{{ loop.index }}" id="playlists_m3u_id_{{ loop.index }}" value="{{ item.m3u_id }}">
             <div class="grid-container">
               <div class="grid-item">
-                <div class="form-check form-switch ps-0 is-filled">
-                  <input type="checkbox" id="playlists_m3u_active_{{ loop.index }}" name="playlists_m3u_active_{{ loop.index }}" class="form-check-input" 
+                <div class="enter-playlists form-check form-switch ps-0 is-filled">
+                  <input type="checkbox" id="playlists_m3u_active_{{ loop.index }}" name="playlists_m3u_active_{{ loop.index }}" class="enter-playlists form-check-input" 
                     {% if item.m3u_active|lower == 'on' %}checked{% endif %}>
                 </div>
               </div>
@@ -249,8 +249,8 @@
           {% endfor %}
           <div class="grid-container">
             <div class="grid-item">
-              <div class="form-check form-switch ps-0 is-filled">
-                <input type="checkbox" id="playlists_m3u_active_new" name="playlists_m3u_active_new" class="form-check-input" checked>
+              <div class="enter-playlists form-check form-switch ps-0 is-filled">
+                <input type="checkbox" id="playlists_m3u_active_new" name="playlists_m3u_active_new" class="enter-playlists form-check-input" checked>
               </div>
             </div>
             <div class="grid-item">
@@ -282,6 +282,35 @@
           </div>
         </div>
         <hr>
+        <!-- Internal Playlists -->
+        <h4 id="internal_playlists_anchor">Internal Playlists</h4>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
+        <div class="form-check form-switch ps-0 is-filled">
+          <!-- Streaming Stations -->
+          <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+            <input type="checkbox" class="form-check-input ms-auto" id="plm_streaming_stations" name="plm_streaming_stations" {% if html_plm_streaming_stations %}checked{% endif %}>
+            <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_streaming_stations"><b>Streaming Stations</b></label>
+            <p><em>Create your own stations from places like YouTube, Twitch, news websites, and other similar sources. Learn more <b><a href='https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Streaming-Stations-%E2%80%90-Managed-Stations' target="_blank">here</a></b>.</em></p>
+          </div>
+          <!-- PBS Stations -->
+          <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+            <input type="checkbox" class="form-check-input ms-auto" id="plm_internal_pbs_stations" name="plm_internal_pbs_stations" {% if html_plm_internal_pbs_stations == "On" %}checked{% endif %}>
+            <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_internal_pbs_stations"><b>PBS Stations</b></label>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 0px; margin-bottom: 10px;">
+              <label class="form-check-label text-body mb-0" for="plm_internal_pbs_url_base"><b>VLC Bridge PBS Base URL:</b></label>
+              <input type="text" id="plm_internal_pbs_url_base" name="plm_internal_pbs_url_base" value="{{ html_plm_internal_pbs_url_base }}" style="flex: 1;" title="{{ html_plm_internal_pbs_url_base }}" placeholder="i.e., http://localhost:7777">
+            </div>
+            <p><em>Gain access to local PBS stations that are available in your market. This playlist is designed to make sure you can receive your legally available stations even when internet geolocation fails or is incorrect. A prior installation of the 'vlc-bridge-pbs' tool is required. Learn more <b><a href='https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-PBS-Stations' target="_blank">here</a></b>.</em></p>
+          </div>
+        </div>
+        <div style="display: flex; margin-top: 10px; width: 98%;">
+          <button type="submit" name="action" value="internal_playlists_save_settings" class="btn bg-gradient-primary w-20 my-2 mb-2" style="margin-right: 5px;">Save</button>
+          <button type="submit" name="action" value="internal_playlists_cancel" class="btn bg-gradient-primary w-20 my-2 mb-2" style="margin-left: 5px;">Cancel</button>
+        </div>
+        <hr>
         <!-- Uploaded Playlists -->
         <h4 id="uploaded_playlists_anchor">Uploaded and Generated Playlists, Guides, and Related Files</h4>
         {% if html_uploaded_playlist_files %}
@@ -309,7 +338,8 @@
                 {% endif %}
               </div>
               <div class="grid-item">
-                {% if 'plmss' in html_uploaded_playlist_file.file_link %}
+                {% set substrings = ['plmss', 'internal/'] %}
+                {% if html_uploaded_playlist_file.file_link is string and substrings | select('in', html_uploaded_playlist_file.file_link) | list | length > 0 %}
                   {% if html_slm_channels_dvr_integration %}
                     <button type="submit" name="action" value="generated_playlists_action_add_to_channels_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Add to Channels DVR</button>
                   {% else %}

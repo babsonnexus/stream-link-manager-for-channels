@@ -41,13 +41,6 @@
               <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="playlist_manager"><b>Linear: Playlist Manager Extension [PLM]</b></label>
               <p><em>There are many sources for linear content including places like OTA (over-the-air with an antenna), TVE (TV Everywhere, i.e., streaming websites for cable stations), FAST (Free Ad-Supported Streaming Television, i.e., Pluto, Plex, Tubi), and plenty more. The Playlist Manger Extension allows users to bring all these disparate sources together into one unified front in order to eliminate repetition and resolve all other issues associated with just being able to consume the content. For users who are not integrating linear content like this, they can turn this feature off.</em></p>
             </div>
-            {% if html_slm_playlist_manager %}
-              <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-                <input type="checkbox" class="form-check-input ms-auto" id="plm_streaming_stations" name="plm_streaming_stations" {% if html_plm_streaming_stations %}checked{% endif %}>
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_streaming_stations"><b>Linear: PLM Streaming Stations Add-on</b></label>
-                <p><em>As an add-on for linear stations through Playlist Manager, users can create their own stations from places like YouTube, Twitch, news websites, and other similar sources using Streaming Stations. If users are not planning on adding content like this, they can turn this off.</em></p>
-              </div>
-            {% endif %}
             <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
               <input type="checkbox" class="form-check-input ms-auto" id="media_tools_manager" name="media_tools_manager" {% if html_slm_media_tools_manager %}checked{% endif %}>
               <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="media_tools_manager"><b>Tools: Media Tools Manager Extension [MTM]</b></label>
