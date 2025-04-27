@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.27.1639"
+    slm_version = "v2025.04.27.1707"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -9585,7 +9585,7 @@ def prune_scan_channels():
                             bookmark_label_maps.append(slm_label_map['label_id'])
 
                     for slm_label in slm_labels:
-                        if slm_label['label_id'] in bookmark_label_maps:
+                        if slm_label['label_id'] in bookmark_label_maps and slm_label['label_active'] == "On":
                             bookmark_labels.append(slm_label['label_name'])
 
                     # Set the base routes
@@ -9670,11 +9670,17 @@ def get_slm_channels_info():
             if bookmark['entry_id'] == bookmark_status['entry_id']:
 
                 for dvr_file in dvr_files:
-                    path_check = clean_comparison_path(dvr_file['Path'])
-                    stream_link_file_path_check = clean_comparison_path(bookmark_status['stream_link_file']).split("slm/", 1)[1]
-                    stream_link_file_path_check = f"slm/{stream_link_file_path_check}"
+                    path_check = None
+                    stream_link_file_path_check = None
 
-                    if path_check == stream_link_file_path_check:
+                    if dvr_file['Path'] is not None and dvr_file['Path'] != "":
+                        path_check = clean_comparison_path(dvr_file['Path'])
+
+                    if bookmark_status['stream_link_file'] is not None and bookmark_status['stream_link_file'] != "":
+                        stream_link_file_path_check = clean_comparison_path(bookmark_status['stream_link_file']).split("slm/", 1)[1]
+                        stream_link_file_path_check = f"slm/{stream_link_file_path_check}"
+
+                    if path_check and stream_link_file_path_check and path_check == stream_link_file_path_check:
 
                         if bookmark['object_type'] == "MOVIE":
                             bookmark['channels_id'] = dvr_file['File ID']
