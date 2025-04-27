@@ -30,6 +30,11 @@
                 <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_prune"><b>'Prune' function in Channels DVR</b></label>
                 <p><em>When on, this program will initiate a delete in Channels DVR for any missing personal media, not just Stream Links/Files. You may decide that you do not want this to run automatically.</em></p>
               </div>
+              <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+                <input type="checkbox" class="form-check-input ms-auto" id="channels_labels" name="channels_labels" {% if html_channels_labels == "On" %}checked{% endif %}>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_labels"><b>Update 'Labels' in Channels DVR</b></label>
+                <p><em>When on, this program will update the labels for the generated Stream Links/Files (or an equivalent assemblage like a TV Show or Video Group) in Channels DVR. Keep this off if you are managing labels for Stream Links/Files in Channels DVR directly. If you want to migrate to using SLM to maintain labels, it is recommended to first import labels and label assignments from Channels DVR in the 'Manage Providers' area. Please note that this function does not impact labels for non-SLM created/managed content (i.e., recordings, personal files, self-imported Stream Links/Files, etc...).</em></p>
+              </div>
             {% endif %}
             <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
               <input type="checkbox" class="form-check-input ms-auto" id="stream_link_file_manager" name="stream_link_file_manager" {% if html_slm_stream_link_file_manager %}checked{% endif %}>

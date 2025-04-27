@@ -23,6 +23,13 @@
       gap: 10px;
   }
 
+  .slm-labels .grid-container {
+      display: grid;
+      grid-template-columns: 0.5fr 3.5fr 6fr 1fr;
+      gap: 10px;
+  }
+
+  .slm-labels .grid-item,
   .provider-group .grid-item,
   .ssss .grid-item,
   .stream-link-mappings .grid-item {
@@ -32,6 +39,7 @@
       min-width: 0;
   }
 
+  .slm-labels .form-check,
   .provider-group .form-check,
   .ssss .form-check,
   .stream-link-mappings .form-check {
@@ -40,6 +48,7 @@
       gap: 3.5em; /* Adjust the gap as needed */
   }
 
+  .slm-labels .form-check-label,
   .provider-group .form-check-label,
   .ssss .form-check-label,
   .stream-link-mappings .form-check-label {
@@ -49,12 +58,14 @@
       text-overflow: ellipsis;
   }
 
+  .slm-labels .form-check-input,
   .provider-group .form-check-input,
   .ssss .form-check-input,
   .stream-link-mappings .form-check-input {
       flex-shrink: 0;
   }
 
+  .slm-labels input[type="text"],
   .provider-group input[type="text"],
   .ssss input[type="text"],
   .stream-link-mappings input[type="text"] {
@@ -62,6 +73,7 @@
       box-sizing: border-box;
   }
 
+  .slm-labels .btn,
   .provider-group .btn,
   .ssss .btn,
   .stream-link-mappings .btn {
@@ -338,6 +350,60 @@
             </div>
             <hr>
           {% endif %}
+          <!-- Labels -->
+          <h4 id="slm_label_anchor">Labels</h4>
+          <div class="slm-labels container-fluid">
+            <div class="grid-container" style="text-align: center;">
+              <div class="grid-item"><h6>Active</h6></div>
+              <div class="grid-item"><h6>Name</h6></div>
+              <div class="grid-item"><h6>Description</h6></div>
+              <div class="grid-item"><h6>Action</h6></div>
+            </div>
+            {% for item in html_slm_labels %}
+              <input type="hidden" name="slm_label_id_{{ loop.index }}" id="slm_label_id_{{ loop.index }}" value="{{ item.label_id }}">
+              <div class="grid-container">
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" id="slm_label_active_{{ loop.index }}" name="slm_label_active_{{ loop.index }}" class="form-check-input" 
+                      {% if item.label_active|lower == 'on' %}checked{% endif %} 
+                      onchange="this.value = this.checked ? 'On' : 'Off'" 
+                      value="On">
+                  </div>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="slm_label_name_{{ loop.index }}" name="slm_label_name_{{ loop.index }}" value="{{ item.label_name }}" title="{{ item.label_name }}">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="slm_label_description_{{ loop.index }}" name="slm_label_description_{{ loop.index }}" value="{{ item.label_description }}" title="{{ item.label_description }}">
+                </div>
+                <div class="grid-item">
+                  <button type="submit" name="action" value="slm_label_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
+                </div>
+              </div>
+            {% endfor %}
+            <div class="grid-container">
+              <div class="grid-item">
+                <div class="form-check form-switch ps-0 is-filled">
+                  <input type="checkbox" id="slm_label_active_new" name="slm_label_active_new" class="form-check-input" checked>
+                </div>
+              </div>
+              <div class="grid-item">
+                <input type="text" id="slm_label_name_new" name="slm_label_name_new">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="slm_label_description_new" name="slm_label_description_new">
+              </div>
+              <div class="grid-item">
+                <button type="submit" name="action" value="slm_label_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
+              </div>
+            </div>
+            <button type="submit" name="action" value="slm_label_save" class="btn bg-gradient-primary w-25 my-2 mb-2" disabled>Save All</button>
+            {% if html_slm_channels_dvr_integration %}
+              <button type="submit" name="action" value="slm_label_import" class="btn bg-gradient-primary w-25 my-2 mb-2">Import from Channels</button>
+            {% endif %}
+            <button type="submit" name="action" value="slm_label_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
+          </div>
+          <hr>
           {% if html_slm_channels_dvr_integration %}
             <!-- SLM Stream Address -->
             <h4 id="slm_stream_address_anchor">SLM Stream Address</h4>
@@ -549,6 +615,40 @@
 
     checkNewInputsProviderGroup();
     checkExistingInputsProviderGroup(); // Ensure initial state is checked
+  });
+</script>
+<!-- Label Buttons -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const addButtonSLMLabel = document.querySelector('button[name="action"][value="slm_label_new"]');
+    const saveButtonSLMLabel = document.querySelector('button[name="action"][value="slm_label_save"]');
+
+    const checkNewInputsSLMLabel = () => {
+      const newNameSLMLabel = document.getElementById('slm_label_name_new').value.trim();
+      addButtonSLMLabel.disabled = !newNameSLMLabel;
+    };
+
+    const checkExistingInputsSLMLabel = () => {
+      let allValidSLMLabel = true;
+      let hasExistingRecordsSLMLabel = false;
+      document.querySelectorAll('input[id^="slm_label_name_"]').forEach(input => {
+        if (input.id.includes('_new')) return;
+        hasExistingRecordsSLMLabel = true;
+        if (!input.value.trim()) allValidSLMLabel = false;
+      });
+      saveButtonSLMLabel.disabled = !allValidSLMLabel || !hasExistingRecordsSLMLabel;
+    };
+
+    document.getElementById('slm_label_name_new').addEventListener('input', checkNewInputsSLMLabel);
+
+    document.querySelectorAll('input[id^="slm_label_name_"]').forEach(input => {
+      if (!input.id.includes('_new')) {
+        input.addEventListener('input', checkExistingInputsSLMLabel);
+      }
+    });
+
+    checkNewInputsSLMLabel();
+    checkExistingInputsSLMLabel(); // Ensure initial state is checked
   });
 </script>
 {% endblock javascripts %}
