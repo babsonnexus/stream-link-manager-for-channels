@@ -24,7 +24,7 @@ from jinja2 import TemplateNotFound
 import yt_dlp
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.14.1925"
+    slm_version = "v2025.04.27.1639"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -146,6 +146,7 @@ def webpage_add_programs():
     done_generate_flag = None
     num_results_test = None
     bookmark_actions = []
+    webpage_label_maps = []
 
     date_new_default = datetime.datetime.now().strftime('%Y-%m-%d')
     if date_new_default_prior is None or date_new_default_prior == '':
@@ -367,6 +368,7 @@ def webpage_add_programs():
                         done_generate_flag = True
                 
                     bookmark_actions = get_bookmark_actions(program_type_input)
+                    webpage_label_maps = get_webpage_label_maps()
 
                 else:
                     program_add_message = release_year_test
@@ -382,6 +384,7 @@ def webpage_add_programs():
             done_generate_flag = True
             special_actions = special_actions_default.copy()
             bookmark_actions = get_bookmark_actions("SHOW")
+            webpage_label_maps = get_webpage_label_maps()
 
             program_add_message = f"{current_time()} INFO: Created season(s)/episode(s)."
 
@@ -402,6 +405,7 @@ def webpage_add_programs():
             done_generate_flag = True
             special_actions = special_actions_default.copy()
             bookmark_actions = get_bookmark_actions("VIDEO")
+            webpage_label_maps = get_webpage_label_maps()
 
             program_add_message = f"{current_time()} INFO: Created video placeholder(s)."
 
@@ -550,6 +554,57 @@ def webpage_add_programs():
                 if new_bookmark_action == "Hide":
                     remove_row_csv(csv_bookmarks_status, entry_id_prior)
 
+            # Save Labels
+            slm_labels = read_data(csv_slm_labels)
+            label_maps = read_data(csv_slm_label_maps)
+
+            if len(slm_labels) > 0:
+                temp_record = create_temp_record(label_maps[0].keys())
+                run_empty_rows = False
+
+                webpage_label_active_inputs = {}
+                webpage_label_id_inputs = {}
+
+                webpage_label_maps = get_webpage_label_maps()
+                total_number_of_checkboxes = len(webpage_label_maps)
+                webpage_label_active_inputs = {str(i): 'Off' for i in range(1, total_number_of_checkboxes + 1)}
+
+                for key in request.form.keys():
+                    if key.startswith('webpage_label_active_'):
+                        index = key.split('_')[-1]
+                        webpage_label_active_inputs[index] = 'On' if request.form.get(key) == 'on' else 'Off'                        
+
+                    if key.startswith('webpage_label_id_'):
+                        index = key.split('_')[-1]
+                        webpage_label_id_inputs[index] = request.form.get(key)
+
+                for index in webpage_label_active_inputs.keys():
+                    webpage_label_active_input = webpage_label_active_inputs.get(index)
+                    webpage_label_id_input = webpage_label_id_inputs.get(index)
+                    label_exists = False
+
+                    for label_map in label_maps:
+                        if label_map['entry_id'] == entry_id_prior and label_map['label_id'] == webpage_label_id_input:
+                            if webpage_label_active_input == "Off":
+                                label_maps.remove(label_map)
+                            label_exists = True
+                            break
+
+                    if not label_exists:
+                        if webpage_label_active_input == "On":
+                            label_maps.append({
+                                'label_id': webpage_label_id_input,
+                                'entry_id': entry_id_prior
+                            })
+
+                if not label_maps:
+                    label_maps.append(temp_record)
+                    run_empty_rows = True
+
+                write_data(csv_slm_label_maps, label_maps)
+                if run_empty_rows:
+                    remove_empty_row(csv_slm_label_maps)
+
             program_search_results_prior = []
             country_code_input_prior = None
             language_code_input_prior = None
@@ -586,6 +641,7 @@ def webpage_add_programs():
                     
                     done_generate_flag = True
                     bookmark_actions = get_bookmark_actions(object_type)
+                    webpage_label_maps = get_webpage_label_maps()
 
                     bookmarks = read_data(csv_bookmarks)
                     for bookmark in bookmarks:
@@ -634,7 +690,8 @@ def webpage_add_programs():
         html_bookmark_action_selected = bookmark_action_prior,
         html_search_videos_disabled = search_videos_disabled,
         html_provider_statuses = provider_statuses,
-        html_provider_status = provider_status
+        html_provider_status = provider_status,
+        html_webpage_label_maps = webpage_label_maps
     )
 
 # Search for country code
@@ -1868,6 +1925,29 @@ def set_bookmarks(entry_id, title, release_year, object_type, url, country_code,
     if type == "search":
         return season_episodes
 
+# Get a list of labels and status for a specific program
+def get_webpage_label_maps():
+    labels = read_data(csv_slm_labels)
+    label_maps = read_data(csv_slm_label_maps)
+    entry_id_label_maps = [label_map['label_id'] for label_map in label_maps if label_map['entry_id'] == entry_id_prior]
+    webpage_label_maps = []
+
+    for label in labels:
+        if label['label_active'] == "On":
+
+            if label['label_id'] in entry_id_label_maps:
+                webpage_label_active = "On"
+            else:
+                webpage_label_active = "Off"
+
+            webpage_label_maps.append({
+                'webpage_label_active': webpage_label_active,
+                'webpage_label_id': label['label_id'],
+                'webpage_label_name': label['label_name']
+            })
+
+    return webpage_label_maps
+
 # Modify existing programs
 @app.route('/modifyprograms', methods=['GET', 'POST'])
 def webpage_modify_programs():
@@ -1893,6 +1973,8 @@ def webpage_modify_programs():
 
     bookmark_actions = []
     new_bookmark_action = None
+
+    webpage_label_maps = []
 
     if request.method == 'POST':
         modify_programs_action = request.form['action']
@@ -1943,8 +2025,37 @@ def webpage_modify_programs():
                     if entry_id_prior.startswith('slm'):
                         special_actions = special_actions_default.copy()
 
+                    webpage_label_maps = get_webpage_label_maps()
+
                 # Deletes the program
                 elif modify_programs_action == 'program_modify_delete':
+                    label_maps = read_data(csv_slm_label_maps)
+
+                    if label_maps:
+                        temp_record = create_temp_record(label_maps[0].keys())
+                        run_empty_rows = False
+
+                        while True:
+                            temp_entry_ids = []
+
+                            for label_map in label_maps:
+                                temp_entry_ids.append(label_map['entry_id'])
+
+                            if entry_id_prior in temp_entry_ids:
+                                for label_map in label_maps:
+                                    if label_map['entry_id'] == entry_id_prior:
+                                        label_maps.remove(label_map)
+                            else:
+                                break
+
+                        if not label_maps:
+                            label_maps.append(temp_record)
+                            run_empty_rows = True
+
+                        write_data(csv_slm_label_maps, label_maps)
+                        if run_empty_rows:
+                            remove_empty_row(csv_slm_label_maps)
+
                     remove_row_csv(csv_bookmarks, entry_id_prior)
                     remove_row_csv(csv_bookmarks_status, entry_id_prior)
 
@@ -2164,6 +2275,57 @@ def webpage_modify_programs():
                         bookmarks = read_data(csv_bookmarks)
                         sorted_bookmarks = sorted((bookmark for bookmark in bookmarks if bookmark['bookmark_action'] != 'Hide'), key=lambda x: sort_key(x["title"]))
 
+                    # Modify Labels
+                    slm_labels = read_data(csv_slm_labels)
+                    label_maps = read_data(csv_slm_label_maps)
+
+                    if len(slm_labels) > 0:
+                        temp_record = create_temp_record(label_maps[0].keys())
+                        run_empty_rows = False
+
+                        webpage_label_active_inputs = {}
+                        webpage_label_id_inputs = {}
+
+                        webpage_label_maps = get_webpage_label_maps()
+                        total_number_of_checkboxes = len(webpage_label_maps)
+                        webpage_label_active_inputs = {str(i): 'Off' for i in range(1, total_number_of_checkboxes + 1)}
+
+                        for key in request.form.keys():
+                            if key.startswith('webpage_label_active_'):
+                                index = key.split('_')[-1]
+                                webpage_label_active_inputs[index] = 'On' if request.form.get(key) == 'on' else 'Off'                        
+
+                            if key.startswith('webpage_label_id_'):
+                                index = key.split('_')[-1]
+                                webpage_label_id_inputs[index] = request.form.get(key)
+
+                        for index in webpage_label_active_inputs.keys():
+                            webpage_label_active_input = webpage_label_active_inputs.get(index)
+                            webpage_label_id_input = webpage_label_id_inputs.get(index)
+                            label_exists = False
+
+                            for label_map in label_maps:
+                                if label_map['entry_id'] == entry_id_prior and label_map['label_id'] == webpage_label_id_input:
+                                    if webpage_label_active_input == "Off":
+                                        label_maps.remove(label_map)
+                                    label_exists = True
+                                    break
+
+                            if not label_exists:
+                                if webpage_label_active_input == "On":
+                                    label_maps.append({
+                                        'label_id': webpage_label_id_input,
+                                        'entry_id': entry_id_prior
+                                    })
+
+                        if not label_maps:
+                            label_maps.append(temp_record)
+                            run_empty_rows = True
+
+                        write_data(csv_slm_label_maps, label_maps)
+                        if run_empty_rows:
+                            remove_empty_row(csv_slm_label_maps)
+
                     # Modify Bookmarks Statuses
                     field_object_type_input = request.form.get('field_object_type')
                     field_status_inputs = {}
@@ -2267,6 +2429,7 @@ def webpage_modify_programs():
             bookmarks_statuses_selected_prior = bookmarks_statuses_selected_sorted
 
             bookmark_actions = get_bookmark_actions(object_type_selected_prior)
+            webpage_label_maps = get_webpage_label_maps()
 
         # Cancel changes or finish
         elif modify_programs_action == 'program_modify_cancel':
@@ -2278,6 +2441,7 @@ def webpage_modify_programs():
             bookmarks_statuses_selected_prior = []
             bookmark_actions = []
             new_bookmark_action = None
+            webpage_label_maps = []
 
         elif modify_programs_action == 'program_modify_show_hidden':
             bookmarks = read_data(csv_bookmarks)
@@ -2292,6 +2456,8 @@ def webpage_modify_programs():
 
             bookmark_actions = []
             new_bookmark_action = None
+
+            webpage_label_maps = []
 
     return render_template(
         'main/modifyprograms.html',
@@ -2315,7 +2481,8 @@ def webpage_modify_programs():
         html_offer_icons = offer_icons,
         html_offer_icons_flag = offer_icons_flag,
         html_bookmark_actions = bookmark_actions,
-        html_bookmark_action_selected = bookmark_action_prior
+        html_bookmark_action_selected = bookmark_action_prior,
+        html_webpage_label_maps = webpage_label_maps
     )
 
 # Manage Providers Webpage
@@ -2325,15 +2492,21 @@ def webpage_manage_providers():
     settings_anchor_id = None
     run_empty_row = None
 
-    settings = read_data(csv_settings)
-    slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
-    if slm_stream_address_prior is None or slm_stream_address_prior == '':
-        slm_stream_address_prior = slm_stream_address
+    action_to_anchor = {
+        'streaming_services': 'streaming_services_anchor',
+        'ssss': 'ssss_anchor',
+        'provider_group': 'provider_group_anchor',
+        'slmapping': 'slmapping_anchor',
+        'slm_stream_address': 'slm_stream_address_anchor',
+        'slm_label': 'slm_label_anchor'
+    }
 
+    # Streaming Services
     streaming_services = read_data(csv_streaming_services)
     streaming_services_subscribed_raw = [streaming_service for streaming_service in streaming_services if streaming_service['streaming_service_subscribe'] == 'True']
     streaming_services_subscribed = sorted(streaming_services_subscribed_raw, key=lambda x: sort_key(x["streaming_service_name"]))
 
+    # Provider Groups
     provider_groups_raw = read_data(csv_provider_groups)
     provider_groups = provider_groups_default.copy()
     if provider_groups_raw:
@@ -2345,6 +2518,7 @@ def webpage_manage_providers():
                     "provider_group_name": f"GROUP: {provider_group_raw['provider_group_name']}"
                 })
 
+    # Stream Link Mappings
     slmappings = read_data(csv_slmappings)
     slmappings_object_type = [
         "MOVIE or SHOW",
@@ -2357,15 +2531,15 @@ def webpage_manage_providers():
         "Replace entire Stream Link with..."
     ]
 
-    slm_stream_address_message = ""
+    # Labels
+    slm_labels = read_data(csv_slm_labels)
 
-    action_to_anchor = {
-        'streaming_services': 'streaming_services_anchor',
-        'ssss': 'ssss_anchor',
-        'provider_group': 'provider_group_anchor',
-        'slmapping': 'slmapping_anchor',
-        'slm_stream_address': 'slm_stream_address_anchor'
-    }
+    # SLM Stream Address
+    settings = read_data(csv_settings)
+    slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
+    if slm_stream_address_prior is None or slm_stream_address_prior == '':
+        slm_stream_address_prior = slm_stream_address
+    slm_stream_address_message = ""    
 
     if request.method == 'POST':
         settings_action = request.form['action']
@@ -2377,10 +2551,10 @@ def webpage_manage_providers():
                 settings_anchor_id = anchor_id
                 break
 
-        checks = ['slmapping_', 'slm_stream_address_', 'streaming_services_', 'ssss_', 'provider_group_']
+        checks = ['slmapping_', 'slm_stream_address_', 'streaming_services_', 'ssss_', 'provider_group_', 'slm_label_']
         if any(settings_action.startswith(check) for check in checks):
 
-            interior_checks = ['slmapping_', 'provider_group_']
+            interior_checks = ['slmapping_', 'provider_group_', 'slm_label_']
             if ( any(settings_action.startswith(interior_check) for interior_check in interior_checks) or '_save' in settings_action ) and ( 'cancel' not in settings_action ):
 
                 if settings_action in ['slm_stream_address_save'
@@ -2533,6 +2707,169 @@ def webpage_manage_providers():
                     csv_to_write = csv_provider_groups
                     data_to_write = provider_groups_raw
 
+                elif settings_action.startswith('slm_label_'):
+
+                    # Add a record
+                    if settings_action == 'slm_label_new':
+                        slm_label_id_new_input = f"slmlbl_{max((int(slm_label['label_id'].split('_')[1]) for slm_label in slm_labels), default=0) + 1:04d}"
+                        slm_label_active_new_input = 'On' if request.form.get('slm_label_active_new') == 'on' else 'Off'
+                        slm_label_name_new_input = request.form.get('slm_label_name_new')
+                        slm_label_description_new_input = request.form.get('slm_label_description_new')
+
+                        slm_labels.append({
+                            "label_id": slm_label_id_new_input,
+                            "label_active": slm_label_active_new_input,
+                            "label_name": slm_label_name_new_input,
+                            "label_description": slm_label_description_new_input
+                        })
+
+                    # Delete a record
+                    elif settings_action.startswith('slm_label_delete_'):
+                        slm_label_delete_index = int(settings_action.split('_')[-1]) - 1
+
+                        slm_label_delete_id = slm_labels[slm_label_delete_index]['label_id']
+                        remove_row_csv(csv_slm_label_maps, slm_label_delete_id)
+
+                        # Create a temporary record with fields set to None
+                        temp_record = create_temp_record(slm_labels[0].keys())
+
+                        if 0 <= slm_label_delete_index < len(slm_labels):
+                            slm_labels.pop(slm_label_delete_index)
+
+                            # If the list is now empty, add the temp record to keep headers
+                            if not slm_labels:
+                                slm_labels.append(temp_record)
+                                run_empty_row = True
+
+                    # Save record modifications
+                    elif settings_action == 'slm_label_save':
+                        slm_label_id_inputs = {}
+                        slm_label_active_inputs = {}
+                        slm_label_name_inputs = {}
+                        slm_label_description_inputs = {}
+
+                        total_number_of_checkboxes = len(slm_labels)
+                        slm_label_active_inputs = {str(i): 'Off' for i in range(1, total_number_of_checkboxes + 1)}
+
+                        for key in request.form.keys():
+                            if key.startswith('slm_label_id_'):
+                                index = key.split('_')[-1]
+                                slm_label_id_inputs[index] = request.form.get(key)
+
+                            if key.startswith('slm_label_active_'):
+                                index = key.split('_')[-1]
+                                slm_label_active_inputs[index] = request.form.get(key)
+
+                            if key.startswith('slm_label_name_'):
+                                index = key.split('_')[-1]
+                                slm_label_name_inputs[index] = request.form.get(key)
+
+                            if key.startswith('slm_label_description_'):
+                                index = key.split('_')[-1]
+                                slm_label_description_inputs[index] = request.form.get(key)
+
+                        slm_labels = []
+
+                        for row in slm_label_id_inputs:
+                            slm_label_id_input = slm_label_id_inputs.get(row)
+                            slm_label_active_input = slm_label_active_inputs.get(row)
+                            slm_label_name_input = slm_label_name_inputs.get(row)
+                            slm_label_description_input = slm_label_description_inputs.get(row)
+
+                            slm_labels.append({
+                                'label_id': slm_label_id_input,
+                                'label_active': slm_label_active_input,
+                                'label_name': slm_label_name_input,
+                                'label_description': slm_label_description_input
+                            })
+
+                    # Import Labels from Channels
+                    elif settings_action == 'slm_label_import':
+                        print(f"{current_time()} INFO: Starting importing labels from Channels DVR...")
+
+                        dvr_files, dvr_groups = get_slm_channels_info()
+
+                        base_labels = []
+
+                        for dvr_file in dvr_files:
+                            item_labels = dvr_file.get('Labels', [])
+                            if item_labels:
+                                for item_label in item_labels:
+                                    if item_label not in base_labels:
+                                        base_labels.append(item_label)
+
+                        for dvr_group in dvr_groups:
+                            item_labels = dvr_group.get('Labels', [])
+                            if item_labels:
+                                for item_label in item_labels:
+                                    if item_label not in base_labels:
+                                        base_labels.append(item_label)
+
+                        for base_label in base_labels:
+                            if base_label not in [slm_label['label_name'] for slm_label in slm_labels]:
+                                slm_label_id_new_input = f"slmlbl_{max((int(slm_label['label_id'].split('_')[1]) for slm_label in slm_labels), default=0) + 1:04d}"
+                                slm_label_active_new_input = 'On'
+                                slm_label_name_new_input = base_label
+                                slm_label_description_new_input = ''
+
+                                slm_labels.append({
+                                    "label_id": slm_label_id_new_input,
+                                    "label_active": slm_label_active_new_input,
+                                    "label_name": slm_label_name_new_input,
+                                    "label_description": slm_label_description_new_input
+                                })
+
+                        bookmarks = read_data(csv_bookmarks)
+                        label_maps = read_data(csv_slm_label_maps)
+
+                        for bookmark in bookmarks:
+                            channels_id = bookmark['channels_id']
+                            entry_id = bookmark['entry_id']
+                            channels_labels = []
+                            mapped_channels_labels = []
+
+                            if bookmark['object_type']  == "MOVIE":
+                                for dvr_file in dvr_files:
+                                    if channels_id == dvr_file["File ID"]:
+                                        channels_labels = dvr_file.get('Labels', [])
+                                        break
+
+                            else:
+                                for dvr_group in dvr_groups:
+                                    if channels_id == dvr_group["Group ID"]:
+                                        channels_labels = dvr_group.get('Labels', [])
+                                        break
+
+                            for channels_label in channels_labels:
+                                for slm_label in slm_labels:
+                                    if channels_label == slm_label['label_name']:
+                                        mapped_channels_labels.append(slm_label['label_id'])
+                                        break
+
+                            for mapped_channels_label in mapped_channels_labels:
+                                label_exists = False
+
+                                for label_map in label_maps:
+                                    if label_map['entry_id'] == entry_id and label_map['label_id'] == mapped_channels_label:
+                                        label_exists = True
+                                        break
+
+                                if not label_exists:
+                                    label_maps.append({
+                                        'label_id': mapped_channels_label,
+                                        'entry_id': entry_id
+                                    })
+
+                        write_data(csv_slm_label_maps, label_maps)
+
+                        print(f"{current_time()} INFO: Finished importing labels from Channels DVR.")
+
+                    if not run_empty_row:
+                        slm_labels = sorted(slm_labels, key=lambda x: sort_key(x["label_name"].casefold()))
+
+                    csv_to_write = csv_slm_labels
+                    data_to_write = slm_labels
+
                 elif settings_action.startswith('slmapping_action_'):
 
                     # Add a map
@@ -2657,6 +2994,8 @@ def webpage_manage_providers():
 
         slmappings = read_data(csv_slmappings)
 
+        slm_labels = read_data(csv_slm_labels)
+
     response = make_response(render_template(
         'main/manage_providers.html',
         segment='manage_providers',
@@ -2677,7 +3016,8 @@ def webpage_manage_providers():
         html_slmappings_object_type = slmappings_object_type,
         html_slmappings_replace_type = slmappings_replace_type,
         html_provider_groups = provider_groups,
-        html_provider_groups_raw = provider_groups_raw
+        html_provider_groups_raw = provider_groups_raw,
+        html_slm_labels = slm_labels
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -6343,7 +6683,7 @@ def webpage_tools_automation():
                 break
 
         if trimmed_action:
-            anchor_base = 'end_to_end_subprocesses' if trimmed_action in other_actions else trimmed_action
+            anchor_base = 'end_to_end_process' if trimmed_action in other_actions else trimmed_action
             anchor = 'anchor_' + anchor_base
 
         if action.endswith('_run'):
@@ -9024,7 +9364,7 @@ def get_stream_link_ids():
                 response = requests.get(api_url, headers=url_headers)
                 response.raise_for_status()  # Raise an exception if the response status code is not 200 (OK)
                 data = response.json()
-                data_filtered = [item for item in data if "\\slm\\" in item["path"]] # Filter the items where the "path" contains "\slm\"
+                data_filtered = [item for item in data if "slm/" in clean_comparison_path(item["path"])] # Filter the items where the "path" contains "slm/" (after cleaning)
 
                 for item in data_filtered:
                     if os.path.exists(item["path"]):
@@ -9050,7 +9390,7 @@ def get_stream_link_ids():
 
         for slm_stream_link in slm_stream_links:
             for stream_link_id in stream_link_ids:
-                if slm_stream_link["path"] == stream_link_id["path"]:
+                if clean_comparison_path(slm_stream_link["path"]) == clean_comparison_path(stream_link_id["path"]):
                     if slm_stream_link["stream_link_current"] != stream_link_id["stream_link_prior"]:
                         stream_link_ids_changed.append(stream_link_id["id"])
 
@@ -9140,19 +9480,20 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
-# Runs a prune/scan in Channels
+# Runs the necessary updates in Channels and gets info afterwards
 def prune_scan_channels():
     print("\n==========================================================")
     print("|                                                        |")
     print("|                Update Media in Channels                |")
     print("|                                                        |")
-    print("==========================================================")
+    print("==========================================================\n")
 
     settings = read_data(csv_settings)
     channels_url = settings[0]["settings"]
     prune_url = f"{channels_url}/dvr/scanner/imports/prune"
     scan_url = f"{channels_url}/dvr/scanner/scan"
     channels_prune = settings[7]["settings"]
+    channels_labels = settings[50]["settings"]                      # [50] SLM: Update Labels in Channels DVR On/Off
 
     channels_url_okay = check_channels_url(None)
 
@@ -9208,18 +9549,94 @@ def prune_scan_channels():
             else:
                 if channels_prune == "On":
                     if stream_link_ids_changed:
-                        notification_add(f"\n{current_time()} Prune and Scan complete. Check Channels DVR for Reprocess status.\n")
+                        notification_add(f"{current_time()} Prune and Scan complete. Check Channels DVR for Reprocess status.")
                     else:
-                        notification_add(f"\n{current_time()} Prune and Scan complete.\n")
+                        notification_add(f"{current_time()} Prune and Scan complete.")
                 else:
                     if stream_link_ids_changed:
-                        notification_add(f"\n{current_time()} Scan complete. Check Channels DVR for Reprocess status.\n")
+                        notification_add(f"{current_time()} Scan complete. Check Channels DVR for Reprocess status.")
                     else:
-                        notification_add(f"\n{current_time()} Scan complete.\n")
+                        notification_add(f"{current_time()} Scan complete.")
                 break
 
+        # Channels DVR Metadata
+        print(f"{current_time()} INFO: Connecting SLM and Channels DVR metadata...")
+        get_slm_channels_info()
+        bookmarks = read_data(csv_bookmarks)
+
+        ### Labels
+        if channels_labels == "On":
+            print(f"{current_time()} INFO: Updating Channels DVR labels...")
+            
+            slm_labels = read_data(csv_slm_labels)
+            slm_label_maps = read_data(csv_slm_label_maps)
+
+            for bookmark in bookmarks:
+                channels_id = bookmark['channels_id']
+                bookmark_item = f"{bookmark['title']} ({bookmark['release_year']}) | {bookmark['object_type']}"
+                bookmark_label_maps = []
+                bookmark_labels = []
+                current_labels = []
+
+                if channels_id is not None and channels_id != "":
+                    # Map labels
+                    for slm_label_map in slm_label_maps:
+                        if bookmark['entry_id'] == slm_label_map['entry_id']:
+                            bookmark_label_maps.append(slm_label_map['label_id'])
+
+                    for slm_label in slm_labels:
+                        if slm_label['label_id'] in bookmark_label_maps:
+                            bookmark_labels.append(slm_label['label_name'])
+
+                    # Set the base routes
+                    if bookmark['object_type'] == "MOVIE":
+                        route = f"/dvr/files/{channels_id}"
+                    else:
+                        route = f"/dvr/groups/{channels_id}"
+
+                    url_base = f"{channels_url}{route}"
+
+                    # Fetch the current labels
+                    try:
+                        response = requests.get(url_base, headers=url_headers)
+                        response.raise_for_status()
+                        current_labels = response.json().get("Labels", [])
+                    except requests.RequestException as e:
+                        print(f"ERROR: Failed to fetch current labels for {url_base}: {e}")
+                        continue
+
+                    url = f"{url_base}/labels"
+
+                    # Delete labels not in bookmark_labels
+                    if current_labels:
+                        for current_label in current_labels:
+                            if current_label not in bookmark_labels or bookmark_labels == []:
+                                delete_url = f"{url}/{urllib.parse.quote(current_label)}"
+                                try:
+                                    delete_response = requests.delete(delete_url, headers=url_headers)
+                                    delete_response.raise_for_status()
+                                    print(f"{current_time()} INFO: Deleted label '{current_label}' from {bookmark_item}.")
+                                except requests.RequestException as e:
+                                    print(f"{current_time()} ERROR: Failed to delete label '{current_label}' from {bookmark_item}: {e}")
+
+                    # Add labels in bookmark_labels that are not in current_labels
+                    if bookmark_labels:
+                        for bookmark_label in bookmark_labels:
+                            if bookmark_label not in current_labels or current_labels == []:
+                                put_url = f"{url}/{urllib.parse.quote(bookmark_label)}"
+                                try:
+                                    put_response = requests.put(put_url, headers=url_headers)
+                                    put_response.raise_for_status()
+                                    print(f"{current_time()} INFO: Added label '{bookmark_label}' to {bookmark_item}.")
+                                except requests.RequestException as e:
+                                    print(f"{current_time()} ERROR: Failed to add label '{bookmark_label}' to {bookmark_item}: {e}")
+
+            notification_add(f"{current_time()} Label assignment complete.")
+
+        notification_add(f"{current_time()} Connecting SLM and Channels DVR metadata complete.")
+
     else:
-        notification_add(f"\n{current_time()} INFO: Skipped Prune, Scan, and Reprocess due to Channels URL error.\n")
+        notification_add(f"{current_time()} INFO: Skipped 'Update Media in Channels DVR' due to Channels URL error.")
 
 # Asycnronous request of Stream Link reprocessing
 async def get_reprocess_requests(channels_url):
@@ -9236,6 +9653,43 @@ async def send_reprocess_requests(reprocess_session, reprocess_url):
         await reprocess_session.put(reprocess_url)
     except asyncio.TimeoutError:
         notification_add(f"\n{current_time()} ERROR: Request for {reprocess_url} timed out.")
+
+# Gets info from Channels DVR and adds it to SLM
+def get_slm_channels_info():
+    bookmarks = read_data(csv_bookmarks)
+    bookmarks_statuses = read_data(csv_bookmarks_status)
+
+    dvr_files = get_channels_dvr_json('dvr_files')
+    dvr_groups = get_channels_dvr_json('dvr_groups')
+
+    for bookmark in bookmarks:
+
+        break_bookmark_statuses = None
+
+        for bookmark_status in bookmarks_statuses:
+            if bookmark['entry_id'] == bookmark_status['entry_id']:
+
+                for dvr_file in dvr_files:
+                    path_check = clean_comparison_path(dvr_file['Path'])
+                    stream_link_file_path_check = clean_comparison_path(bookmark_status['stream_link_file']).split("slm/", 1)[1]
+                    stream_link_file_path_check = f"slm/{stream_link_file_path_check}"
+
+                    if path_check == stream_link_file_path_check:
+
+                        if bookmark['object_type'] == "MOVIE":
+                            bookmark['channels_id'] = dvr_file['File ID']
+                        else:
+                            bookmark['channels_id'] = dvr_file['Group ID']
+
+                        break_bookmark_statuses = True
+                        break
+            
+            if break_bookmark_statuses:
+                break
+    
+    write_data(csv_bookmarks, bookmarks)
+
+    return dvr_files, dvr_groups
 
 # Automation - Generate Stream Links for New & Recent Releases Only
 def run_slm_new_recent_releases():
@@ -9563,7 +10017,9 @@ def webpage_files():
         {'file_name': 'Streaming Services', 'file': csv_streaming_services },
         {'file_name': 'Stream Link Mappings', 'file': csv_slmappings },
         {'file_name': 'Bookmarks', 'file': csv_bookmarks },
-        {'file_name': 'Bookmarks Statuses', 'file': csv_bookmarks_status }
+        {'file_name': 'Bookmarks Statuses', 'file': csv_bookmarks_status },
+        {'file_name': 'Labels', 'file': csv_slm_labels },
+        {'file_name': 'Label Maps', 'file': csv_slm_label_maps }
     ]
 
     plm_file_lists = [
@@ -9775,6 +10231,7 @@ def webpage_settings():
         channels_url_prior = channels_url
     channels_directory = settings[1]["settings"]
     channels_prune = settings[7]["settings"]
+    channels_labels = settings[50]["settings"]                      # [50] SLM: Update Labels in Channels DVR On/Off
 
     channels_url_message = ""
     channels_directory_message = ""
@@ -9784,6 +10241,7 @@ def webpage_settings():
         'channels_url': 'channels_url_anchor',
         'channels_directory': 'channels_directory_anchor',
         'channels_prune': 'advanced_experimental_anchor',
+        'channels_labels': 'advanced_experimental_anchor',
         'playlist_manager': 'advanced_experimental_anchor',
         'stream_link_file_manager': 'advanced_experimental_anchor',
         'channels_dvr_integration': 'advanced_experimental_anchor',
@@ -9803,6 +10261,7 @@ def webpage_settings():
         channels_directory_input = request.form.get('current_directory')
         channels_directory_manual_path = request.form.get('channels_directory_manual_path')
         channels_prune_input = request.form.get('channels_prune')
+        channels_labels_input = request.form.get('channels_labels')
         playlist_manager_input = request.form.get('playlist_manager')
         stream_link_file_manager_input = request.form.get('stream_link_file_manager')
         channels_dvr_integration_input = request.form.get('channels_dvr_integration')
@@ -9857,6 +10316,9 @@ def webpage_settings():
 
                         # Channels DVR Prune
                         settings[7]["settings"] = "On" if channels_prune_input == 'on' else "Off"
+
+                        # Channels DVR Labels
+                        settings[50]["settings"] = "On" if channels_labels_input == 'on' else "Off"
 
                         # On-Demand: Stream Link/File Manager [SLM]
                         settings[23]["settings"] = "On" if stream_link_file_manager_input == 'on' else "Off"
@@ -9933,6 +10395,7 @@ def webpage_settings():
             channels_url_prior = channels_url
         channels_directory = settings[1]["settings"]
         channels_prune = settings[7]["settings"]
+        channels_labels = settings[50]["settings"]                      # [50] SLM: Update Labels in Channels DVR On/Off
 
     response = make_response(render_template(
         'main/settings.html',
@@ -9949,6 +10412,7 @@ def webpage_settings():
         html_channels_url_prior = channels_url_prior,
         html_channels_directory = channels_directory,
         html_channels_prune = channels_prune,
+        html_channels_labels = channels_labels,
         html_channels_url_message = channels_url_message,
         html_current_directory = current_directory,
         html_subdirectories = get_subdirectories(current_directory),
@@ -10170,6 +10634,13 @@ def sort_key(title):
 # Normalize the file path for systems that can't handle certain characters like 'é'
 def normalize_path(path):
     return unicodedata.normalize('NFKC', path)
+
+# Clean a stored path value so it can used in comparisons
+def clean_comparison_path(path):
+    path_cleaned = None
+    path_cleaned = path.replace("\\\\", "/").replace("\\", "/").replace("//", "/").replace("////", "/").lower()
+    path_cleaned = normalize_path(path_cleaned)
+    return path_cleaned
 
 # Get the full path for a file
 def full_path(file):
@@ -10758,6 +11229,7 @@ def check_and_create_csv(csv_file):
 
     if csv_file == csv_bookmarks:
         check_and_add_column(csv_file, 'bookmark_action', 'None')
+        check_and_add_column(csv_file, 'channels_id', '')
 
     if csv_file == csv_playlistmanager_parents:
         check_and_add_column(csv_file, 'parent_active', 'On')
@@ -10832,6 +11304,7 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Active Providers"}, 49, "SLM: Search Default for Provider Status")
         check_and_append(csv_file, {"settings": "Off"}, 50, "PLM: Internal PBS Stations On/Off")
         check_and_append(csv_file, {"settings": "http://localhost:[PORT]"}, 51, "PLM: VLC Bridge PBS Base URL")
+        check_and_append(csv_file, {"settings": "Off"}, 52, "SLM: Update Labels in Channels DVR On/Off")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -10886,19 +11359,24 @@ def initial_data(csv_file):
                     {"settings": f"http://{get_external_ip()}:{slm_port}"},                    # [46] SLM: SLM Stream Address
                     {"settings": "Active Providers"},                                          # [47] SLM: Search Default for Provider Status
                     {"settings": "Off"},                                                       # [48] PLM: Internal PBS Stations On/Off
-                    {"settings": "http://localhost:[PORT]"}                                    # [49] PLM: VLC Bridge PBS Base URL
+                    {"settings": "http://localhost:[PORT]"},                                   # [49] PLM: VLC Bridge PBS Base URL
+                    {"settings": "Off"}                                                        # [50] SLM: Update Labels in Channels DVR On/Off
         ]        
+
     # Stream Link/File Manager
     elif csv_file == csv_streaming_services:
         data = get_streaming_services()
+
     elif csv_file == csv_bookmarks:
         data = [
-            {"entry_id": None,"title": None, "release_year": None, "object_type": None, "url": None, "country_code": None, "language_code": None, "bookmark_action": None}
+            {"entry_id": None,"title": None, "release_year": None, "object_type": None, "url": None, "country_code": None, "language_code": None, "bookmark_action": None, "channels_id": None}
         ]
+
     elif csv_file == csv_bookmarks_status:
         data = [
             {"entry_id": None, "season_episode_id": None, "season_episode_prefix": None, "season_episode": None, "status": None, "stream_link": None, "stream_link_override": None, "stream_link_file": None, "special_action": None, "original_release_date": None}
         ]
+
     elif csv_file == csv_slmappings:
         data = [
             {"active": "Off", "contains_string": "hulu.com/watch", "object_type": "MOVIE or SHOW", "replace_type": "Replace string with...", "replace_string": "disneyplus.com/play"},
@@ -10907,27 +11385,43 @@ def initial_data(csv_file):
             {"active": "Off", "contains_string": "vudu.com", "object_type": "MOVIE or SHOW", "replace_type": "Replace entire Stream Link with...", "replace_string": "fandangonow://"},
             {"active": "On", "contains_string": "peacocktv.com/watch/asset/.+?/([a-zA-Z0-9\\\\-]+)$", "object_type": "MOVIE or SHOW", "replace_type": "Replace pattern (REGEX) with...", "replace_string": 'peacocktv.com/deeplink?deeplinkData={"pvid":"\\1","type":"PROGRAMME","action":"PLAY"}'}
         ]
+
     elif csv_file == csv_provider_groups:
         data = [
             {"provider_group_id": None, "provider_group_active": None, "provider_group_name": None, "provider_group_description": None}
         ]
+
+    elif csv_file == csv_slm_labels:
+        data = [
+            {"label_id": None, "label_active": None, "label_name": None, "label_description": None}
+        ]
+
+    elif csv_file == csv_slm_label_maps:
+        data = [
+            {"label_id": None, "entry_id": None}
+        ]
+
     # Playlist Manager
     elif csv_file == csv_playlistmanager_playlists:
         data = [
             {"m3u_id": None, "m3u_name": None, "m3u_url": None, "epg_xml": None, "stream_format": None, "m3u_priority": None}
         ]
+
     elif csv_file == csv_playlistmanager_parents:
         data = [
             {"parent_channel_id": None, "parent_title": None, "parent_tvg_id_override": None, "parent_tvg_logo_override": None, "parent_channel_number_override": None, "parent_tvc_guide_stationid_override": None, "parent_tvc_guide_art_override": None, "parent_tvc_guide_tags_override": None, "parent_tvc_guide_genres_override": None, "parent_tvc_guide_categories_override": None, "parent_tvc_guide_placeholders_override": None, "parent_tvc_stream_vcodec_override": None, "parent_tvc_stream_acodec_override": None, "parent_preferred_playlist": None, "parent_active": None, "parent_tvg_description_override": None, "parent_group_title_override": None}
         ]
+
     elif csv_file == csv_playlistmanager_child_to_parent:
         data = [
             {"child_m3u_id_channel_id": None, "parent_channel_id": None, "stream_format_override": None}
         ]    
+
     elif csv_file == csv_playlistmanager_combined_m3us:
         data = [
             {"station_playlist": None, "m3u_id": None, "title": None, "tvc_guide_title": None, "channel_id": None, "tvg_id": None, "tvg_name": None, "tvg_logo": None, "tvg_chno": None, "channel_number": None, "tvg_description": None, "tvc_guide_description": None, "group_title": None, "tvc_guide_stationid": None, "tvc_guide_art": None, "tvc_guide_tags": None, "tvc_guide_genres": None, "tvc_guide_categories": None, "tvc_guide_placeholders": None, "tvc_stream_vcodec": None, "tvc_stream_acodec": None, "url": None}
         ]
+
     elif csv_file == csv_playlistmanager_streaming_stations:
         data = [
             {"channel_id": None, "source": None, "url": None, "title": None, "tvg_logo": None, "tvg_description": None,     "tvc_guide_tags": None, "tvc_guide_genres": None, "tvc_guide_categories": None, "tvc_guide_placeholders": None, "tvc_stream_vcodec": None, "tvc_stream_acodec": None}
@@ -11121,6 +11615,10 @@ def get_channels_dvr_json(selection):
         route = '/dvr/collections/content'
     elif selection == 'dvr_status':
         route = '/dvr'
+    elif selection == 'dvr_files':
+        route = '/dvr/files'
+    elif selection == 'dvr_groups':
+        route = '/dvr/groups'
 
     if route:
         url = f"{channels_url}{route}"
@@ -11283,6 +11781,88 @@ def get_channels_dvr_json(selection):
                         "trash_after": trash_after
                     })
 
+                elif selection == 'dvr_files':
+                    for result in results_base_json:
+                        dvr_files_id = result.get("ID", '')
+                        dvr_files_group_id = result.get("GroupID", '')
+                        dvr_files_path = result.get("Path", '')
+                        dvr_files_checksum = result.get("Checksum", '')
+                        dvr_files_created_at = result.get("CreatedAt", '')
+                        dvr_files_fileSize = result.get("FileSize", '')
+                        dvr_files_duration = result.get("Duration", '')
+                        dvr_files_completed = result.get("Completed", '')
+                        dvr_files_processed = result.get("Processed", '')
+                        dvr_files_updated_at = result.get("UpdatedAt", '')
+                        dvr_files_version = result.get("Version", '')
+                        dvr_files_labels = result.get("Labels", [])
+                        dvr_files_import_path = result.get("ImportPath", '')
+                        dvr_files_import_query = result.get("ImportQuery", '')
+                        dvr_files_import_group = result.get("ImportGroup", '')
+                        dvr_files_imported_at = result.get("ImportedAt", '')
+                    
+                        results_library.append({
+                            "File ID": dvr_files_id,
+                            "Group ID": dvr_files_group_id,
+                            "Path": dvr_files_path,
+                            "Checksum": dvr_files_checksum,
+                            "Created At": dvr_files_created_at,
+                            "File Size": dvr_files_fileSize,
+                            "Duration": dvr_files_duration,
+                            "Completed": dvr_files_completed,
+                            "Processed": dvr_files_processed,
+                            "Updated At": dvr_files_updated_at,
+                            "Version": dvr_files_version,
+                            "Labels": dvr_files_labels,
+                            "Import Path": dvr_files_import_path,
+                            "Import Query": dvr_files_import_query,
+                            "Import Group": dvr_files_import_group,
+                            "Imported At": dvr_files_imported_at
+                        })
+
+                elif selection == 'dvr_groups':
+                    for result in results_base_json:
+                        dvr_groups_id = result.get("ID", '')
+                        dvr_groups_name = result.get("Name", '')
+                        dvr_groups_series_id = result.get("SeriesID", '')
+                        dvr_groups_summary = result.get("Summary", '')
+                        dvr_groups_image = result.get("Image", '')
+                        dvr_groups_categories = result.get("Categories", [])
+                        dvr_groups_genres = result.get("Genres", [])
+                        dvr_groups_file_id = result.get("FileID", [])
+                        dvr_groups_created_at = result.get("CreatedAt", '')
+                        dvr_groups_recorded_at = result.get("RecordedAt", '')
+                        dvr_groups_updated_at = result.get("UpdatedAt", '')
+                        dvr_groups_refreshed_at = result.get("RefreshedAt", '')
+                        dvr_groups_release_date = result.get("ReleaseDate", '')
+                        dvr_groups_release_year = result.get("ReleaseYear", '')
+                        dvr_groups_imported_at = result.get("ImportedAt", '')
+                        dvr_groups_import_id = result.get("ImportID", [])
+                        dvr_groups_labels = result.get("Labels", [])
+                        dvr_groups_version = result.get("Version", '')
+                        dvr_groups_num_unwatched = result.get("NumUnwatched", '')
+
+                        results_library.append({
+                            "Group ID": dvr_groups_id,
+                            "Name": dvr_groups_name,
+                            "Series ID": dvr_groups_series_id,
+                            "Summary": dvr_groups_summary,
+                            "Image": dvr_groups_image,
+                            "Categories": dvr_groups_categories,
+                            "Genres": dvr_groups_genres,
+                            "File IDs": dvr_groups_file_id,
+                            "Created At": dvr_groups_created_at,
+                            "Recorded At": dvr_groups_recorded_at,
+                            "Updated At": dvr_groups_updated_at,
+                            "Refreshed At": dvr_groups_refreshed_at,
+                            "Release Date": dvr_groups_release_date,
+                            "Release Year": dvr_groups_release_year,
+                            "Imported At": dvr_groups_imported_at,
+                            "Import IDs": dvr_groups_import_id,
+                            "Labels": dvr_groups_labels,
+                            "Version": dvr_groups_version,
+                            "Number Unwatched": dvr_groups_num_unwatched
+                        })
+
     return results_library
 
 def get_channels_dvr_activity():
@@ -11302,9 +11882,16 @@ def put_channels_dvr_json(route, json_data):
     results = None
 
     try:
-        results = requests.put(full_url, headers=url_headers, json=json_data)
+        response = requests.put(full_url, headers=url_headers, json=json_data)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        results = response
+
     except requests.RequestException as e:
-        print(f"{current_time()} ERROR: While performing action on '{route}', received {e}.")
+        # Log error details
+        print(f"{current_time()} ERROR: PUT request to {full_url} failed: {e}")
+        if response is not None:
+            print(f"{current_time()} ERROR: Response Status Code: {response.status_code}")
+            print(f"{current_time()} ERROR: Response Body: {response.text}")
 
     return results
 
@@ -11327,6 +11914,8 @@ csv_bookmarks = "StreamLinkManager_Bookmarks.csv"
 csv_bookmarks_status = "StreamLinkManager_BookmarksStatus.csv"
 csv_slmappings = "StreamLinkManager_SLMappings.csv"
 csv_provider_groups = "StreamLinkManager_ProviderGroups.csv"
+csv_slm_labels = "StreamLinkManager_Labels.csv"
+csv_slm_label_maps = "StreamLinkManager_LabelMaps.csv"
 csv_playlistmanager_playlists = "PlaylistManager_Playlists.csv"
 csv_playlistmanager_combined_m3us = "PlaylistManager_Combinedm3us.csv"
 csv_playlistmanager_parents = "PlaylistManager_Parents.csv"
@@ -11339,6 +11928,8 @@ csv_files = [
     csv_bookmarks_status,
     csv_slmappings,
     csv_provider_groups,
+    csv_slm_labels,
+    csv_slm_label_maps,
     csv_playlistmanager_playlists,
     csv_playlistmanager_combined_m3us,
     csv_playlistmanager_parents,
