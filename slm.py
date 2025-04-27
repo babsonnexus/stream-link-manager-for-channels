@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.27.1707"
+    slm_version = "v2025.04.27.1939"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -9565,72 +9565,88 @@ def prune_scan_channels():
         bookmarks = read_data(csv_bookmarks)
 
         ### Labels
+        # if channels_labels == "On":
+        #     print(f"{current_time()} INFO: Updating Channels DVR labels...")
+            
+        #     slm_labels = read_data(csv_slm_labels)
+        #     slm_label_maps = read_data(csv_slm_label_maps)
+
+        #     for bookmark in bookmarks:
+        #         channels_id = bookmark['channels_id']
+        #         bookmark_item = f"{bookmark['title']} ({bookmark['release_year']}) | {bookmark['object_type']}"
+        #         bookmark_label_maps = []
+        #         bookmark_labels = []
+        #         current_labels = []
+
+        #         if channels_id is not None and channels_id != "":
+        #             # Map labels
+        #             for slm_label_map in slm_label_maps:
+        #                 if bookmark['entry_id'] == slm_label_map['entry_id']:
+        #                     bookmark_label_maps.append(slm_label_map['label_id'])
+
+        #             for slm_label in slm_labels:
+        #                 if slm_label['label_id'] in bookmark_label_maps and slm_label['label_active'] == "On":
+        #                     bookmark_labels.append(slm_label['label_name'])
+
+        #             # Set the base routes
+        #             if bookmark['object_type'] == "MOVIE":
+        #                 route = f"/dvr/files/{channels_id}"
+        #             else:
+        #                 route = f"/dvr/groups/{channels_id}"
+
+        #             url_base = f"{channels_url}{route}"
+
+        #             # Fetch the current labels
+        #             try:
+        #                 response = requests.get(url_base, headers=url_headers)
+        #                 response.raise_for_status()
+        #                 current_labels = response.json().get("Labels", [])
+        #             except requests.RequestException as e:
+        #                 print(f"ERROR: Failed to fetch current labels for {url_base}: {e}")
+        #                 continue
+
+        #             url = f"{url_base}/labels"
+
+        #             # Delete labels not in bookmark_labels
+        #             if current_labels:
+        #                 for current_label in current_labels:
+        #                     if current_label not in bookmark_labels or bookmark_labels == []:
+        #                         delete_url = f"{url}/{urllib.parse.quote(current_label)}"
+        #                         try:
+        #                             delete_response = requests.delete(delete_url, headers=url_headers)
+        #                             delete_response.raise_for_status()
+        #                             print(f"{current_time()} INFO: Deleted label '{current_label}' from {bookmark_item}.")
+        #                         except requests.RequestException as e:
+        #                             print(f"{current_time()} ERROR: Failed to delete label '{current_label}' from {bookmark_item}: {e}")
+
+        #             # Add labels in bookmark_labels that are not in current_labels
+        #             if bookmark_labels:
+        #                 for bookmark_label in bookmark_labels:
+        #                     if bookmark_label not in current_labels or current_labels == []:
+        #                         put_url = f"{url}/{urllib.parse.quote(bookmark_label)}"
+        #                         try:
+        #                             put_response = requests.put(put_url, headers=url_headers)
+        #                             put_response.raise_for_status()
+        #                             print(f"{current_time()} INFO: Added label '{bookmark_label}' to {bookmark_item}.")
+        #                         except requests.RequestException as e:
+        #                             print(f"{current_time()} ERROR: Failed to add label '{bookmark_label}' to {bookmark_item}: {e}")
+
+        #     notification_add(f"{current_time()} Label assignment complete.")
         if channels_labels == "On":
             print(f"{current_time()} INFO: Updating Channels DVR labels...")
-            
+
             slm_labels = read_data(csv_slm_labels)
             slm_label_maps = read_data(csv_slm_label_maps)
 
-            for bookmark in bookmarks:
-                channels_id = bookmark['channels_id']
-                bookmark_item = f"{bookmark['title']} ({bookmark['release_year']}) | {bookmark['object_type']}"
-                bookmark_label_maps = []
-                bookmark_labels = []
-                current_labels = []
+            async def update_labels():
+                async with aiohttp.ClientSession() as session:
+                    tasks = [
+                        process_bookmark_labels(session, bookmark, slm_labels, slm_label_maps, channels_url, url_headers)
+                        for bookmark in bookmarks
+                    ]
+                    await asyncio.gather(*tasks)
 
-                if channels_id is not None and channels_id != "":
-                    # Map labels
-                    for slm_label_map in slm_label_maps:
-                        if bookmark['entry_id'] == slm_label_map['entry_id']:
-                            bookmark_label_maps.append(slm_label_map['label_id'])
-
-                    for slm_label in slm_labels:
-                        if slm_label['label_id'] in bookmark_label_maps and slm_label['label_active'] == "On":
-                            bookmark_labels.append(slm_label['label_name'])
-
-                    # Set the base routes
-                    if bookmark['object_type'] == "MOVIE":
-                        route = f"/dvr/files/{channels_id}"
-                    else:
-                        route = f"/dvr/groups/{channels_id}"
-
-                    url_base = f"{channels_url}{route}"
-
-                    # Fetch the current labels
-                    try:
-                        response = requests.get(url_base, headers=url_headers)
-                        response.raise_for_status()
-                        current_labels = response.json().get("Labels", [])
-                    except requests.RequestException as e:
-                        print(f"ERROR: Failed to fetch current labels for {url_base}: {e}")
-                        continue
-
-                    url = f"{url_base}/labels"
-
-                    # Delete labels not in bookmark_labels
-                    if current_labels:
-                        for current_label in current_labels:
-                            if current_label not in bookmark_labels or bookmark_labels == []:
-                                delete_url = f"{url}/{urllib.parse.quote(current_label)}"
-                                try:
-                                    delete_response = requests.delete(delete_url, headers=url_headers)
-                                    delete_response.raise_for_status()
-                                    print(f"{current_time()} INFO: Deleted label '{current_label}' from {bookmark_item}.")
-                                except requests.RequestException as e:
-                                    print(f"{current_time()} ERROR: Failed to delete label '{current_label}' from {bookmark_item}: {e}")
-
-                    # Add labels in bookmark_labels that are not in current_labels
-                    if bookmark_labels:
-                        for bookmark_label in bookmark_labels:
-                            if bookmark_label not in current_labels or current_labels == []:
-                                put_url = f"{url}/{urllib.parse.quote(bookmark_label)}"
-                                try:
-                                    put_response = requests.put(put_url, headers=url_headers)
-                                    put_response.raise_for_status()
-                                    print(f"{current_time()} INFO: Added label '{bookmark_label}' to {bookmark_item}.")
-                                except requests.RequestException as e:
-                                    print(f"{current_time()} ERROR: Failed to add label '{bookmark_label}' to {bookmark_item}: {e}")
-
+            asyncio.run(update_labels())
             notification_add(f"{current_time()} Label assignment complete.")
 
         notification_add(f"{current_time()} Connecting SLM and Channels DVR metadata complete.")
@@ -9654,48 +9670,158 @@ async def send_reprocess_requests(reprocess_session, reprocess_url):
     except asyncio.TimeoutError:
         notification_add(f"\n{current_time()} ERROR: Request for {reprocess_url} timed out.")
 
+# Asynchronous function to process bookmark labels
+async def process_bookmark_labels(session, bookmark, slm_labels, slm_label_maps, channels_url, url_headers):
+    channels_id = bookmark['channels_id']
+    bookmark_item = f"{bookmark['title']} ({bookmark['release_year']}) | {bookmark['object_type']}"
+    bookmark_label_maps = []
+    bookmark_labels = []
+
+    if channels_id is not None and channels_id != "":
+        # Map labels
+        for slm_label_map in slm_label_maps:
+            if bookmark['entry_id'] == slm_label_map['entry_id']:
+                bookmark_label_maps.append(slm_label_map['label_id'])
+
+        for slm_label in slm_labels:
+            if slm_label['label_id'] in bookmark_label_maps and slm_label['label_active'] == "On":
+                bookmark_labels.append(slm_label['label_name'])
+
+        # Set the base routes
+        route = f"/dvr/files/{channels_id}" if bookmark['object_type'] == "MOVIE" else f"/dvr/groups/{channels_id}"
+        url_base = f"{channels_url}{route}"
+
+        # Fetch the current labels
+        current_labels = await fetch_current_labels(session, url_base, url_headers)
+        if current_labels is None:
+            return
+
+        url = f"{url_base}/labels"
+
+        # Delete labels not in bookmark_labels
+        await delete_labels(session, url, current_labels, bookmark_labels, bookmark_item, url_headers)
+
+        # Add labels in bookmark_labels that are not in current_labels
+        await add_labels(session, url, current_labels, bookmark_labels, bookmark_item, url_headers)
+
+# Asynchronous request to fetch current labels
+async def fetch_current_labels(session, url_base, url_headers):
+    try:
+        async with session.get(url_base, headers=url_headers) as response:
+            response.raise_for_status()
+            json_response = await response.json()  # Await the coroutine
+            return json_response.get("Labels", [])  # Access the "Labels" key
+    except aiohttp.ClientError as e:
+        print(f"ERROR: Failed to fetch current labels for {url_base}: {e}")
+        return None
+
+# Asynchronous request to delete labels not in bookmark_labels
+async def delete_labels(session, url, current_labels, bookmark_labels, bookmark_item, url_headers):
+    for current_label in current_labels:
+        if current_label not in bookmark_labels or not bookmark_labels:
+            delete_url = f"{url}/{urllib.parse.quote(current_label)}"
+            try:
+                async with session.delete(delete_url, headers=url_headers) as response:
+                    response.raise_for_status()
+                    print(f"{current_time()} INFO: Deleted label '{current_label}' from {bookmark_item}.")
+            except aiohttp.ClientError as e:
+                print(f"{current_time()} ERROR: Failed to delete label '{current_label}' from {bookmark_item}: {e}")
+
+# Asynchronous request to add labels in bookmark_labels that are not in current_labels
+async def add_labels(session, url, current_labels, bookmark_labels, bookmark_item, url_headers):
+    for bookmark_label in bookmark_labels:
+        if bookmark_label not in current_labels or not current_labels:
+            put_url = f"{url}/{urllib.parse.quote(bookmark_label)}"
+            try:
+                async with session.put(put_url, headers=url_headers) as response:
+                    response.raise_for_status()
+                    print(f"{current_time()} INFO: Added label '{bookmark_label}' to {bookmark_item}.")
+            except aiohttp.ClientError as e:
+                print(f"{current_time()} ERROR: Failed to add label '{bookmark_label}' to {bookmark_item}: {e}")
+
 # Gets info from Channels DVR and adds it to SLM
 def get_slm_channels_info():
+    # bookmarks = read_data(csv_bookmarks)
+    # bookmarks_statuses = read_data(csv_bookmarks_status)
+
+    # dvr_files = get_channels_dvr_json('dvr_files')
+    # dvr_groups = get_channels_dvr_json('dvr_groups')
+
+    # for bookmark in bookmarks:
+
+    #     break_bookmark_statuses = None
+
+    #     for bookmark_status in bookmarks_statuses:
+    #         if bookmark['entry_id'] == bookmark_status['entry_id']:
+
+    #             for dvr_file in dvr_files:
+    #                 path_check = None
+    #                 stream_link_file_path_check = None
+
+    #                 if dvr_file['Path'] is not None and dvr_file['Path'] != "":
+    #                     path_check = clean_comparison_path(dvr_file['Path'])
+
+    #                 if bookmark_status['stream_link_file'] is not None and bookmark_status['stream_link_file'] != "":
+    #                     stream_link_file_path_check = clean_comparison_path(bookmark_status['stream_link_file']).split("slm/", 1)[1]
+    #                     stream_link_file_path_check = f"slm/{stream_link_file_path_check}"
+
+    #                 if path_check and stream_link_file_path_check and path_check == stream_link_file_path_check:
+
+    #                     if bookmark['object_type'] == "MOVIE":
+    #                         bookmark['channels_id'] = dvr_file['File ID']
+    #                     else:
+    #                         bookmark['channels_id'] = dvr_file['Group ID']
+
+    #                     break_bookmark_statuses = True
+    #                     break
+            
+    #         if break_bookmark_statuses:
+    #             break
+    
+    # write_data(csv_bookmarks, bookmarks)
+
+    # return dvr_files, dvr_groups
     bookmarks = read_data(csv_bookmarks)
     bookmarks_statuses = read_data(csv_bookmarks_status)
 
     dvr_files = get_channels_dvr_json('dvr_files')
     dvr_groups = get_channels_dvr_json('dvr_groups')
 
-    for bookmark in bookmarks:
+    # Process bookmarks concurrently using asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    tasks = [
+        process_bookmark_async(bookmark, bookmarks_statuses, dvr_files)
+        for bookmark in bookmarks
+    ]
+    loop.run_until_complete(asyncio.gather(*tasks))
+    loop.close()
 
-        break_bookmark_statuses = None
-
-        for bookmark_status in bookmarks_statuses:
-            if bookmark['entry_id'] == bookmark_status['entry_id']:
-
-                for dvr_file in dvr_files:
-                    path_check = None
-                    stream_link_file_path_check = None
-
-                    if dvr_file['Path'] is not None and dvr_file['Path'] != "":
-                        path_check = clean_comparison_path(dvr_file['Path'])
-
-                    if bookmark_status['stream_link_file'] is not None and bookmark_status['stream_link_file'] != "":
-                        stream_link_file_path_check = clean_comparison_path(bookmark_status['stream_link_file']).split("slm/", 1)[1]
-                        stream_link_file_path_check = f"slm/{stream_link_file_path_check}"
-
-                    if path_check and stream_link_file_path_check and path_check == stream_link_file_path_check:
-
-                        if bookmark['object_type'] == "MOVIE":
-                            bookmark['channels_id'] = dvr_file['File ID']
-                        else:
-                            bookmark['channels_id'] = dvr_file['Group ID']
-
-                        break_bookmark_statuses = True
-                        break
-            
-            if break_bookmark_statuses:
-                break
-    
     write_data(csv_bookmarks, bookmarks)
 
     return dvr_files, dvr_groups
+
+# Asynchronous helper function to process a single bookmark.
+async def process_bookmark_async(bookmark, bookmarks_statuses, dvr_files):
+    for bookmark_status in bookmarks_statuses:
+        if bookmark['entry_id'] == bookmark_status['entry_id']:
+            for dvr_file in dvr_files:
+                path_check = None
+                stream_link_file_path_check = None
+
+                if dvr_file['Path'] is not None and dvr_file['Path'] != "":
+                    path_check = clean_comparison_path(dvr_file['Path'])
+
+                if bookmark_status['stream_link_file'] is not None and bookmark_status['stream_link_file'] != "":
+                    stream_link_file_path_check = clean_comparison_path(bookmark_status['stream_link_file']).split("slm/", 1)[1]
+                    stream_link_file_path_check = f"slm/{stream_link_file_path_check}"
+
+                if path_check and stream_link_file_path_check and path_check == stream_link_file_path_check:
+                    if bookmark['object_type'] == "MOVIE":
+                        bookmark['channels_id'] = dvr_file['File ID']
+                    else:
+                        bookmark['channels_id'] = dvr_file['Group ID']
+                    return  # Exit once a match is found
 
 # Automation - Generate Stream Links for New & Recent Releases Only
 def run_slm_new_recent_releases():
