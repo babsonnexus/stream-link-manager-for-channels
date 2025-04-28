@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.27.1939"
+    slm_version = "v2025.04.28.1749"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -2363,7 +2363,7 @@ def webpage_modify_programs():
 
                     if field_object_type_input == 'MOVIE':
                         for index in field_status_inputs.keys():
-                            field_status_input = field_status_inputs.get(index)
+                            field_status_input = field_status_inputs.get(index, 'watched')
                             field_stream_link_override_input = field_stream_link_override_inputs.get(index)
                             field_special_action_input = field_special_action_inputs.get(index)
 
@@ -2377,7 +2377,7 @@ def webpage_modify_programs():
                         video_names = []
 
                         for index in field_season_episode_inputs.keys():
-                            field_status_input = field_status_inputs.get(index)
+                            field_status_input = field_status_inputs.get(index, 'watched')
                             field_stream_link_override_input = field_stream_link_override_inputs.get(index)
                             field_season_episode_input = field_season_episode_inputs.get(index)
                             field_season_episode_prefix_input = field_season_episode_prefix_inputs.get(index)
@@ -5878,19 +5878,23 @@ def webpage_reports_queries():
     reports_queries_lists = [{'name': 'Select a Report or Query...', 'value': 'reports_queries_cancel'}]
 
     if slm_stream_link_file_manager:
-        reports_queries_lists.append({'name': 'Movies / Shows: Currently Unavailable', 'value': 'query_currently_unavailable'})
-        reports_queries_lists.append({'name': 'Movies / Shows: Previously Watched', 'value': 'query_previously_watched'})
-        reports_queries_lists.append({'name': "Movies / Shows: Last 30 Days Original Release Date with Availablity*", 'value': 'query_slm_recent_releases_30_days'})
-        reports_queries_lists.append({'name': "Movies / Shows: Last 90 Days Original Release Date with Availablity*", 'value': 'query_slm_recent_releases_90_days'})
-        reports_queries_lists.append({'name': "Movies / Shows: Not on JustWatch*", 'value': 'query_not_on_justwatch'})
+        reports_queries_lists.append({'name': 'On-Demand: Summary', 'value': 'query_slm_summary'})
+        reports_queries_lists.append({'name': 'On-Demand: Currently Unavailable', 'value': 'query_currently_unavailable'})
+        reports_queries_lists.append({'name': 'On-Demand: Previously Watched', 'value': 'query_previously_watched'})
+        reports_queries_lists.append({'name': "On-Demand: Movies / Shows - Last 30 Days Original Release Date with Availablity*", 'value': 'query_slm_recent_releases_30_days'})
+        reports_queries_lists.append({'name': "On-Demand: Movies / Shows - Last 90 Days Original Release Date with Availablity*", 'value': 'query_slm_recent_releases_90_days'})
+        reports_queries_lists.append({'name': "On-Demand: Movies / Shows - Not on JustWatch*", 'value': 'query_not_on_justwatch'})
 
     if slm_channels_dvr_integration:
-        reports_queries_lists.append({'name': 'Movies / Shows: By Library Collection', 'value': 'query_mtm_programs_by_library_collection'})
+        reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Library Collection', 'value': 'query_mtm_programs_by_library_collection'})
+        reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Number of Files', 'value': 'query_mtm_programs_by_number_of_files'})
+        reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Size on Disk', 'value': 'query_mtm_programs_by_size_on_disk'})
+        reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Average Size per File', 'value': 'query_mtm_programs_by_average_file_size'})
 
     if slm_playlist_manager:
-        reports_queries_lists.append({'name': 'Stations: Parents and Children', 'value': 'query_plm_parent_children'})
+        reports_queries_lists.append({'name': 'Linear: Stations - Parents and Children', 'value': 'query_plm_parent_children'})
         if slm_channels_dvr_integration:
-            reports_queries_lists.append({'name': 'Stations: By Channel Collection', 'value': 'query_mtm_stations_by_channel_collection'})
+            reports_queries_lists.append({'name': 'Channels DVR: Stations by Channel Collection', 'value': 'query_mtm_stations_by_channel_collection'})
 
     if request.method == 'POST':
         action = request.form['action']
@@ -5934,30 +5938,39 @@ def run_query(query_name):
     run_query = None
     results = []
 
+    # GEN
+    settings_data = read_data(csv_settings)
+    channels_url = settings_data[0]["settings"]
+
+    # SLM
     bookmarks_data = read_data(csv_bookmarks)
     bookmarks_status_data = read_data(csv_bookmarks_status)
-    settings_data = read_data(csv_settings)
     slmappings_data = read_data(csv_slmappings)
     streaming_services_data = read_data(csv_streaming_services)
+    slm_labels_data = read_data(csv_slm_labels)
+    slm_label_maps_data = read_data(csv_slm_label_maps)
+
+    # PLM
     plm_child_to_parent_maps_data = read_data(csv_playlistmanager_child_to_parent)
     plm_all_stations_data = read_data(csv_playlistmanager_combined_m3us)
     plm_parents_data = read_data(csv_playlistmanager_parents)
     plm_playlists_data = read_data(csv_playlistmanager_playlists)
 
     # Convert the data into pandas DataFrames
+    settings = pd.DataFrame(settings_data)
     bookmarks = pd.DataFrame(bookmarks_data)
     bookmarks_status = pd.DataFrame(bookmarks_status_data)
-    settings = pd.DataFrame(settings_data)
     slmappings = pd.DataFrame(slmappings_data)
     streaming_services = pd.DataFrame(streaming_services_data)
+    slm_labels = pd.DataFrame(slm_labels_data)
+    slm_label_maps = pd.DataFrame(slm_label_maps_data)
     plm_child_to_parent_maps = pd.DataFrame(plm_child_to_parent_maps_data)
     plm_all_stations = pd.DataFrame(plm_all_stations_data)
     plm_parents = pd.DataFrame(plm_parents_data)
     plm_playlists = pd.DataFrame(plm_playlists_data)
 
-    channels_url = settings_data[0]["settings"]
-
     if query_name in [
+                        'query_slm_summary',
                         'query_currently_unavailable',
                         'query_previously_watched',
                         'query_slm_recent_releases_30_days',
@@ -5972,36 +5985,124 @@ def run_query(query_name):
 
             run_query = True
 
-            if query_name == 'query_currently_unavailable':
-                # Add a new column for the season using string slicing
-                bookmarks_status['Season'] = bookmarks_status['season_episode'].str[:3]
+            if query_name == 'query_slm_summary':
+                # Merge bookmarks with slm_label_maps_data to get label_ids for each entry_id
+                bookmarks_with_labels = pd.merge(
+                    bookmarks,
+                    slm_label_maps,
+                    on='entry_id',
+                    how='left'
+                )
+
+                # Merge the result with slm_labels_data to get label_name for each label_id
+                bookmarks_with_labels = pd.merge(
+                    bookmarks_with_labels,
+                    slm_labels[slm_labels['label_active'] == "On"],  # Only include active labels
+                    on='label_id',
+                    how='left'
+                )
+
+                # Group by entry_id and aggregate label_name into a comma-delimited list
+                bookmarks_with_labels = bookmarks_with_labels.groupby(
+                    ['entry_id', 'object_type', 'title', 'release_year', 'url', 'country_code', 'language_code', 'bookmark_action']
+                )['label_name'].apply(lambda x: ', '.join(x.dropna())).reset_index()
+
+                # Rename the aggregated column to 'labels'
+                bookmarks_with_labels.rename(columns={'label_name': 'labels'}, inplace=True)
 
                 query = """
-                SELECT 
-                    bookmarks.object_type AS "Type", 
-                    bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
-                    bookmarks_status.Season, 
-                    CASE 
-                        WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                SELECT
+                    bookmarks_with_labels.object_type AS "Type",
+                    bookmarks_with_labels.title || " (" || bookmarks_with_labels.release_year || ")" AS "Name",
+                    CASE
+                        WHEN bookmarks_with_labels.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                        WHEN bookmarks_with_labels.object_type = 'VIDEO' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
                         ELSE ''
-                    END AS "# Episodes"
-                FROM 
-                    bookmarks 
-                INNER JOIN 
-                    bookmarks_status 
-                ON 
-                    bookmarks.entry_id = bookmarks_status.entry_id
-                WHERE 
-                    bookmarks_status.status = 'unwatched' 
-                    AND bookmarks_status.stream_link_file = ''
-                GROUP BY 
-                    bookmarks.object_type, 
-                    bookmarks.title || " (" || bookmarks.release_year || ")", 
-                    bookmarks_status.Season
-                ORDER BY 
-                    bookmarks.object_type, 
-                    bookmarks.title || " (" || bookmarks.release_year || ")"
+                    END AS "# Episodes/Videos",
+                    SUM(CASE WHEN bookmarks_status.status = 'unwatched' THEN 1 ELSE 0 END) AS "# Unwatched",
+                    SUM(CASE WHEN bookmarks_status.status = 'watched' THEN 1 ELSE 0 END) AS "# Watched",
+                    bookmarks_with_labels.labels AS "Labels"
+                FROM
+                    bookmarks_with_labels
+                INNER JOIN
+                    bookmarks_status
+                ON
+                    bookmarks_with_labels.entry_id = bookmarks_status.entry_id
+                GROUP BY
+                    bookmarks_with_labels.object_type,
+                    bookmarks_with_labels.title || " (" || bookmarks_with_labels.release_year || ")",
+                    bookmarks_with_labels.labels
+                ORDER BY
+                    bookmarks_with_labels.object_type,
+                    bookmarks_with_labels.title || " (" || bookmarks_with_labels.release_year || ")"
                 """
+
+            elif query_name in [
+                                'query_currently_unavailable',
+                                'query_previously_watched'
+                             ]:
+
+                # Add a new column for the season using string slicing
+                bookmarks_status['Season'] = bookmarks_status['season_episode'].apply(lambda x: x[:3] if isinstance(x, str) and x.startswith('S') else '')
+
+                if query_name == 'query_currently_unavailable':
+
+                    query = """
+                    SELECT 
+                        bookmarks.object_type AS "Type", 
+                        bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
+                        bookmarks_status.Season, 
+                        CASE 
+                            WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                            WHEN bookmarks.object_type = 'VIDEO' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                            ELSE ''
+                        END AS "# Episodes/Videos"
+                    FROM 
+                        bookmarks 
+                    INNER JOIN 
+                        bookmarks_status 
+                    ON 
+                        bookmarks.entry_id = bookmarks_status.entry_id
+                    WHERE 
+                        bookmarks_status.status = 'unwatched' 
+                        AND bookmarks_status.stream_link_file = ''
+                    GROUP BY 
+                        bookmarks.object_type, 
+                        bookmarks.title || " (" || bookmarks.release_year || ")", 
+                        bookmarks_status.Season
+                    ORDER BY 
+                        bookmarks.object_type, 
+                        bookmarks.title || " (" || bookmarks.release_year || ")"
+                    """
+
+                elif query_name == 'query_previously_watched':
+
+                    query = """
+                    SELECT 
+                        bookmarks.object_type AS "Type", 
+                        bookmarks.title || " (" || bookmarks.release_year || ")" AS "Name", 
+                        bookmarks_status.Season, 
+                        CASE 
+                            WHEN bookmarks.object_type = 'SHOW' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                            WHEN bookmarks.object_type = 'VIDEO' THEN CAST(COUNT(bookmarks_status.season_episode) AS INTEGER)
+                            ELSE ''
+                        END AS "# Episodes/Videos"
+                    FROM 
+                        bookmarks 
+                    INNER JOIN 
+                        bookmarks_status 
+                    ON 
+                        bookmarks.entry_id = bookmarks_status.entry_id
+                    WHERE 
+                        bookmarks_status.status = 'watched'
+                    GROUP BY 
+                        bookmarks.object_type, 
+                        bookmarks.title || " (" || bookmarks.release_year || ")", 
+                        bookmarks_status.Season
+                    ORDER BY 
+                        bookmarks.object_type, 
+                        bookmarks.title || " (" || bookmarks.release_year || ")"
+                    """
 
             elif query_name in ['query_slm_recent_releases_30_days', 'query_slm_recent_releases_90_days']:
                 # Step 1: Filter bookmarks_status_data for entries within the last xxx days
@@ -6021,6 +6122,10 @@ def run_query(query_name):
                     ]
                     .sort_values(by='original_release_date', ascending=False)
                 )
+
+                bookmarks_status_filtered_data = bookmarks_status_filtered_data[
+                    bookmarks_status_filtered_data['entry_id'].map(bookmarks.set_index('entry_id')['object_type']) != "VIDEO"
+                ]
 
                 # Step 2: Add node_id, country_code, and language_code
                 bookmarks_status_filtered_data['node_id'] = bookmarks_status_filtered_data.apply(
@@ -6125,6 +6230,7 @@ def run_query(query_name):
                     bookmarks.entry_id = bookmarks_status.entry_id
                 WHERE 
                     bookmarks_status.original_release_date = '9999-12-31'
+                    AND bookmarks.object_type != 'VIDEO'
                 GROUP BY 
                     bookmarks.object_type, 
                     bookmarks.title || " (" || bookmarks.release_year || ")", 
@@ -6213,11 +6319,11 @@ def run_query(query_name):
             """
 
     elif query_name in [
-                            'query_mtm_programs_by_library_collection'
+                            'query_mtm_programs_by_library_collection',
+                            'query_mtm_programs_by_size_on_disk',
+                            'query_mtm_programs_by_number_of_files',
+                            'query_mtm_programs_by_average_file_size'
                        ]:
-
-        # Get a list of Channels DVR Library Collections and item assignments
-        items_by_library_collection_data = get_channels_dvr_json('items_by_library_collection')
 
         # Get a list of Channels DVR Movies
         channels_movies_url = f"{channels_url}/api/v1/movies?format=csv"
@@ -6226,6 +6332,10 @@ def run_query(query_name):
         # Get a list of Channels DVR Shows
         channels_shows_url = f"{channels_url}/api/v1/shows?format=csv"
         waste_results, channels_shows_data, waste_message = parse_csv_url(channels_shows_url)
+
+        # Get a list of Channels DVR Video Groups
+        channels_video_groups_url = f"{channels_url}/api/v1/video_groups?format=csv"
+        waste_results, channels_video_groups_data, waste_message = parse_csv_url(channels_video_groups_url)
 
         # Combine the list of Channels DVR Movies and Shows
         channels_programs_data = []
@@ -6236,7 +6346,8 @@ def run_query(query_name):
                     {
                         "program_type": "MOVIE",
                         "program_id": item.get("ID", ''),
-                        "program_title": item.get("Title", '')
+                        "program_title": item.get("Title", ''),
+                        "program_year": '' if item.get("Release Year", 0) == 0 else item.get("Release Year", '')
                     }
                 )
 
@@ -6246,33 +6357,166 @@ def run_query(query_name):
                     {
                         "program_type": "SHOW",
                         "program_id": item.get("ID", ''),
-                        "program_title": item.get("Name", '')
+                        "program_title": item.get("Name", ''),
+                        "program_year": '' if item.get("Release Year", 0) == 0 else item.get("Release Year", '')
                     }
                 )
 
-        # If have both, then set query and run_query to True
-        if items_by_library_collection_data and channels_programs_data:
-            run_query = True
+        if channels_video_groups_data:
+            for item in channels_video_groups_data:
+                channels_programs_data.append(
+                    {
+                        "program_type": "VIDEO",
+                        "program_id": item.get("ID", ''),
+                        "program_title": item.get("Name", ''),
+                        "program_year": '' if item.get("Release Year", 0) == 0 else item.get("Release Year", '')
+                    }
+                )
 
-            items_by_library_collection = pd.DataFrame(items_by_library_collection_data)
+        if channels_programs_data:
+
             channels_programs = pd.DataFrame(channels_programs_data)
 
-            query = """
-            SELECT
-                channels_programs.program_type AS "Type",
-                channels_programs.program_title AS "Title",
-                COALESCE(items_by_library_collection.library_collection_name, 'No Library Collection') AS "Library Collection"
-            FROM
-                channels_programs
-            LEFT JOIN
-                items_by_library_collection
-            ON
-                channels_programs.program_id = items_by_library_collection.program_id
-            GROUP BY
-                channels_programs.program_type,
-                channels_programs.program_title,
-                items_by_library_collection.library_collection_name
-            """
+            if query_name == 'query_mtm_programs_by_library_collection':
+
+                # Get a list of Channels DVR Library Collections and item assignments
+                items_by_library_collection_data = get_channels_dvr_json('items_by_library_collection')
+
+                # If have both, then set query and run_query to True
+                if items_by_library_collection_data:
+                    run_query = True
+                    items_by_library_collection = pd.DataFrame(items_by_library_collection_data)
+
+                    query = """
+                    SELECT
+                        channels_programs.program_type AS "Type",
+                        channels_programs.program_title || 
+                            CASE 
+                                WHEN channels_programs.program_type = 'SHOW' THEN ' (' || channels_programs.program_year || ')' 
+                                ELSE '' 
+                            END AS "Name",
+                        CASE
+                            WHEN GROUP_CONCAT(items_by_library_collection.library_collection_name, ', ') IS NULL THEN 'No Library Collection'
+                            ELSE GROUP_CONCAT(items_by_library_collection.library_collection_name, ', ')
+                        END AS "Library Collection"
+                    FROM
+                        channels_programs
+                    LEFT JOIN
+                        items_by_library_collection
+                    ON
+                        channels_programs.program_id = items_by_library_collection.program_id
+                    GROUP BY
+                        channels_programs.program_type,
+                        channels_programs.program_title,
+                        channels_programs.program_year
+                    """
+
+            elif query_name in [
+                                    'query_mtm_programs_by_size_on_disk',
+                                    'query_mtm_programs_by_number_of_files',
+                                    'query_mtm_programs_by_average_file_size'
+                            ]:
+
+                dvr_files_data = get_channels_dvr_json('dvr_files')
+
+                if dvr_files_data:
+                    run_query = True
+
+                    dvr_files_data_processed = []
+                    for item in dvr_files_data:
+                        dvr_files_data_processed.append({
+                            "File ID": item.get("File ID", ''),
+                            "Group ID": item.get("Group ID", ''),
+                            "File Size": item.get("File Size", 0)
+                        })
+
+                    dvr_files = pd.DataFrame(dvr_files_data_processed)
+
+                    query = """
+                    SELECT
+                        channels_programs.program_type AS "Type",
+                        channels_programs.program_title || 
+                            CASE 
+                                WHEN channels_programs.program_type = 'SHOW' THEN ' (' || channels_programs.program_year || ')' 
+                                ELSE '' 
+                            END AS "Name",
+                        COUNT(
+                            CASE 
+                                WHEN channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id THEN 1
+                                WHEN channels_programs.program_type != 'MOVIE' AND dvr_files."Group ID" = channels_programs.program_id THEN 1
+                                ELSE NULL
+                            END
+                        ) AS "# of Files",
+                        CASE
+                            WHEN SUM(
+                                CASE 
+                                    WHEN channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                    WHEN channels_programs.program_type != 'MOVIE' AND dvr_files."Group ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                    ELSE 0
+                                END
+                            ) / 1073741824.0 < 0.1 THEN '<0.1 GB'
+                            ELSE ROUND(
+                                SUM(
+                                    CASE 
+                                        WHEN channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                        WHEN channels_programs.program_type != 'MOVIE' AND dvr_files."Group ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                        ELSE 0
+                                    END
+                                ) / 1073741824.0, 1
+                            ) || ' GB'
+                        END AS "Size on Disk",
+                        CASE
+                            WHEN COUNT(
+                                CASE 
+                                    WHEN channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id THEN 1
+                                    WHEN channels_programs.program_type != 'MOVIE' AND dvr_files."Group ID" = channels_programs.program_id THEN 1
+                                    ELSE NULL
+                                END
+                            ) = 0 THEN NULL
+                            WHEN ROUND(
+                                SUM(
+                                    CASE 
+                                        WHEN channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                        WHEN channels_programs.program_type != 'MOVIE' AND dvr_files."Group ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                        ELSE 0
+                                    END
+                                ) / COUNT(
+                                    CASE 
+                                        WHEN channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id THEN 1
+                                        WHEN channels_programs.program_type != 'MOVIE' AND dvr_files."Group ID" = channels_programs.program_id THEN 1
+                                        ELSE NULL
+                                    END
+                                ) / 1073741824.0, 1
+                            ) < 0.1 THEN '<0.1 GB'
+                            ELSE ROUND(
+                                SUM(
+                                    CASE 
+                                        WHEN channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                        WHEN channels_programs.program_type != 'MOVIE' AND dvr_files."Group ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                        ELSE 0
+                                    END
+                                ) / COUNT(
+                                    CASE 
+                                        WHEN channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id THEN 1
+                                        WHEN channels_programs.program_type != 'MOVIE' AND dvr_files."Group ID" = channels_programs.program_id THEN 1
+                                        ELSE NULL
+                                    END
+                                ) / 1073741824.0, 1
+                            ) || ' GB'
+                        END AS "Average Size per File"
+                    FROM
+                        channels_programs
+                    LEFT JOIN
+                        dvr_files
+                    ON
+                        (channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id)
+                        OR
+                        (channels_programs.program_type != 'MOVIE' AND dvr_files."Group ID" = channels_programs.program_id)
+                    GROUP BY
+                        channels_programs.program_type,
+                        channels_programs.program_title,
+                        channels_programs.program_year            
+                    """
 
     # Execute the query
     if run_query:
@@ -6281,7 +6525,21 @@ def run_query(query_name):
         if query_name == 'query_mtm_stations_by_channel_collection':
             results = sorted(results, key=lambda x: (sort_key(x["Station Name"].casefold()), sort_key(x["Channel Collection Name"].casefold())))
         elif query_name == 'query_mtm_programs_by_library_collection':
-            results = sorted(results, key=lambda x: (x["Type"], sort_key(x["Title"].casefold()), sort_key(x["Library Collection"].casefold())))
+            results = sorted(results, key=lambda x: (x["Type"], sort_key(x["Name"].casefold()), sort_key(x["Library Collection"].casefold())))
+        elif query_name == 'query_mtm_programs_by_size_on_disk':
+            results = sorted(results, key=lambda x: (
+                -float(x["Size on Disk"].split()[0]) if x["Size on Disk"] not in ["<0.1 GB", None, ""] else 0,
+                x["Type"].casefold(),
+                x["Name"].casefold()
+            ))
+        elif query_name == 'query_mtm_programs_by_number_of_files':
+            results = sorted(results, key=lambda x: (-x["# of Files"], sort_key(x["Type"].casefold()), sort_key(x["Name"].casefold())))
+        elif query_name == 'query_mtm_programs_by_average_file_size':
+            results = sorted(results, key=lambda x: (
+                -float(x["Average Size per File"].split()[0]) if x["Average Size per File"] not in ["<0.1 GB", None, ""] else 0,
+                x["Type"].casefold(),
+                x["Name"].casefold()
+            ))
 
     return results
 
@@ -9647,7 +9905,7 @@ def prune_scan_channels():
                     await asyncio.gather(*tasks)
 
             asyncio.run(update_labels())
-            notification_add(f"{current_time()} Label assignment complete.")
+            notification_add(f"{current_time()} Label assignments complete.")
 
         notification_add(f"{current_time()} Connecting SLM and Channels DVR metadata complete.")
 
@@ -9741,6 +9999,7 @@ async def add_labels(session, url, current_labels, bookmark_labels, bookmark_ite
 
 # Gets info from Channels DVR and adds it to SLM
 def get_slm_channels_info():
+    # print(f"{current_time()} INFO: Importing Channels DVR info...")
     # bookmarks = read_data(csv_bookmarks)
     # bookmarks_statuses = read_data(csv_bookmarks_status)
 
@@ -9780,48 +10039,46 @@ def get_slm_channels_info():
     
     # write_data(csv_bookmarks, bookmarks)
 
-    # return dvr_files, dvr_groups
-    bookmarks = read_data(csv_bookmarks)
-    bookmarks_statuses = read_data(csv_bookmarks_status)
+    # print(f"{current_time()} INFO: Finished importing Channels DVR info.")
 
+    # return dvr_files, dvr_groups
+    print(f"{current_time()} INFO: Importing Channels DVR info...")
+
+    # Read data
+    bookmarks = read_data(csv_bookmarks)
+    bookmarks_statuses = [
+        bookmarks_status for bookmarks_status in read_data(csv_bookmarks_status) if bookmarks_status['stream_link_file']
+    ]
+
+    # Get dvr_files and dvr_groups as they are
     dvr_files = get_channels_dvr_json('dvr_files')
     dvr_groups = get_channels_dvr_json('dvr_groups')
 
-    # Process bookmarks concurrently using asyncio
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    tasks = [
-        process_bookmark_async(bookmark, bookmarks_statuses, dvr_files)
-        for bookmark in bookmarks
-    ]
-    loop.run_until_complete(asyncio.gather(*tasks))
-    loop.close()
+    # Create a dictionary for efficient DVR file lookups
+    dvr_files_lookup = {
+        clean_comparison_path(dvr_file['Path']): dvr_file for dvr_file in dvr_files if dvr_file['Path']
+    }
 
-    write_data(csv_bookmarks, bookmarks)
+    for bookmark in bookmarks:
+        for bookmarks_status in bookmarks_statuses:
+            if bookmark['entry_id'] == bookmarks_status['entry_id']:
+                # Precompute the cleaned stream link file path
+                stream_link_file_path_check = f"slm/{clean_comparison_path(bookmarks_status['stream_link_file']).split('slm/', 1)[1]}"
 
-    return dvr_files, dvr_groups
-
-# Asynchronous helper function to process a single bookmark.
-async def process_bookmark_async(bookmark, bookmarks_statuses, dvr_files):
-    for bookmark_status in bookmarks_statuses:
-        if bookmark['entry_id'] == bookmark_status['entry_id']:
-            for dvr_file in dvr_files:
-                path_check = None
-                stream_link_file_path_check = None
-
-                if dvr_file['Path'] is not None and dvr_file['Path'] != "":
-                    path_check = clean_comparison_path(dvr_file['Path'])
-
-                if bookmark_status['stream_link_file'] is not None and bookmark_status['stream_link_file'] != "":
-                    stream_link_file_path_check = clean_comparison_path(bookmark_status['stream_link_file']).split("slm/", 1)[1]
-                    stream_link_file_path_check = f"slm/{stream_link_file_path_check}"
-
-                if path_check and stream_link_file_path_check and path_check == stream_link_file_path_check:
+                # Match DVR file paths and update bookmark data
+                if stream_link_file_path_check in dvr_files_lookup:
                     if bookmark['object_type'] == "MOVIE":
-                        bookmark['channels_id'] = dvr_file['File ID']
+                        bookmark['channels_id'] = dvr_files_lookup[stream_link_file_path_check]['File ID']
                     else:
-                        bookmark['channels_id'] = dvr_file['Group ID']
-                    return  # Exit once a match is found
+                        bookmark['channels_id'] = dvr_files_lookup[stream_link_file_path_check]['Group ID']
+                    break  # Exit the inner loop once a match is found
+
+    # Write updated bookmarks back to the file
+    write_data(csv_bookmarks, bookmarks)
+    print(f"{current_time()} INFO: Finished importing Channels DVR info.")
+
+    # Return dvr_files and dvr_groups as they are
+    return dvr_files, dvr_groups
 
 # Automation - Generate Stream Links for New & Recent Releases Only
 def run_slm_new_recent_releases():
