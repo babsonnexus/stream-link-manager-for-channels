@@ -24,16 +24,16 @@ from jinja2 import TemplateNotFound
 import yt_dlp
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.04.14.1925"
+slm_version = "v2025.04.30.1508"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.28.1749"
+    slm_version = "v2025.04.30.1508"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -703,8 +703,8 @@ def get_country_code():
 
     global timeout_occurred
     timeout_occurred = False
-    print(f"\n{current_time()} Searching for country code for Streaming Services...")
-    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
+    print(f"{current_time()} Searching for country code for Streaming Services...")
+    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.")
 
     # Search times out after 30 seconds
     timer = threading.Timer(30, timeout_handler)
@@ -718,11 +718,11 @@ def get_country_code():
         if user_country_code in valid_country_codes:
             country_code_input = user_country_code
     except TimeoutError:
-        print(f"{current_time()} INFO: Search timed out. Continuing to next step...\n")
+        print(f"{current_time()} INFO: Search timed out. Continuing to next step...")
     except KeyboardInterrupt:
-        print(f"{current_time()} INFO: Search interrupted by user. Continuing to next step...\n")
+        print(f"{current_time()} INFO: Search interrupted by user. Continuing to next step...")
     except Exception as e:
-        print(f"{current_time()} INFO: Error getting geolocation: {e}. Continuing to next step...\n")
+        print(f"{current_time()} INFO: Error getting geolocation: {e}. Continuing to next step...")
     finally:
         timer.cancel()  # Disable the timer
 
@@ -733,7 +733,7 @@ def get_country_code():
         print(f"{current_time()} INFO: Country not found, using default value. Please set your Country in 'Settings'.")
         country_code_new = country_code
 
-    print(f"{current_time()} INFO: Country Code set to '{country_code_new}'\n")
+    print(f"{current_time()} INFO: Country Code set to '{country_code_new}'")
 
     return country_code_new
 
@@ -1112,7 +1112,7 @@ def get_program_search(program_search, country_code, language_code, num_results)
         program_search_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
         program_search_results_json = program_search_results.json()
     except requests.RequestException as e:
-        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
+        print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
 
     return program_search_results_json
 
@@ -1623,7 +1623,7 @@ def get_program_new(date_new, country_code, language_code, num_results, provider
         program_new_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
         program_new_results_json = program_new_results.json()
     except requests.RequestException as e:
-        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
+        print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
 
     if program_new_results_json:
         program_new_results_json_array = program_new_results_json["data"]["newTitles"]["edges"]
@@ -1680,7 +1680,7 @@ def get_program_new(date_new, country_code, language_code, num_results, provider
                 offer_raw_clearname = record["newOffer"]["package"]["clearName"]
                 offers_raw_list.append({"icon": offer_raw_icon, "sort": offer_raw_clearname})
             except:
-                print(f"\n{current_time()} WARNING: Unable to find offer icon for {record}. Skipping...")
+                print(f"{current_time()} WARNING: Unable to find offer icon for {record}. Skipping...")
 
             offers_raw_list_sorted = sorted(offers_raw_list, key=lambda x: sort_key(x["sort"]))
             icons_list = []
@@ -1748,7 +1748,7 @@ def get_streaming_services_map():
     try:
         provider_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
     except requests.RequestException as e:
-        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
+        print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
 
     if provider_results:
         provider_results_json = provider_results.json()
@@ -2065,7 +2065,7 @@ def webpage_modify_programs():
 
                     movie_path, tv_path, video_path = get_movie_tv_path()
 
-                    print(f"\nRemoved files/directories:\n")
+                    print(f"Removed files/directories:")
                     remove_rogue_empty(movie_path, tv_path, video_path, bookmarks_statuses)
 
                     if object_type_selected_prior == "MOVIE":
@@ -2223,7 +2223,7 @@ def webpage_modify_programs():
 
                             movie_path, tv_path, video_path = get_movie_tv_path()
 
-                            print(f"\nRemoved files/directories:\n")
+                            print(f"Removed files/directories:")
                             remove_rogue_empty(movie_path, tv_path, video_path, bookmarks_statuses)
 
                             program_modify_message = f"{current_time()} INFO: {program_modify_delete_episode_season_episode} deleted."
@@ -3058,7 +3058,7 @@ def get_streaming_services():
     try:
         provider_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
     except requests.RequestException as e:
-        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
+        print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
 
     if provider_results:
         provider_results_json = provider_results.json()
@@ -4185,14 +4185,14 @@ def download_internal(filename):
         return m3u_content
 
     else:
-        return f"\n{current_time()} ERROR: '{filename}' does not exist or is not turned on."
+        return f"{current_time()} ERROR: '{filename}' does not exist or is not turned on."
 
 # Goes through each of the playlists and combines all m3us together into a single list
 def get_combined_m3us():
     playlists = read_data(csv_playlistmanager_playlists)
     combined_m3us = []
 
-    print(f"\n{current_time()} Starting combination of playlists...")
+    print(f"{current_time()} Starting combination of playlists...")
 
     for playlist in playlists:
         response = None
@@ -4212,11 +4212,11 @@ def get_combined_m3us():
             new_row = { 'child_m3u_id_channel_id': check_m3u_id_channel_id, 'parent_channel_id': 'Unassigned', 'stream_format_override': 'None' }
             append_data(csv_playlistmanager_child_to_parent, new_row)
 
-    print(f"\n{current_time()} Finished combination of playlists.")
+    print(f"{current_time()} Finished combination of playlists.")
 
 # Parse the m3u Playlist to get all the details
 def parse_m3u(m3u_id, m3u_name, response):
-    print(f"\n{current_time()} INFO: Beginning parse of {m3u_name} ({m3u_id}).")
+    print(f"{current_time()} INFO: Beginning parse of {m3u_name} ({m3u_id}).")
 
     data = response.text.splitlines()
     cleaned_data = clean_m3u(data)
@@ -4308,7 +4308,7 @@ def parse_m3u(m3u_id, m3u_name, response):
     if current_record:
         records.append(current_record)
 
-    print(f"\n{current_time()} INFO: Initial parse of {m3u_name} ({m3u_id}) complete. Beginning check for unique 'channel-id' values.")
+    print(f"{current_time()} INFO: Initial parse of {m3u_name} ({m3u_id}) complete. Beginning check for unique 'channel-id' values.")
 
     # Ensure unique channel-id
     channel_id_counts = {}
@@ -4322,7 +4322,7 @@ def parse_m3u(m3u_id, m3u_name, response):
         else:
             channel_id_counts[channel_id] = 0
 
-    print(f"\n{current_time()} INFO: Finished parse of {m3u_name} ({m3u_id}).")
+    print(f"{current_time()} INFO: Finished parse of {m3u_name} ({m3u_id}).")
 
     return records
 
@@ -4501,7 +4501,7 @@ def set_child_to_parent(child_m3u_id_channel_id, parent_channel_id, stream_forma
 
 # Creates the m3u(s) and XML EPG(s)
 def get_final_m3us_epgs():
-    notification_add(f"\n{current_time()} Starting generation of final m3u(s) and XML EPG(s)...\n")
+    notification_add(f"{current_time()} Starting generation of final m3u(s) and XML EPG(s)...")
 
     settings = read_data(csv_settings)
 
@@ -4767,7 +4767,7 @@ def get_final_m3us_epgs():
     create_chunk_files(epg_strmlnk_final_m3us, "plm_epg_strmlnk_m3u", "m3u", max_stations)
     get_epgs_for_m3us()
 
-    notification_add(f"\n{current_time()} Finished generation of final m3u(s) and XML EPG(s).")
+    notification_add(f"{current_time()} Finished generation of final m3u(s) and XML EPG(s).")
 
 # Runs through all the records to find a valid value to return
 def get_m3u_field_value(field, combined_children, children):
@@ -6005,7 +6005,7 @@ def run_query(query_name):
                 # Group by entry_id and aggregate label_name into a comma-delimited list
                 bookmarks_with_labels = bookmarks_with_labels.groupby(
                     ['entry_id', 'object_type', 'title', 'release_year', 'url', 'country_code', 'language_code', 'bookmark_action']
-                )['label_name'].apply(lambda x: ', '.join(x.dropna())).reset_index()
+                )['label_name'].apply(lambda x: ', '.join(x.dropna()) if not x.dropna().empty else "No Assigned Labels").reset_index()
 
                 # Rename the aggregated column to 'labels'
                 bookmarks_with_labels.rename(columns={'label_name': 'labels'}, inplace=True)
@@ -6573,7 +6573,7 @@ def webpage_tools_gracenotesearch():
                 try:
                     gracenote_search_results_base = requests.get(gracenote_search_url_entry, headers=url_headers)
                 except requests.RequestException as e:
-                    gracenote_search_message = f"\n{current_time()} ERROR: During search, received {e}. Please try again."
+                    gracenote_search_message = f"{current_time()} ERROR: During search, received {e}. Please try again."
 
             else:
                 gracenote_search_message = f"{current_time()} ERROR: Channels URL is incorrect. Please update in the 'Settings' area."
@@ -6863,20 +6863,28 @@ def webpage_tools_automation():
     auto_update_schedule_frequency = settings[18]["settings"]
     plm_update_stations_schedule = settings[13]["settings"]
     plm_update_stations_schedule_time = settings[14]["settings"]
-    plm_update_stations_schedule_frequency = settings[44]["settings"]    # [44] PLM: Update Stations Process Schedule Frequency
+    plm_update_stations_schedule_frequency = settings[44]["settings"]               # [44] PLM: Update Stations Process Schedule Frequency
     plm_update_m3us_epgs_schedule = settings[15]["settings"]
     plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
     plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
-    reset_channels_passes = settings[29]["settings"]                     # [29] MTM: Automation - Reset Channels DVR Passes On/Off
-    reset_channels_passes_time = settings[30]["settings"]                # [30] MTM: Automation - Reset Channels DVR Passes Start Time
-    reset_channels_passes_frequency = settings[31]["settings"]           # [31] MTM: Automation - Reset Channels DVR Passes Frequency
-    slm_new_recent_releases = settings[32]["settings"]                   # [32] MTM: Automation - SLM New & Recent Releases On/Off
-    slm_new_recent_releases_time = settings[33]["settings"]              # [33] MTM: Automation - SLM New & Recent Releases Start Time
-    slm_new_recent_releases_frequency = settings[34]["settings"]         # [34] MTM: Automation - SLM New & Recent Releases Frequency
-    slm_new_recent_releases_when = settings[35]["settings"]              # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
-    refresh_channels_m3u_playlists = settings[36]["settings"]            # [36] MTM: Automation - Refresh Channels M3U Playlists On/Off
-    refresh_channels_m3u_playlists_time = settings[37]["settings"]       # [37] MTM: Automation - Refresh Channels M3U Playlists Start Time
-    refresh_channels_m3u_playlists_frequency = settings[38]["settings"]  # [38] MTM: Automation - Refresh Channels M3U Playlists Frequency
+    reset_channels_passes = settings[29]["settings"]                                # [29] MTM: Automation - Reset Channels DVR Passes On/Off
+    reset_channels_passes_time = settings[30]["settings"]                           # [30] MTM: Automation - Reset Channels DVR Passes Start Time
+    reset_channels_passes_frequency = settings[31]["settings"]                      # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+    slm_new_recent_releases = settings[32]["settings"]                              # [32] MTM: Automation - SLM New & Recent Releases On/Off
+    slm_new_recent_releases_time = settings[33]["settings"]                         # [33] MTM: Automation - SLM New & Recent Releases Start Time
+    slm_new_recent_releases_frequency = settings[34]["settings"]                    # [34] MTM: Automation - SLM New & Recent Releases Frequency
+    slm_new_recent_releases_when = settings[35]["settings"]                         # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
+    refresh_channels_m3u_playlists = settings[36]["settings"]                       # [36] MTM: Automation - Refresh Channels M3U Playlists On/Off
+    refresh_channels_m3u_playlists_time = settings[37]["settings"]                  # [37] MTM: Automation - Refresh Channels M3U Playlists Start Time
+    refresh_channels_m3u_playlists_frequency = settings[38]["settings"]             # [38] MTM: Automation - Refresh Channels M3U Playlists Frequency
+    mtm_channels_remove_old_logs_recording = settings[51]["settings"]               # [51] MTM: Remove old Channels DVR Recording Logs On/Off
+    mtm_channels_remove_old_logs_recording_time = settings[52]["settings"]          # [52] MTM: Remove old Channels DVR Recording Logs Start Time
+    mtm_channels_remove_old_logs_recording_frequency = settings[53]["settings"]     # [53] MTM: Remove old Channels DVR Recording Logs Frequency
+    mtm_channels_remove_old_logs_recording_days = settings[54]["settings"]          # [54] MTM: Remove old Channels DVR Recording Logs Days to Keep
+    mtm_channels_remove_old_backups = settings[55]["settings"]                      # [55] MTM: Remove old Channels DVR Backups On/Off
+    mtm_channels_remove_old_backups_time = settings[56]["settings"]                 # [56] MTM: Remove old Channels DVR Backups Start Time
+    mtm_channels_remove_old_backups_frequency = settings[57]["settings"]            # [57] MTM: Remove old Channels DVR Backups Frequency
+    mtm_channels_remove_old_backups_days = settings[58]["settings"]                 # [58] MTM: Remove old Channels DVR Backups Days to Keep
 
     automation_message = ''
     action_friendly_name = ''
@@ -6951,6 +6959,15 @@ def webpage_tools_automation():
 
             elif action.startswith('refresh_channels_m3u_playlists'):
                 automation_message = run_refresh_channels_m3u_playlists()
+
+            elif action.startswith('mtm_channels_remove_old'):
+
+                if 'logs_recording' in action:
+                    action_type = 'channels_recording_logs'
+                elif 'backups' in action:
+                    action_type = 'channels_backups'
+
+                automation_message = run_channels_remove_old_files_empty_directories(action_type)
 
             else:
 
@@ -7097,6 +7114,40 @@ def webpage_tools_automation():
                     settings[16]["settings"] = plm_update_m3us_epgs_schedule_time_input
                     settings[17]["settings"] = plm_update_m3us_epgs_schedule_frequency_input
 
+                elif action.startswith('mtm_channels_remove_old_logs_recording'):
+                    mtm_channels_remove_old_logs_recording_input = request.form.get('mtm_channels_remove_old_logs_recording')
+                    mtm_channels_remove_old_logs_recording_time_input = request.form.get('mtm_channels_remove_old_logs_recording_time')
+                    mtm_channels_remove_old_logs_recording_frequency_input = request.form.get('mtm_channels_remove_old_logs_recording_frequency')
+                    mtm_channels_remove_old_logs_recording_days_input = request.form.get('mtm_channels_remove_old_logs_recording_days')
+
+                    settings[51]["settings"] = "On" if mtm_channels_remove_old_logs_recording_input == 'on' else "Off"
+                    settings[52]["settings"] = mtm_channels_remove_old_logs_recording_time_input
+                    settings[53]["settings"] = mtm_channels_remove_old_logs_recording_frequency_input
+                    try:
+                        if int(mtm_channels_remove_old_logs_recording_days_input) > 0:
+                            settings[54]["settings"] = int(mtm_channels_remove_old_logs_recording_days_input)
+                        else:
+                            automation_message = f"{current_time()} ERROR: For 'Days to Keep', please enter a positive integer."
+                    except ValueError:
+                        automation_message = f"{current_time()} ERROR: 'Days to Keep' must be a number."
+
+                elif action.startswith('mtm_channels_remove_old_backups'):
+                    mtm_channels_remove_old_backups_input = request.form.get('mtm_channels_remove_old_backups')
+                    mtm_channels_remove_old_backups_time_input = request.form.get('mtm_channels_remove_old_backups_time')
+                    mtm_channels_remove_old_backups_frequency_input = request.form.get('mtm_channels_remove_old_backups_frequency')
+                    mtm_channels_remove_old_backups_days_input = request.form.get('mtm_channels_remove_old_backups_days')
+
+                    settings[55]["settings"] = "On" if mtm_channels_remove_old_backups_input == 'on' else "Off"
+                    settings[56]["settings"] = mtm_channels_remove_old_backups_time_input
+                    settings[57]["settings"] = mtm_channels_remove_old_backups_frequency_input
+                    try:
+                        if int(mtm_channels_remove_old_backups_days_input) > 0:
+                            settings[58]["settings"] = int(mtm_channels_remove_old_backups_days_input)
+                        else:
+                            automation_message = f"{current_time()} ERROR: For 'Days to Keep', please enter a positive integer."
+                    except ValueError:
+                        automation_message = f"{current_time()} ERROR: 'Days to Keep' must be a number."
+
                 csv_to_write = csv_settings
                 data_to_write = settings
                 write_data(csv_to_write, data_to_write)
@@ -7118,20 +7169,28 @@ def webpage_tools_automation():
             auto_update_schedule_frequency = settings[18]["settings"]
             plm_update_stations_schedule = settings[13]["settings"]
             plm_update_stations_schedule_time = settings[14]["settings"]
-            plm_update_stations_schedule_frequency = settings[44]["settings"]    # [44] PLM: Update Stations Process Schedule Frequency
+            plm_update_stations_schedule_frequency = settings[44]["settings"]               # [44] PLM: Update Stations Process Schedule Frequency
             plm_update_m3us_epgs_schedule = settings[15]["settings"]
             plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
             plm_update_m3us_epgs_schedule_frequency = settings[17]["settings"]
-            reset_channels_passes = settings[29]["settings"]                     # [29] MTM: Automation - Reset Channels DVR Passes On/Off
-            reset_channels_passes_time = settings[30]["settings"]                # [30] MTM: Automation - Reset Channels DVR Passes Start Time
-            reset_channels_passes_frequency = settings[31]["settings"]           # [31] MTM: Automation - Reset Channels DVR Passes Frequency
-            slm_new_recent_releases = settings[32]["settings"]                   # [32] MTM: Automation - SLM New & Recent Releases On/Off
-            slm_new_recent_releases_time = settings[33]["settings"]              # [33] MTM: Automation - SLM New & Recent Releases Start Time
-            slm_new_recent_releases_frequency = settings[34]["settings"]         # [34] MTM: Automation - SLM New & Recent Releases Frequency
-            slm_new_recent_releases_when = settings[35]["settings"]              # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
-            refresh_channels_m3u_playlists = settings[36]["settings"]            # [36] MTM: Automation - Refresh Channels M3U Playlists On/Off
-            refresh_channels_m3u_playlists_time = settings[37]["settings"]       # [37] MTM: Automation - Refresh Channels M3U Playlists Start Time
-            refresh_channels_m3u_playlists_frequency = settings[38]["settings"]  # [38] MTM: Automation - Refresh Channels M3U Playlists Frequency
+            reset_channels_passes = settings[29]["settings"]                                # [29] MTM: Automation - Reset Channels DVR Passes On/Off
+            reset_channels_passes_time = settings[30]["settings"]                           # [30] MTM: Automation - Reset Channels DVR Passes Start Time
+            reset_channels_passes_frequency = settings[31]["settings"]                      # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+            slm_new_recent_releases = settings[32]["settings"]                              # [32] MTM: Automation - SLM New & Recent Releases On/Off
+            slm_new_recent_releases_time = settings[33]["settings"]                         # [33] MTM: Automation - SLM New & Recent Releases Start Time
+            slm_new_recent_releases_frequency = settings[34]["settings"]                    # [34] MTM: Automation - SLM New & Recent Releases Frequency
+            slm_new_recent_releases_when = settings[35]["settings"]                         # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
+            refresh_channels_m3u_playlists = settings[36]["settings"]                       # [36] MTM: Automation - Refresh Channels M3U Playlists On/Off
+            refresh_channels_m3u_playlists_time = settings[37]["settings"]                  # [37] MTM: Automation - Refresh Channels M3U Playlists Start Time
+            refresh_channels_m3u_playlists_frequency = settings[38]["settings"]             # [38] MTM: Automation - Refresh Channels M3U Playlists Frequency
+            mtm_channels_remove_old_logs_recording = settings[51]["settings"]               # [51] MTM: Remove old Channels DVR Recording Logs On/Off
+            mtm_channels_remove_old_logs_recording_time = settings[52]["settings"]          # [52] MTM: Remove old Channels DVR Recording Logs Start Time
+            mtm_channels_remove_old_logs_recording_frequency = settings[53]["settings"]     # [53] MTM: Remove old Channels DVR Recording Logs Frequency
+            mtm_channels_remove_old_logs_recording_days = settings[54]["settings"]          # [54] MTM: Remove old Channels DVR Recording Logs Days to Keep
+            mtm_channels_remove_old_backups = settings[55]["settings"]                      # [55] MTM: Remove old Channels DVR Backups On/Off
+            mtm_channels_remove_old_backups_time = settings[56]["settings"]                 # [56] MTM: Remove old Channels DVR Backups Start Time
+            mtm_channels_remove_old_backups_frequency = settings[57]["settings"]            # [57] MTM: Remove old Channels DVR Backups Frequency
+            mtm_channels_remove_old_backups_days = settings[58]["settings"]                 # [58] MTM: Remove old Channels DVR Backups Days to Keep
 
     return render_template(
         'main/tools_automation.html',
@@ -7175,7 +7234,15 @@ def webpage_tools_automation():
         html_slm_new_recent_releases_when = slm_new_recent_releases_when,
         html_refresh_channels_m3u_playlists = refresh_channels_m3u_playlists,
         html_refresh_channels_m3u_playlists_time = refresh_channels_m3u_playlists_time,
-        html_refresh_channels_m3u_playlists_frequency = refresh_channels_m3u_playlists_frequency
+        html_refresh_channels_m3u_playlists_frequency = refresh_channels_m3u_playlists_frequency,
+        html_mtm_channels_remove_old_logs_recording = mtm_channels_remove_old_logs_recording,
+        html_mtm_channels_remove_old_logs_recording_time = mtm_channels_remove_old_logs_recording_time,
+        html_mtm_channels_remove_old_logs_recording_frequency = mtm_channels_remove_old_logs_recording_frequency,
+        html_mtm_channels_remove_old_logs_recording_days = mtm_channels_remove_old_logs_recording_days,
+        html_mtm_channels_remove_old_backups = mtm_channels_remove_old_backups,
+        html_mtm_channels_remove_old_backups_time = mtm_channels_remove_old_backups_time,
+        html_mtm_channels_remove_old_backups_frequency = mtm_channels_remove_old_backups_frequency,
+        html_mtm_channels_remove_old_backups_days = mtm_channels_remove_old_backups_days
     )
 
 # Create a continous stream of the log file
@@ -7218,24 +7285,32 @@ def check_schedule():
         auto_update_schedule_frequency_parsed = int(re.search(r'\d+', auto_update_schedule_frequency).group())
         plm_update_stations_schedule = settings[13]["settings"]
         plm_update_stations_schedule_time = settings[14]["settings"]
-        plm_update_stations_schedule_frequency = settings[44]["settings"]    # [44] PLM: Update Stations Process Schedule Frequency
+        plm_update_stations_schedule_frequency = settings[44]["settings"]               # [44] PLM: Update Stations Process Schedule Frequency
         plm_update_stations_schedule_frequency_parsed = int(re.search(r'\d+', plm_update_stations_schedule_frequency).group())
         plm_update_m3us_epgs_schedule = settings[15]["settings"]
         plm_update_m3us_epgs_schedule_time = settings[16]["settings"]
         plm_m3us_epgs_schedule_frequency = settings[17]["settings"]
         plm_m3us_epgs_schedule_frequency_parsed = int(re.search(r'\d+', plm_m3us_epgs_schedule_frequency).group())
-        reset_channels_passes = settings[29]["settings"]                     # [29] MTM: Automation - Reset Channels DVR Passes On/Off
-        reset_channels_passes_time = settings[30]["settings"]                # [30] MTM: Automation - Reset Channels DVR Passes Start Time
-        reset_channels_passes_frequency = settings[31]["settings"]           # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+        reset_channels_passes = settings[29]["settings"]                                # [29] MTM: Automation - Reset Channels DVR Passes On/Off
+        reset_channels_passes_time = settings[30]["settings"]                           # [30] MTM: Automation - Reset Channels DVR Passes Start Time
+        reset_channels_passes_frequency = settings[31]["settings"]                      # [31] MTM: Automation - Reset Channels DVR Passes Frequency
         reset_channels_passes_frequency_parsed = int(re.search(r'\d+', reset_channels_passes_frequency).group())
-        slm_new_recent_releases = settings[32]["settings"]                   # [32] MTM: Automation - SLM New & Recent Releases On/Off
-        slm_new_recent_releases_time = settings[33]["settings"]              # [33] MTM: Automation - SLM New & Recent Releases Start Time
-        slm_new_recent_releases_frequency = settings[34]["settings"]         # [34] MTM: Automation - SLM New & Recent Releases Frequency
+        slm_new_recent_releases = settings[32]["settings"]                              # [32] MTM: Automation - SLM New & Recent Releases On/Off
+        slm_new_recent_releases_time = settings[33]["settings"]                         # [33] MTM: Automation - SLM New & Recent Releases Start Time
+        slm_new_recent_releases_frequency = settings[34]["settings"]                    # [34] MTM: Automation - SLM New & Recent Releases Frequency
         slm_new_recent_releases_frequency_parsed = int(re.search(r'\d+', slm_new_recent_releases_frequency).group())
-        refresh_channels_m3u_playlists = settings[36]["settings"]            # [36] MTM: Automation - Refresh Channels M3U Playlists On/Off
-        refresh_channels_m3u_playlists_time = settings[37]["settings"]       # [37] MTM: Automation - Refresh Channels M3U Playlists Start Time
-        refresh_channels_m3u_playlists_frequency = settings[38]["settings"]  # [38] MTM: Automation - Refresh Channels M3U Playlists Frequency
+        refresh_channels_m3u_playlists = settings[36]["settings"]                       # [36] MTM: Automation - Refresh Channels M3U Playlists On/Off
+        refresh_channels_m3u_playlists_time = settings[37]["settings"]                  # [37] MTM: Automation - Refresh Channels M3U Playlists Start Time
+        refresh_channels_m3u_playlists_frequency = settings[38]["settings"]             # [38] MTM: Automation - Refresh Channels M3U Playlists Frequency
         refresh_channels_m3u_playlists_frequency_parsed = int(re.search(r'\d+', refresh_channels_m3u_playlists_frequency).group())
+        mtm_channels_remove_old_logs_recording = settings[51]["settings"]               # [51] MTM: Remove old Channels DVR Recording Logs On/Off
+        mtm_channels_remove_old_logs_recording_time = settings[52]["settings"]          # [52] MTM: Remove old Channels DVR Recording Logs Start Time
+        mtm_channels_remove_old_logs_recording_frequency = settings[53]["settings"]     # [53] MTM: Remove old Channels DVR Recording Logs Frequency
+        mtm_channels_remove_old_logs_recording_frequency_parsed = int(re.search(r'\d+', mtm_channels_remove_old_logs_recording_frequency).group())
+        mtm_channels_remove_old_backups = settings[55]["settings"]                      # [55] MTM: Remove old Channels DVR Backups On/Off
+        mtm_channels_remove_old_backups_time = settings[56]["settings"]                 # [56] MTM: Remove old Channels DVR Backups Start Time
+        mtm_channels_remove_old_backups_frequency = settings[57]["settings"]            # [57] MTM: Remove old Channels DVR Backups Frequency
+        mtm_channels_remove_old_backups_frequency_parsed = int(re.search(r'\d+', mtm_channels_remove_old_backups_frequency).group())
 
         if gen_backup_schedule == 'On' and gen_backup_schedule_time:
             gen_backup_schedule_hour, gen_backup_schedule_minute = map(int, gen_backup_schedule_time.split(':'))
@@ -7291,6 +7366,20 @@ def check_schedule():
 
             if current_minute == refresh_channels_m3u_playlists_minute and (current_hour - refresh_channels_m3u_playlists_hour) % refresh_channels_m3u_playlists_frequency_parsed == 0:
                 threading.Thread(target=run_refresh_channels_m3u_playlists).start()
+                wait_trigger = True
+
+        if mtm_channels_remove_old_logs_recording == 'On' and mtm_channels_remove_old_logs_recording_time:
+            mtm_channels_remove_old_logs_recording_hour, mtm_channels_remove_old_logs_recording_minute = map(int, mtm_channels_remove_old_logs_recording_time.split(':'))
+
+            if current_minute == mtm_channels_remove_old_logs_recording_minute and (current_hour - mtm_channels_remove_old_logs_recording_hour) % mtm_channels_remove_old_logs_recording_frequency_parsed == 0:
+                threading.Thread(target=run_channels_remove_old_files_empty_directories, args=('channels_recording_logs',)).start()
+                wait_trigger = True
+
+        if mtm_channels_remove_old_backups == 'On' and mtm_channels_remove_old_backups_time:
+            mtm_channels_remove_old_backups_hour, mtm_channels_remove_old_backups_minute = map(int, mtm_channels_remove_old_backups_time.split(':'))
+
+            if current_minute == mtm_channels_remove_old_backups_minute and (current_hour - mtm_channels_remove_old_backups_hour) % mtm_channels_remove_old_backups_frequency_parsed == 0:
+                threading.Thread(target=run_channels_remove_old_files_empty_directories, args=('channels_backups',)).start()
                 wait_trigger = True
 
         if wait_trigger:
@@ -7362,7 +7451,7 @@ def check_upgrade():
     if current_version == slm_version or current_version == None or slm_environment_version == 'PRERELEASE':
         gen_upgrade_flag = None
     else:
-        notification_add(f"\n{current_time()} Upgrade available ({current_version})! Please follow directions at '{github_url}/wiki/Upgrade-‐-Overview'.\n")
+        notification_add(f"{current_time()} Upgrade available ({current_version})! Please follow directions at '{github_url}/wiki/Upgrade-‐-Overview'.")
         gen_upgrade_flag = True
 
 # SLM: End-to-End Update Process
@@ -7371,9 +7460,9 @@ def end_to_end():
     print("|                                                        |")
     print("|             SLM: End-to-End Update Process             |")
     print("|                                                        |")
-    print("==========================================================")
+    print("==========================================================\n")
 
-    notification_add(f"\n{current_time()} Beginning SLM end-to-end update process...\n")
+    notification_add(f"{current_time()} Beginning SLM end-to-end update process...")
 
     start_time = time.time()
 
@@ -7397,9 +7486,8 @@ def end_to_end():
     hours, remainder = divmod(elapsed_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
 
-    notification_add(f"\n{current_time()} Total Elapsed Time: {int(hours)} hours | {int(minutes)} minutes | {int(seconds)} seconds")
-
-    notification_add(f"\n{current_time()} SLM End-to-end update process complete\n")
+    notification_add(f"{current_time()} Total Elapsed Time: {int(hours)} hours | {int(minutes)} minutes | {int(seconds)} seconds")
+    notification_add(f"{current_time()} SLM End-to-end update process complete.")
 
 # Check for new episodes
 def get_new_episodes(entry_id_filter):
@@ -7407,9 +7495,9 @@ def get_new_episodes(entry_id_filter):
     print("|                                                        |")
     print("|                 Check for New Episodes                 |")
     print("|                                                        |")
-    print("==========================================================")
+    print("==========================================================\n")
 
-    print(f"\n{current_time()} Scanning for new episodes...\n")
+    print(f"{current_time()} Scanning for new episodes...")
     
     bookmarks = read_data(csv_bookmarks)
     show_bookmarks = [
@@ -7438,9 +7526,9 @@ def get_new_episodes(entry_id_filter):
                     append_data(csv_bookmarks_status, new_row)
                     notification_add(f"    For {show_bookmark['title']} ({show_bookmark['release_year']}), added {season_episode['season_episode']}")
         else:
-            notification_add(f"\n{current_time()} WARNING: No episodes found for {show_bookmark['title']} ({show_bookmark['release_year']}) | {show_bookmark['object_type']}.\n")
+            notification_add(f"{current_time()} WARNING: No episodes found for {show_bookmark['title']} ({show_bookmark['release_year']}) | {show_bookmark['object_type']}.")
 
-    print(f"\n{current_time()} Finished scanning for new episodes.\n")
+    print(f"{current_time()} Finished scanning for new episodes.")
 
 # Searches JustWatch website to get the list of season/episode values
 def get_episode_list(entry_id, url, country_code, language_code):
@@ -9008,11 +9096,11 @@ def get_episode_list(entry_id, url, country_code, language_code):
                 season_episodes_sorted = sorted(season_episodes_results, key=lambda d: d['season_episode'])
 
             except requests.RequestException as e:
-                print(f"\n{current_time()} WARNING: {e}. Skipping, please try again. (entry_id: {entry_id})")
+                print(f"{current_time()} WARNING: {e}. Skipping, please try again. (entry_id: {entry_id})")
             except KeyError as e:
-                print(f"\n{current_time()} WARNING: Missing key {e}. Skipping, please try again. (entry_id: {entry_id})")
+                print(f"{current_time()} WARNING: Missing key {e}. Skipping, please try again. (entry_id: {entry_id})")
             except Exception as e:
-                print(f"\n{current_time()} WARNING: An unexpected error occurred: {e}. Skipping, please try again. (entry_id: {entry_id})")
+                print(f"{current_time()} WARNING: An unexpected error occurred: {e}. Skipping, please try again. (entry_id: {entry_id})")
 
     return season_episodes_sorted
 
@@ -9093,7 +9181,7 @@ def get_season_list(entry_id, url, country_code, language_code, _GRAPHQL_GetUrlT
     try:
         season_list = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
     except requests.RequestException as e:
-        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
+        print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
 
     if season_list:
         season_list_json = season_list.json()
@@ -9124,7 +9212,7 @@ def import_program_updates():
     print("|                                                        |")
     print("|         Import Program Updates from Channels           |")
     print("|                                                        |")
-    print("==========================================================")
+    print("==========================================================\n")
 
     settings = read_data(csv_settings)
     channels_directory = settings[1]["settings"]
@@ -9133,12 +9221,12 @@ def import_program_updates():
     run_import = None
 
     if not os.path.exists(channels_directory):
-        notification_add(f"\n{current_time()} WARNING: {channels_directory} does not exist, skipping import. Please change the Channels directory in the Settings menu.\n")
+        notification_add(f"{current_time()} WARNING: {channels_directory} does not exist, skipping import. Please change the Channels directory in the Settings menu.")
     else:
         run_import = True
         
     if run_import:
-        print(f"\n{current_time()} Checking for removed Stream Links...\n")
+        print(f"{current_time()} Checking for removed Stream Links...")
 
         for bookmark_status in bookmarks_statuses:
             stream_link_file_raw = normalize_path(bookmark_status['stream_link_file'])
@@ -9163,7 +9251,7 @@ def import_program_updates():
 
         write_data(csv_bookmarks_status, bookmarks_statuses)
 
-        print(f"\n{current_time()} Finished checking for removed Stream Links.\n")
+        print(f"{current_time()} Finished checking for removed Stream Links.")
 
 # Find if a stream link is available for bookmarked programs, create stream link files if true, remove files if false
 def generate_stream_links(original_release_date_list):
@@ -9171,7 +9259,7 @@ def generate_stream_links(original_release_date_list):
     print("|                                                        |")
     print("|                  Generate Stream Links                 |")
     print("|                                                        |")
-    print("==========================================================")
+    print("==========================================================\n")
 
     settings = read_data(csv_settings)
     channels_directory = settings[1]["settings"]
@@ -9185,28 +9273,28 @@ def generate_stream_links(original_release_date_list):
     run_generation = None
 
     if slm_channels_dvr_integration and not os.path.exists(channels_directory):
-        notification_add(f"\n{current_time()} WARNING: {channels_directory} does not exist, skipping generation. Please change the Channels directory in the Settings menu.\n")
+        notification_add(f"{current_time()} WARNING: {channels_directory} does not exist, skipping generation. Please change the Channels directory in the Settings menu.")
     else:
         run_generation = True
         
     if run_generation:
-        print(f"\n{current_time()} START: Generating Stream Links...")
+        print(f"{current_time()} START: Generating Stream Links...")
 
-        print(f"\n{current_time()} Getting Stream Links...\n")
+        print(f"{current_time()} Getting Stream Links...")
         find_stream_links(auto_bookmarks, original_release_date_list)
-        print(f"\n{current_time()} Finished getting Stream Links.")
+        print(f"{current_time()} Finished getting Stream Links.")
 
         if slm_channels_dvr_integration:
             if original_release_date_list is None:
-                print(f"\n{current_time()} Checking for changes from last run...\n")
+                print(f"{current_time()} Checking for changes from last run...")
                 get_stream_link_ids()
-                print(f"\n{current_time()} Finished checking for changes from last run.\n")
+                print(f"{current_time()} Finished checking for changes from last run.")
 
-            print(f"\n{current_time()} Creating and removing Stream Link files and directories...\n")
+            print(f"{current_time()} Creating and removing Stream Link files and directories...")
             create_stream_link_files(bookmarks, True, original_release_date_list)
-            print(f"\n{current_time()} Finished creating and removing Stream Link files and directories.")
+            print(f"{current_time()} Finished creating and removing Stream Link files and directories.")
 
-        print(f"\n{current_time()} END: Finished Generating Stream Links.\n")
+        print(f"{current_time()} END: Finished Generating Stream Links.")
 
 # Run Stream Link Generation and File Creation on one program
 def generate_stream_links_single(entry_id):
@@ -9280,7 +9368,7 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
                                 elif auto_bookmark['object_type'] == "SHOW":
                                     node_id = bookmarks_status['season_episode_id']
                                 else:
-                                    print(f"\n{current_time()} ERROR: Invalid object_type\n")
+                                    print(f"{current_time()} ERROR: Invalid object_type")
                                 
                                 if original_release_date_list is None or node_id in original_release_date_list:
                                     stream_link_details = get_offers(node_id, auto_bookmark['country_code'], auto_bookmark['language_code'])
@@ -9293,15 +9381,15 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
                                 break  # Break out of the retry loop if successful
                             
                             except Exception as e:
-                                print(f"\n{current_time()} ERROR: {e}. Retrying...\n")
+                                print(f"{current_time()} ERROR: {e}. Retrying...")
 
                         else:
-                            print(f"\n{current_time()} ERROR: Could not find Stream Link after 3 attempts.")
+                            print(f"{current_time()} ERROR: Could not find Stream Link after 3 attempts.")
                             if bookmarks_status['stream_link'] != "":
-                                print(f"{current_time()} INFO: Assigning prior Stream Link.\n")
+                                print(f"{current_time()} INFO: Assigning prior Stream Link.")
                                 stream_link_dirty = bookmarks_status['stream_link']
                             else:
-                                print(f"{current_time()} INFO: No prior Stream Link to assign. Try again later.\n")
+                                print(f"{current_time()} INFO: No prior Stream Link to assign. Try again later.")
                             pass
 
                 else:
@@ -9334,7 +9422,7 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
                             else:
                                 print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode']} assigned Stream Link: {stream_link}")
                     else:
-                        print(f"\n{current_time()} ERROR: Invalid object_type\n")
+                        print(f"{current_time()} ERROR: Invalid object_type")
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
@@ -9484,7 +9572,7 @@ def get_offers(node_id, country_code, language_code):
         offers_json = offers.json()
         offers_json_offers_array = offers_json["data"]["node"]
     except requests.RequestException as e:
-        print(f"\n{current_time()} WARNING: {e}. Skipping, please try again.")
+        print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
 
     return offers_json_offers_array
 
@@ -9635,7 +9723,7 @@ def get_stream_link_ids():
                                 stream_link_prior = file.read().rstrip().lower()
                         else:
                             stream_link_prior = None
-                            print(f"\n{current_time()} WARNING: Could not find {original_path}. Skipping check.")
+                            print(f"{current_time()} WARNING: Could not find {original_path}. Skipping check.")
 
                         stream_link_ids.append({
                             "path": path,
@@ -9644,7 +9732,7 @@ def get_stream_link_ids():
                         })
 
             except requests.RequestException as e:
-                print(f"\n{current_time()} ERROR: From Channels API... {e}")
+                print(f"{current_time()} ERROR: From Channels API... {e}")
 
         for slm_stream_link in slm_stream_links:
             for stream_link_id in stream_link_ids:
@@ -9653,7 +9741,7 @@ def get_stream_link_ids():
                         stream_link_ids_changed.append(stream_link_id["id"])
 
     else:
-        notification_add(f"\n{current_time()} INFO: Cannot check for changes from last run due to Channels URL error.\n")
+        notification_add(f"{current_time()} INFO: Cannot check for changes from last run due to Channels URL error.")
 
 # Creates Stream Link Files and removes invalid ones and empty directories (for TV)
 def create_stream_link_files(base_bookmarks, remove_choice, original_release_date_list):
@@ -9823,73 +9911,6 @@ def prune_scan_channels():
         bookmarks = read_data(csv_bookmarks)
 
         ### Labels
-        # if channels_labels == "On":
-        #     print(f"{current_time()} INFO: Updating Channels DVR labels...")
-            
-        #     slm_labels = read_data(csv_slm_labels)
-        #     slm_label_maps = read_data(csv_slm_label_maps)
-
-        #     for bookmark in bookmarks:
-        #         channels_id = bookmark['channels_id']
-        #         bookmark_item = f"{bookmark['title']} ({bookmark['release_year']}) | {bookmark['object_type']}"
-        #         bookmark_label_maps = []
-        #         bookmark_labels = []
-        #         current_labels = []
-
-        #         if channels_id is not None and channels_id != "":
-        #             # Map labels
-        #             for slm_label_map in slm_label_maps:
-        #                 if bookmark['entry_id'] == slm_label_map['entry_id']:
-        #                     bookmark_label_maps.append(slm_label_map['label_id'])
-
-        #             for slm_label in slm_labels:
-        #                 if slm_label['label_id'] in bookmark_label_maps and slm_label['label_active'] == "On":
-        #                     bookmark_labels.append(slm_label['label_name'])
-
-        #             # Set the base routes
-        #             if bookmark['object_type'] == "MOVIE":
-        #                 route = f"/dvr/files/{channels_id}"
-        #             else:
-        #                 route = f"/dvr/groups/{channels_id}"
-
-        #             url_base = f"{channels_url}{route}"
-
-        #             # Fetch the current labels
-        #             try:
-        #                 response = requests.get(url_base, headers=url_headers)
-        #                 response.raise_for_status()
-        #                 current_labels = response.json().get("Labels", [])
-        #             except requests.RequestException as e:
-        #                 print(f"ERROR: Failed to fetch current labels for {url_base}: {e}")
-        #                 continue
-
-        #             url = f"{url_base}/labels"
-
-        #             # Delete labels not in bookmark_labels
-        #             if current_labels:
-        #                 for current_label in current_labels:
-        #                     if current_label not in bookmark_labels or bookmark_labels == []:
-        #                         delete_url = f"{url}/{urllib.parse.quote(current_label)}"
-        #                         try:
-        #                             delete_response = requests.delete(delete_url, headers=url_headers)
-        #                             delete_response.raise_for_status()
-        #                             print(f"{current_time()} INFO: Deleted label '{current_label}' from {bookmark_item}.")
-        #                         except requests.RequestException as e:
-        #                             print(f"{current_time()} ERROR: Failed to delete label '{current_label}' from {bookmark_item}: {e}")
-
-        #             # Add labels in bookmark_labels that are not in current_labels
-        #             if bookmark_labels:
-        #                 for bookmark_label in bookmark_labels:
-        #                     if bookmark_label not in current_labels or current_labels == []:
-        #                         put_url = f"{url}/{urllib.parse.quote(bookmark_label)}"
-        #                         try:
-        #                             put_response = requests.put(put_url, headers=url_headers)
-        #                             put_response.raise_for_status()
-        #                             print(f"{current_time()} INFO: Added label '{bookmark_label}' to {bookmark_item}.")
-        #                         except requests.RequestException as e:
-        #                             print(f"{current_time()} ERROR: Failed to add label '{bookmark_label}' to {bookmark_item}: {e}")
-
-        #     notification_add(f"{current_time()} Label assignment complete.")
         if channels_labels == "On":
             print(f"{current_time()} INFO: Updating Channels DVR labels...")
 
@@ -9919,14 +9940,14 @@ async def get_reprocess_requests(channels_url):
         try:
             await asyncio.gather(*tasks)
         except asyncio.TimeoutError:
-            notification_add(f"\n{current_time()} ERROR: Reprocessing requests timed out.")
+            notification_add(f"{current_time()} ERROR: Reprocessing requests timed out.")
 
 # Build list of Stream Link reprocess requests
 async def send_reprocess_requests(reprocess_session, reprocess_url):
     try:
         await reprocess_session.put(reprocess_url)
     except asyncio.TimeoutError:
-        notification_add(f"\n{current_time()} ERROR: Request for {reprocess_url} timed out.")
+        notification_add(f"{current_time()} ERROR: Request for {reprocess_url} timed out.")
 
 # Asynchronous function to process bookmark labels
 async def process_bookmark_labels(session, bookmark, slm_labels, slm_label_maps, channels_url, url_headers):
@@ -9999,49 +10020,6 @@ async def add_labels(session, url, current_labels, bookmark_labels, bookmark_ite
 
 # Gets info from Channels DVR and adds it to SLM
 def get_slm_channels_info():
-    # print(f"{current_time()} INFO: Importing Channels DVR info...")
-    # bookmarks = read_data(csv_bookmarks)
-    # bookmarks_statuses = read_data(csv_bookmarks_status)
-
-    # dvr_files = get_channels_dvr_json('dvr_files')
-    # dvr_groups = get_channels_dvr_json('dvr_groups')
-
-    # for bookmark in bookmarks:
-
-    #     break_bookmark_statuses = None
-
-    #     for bookmark_status in bookmarks_statuses:
-    #         if bookmark['entry_id'] == bookmark_status['entry_id']:
-
-    #             for dvr_file in dvr_files:
-    #                 path_check = None
-    #                 stream_link_file_path_check = None
-
-    #                 if dvr_file['Path'] is not None and dvr_file['Path'] != "":
-    #                     path_check = clean_comparison_path(dvr_file['Path'])
-
-    #                 if bookmark_status['stream_link_file'] is not None and bookmark_status['stream_link_file'] != "":
-    #                     stream_link_file_path_check = clean_comparison_path(bookmark_status['stream_link_file']).split("slm/", 1)[1]
-    #                     stream_link_file_path_check = f"slm/{stream_link_file_path_check}"
-
-    #                 if path_check and stream_link_file_path_check and path_check == stream_link_file_path_check:
-
-    #                     if bookmark['object_type'] == "MOVIE":
-    #                         bookmark['channels_id'] = dvr_file['File ID']
-    #                     else:
-    #                         bookmark['channels_id'] = dvr_file['Group ID']
-
-    #                     break_bookmark_statuses = True
-    #                     break
-            
-    #         if break_bookmark_statuses:
-    #             break
-    
-    # write_data(csv_bookmarks, bookmarks)
-
-    # print(f"{current_time()} INFO: Finished importing Channels DVR info.")
-
-    # return dvr_files, dvr_groups
     print(f"{current_time()} INFO: Importing Channels DVR info...")
 
     # Read data
@@ -10086,9 +10064,9 @@ def run_slm_new_recent_releases():
     print("|                                                        |")
     print("|           SLM: New & Recent Releases Process           |")
     print("|                                                        |")
-    print("==========================================================")
+    print("==========================================================\n")
 
-    notification_add(f"\n{current_time()} Beginning SLM New & Recent Releases process...\n")
+    notification_add(f"{current_time()} Beginning SLM New & Recent Releases process...")
 
     start_time = time.time()
 
@@ -10125,9 +10103,8 @@ def run_slm_new_recent_releases():
     hours, remainder = divmod(elapsed_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
 
-    notification_add(f"\n{current_time()} Total Elapsed Time: {int(hours)} hours | {int(minutes)} minutes | {int(seconds)} seconds")
-
-    notification_add(f"\n{current_time()} SLM New & Recent Releases process complete.\n")
+    notification_add(f"{current_time()} Total Elapsed Time: {int(hours)} hours | {int(minutes)} minutes | {int(seconds)} seconds")
+    notification_add(f"{current_time()} SLM New & Recent Releases process complete.")
 
 # Create a list of Node IDs for New & Recent Releases
 def get_original_release_date_list():
@@ -10135,9 +10112,9 @@ def get_original_release_date_list():
     print("|                                                        |")
     print("|               Get Original Release Dates               |")
     print("|                                                        |")
-    print("==========================================================")
+    print("==========================================================\n")
 
-    print(f"\n{current_time()} Gathering original release dates...\n")
+    print(f"{current_time()} Gathering original release dates...")
 
     bookmarks = read_data(csv_bookmarks)
     auto_bookmarks = [
@@ -10169,7 +10146,7 @@ def get_original_release_date_list():
                         elif auto_bookmark['object_type'] == "SHOW":
                             node_id = bookmarks_status['season_episode_id']
                         else:
-                            print(f"\n{current_time()} ERROR: Invalid object_type\n")
+                            print(f"{current_time()} ERROR: Invalid object_type")
                             continue
 
                         if node_id:
@@ -10194,7 +10171,7 @@ def get_original_release_date_list():
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
-    print(f"\n{current_time()} Finished gathering original release dates.\n")
+    print(f"{current_time()} Finished gathering original release dates.")
 
     return original_release_date_list
 
@@ -10240,7 +10217,7 @@ def get_original_release_date(node_id, country_code, language_code):
         else:
             result = "9999-12-31"
     except aiohttp.ClientError as e:
-        print(f"\n{current_time()} WARNING: {e}. Skipping '{node_id}', please try again.")
+        print(f"{current_time()} WARNING: {e}. Skipping '{node_id}', please try again.")
 
     return result
 
@@ -10259,7 +10236,7 @@ def run_reset_channels_passes():
     passes_results_dictionary_active = []
     passes_error = None
 
-    notification_add(f"\n{current_time()} Beginning 'Reset Channels DVR Passes' Automation...")
+    notification_add(f"{current_time()} Beginning 'Reset Channels DVR Passes' Automation...")
 
     channels_url_okay = check_channels_url(None)
 
@@ -10267,7 +10244,7 @@ def run_reset_channels_passes():
         try:
             passes_results_base = requests.get(channels_passes_url, headers=url_headers)
         except requests.RequestException as e:
-            passes_message = f"\n{current_time()} ERROR: During process, received {e}. Please try again."
+            passes_message = f"{current_time()} ERROR: During process, received {e}. Please try again."
     else:
         passes_message = f"{current_time()} ERROR: Channels URL is incorrect. Please update in the 'Settings' area."
 
@@ -10300,7 +10277,7 @@ def run_reset_channels_passes():
             try:
                 requests.put(url)
             except requests.RequestException as e:
-                notification_add(f"\n{current_time()} WARNING: For pass with the id '{item['passes_result_id']}', received error {e}. Skipping pause...")
+                notification_add(f"{current_time()} WARNING: For pass with the id '{item['passes_result_id']}', received error {e}. Skipping pause...")
                 passes_error = True
 
         # Resort with highest priority on top to resume
@@ -10311,7 +10288,7 @@ def run_reset_channels_passes():
             try:
                 requests.put(url)
             except requests.RequestException as e:
-                notification_add(f"\n{current_time()} WARNING: For pass with the id '{item['passes_result_id']}', received error {e}. Skipping resume...")
+                notification_add(f"{current_time()} WARNING: For pass with the id '{item['passes_result_id']}', received error {e}. Skipping resume...")
                 passes_error = True
 
         if passes_error:
@@ -10322,7 +10299,7 @@ def run_reset_channels_passes():
     if passes_message is not None and passes_message != '':
         print(f"{passes_message}")
 
-    notification_add(f"\n{current_time()} Finished 'Reset Channels DVR Passes' Automation.")
+    notification_add(f"{current_time()} Finished 'Reset Channels DVR Passes' Automation.")
 
     return passes_message
 
@@ -10341,7 +10318,7 @@ def run_refresh_channels_m3u_playlists():
     providers_results_base_json = None
     providers_results_dictionary = []
 
-    notification_add(f"\n{current_time()} Beginning 'Refresh Channels DVR m3u Playlists' Automation...")
+    notification_add(f"{current_time()} Beginning 'Refresh Channels DVR m3u Playlists' Automation...")
 
     channels_url_okay = check_channels_url(None)
 
@@ -10349,7 +10326,7 @@ def run_refresh_channels_m3u_playlists():
         try:
             providers_results_base = requests.get(providers_url, headers=url_headers)
         except requests.RequestException as e:
-            message = f"\n{current_time()} ERROR: During process, received {e}. Please try again."
+            message = f"{current_time()} ERROR: During process, received {e}. Please try again."
     else:
         message = f"{current_time()} ERROR: Channels URL is incorrect. Please update in the 'Settings' area."
 
@@ -10369,12 +10346,12 @@ def run_refresh_channels_m3u_playlists():
                         break  # Exit the retry loop if the request is successful
                     except requests.Timeout:
                         if attempt < 2:  # Only log a warning if we will retry
-                            print(f"\n{current_time()} WARNING: For m3u Playlist '{provider}', request timed out. Retrying...")
+                            print(f"{current_time()} WARNING: For m3u Playlist '{provider}', request timed out. Retrying...")
                         else:
-                            print(f"\n{current_time()} ERROR: For m3u Playlist '{provider}', request timed out. Skipping refresh...")
+                            print(f"{current_time()} ERROR: For m3u Playlist '{provider}', request timed out. Skipping refresh...")
                             automation_error = True
                     except requests.RequestException as e:
-                        print(f"\n{current_time()} ERROR: For m3u Playlist '{provider}', received error {e}. Skipping refresh...")
+                        print(f"{current_time()} ERROR: For m3u Playlist '{provider}', received error {e}. Skipping refresh...")
                         automation_error = True
                         break  # Exit the retry loop on other exceptions
 
@@ -10384,9 +10361,39 @@ def run_refresh_channels_m3u_playlists():
                 message = f"{current_time()} INFO: 'Refresh Channels DVR m3u Playlists' completed successfully."
 
         else:
-            message = f"\n{current_time()} INFO: For 'Refresh Channels DVR m3u Playlists', no matching valid m3u playlists were found."
+            message = f"{current_time()} INFO: For 'Refresh Channels DVR m3u Playlists', no matching valid m3u playlists were found."
 
-    notification_add(f"\n{current_time()} Finished 'Refresh Channels DVR m3u Playlists' Automation.")
+    notification_add(f"{current_time()} Finished 'Refresh Channels DVR m3u Playlists' Automation.")
+
+    return message
+
+# Automation - In Channels DVR, remove files older than a certain number of day and empty directories
+def run_channels_remove_old_files_empty_directories(action_type):
+    settings = read_data(csv_settings)
+    channels_directory = settings[1]["settings"]                            # [1] Channels DVR Directory
+    mtm_channels_remove_old_logs_recording_days = settings[54]["settings"]  # [54] MTM: Remove old Channels DVR Recording Logs Days to Keep
+    mtm_channels_remove_old_backups_days = settings[58]["settings"]         # [58] MTM: Remove old Channels DVR Backups Days to Keep
+    message = ''
+
+    if action_type == "channels_recording_logs":
+        base_directory = os.path.join(channels_directory, "Logs", "recording")
+        num_days = int(mtm_channels_remove_old_logs_recording_days)
+        type_description = "Recording Logs"
+    elif action_type == "channels_backups":
+        base_directory = os.path.join(channels_directory, "Database")
+        num_days = int(mtm_channels_remove_old_backups_days)
+        type_description = "Backups"
+    else:
+        base_directory = None
+        num_days = None
+        message = f"{current_time()} ERROR: Invalid type for Channels DVR old files and empty directories removal."
+        print(message)
+
+    if base_directory and num_days:
+        notification_add(f"{current_time()} Beginning 'Remove Old Channels DVR {type_description}' Automation...")
+        remove_old_files_and_empty_directories(base_directory, num_days)
+        message = f"{current_time()} INFO: 'Remove Old Channels DVR {type_description}' completed. See logs for details."
+        notification_add(f"{current_time()} Finished 'Remove Old Channels DVR {type_description}' Automation.")
 
     return message
 
@@ -10829,7 +10836,7 @@ def check_channels_url(channels_url_input):
         if response:
             channels_url_okay = True
     except requests.RequestException:
-        print(f"\n{current_time()} WARNING: Channels URL not found at {channels_url}")
+        print(f"{current_time()} WARNING: Channels URL not found at {channels_url}")
         print(f"{current_time()} WARNING: Please change Channels URL in settings")
 
     return channels_url_okay
@@ -10843,8 +10850,8 @@ def find_channels_dvr_path():
     root_path = os.path.abspath(os.sep)
     search_directory = "Imports"
 
-    print(f"\n{current_time()} Searching for Channels DVR folder...")
-    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
+    print(f"{current_time()} Searching for Channels DVR folder...")
+    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.")
 
     # Search times out after 60 seconds
     timer = threading.Timer(60, timeout_handler)
@@ -10859,9 +10866,9 @@ def find_channels_dvr_path():
                     channels_dvr_path_search = os.path.abspath(os.path.join(root))
                     break  # Stop searching once found
     except TimeoutError:
-        print(f"{current_time()} INFO: Search timed out. Continuing to next step...\n")
+        print(f"{current_time()} INFO: Search timed out. Continuing to next step...")
     except KeyboardInterrupt:
-        print(f"{current_time()} INFO: Search interrupted by user. Continuing to next step...\n")
+        print(f"{current_time()} INFO: Search interrupted by user. Continuing to next step...")
     finally:
         timer.cancel()  # Disable the timer
 
@@ -10875,7 +10882,7 @@ def find_channels_dvr_path():
         else:
             print(f"{current_time()} INFO: Channels DVR folder not found, defaulting to current directory. Please set your Channels DVR folder in 'Settings'.")
 
-    print(f"{current_time()} INFO: Channels DVR folder set to '{channels_dvr_path}'\n")
+    print(f"{current_time()} INFO: Channels DVR folder set to '{channels_dvr_path}'")
 
     return channels_dvr_path
 
@@ -11213,7 +11220,7 @@ def reliable_remove(filepath):
             if not os.path.exists(filepath):
                 return True
         except Exception as e:
-            print(f"\n{current_time()} WARNING: After {attempt + 1} attempt, failed to remove {filepath} due to: {e}")
+            print(f"{current_time()} WARNING: After {attempt + 1} attempt, failed to remove {filepath} due to: {e}")
         
         print(f"{current_time()} INFO: Waiting for {wait_time} seconds before next attempt...")
         time.sleep(wait_time)
@@ -11246,6 +11253,29 @@ def remove_rogue_empty(movie_path, tv_path, video_path, bookmarks_statuses):
     directory_delete(tv_path)
     directory_delete(video_path)
 
+# Remove files older than a certain number of days and empty directories
+def remove_old_files_and_empty_directories(base_directory, num_days):
+    now = datetime.datetime.now()
+    cutoff_time = now - datetime.timedelta(days=num_days)
+
+    print(f"{current_time()} INFO: Removing files older than {num_days} days and empty directories from {base_directory}...")
+
+    for dirpath, dirnames, filenames in os.walk(base_directory):
+        for filename in filenames:
+            file_path = normalize_path(os.path.join(dirpath, filename))
+            try:
+                file_mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+                if file_mod_time < cutoff_time:
+                    os.remove(file_path)
+                    print(f"    Deleted old file: {file_path}")
+            except Exception as e:
+                print(f"    Error removing file {file_path}: {e}")
+
+    # Remove empty directories
+    directory_delete(base_directory)
+
+    print(f"{current_time()} INFO: Finished removing files older than {num_days} days and empty directories from {base_directory}.")
+
 # Read data from a CSV file.
 def read_data(csv_file):
     full_path_file = full_path(csv_file)
@@ -11258,7 +11288,7 @@ def read_data(csv_file):
                 data.append(row)
         return data
     except Exception as e:
-        print(f"\n{current_time()} ERROR: Reading data... {e}\n")
+        print(f"{current_time()} ERROR: Reading data... {e}")
         return None
 
 # Write data back to a CSV file.
@@ -11273,7 +11303,7 @@ def write_data(csv_file, data):
             # Write each row from the data list
             writer.writerows(data)
     except Exception as e:
-        print(f"\n{current_time()} ERROR: Writing data... {e}\n")
+        print(f"{current_time()} ERROR: Writing data... {e}")
 
 # Appends a new row to an existing CSV file.
 def append_data(csv_file, new_row):
@@ -11295,7 +11325,7 @@ def append_data(csv_file, new_row):
             # Append the new row
             writer.writerow(new_row)
     except Exception as e:
-        print(f"\n{current_time()} ERROR: Appending data... {e}\n")
+        print(f"{current_time()} ERROR: Appending data... {e}")
 
 # Removes rows in a CSV file based upon a value in the first column
 def remove_row_csv(csv_file, field_value):
@@ -11305,7 +11335,7 @@ def remove_row_csv(csv_file, field_value):
         # Read the CSV file
         with open(full_path_file, 'r', encoding='utf-8') as inp:
             reader = csv.reader(inp)
-            print(f"\nIn {csv_file}, removed row:\n")
+            print(f"In {csv_file}, removed row:")
 
             rows_to_keep = []
             for row in reader:
@@ -11347,7 +11377,7 @@ def check_and_append(csv_file, new_row, threshold, purpose):
     
     if row_count < threshold:
         append_data(csv_file, new_row)
-        notification_add(f"\n{current_time()} INFO: New row added to {csv_file}... it was for '{purpose}'.")
+        notification_add(f"{current_time()} INFO: New row added to {csv_file}... it was for '{purpose}'.")
 
 # Add new columns during upgrades
 def check_and_add_column(csv_file, column_name, default_value):
@@ -11376,34 +11406,34 @@ def update_rows(csv_file, data, id_field, modify_flag):
     if data:
         new_rows = extract_new_rows(csv_file, data, id_field)
         if new_rows:
-            print(f"\n{current_time()} INFO: Adding new rows to {csv_file}...\n")
+            print(f"{current_time()} INFO: Adding new rows to {csv_file}...")
             for new_row in new_rows:
                 append_data(csv_file, new_row)
                 notification_add(f"    ADDED: {new_row[id_field]}")
-            print(f"\n{current_time()} INFO: Finished adding new rows.\n")
+            print(f"{current_time()} INFO: Finished adding new rows.")
 
         old_rows = extract_old_rows(csv_file, data, id_field)
         if old_rows:
-            print(f"\n{current_time()} INFO: Removing old rows from {csv_file}...\n")
+            print(f"{current_time()} INFO: Removing old rows from {csv_file}...")
             for old_row in old_rows:
                 notification_add(f"    REMOVED: {old_row[id_field]}")
             remove_data(csv_file, old_rows, id_field)
-            print(f"\n{current_time()} INFO: Finished removing old rows.\n")
+            print(f"{current_time()} INFO: Finished removing old rows.")
 
         if modify_flag:
             modified_rows, no_notify_rows = extract_modified_rows(csv_file, data, id_field)
             if modified_rows:
-                print(f"\n{current_time()} INFO: Updating modified rows in {csv_file}...\n")
+                print(f"{current_time()} INFO: Updating modified rows in {csv_file}...")
                 for modified_row in modified_rows:
                     if modified_row not in no_notify_rows:
                         notification_add(f"    MODIFIED: {modified_row[id_field]}")
                 update_data(csv_file, modified_rows, id_field)
-                print(f"\n{current_time()} INFO: Finished updating modified rows.\n")
+                print(f"{current_time()} INFO: Finished updating modified rows.")
 
             remove_duplicate_rows(csv_file)
             
     else:
-        print(f"\n{current_time()} WARNING: No data to compare, skipping adding and removing rows in {csv_file}.\n")
+        print(f"{current_time()} WARNING: No data to compare, skipping adding and removing rows in {csv_file}.")
 
 # Extracts new rows from the library data that are not already present in the CSV file
 def extract_new_rows(csv_file, data, id_field):
@@ -11547,7 +11577,7 @@ def remove_duplicate_rows(csv_file):
             writer.writeheader()
             writer.writerows(unique_data)
         
-        print(f"\n{current_time()} INFO: Removed duplicate rows from {csv_file}.\n")
+        print(f"{current_time()} INFO: Removed duplicate rows from {csv_file}.")
 
 # Clean up empty data files
 def remove_empty_row(csv_file):
@@ -11600,7 +11630,7 @@ def check_and_create_csv(csv_file):
         remove_empty_row(csv_file)
 
         if csv_file == csv_settings:
-            print(f"\n*** First Time Setup ***")
+            print(f"*** First Time Setup ***")
             settings = read_data(csv_settings)
 
             settings[0]['settings'], channels_url_message = get_channels_url()
@@ -11694,6 +11724,14 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Off"}, 50, "PLM: Internal PBS Stations On/Off")
         check_and_append(csv_file, {"settings": "http://localhost:[PORT]"}, 51, "PLM: VLC Bridge PBS Base URL")
         check_and_append(csv_file, {"settings": "Off"}, 52, "SLM: Update Labels in Channels DVR On/Off")
+        check_and_append(csv_file, {"settings": "Off"}, 53, "MTM: Remove old Channels DVR Recording Logs On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 54, "MTM: Remove old Channels DVR Recording Logs Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 55, "MTM: Remove old Channels DVR Recording Logs Frequency")
+        check_and_append(csv_file, {"settings": 7}, 56, "MTM: Remove old Channels DVR Recording Logs Days to Keep")
+        check_and_append(csv_file, {"settings": "Off"}, 57, "MTM: Remove old Channels DVR Backups On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 58, "MTM: Remove old Channels DVR Backups Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 59, "MTM: Remove old Channels DVR Backups Frequency")
+        check_and_append(csv_file, {"settings": 7}, 60, "MTM: Remove old Channels DVR Backups Days to Keep")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -11749,7 +11787,15 @@ def initial_data(csv_file):
                     {"settings": "Active Providers"},                                          # [47] SLM: Search Default for Provider Status
                     {"settings": "Off"},                                                       # [48] PLM: Internal PBS Stations On/Off
                     {"settings": "http://localhost:[PORT]"},                                   # [49] PLM: VLC Bridge PBS Base URL
-                    {"settings": "Off"}                                                        # [50] SLM: Update Labels in Channels DVR On/Off
+                    {"settings": "Off"},                                                       # [50] SLM: Update Labels in Channels DVR On/Off
+                    {"settings": "Off"},                                                       # [51] MTM: Remove old Channels DVR Recording Logs On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [52] MTM: Remove old Channels DVR Recording Logs Start Time
+                    {"settings": "Every 24 hours"},                                            # [53] MTM: Remove old Channels DVR Recording Logs Frequency
+                    {"settings": 7},                                                           # [54] MTM: Remove old Channels DVR Recording Logs Days to Keep
+                    {"settings": "Off"},                                                       # [55] MTM: Remove old Channels DVR Backups On/Off
+                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [56] MTM: Remove old Channels DVR Backups Start Time
+                    {"settings": "Every 24 hours"},                                            # [57] MTM: Remove old Channels DVR Backups Frequency
+                    {"settings": 7}                                                            # [58] MTM: Remove old Channels DVR Backups Days to Keep
         ]        
 
     # Stream Link/File Manager
@@ -11824,14 +11870,14 @@ def check_website(url):
         try:
             response = requests.get(url, headers=url_headers)
             if response.status_code == 200:
-                print(f"\n{current_time()} SUCCESS: {url} is accessible. Continuing...")
+                print(f"{current_time()} SUCCESS: {url} is accessible. Continuing...")
                 break
             else:
-                print(f"\n{current_time()} ERROR: {url} reports {response.status_code}")
+                print(f"{current_time()} ERROR: {url} reports {response.status_code}")
         except requests.RequestException as e:
-            print(f"\n{current_time()} ERROR: {url} reports {e}")
+            print(f"{current_time()} ERROR: {url} reports {e}")
         
-        print(f"\n{current_time()} INFO: Retrying in 1 minute...")
+        print(f"{current_time()} INFO: Retrying in 1 minute...")
         time.sleep(60)
 
 # Used to loop through a URL that might error
@@ -11849,10 +11895,10 @@ def fetch_url(url, retries, delay):
             
         except Exception as e:
             if attempt < retries - 1:
-                print(f"\n{current_time()} WARNING: For '{url}', encountered an error ({e}). Retrying in {delay} seconds...")
+                print(f"{current_time()} WARNING: For '{url}', encountered an error ({e}). Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
-                notification_add(f"\n{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...")
+                notification_add(f"{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...")
 
 # Used to send a post command to a URL that might error
 def post_url(url, json_data, retries, delay):
@@ -11872,10 +11918,10 @@ def post_url(url, json_data, retries, delay):
             
         except Exception as e:
             if attempt < retries - 1:
-                print(f"\n{current_time()} WARNING: For '{url}', encountered an error ({e}). Retrying in {delay} seconds...")
+                print(f"{current_time()} WARNING: For '{url}', encountered an error ({e}). Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
-                notification_add(f"\n{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...") 
+                notification_add(f"{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...") 
 
 # Searches for an IP Address on the LAN that responds to Port 8089
 def get_channels_url():
@@ -11895,8 +11941,7 @@ def get_channels_url():
         "tailscale"
     ]
 
-    print(f"\n{current_time()} Searching for Channels URL...")
-    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.\n")
+    print(f"{current_time()} Searching for Channels URL...")
 
     # Search times out after 60 seconds
     timer = threading.Timer(60, timeout_handler)
@@ -11948,8 +11993,8 @@ def get_channels_url():
         channels_url_message = f"{current_time()} INFO: Channels URL not found. Please manually update in Settings."
         channels_url = f"http://[CHANNELS_URL_NOT_FOUND_UPDATE_SETTINGS]:8089"
 
-    print(f"\n{channels_url_message}")
-    print(f"{current_time()} INFO: Channels URL set to '{channels_url}'\n")
+    print(f"{channels_url_message}")
+    print(f"{current_time()} INFO: Channels URL set to '{channels_url}'")
 
     return channels_url, channels_url_message
 
@@ -12660,7 +12705,7 @@ logging.basicConfig(
 )
 log = logger()
 
-notification_add(f"\n{current_time()} Beginning Initialization Process (see log for details)...\n")
+notification_add(f"{current_time()} Beginning Initialization Process (see log for details)...")
 
 check_website(engine_url)
 
@@ -12707,11 +12752,11 @@ thread.daemon = True
 thread.start()
 
 if slm_channels_dvr_integration:
-    notification_add(f"\n{current_time()} Initialization Complete. Starting Streaming Library Manager for Channels...")
+    notification_add(f"{current_time()} Initialization Complete. Starting Streaming Library Manager for Channels...")
 else:
-    notification_add(f"\n{current_time()} Initialization Complete. Starting Streaming Library Manager...")
+    notification_add(f"{current_time()} Initialization Complete. Starting Streaming Library Manager...")
 
 # Start Server
 if __name__ == "__main__":
-    notification_add(f"\n{current_time()} INFO: Server starting on port {slm_port}\n")
+    notification_add(f"{current_time()} INFO: Server starting on port {slm_port}")
     app.run(host='0.0.0.0', port=slm_port)
