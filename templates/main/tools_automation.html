@@ -319,6 +319,74 @@
                     <button type="submit" name="action" value="refresh_channels_m3u_playlists_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run</button>
                   </div>
                 </div>
+                <div id="anchor_mtm_channels_remove_old_logs_recording" class="settings-box" style="width: 99%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" class="form-check-input ms-auto" id="mtm_channels_remove_old_logs_recording" name="mtm_channels_remove_old_logs_recording" {% if html_mtm_channels_remove_old_logs_recording == "On" %}checked{% endif %}>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="mtm_channels_remove_old_logs_recording"><b>Remove Old Recording Logs</b></label>
+                  </div>
+                  <div>
+                    <p><em>In the main Channels DVR path, removes 'Recording Logs' that are older than the number of set days, and then also deletes the empty directories left behind.</em></p>
+                  </div>
+                  <div>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="mtm_channels_remove_old_logs_recording_time">Start at:</label>
+                    <input type="time" id="mtm_channels_remove_old_logs_recording_time" name="mtm_channels_remove_old_logs_recording_time" value="{{ html_mtm_channels_remove_old_logs_recording_time }}" class="ms-3">
+                  </div>
+                  <div style="margin-top: 10px;">
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="mtm_channels_remove_old_logs_recording_frequency">And run:</label>
+                    <div style="margin-left: 15px;">
+                      <select class="select2" name="mtm_channels_remove_old_logs_recording_frequency" id="mtm_channels_remove_old_logs_recording_frequency">
+                        {% for html_automation_frequency in html_automation_frequencies %}
+                          <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_mtm_channels_remove_old_logs_recording_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label for="mtm_channels_remove_old_logs_recording_days" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Number of Days:</label>
+                    <input type="text" id="mtm_channels_remove_old_logs_recording_days" name="mtm_channels_remove_old_logs_recording_days" value="{{ html_mtm_channels_remove_old_logs_recording_days }}" style="display: block; margin-left: 15px; width: 25%;">
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                    <button type="submit" name="action" value="mtm_channels_remove_old_logs_recording_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+                    <button type="submit" name="action" value="mtm_channels_remove_old_logs_recording_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: -25px;">
+                    <button type="submit" name="action" value="mtm_channels_remove_old_logs_recording_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run</button>
+                  </div>
+                </div>
+                <div id="anchor_mtm_channels_remove_old_backups" class="settings-box" style="width: 99%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" class="form-check-input ms-auto" id="mtm_channels_remove_old_backups" name="mtm_channels_remove_old_backups" {% if html_mtm_channels_remove_old_backups == "On" %}checked{% endif %}>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="mtm_channels_remove_old_backups"><b>Remove Old Backups</b></label>
+                  </div>
+                  <div>
+                    <p><em>In the main Channels DVR path, removes 'Backups' that are older than the number of set days, and then also deletes the empty directories left behind.</em></p>
+                  </div>
+                  <div>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="mtm_channels_remove_old_backups_time">Start at:</label>
+                    <input type="time" id="mtm_channels_remove_old_backups_time" name="mtm_channels_remove_old_backups_time" value="{{ html_mtm_channels_remove_old_backups_time }}" class="ms-3">
+                  </div>
+                  <div style="margin-top: 10px;">
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="mtm_channels_remove_old_backups_frequency">And run:</label>
+                    <div style="margin-left: 15px;">
+                      <select class="select2" name="mtm_channels_remove_old_backups_frequency" id="mtm_channels_remove_old_backups_frequency">
+                        {% for html_automation_frequency in html_automation_frequencies %}
+                          <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_mtm_channels_remove_old_backups_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label for="mtm_channels_remove_old_backups_days" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Number of Days:</label>
+                    <input type="text" id="mtm_channels_remove_old_backups_days" name="mtm_channels_remove_old_backups_days" value="{{ html_mtm_channels_remove_old_backups_days }}" style="display: block; margin-left: 15px; width: 25%;">
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                    <button type="submit" name="action" value="mtm_channels_remove_old_backups_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+                    <button type="submit" name="action" value="mtm_channels_remove_old_backups_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: -25px;">
+                    <button type="submit" name="action" value="mtm_channels_remove_old_backups_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run</button>
+                  </div>
+                </div>
               {% endif %}
             </div>
             <!-- Live Process Log -->
