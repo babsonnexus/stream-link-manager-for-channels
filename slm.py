@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.04.30.1508"
+slm_version = "v2025.05.05.1603"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.04.30.1508"
+    slm_version = "v2025.05.05.1603"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -10039,6 +10039,7 @@ def get_slm_channels_info():
 
     for bookmark in bookmarks:
         for bookmarks_status in bookmarks_statuses:
+            remove_channels_id = True
             if bookmark['entry_id'] == bookmarks_status['entry_id']:
                 # Precompute the cleaned stream link file path
                 stream_link_file_path_check = f"slm/{clean_comparison_path(bookmarks_status['stream_link_file']).split('slm/', 1)[1]}"
@@ -10049,7 +10050,11 @@ def get_slm_channels_info():
                         bookmark['channels_id'] = dvr_files_lookup[stream_link_file_path_check]['File ID']
                     else:
                         bookmark['channels_id'] = dvr_files_lookup[stream_link_file_path_check]['Group ID']
+                    remove_channels_id = False
                     break  # Exit the inner loop once a match is found
+
+        if remove_channels_id:
+            bookmark['channels_id'] = ''                    
 
     # Write updated bookmarks back to the file
     write_data(csv_bookmarks, bookmarks)
