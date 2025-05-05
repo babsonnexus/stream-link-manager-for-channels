@@ -36,7 +36,11 @@
           <div class="row">
             <!-- Scheduler -->
             <div class="common-div left-div">
-              <h4>Scheduler</h4>
+              <h4>Scheduler
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-Automation" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </h4>
               <p><em>WARNING: A buffer of at least 1 minute is required between automated processes, otherwise they may not run.</em></p>
               <hr>
               <h5>Streaming Library Manager</h5>
@@ -106,7 +110,11 @@
               </div>
               {% if html_slm_stream_link_file_manager %}
                 <hr>
-                <h5>Stream Link Manager</h5>
+                <h5>Stream Link Manager
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Processes" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                </h5>
                 <div id="anchor_end_to_end_process" class="settings-box" style="width: 99%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
                   <div class="form-check form-switch ps-0 is-filled">
                     <input type="checkbox" class="form-check-input ms-auto" id="auto_update_schedule" name="auto_update_schedule" {% if html_auto_update_schedule == "On" %}checked{% endif %}>
@@ -194,7 +202,11 @@
               {% endif %}
               {% if html_slm_playlist_manager %}
                 <hr>
-                <h5>Playlist Manager</h5>
+                <h5>Playlist Manager
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Processes" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                </h5>
                 <div id="anchor_plm_update_stations_process" class="settings-box" style="width: 99%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; vertical-align: top; margin-bottom: 5px;">
                   <div class="form-check form-switch ps-0 is-filled">
                     <input type="checkbox" class="form-check-input ms-auto" id="plm_update_stations_schedule" name="plm_update_stations_schedule" {% if html_plm_update_stations_schedule == "On" %}checked{% endif %}>

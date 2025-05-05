@@ -54,7 +54,11 @@
       <div class="col-12">
         <form method="POST" action="/modifyprograms" id="process-form" enctype="multipart/form-data">
           <!-- Select Program Section -->
-          <h4>Select a Program...</h4>
+          <h4>Select a Program...
+            <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Modify-Programs" target="_blank">
+              <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+            </a>
+          </h4>
           <select class="select2" name="title" id="title_select" style="width: calc(30%);" onchange="setEntryId()">
             {% for item in html_sorted_bookmarks %}
                 <option value="{{ item.title }} ({{ item.release_year }}) | {{ item.object_type }}" data-entry-id="{{ item.entry_id }}" 
@@ -86,11 +90,15 @@
           {% endif %}
           <!-- Bookmark Section -->
           {% if html_edit_flag %}
-            <label for="field_title">Title:</label>
+            <label for="field_title"><b>Title:</b></label>
             <input type="text" id="field_title" name="field_title" value="{{ html_title_selected }}" placeholder="A 'Title' is required..." style="width: 30%; margin-right: 10px;" title="{{ html_title_selected }}">
-            <label for="field_release_year">Release Year:</label>
+            <label for="field_release_year"><b>Release Year:</b></label>
             <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected }}" placeholder="Enter year (i.e., 2024)" style="width: 10%; margin-right: 10px;" title="{{ html_release_year_selected }}">
-            <label for="field_bookmark_action">Bookmark Action:</label>
+            <label for="field_bookmark_action"><b>Bookmark Action:</b>
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Actions" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </label>
             <select class="select2" name="field_bookmark_action" id="field_bookmark_action" style="width: 15%;">
               {% for html_bookmark_action in html_bookmark_actions %}
                 <option {% if html_bookmark_action_selected == html_bookmark_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_bookmark_action }}</option>
@@ -99,6 +107,9 @@
             <button class="btn bg-gradient-primary my-2 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#labelPanel" aria-expanded="true" aria-controls="labelPanel" style="width: 10%; margin-right: 10px; margin-left: 10px;">
               Labels
             </button>
+            <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Labels" target="_blank">
+              <i class="material-icons opacity-10" style="position: relative; top: 3px; left: -5px;">help_outline</i>
+            </a>
             <div class="collapse" id="labelPanel">
               <div class="content-placeholder">
                 <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
@@ -130,7 +141,11 @@
                 <div class="grid-item"><h6>Watched / Unwatched</h6></div>
                 <div class="grid-item"><h6>Current Stream Link/File</h6></div>
                 <div class="grid-item"><h6>Stream Link/File Override</h6></div>
-                <div class="grid-item"><h6>Special Action</h6></div>
+                <div class="grid-item"><h6>Special Action
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                </h6></div>
               </div>
             {% endif %}
             {% if html_object_type_selected == 'SHOW' %}
@@ -138,7 +153,11 @@
                 <div class="grid-item"><h6>Watched / Unwatched</h6></div>
                 <div class="grid-item"><h6>Current Stream Link/File</h6></div>
                 <div class="grid-item"><h6>Stream Link/File Override</h6></div>
-                <div class="grid-item"><h6>Special Action</h6></div>
+                <div class="grid-item"><h6>Special Action
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                </h6></div>
                 <div class="grid-item"><h6>Episode Prefix</h6></div>
                 <div class="grid-item"><h6>Action</h6></div>
               </div>
@@ -175,7 +194,11 @@
                 <div class="grid-item"><h6>Watched / Unwatched</h6></div>
                 <div class="grid-item"><h6>Video Name</h6></div>
                 <div class="grid-item"><h6>Stream Link/File Override</h6></div>
-                <div class="grid-item"><h6>Special Action</h6></div>
+                <div class="grid-item"><h6>Special Action
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                </h6></div>
                 <div class="grid-item"><h6>Action</h6></div>
               </div>
             {% endif %}

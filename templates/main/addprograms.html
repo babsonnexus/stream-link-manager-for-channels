@@ -104,7 +104,11 @@
             <!-- Search Fields -->
             <div class="common-div column-div-1">
               <hr>
-              <h4 style="text-align: center;">Search Selections</h6>
+              <h4 style="text-align: center;">Search Selections
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Searching-for-Movies-and-Shows" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </h4>
               <hr>
               <div style="margin-top: 8px;">
                 <label for="program_add"><b>Search / Manual Term</b></label>
@@ -123,14 +127,22 @@
             <!-- Provider Fields -->
             <div class="common-div column-div-2">
               <hr>
-              <h4 style="text-align: center;">New & Updated On My Providers</h6>
+              <h4 style="text-align: center;">New & Updated On My Providers
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Searching-for-Movies-and-Shows" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </h4>
               <hr>
               <div style="margin-top: 8px;">
                 <label for="date_new"><b>Check Date</b></label>
                 <input type="date" id="date_new" name="date_new" value="{{ html_date_new_default }}" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>
               </div>
               <div style="margin-top: 8px;">
-                <label for="provider_status"><b>Provider Status</b></label>
+                <label for="provider_status"><b>Provider Status</b>
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Provider-Groups" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                </label>
                 <select class="select2" name="provider_status" id="provider_status" style="width: 98%;">
                   {% for provider_status_item in html_provider_statuses %}
                       <option value="{{ provider_status_item }}" {% if provider_status_item == html_provider_status %}selected{% endif %}>{{ provider_status_item }}</option>
@@ -146,7 +158,11 @@
             <!-- Manual Fields -->
             <div class="common-div column-div-3">
               <hr>
-              <h4 style="text-align: center;">Manual Selections</h6>
+              <h4 style="text-align: center;">Manual Selections
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Adding-Manual-Movies,-Shows,-and-Videos" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </h4>
               <hr>
               <div style="margin-top: 8px;">
                 <label for="release_year"><b>Release Year</b></label>
@@ -168,7 +184,11 @@
             <!-- Search Options -->
             <div class="common-div column-div-4">
               <hr>
-              <h4 style="text-align: center;">Options</h6>
+              <h4 style="text-align: center;">Options
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Search-Defaults" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </h4>
               <hr>
               <h6 style="text-align: center;">General</h6>
               <div style="margin-top: 8px;">
@@ -371,11 +391,15 @@
           <!-- Bookmark Section -->
           <div>
             {% if html_done_generate_flag %}
-              <label for="field_title">Title:</label>
+              <label for="field_title"><b>Title:</b></label>
               <input type="text" id="field_title" name="field_title" value="{{ html_title_selected }}" placeholder="A 'Title' is required..." style="width: 30%; margin-right: 10px;" title="{{ html_title_selected }}">
-              <label for="field_release_year">Release Year:</label>
+              <label for="field_release_year"><b>Release Year:</b></label>
               <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected }}" placeholder="Enter year (i.e., 2024)" style="width: 10%; margin-right: 10px;" title="{{ html_release_year_selected }}">
-              <label for="field_bookmark_action">Bookmark Action:</label>
+              <label for="field_bookmark_action"><b>Bookmark Action:</b>
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Actions" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </label>
               <select class="select2" name="field_bookmark_action" id="field_bookmark_action" style="width: 15%;">
                 {% for html_bookmark_action in html_bookmark_actions %}
                   <option {% if html_bookmark_action_selected == html_bookmark_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_bookmark_action }}</option>
@@ -384,6 +408,9 @@
               <button class="btn bg-gradient-primary my-2 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#labelPanel" aria-expanded="true" aria-controls="labelPanel" style="width: 10%; margin-right: 10px; margin-left: 10px;">
                 Labels
               </button>
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Labels" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px; left: -5px;">help_outline</i>
+              </a>
               <div class="collapse" id="labelPanel">
                 <div class="content-placeholder">
                   <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
@@ -411,16 +438,28 @@
           <!-- Selected Movie Options -->
           <div>
             {% if html_stream_link_override_movie_flag %}
-            <h4>OPTIONAL: Movie Settings</h4>
+            <h4>OPTIONAL: Movie Settings
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Basic-Selections" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
             <ul>
               <li>Mark the movie as 'watched' by unchecking.</li>
-              <li>Override any potentially generated Stream Link/File by entering an address. NOTE: This is required for manual programs and STRM links.</li>
-              <li>If desired, select a 'Special Action' such as making the selection a STRM link or picking a preferred Streaming Service</li>
+              <li>Override any potentially generated Stream Link/File by entering an address. NOTE: This is required for manual programs and Stream Files.</li>
+              <li>If desired, select a 'Special Action' such as making the selection a Stream File (STRM) 
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-Stream-Files" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+                or picking a preferred Streaming Service.</li>
             </ul>
             <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
               <div class="grid-item"><h6>Watched / Unwatched</h6></div>
               <div class="grid-item"><h6>Stream Link/File Override</h6></div>
-              <div class="grid-item"><h6>Special Action</h6></div>
+              <div class="grid-item"><h6>Special Action
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </h6></div>
             </div>
             <div class="grid-container" style="text-align: center;">
               <div class="grid-item">
@@ -445,17 +484,29 @@
           <!-- Selected Show Options -->
           <div>
             {% if html_season_episodes %}
-              <h4 for="select_episodes">OPTIONAL: Episode Settings</h4>
+              <h4 for="select_episodes">OPTIONAL: Episode Settings
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Basic-Selections" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </h4>
               <ul>
                 <li>Mark episodes as 'watched' by unchecking.</li>
-                <li>Override any potentially generated Stream Link/File by entering an address. NOTE: This is required for manual programs and STRM links.</li>
-                <li>If desired, select a 'Special Action' such as making the selection a STRM link or picking a preferred Streaming Service</li>
+                <li>Override any potentially generated Stream Link/File by entering an address. NOTE: This is required for manual programs and Stream Files.</li>
+                <li>If desired, select a 'Special Action' such as making the selection a Stream File (STRM) 
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-Stream-Files" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                  or picking a preferred Streaming Service.</li>
                 <li>Add a prefix to Stream Link/File file names for tracking purposes (i.e., [DUB] vs. [SUB]) by entering a value.</li>
               </ul>
               <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
                 <div class="grid-item"><h6>Watched / Unwatched</h6></div>
                 <div class="grid-item"><h6>Stream Link/File Override</h6></div>
-                <div class="grid-item"><h6>Special Action</h6></div>
+                <div class="grid-item"><h6>Special Action
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                </h6></div>
                 <div class="grid-item"><h6>Episode Prefix</h6></div>
               </div>
               <div class="grid-container" style="text-align: center;">
@@ -535,18 +586,34 @@
           <!-- Selected Video Group Options -->
           <div>
             {% if html_video_season_episodes %}
-              <h4 for="select_episodes">REQUIRED: Video Settings</h4>
+              <h4 for="select_episodes">REQUIRED: Video Settings
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Basic-Selections" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </h4>
               <ul>
                 <li>Mark videos as 'watched' by unchecking.</li>
                 <li>Replace the generic placeholder names for the videos.</li>
-                <li>Input a 'Stream Link Override' by entering an address, whether a Stream Link or a Stream File.</li>
-                <li>If desired, select a 'Special Action' such as making the selection a Stream Link (STRM).</li>
+                <li>Input a 'Stream Link Override' by entering an address.</li>
+                <li>If desired, select a 'Special Action' such as making the selection a Stream File (STRM) 
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-Stream-Files" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                  or SLM Stream 
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-SLM-Streams" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                  .</li>
               </ul>
               <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
                 <div class="grid-item"><h6>Watched / Unwatched</h6></div>
                 <div class="grid-item"><h6>Video Name</h6></div>
                 <div class="grid-item"><h6>Stream Link/File Override</h6></div>
-                <div class="grid-item"><h6>Special Action</h6></div>
+                <div class="grid-item"><h6>Special Action
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                </h6></div>
               </div>
               {% for item in html_video_season_episodes %}
                 <input type="hidden" name="field_episode_prefix_{{ loop.index }}" id="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}">

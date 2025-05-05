@@ -129,7 +129,11 @@
     <div class="col-12">
       <form method="POST" action="/playlists/plm_manage" id="process-form" enctype="multipart/form-data">
         <!-- Prioritize Playlists -->
-        <h4 id="priority_playlists_anchor">Prioritize Playlists</h4>
+        <h4 id="priority_playlists_anchor">Prioritize Playlists
+          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Manage-Playlists" target="_blank">
+            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+          </a>
+        </h4>
         <div class="container">
           <style>
             .listbox {
@@ -201,7 +205,11 @@
         <input type="hidden" id="priority_playlists" name="priority_playlists">
         <hr>
         <!-- Enter Playlists -->
-        <h4 id="playlists_anchor">Enter Playlists</h4>
+        <h4 id="playlists_anchor">Enter Playlists
+          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Manage-Playlists" target="_blank">
+            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+          </a>
+        </h4>
         <p><em>WARNING: It is not recommended to use 'https' as it may result in the link failing to be read.</em></p>
         <div class="playlists container-fluid">
           <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
@@ -283,7 +291,11 @@
         </div>
         <hr>
         <!-- Internal Playlists -->
-        <h4 id="internal_playlists_anchor">Internal Playlists</h4>
+        <h4 id="internal_playlists_anchor">Internal Playlists
+          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Internal-Stations" target="_blank">
+            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+          </a>
+        </h4>
         <!-- Spacer row -->
         <div class="row">
           <div class="col-12 my-2"></div>
@@ -292,18 +304,26 @@
           <!-- Streaming Stations -->
           <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
             <input type="checkbox" class="form-check-input ms-auto" id="plm_streaming_stations" name="plm_streaming_stations" {% if html_plm_streaming_stations %}checked{% endif %}>
-            <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_streaming_stations"><b>Streaming Stations</b></label>
-            <p><em>Create your own stations from places like YouTube, Twitch, news websites, and other similar sources. Learn more <b><a href='https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Streaming-Stations-%E2%80%90-Managed-Stations' target="_blank">here</a></b>.</em></p>
+            <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_streaming_stations"><b>Streaming Stations</b>
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Streaming-Stations-%E2%80%90-Managed-Stations" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </label>
+            <p><em>Create your own stations from places like YouTube, Twitch, news websites, and other similar sources.</em></p>
           </div>
           <!-- PBS Stations -->
           <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
             <input type="checkbox" class="form-check-input ms-auto" id="plm_internal_pbs_stations" name="plm_internal_pbs_stations" {% if html_plm_internal_pbs_stations == "On" %}checked{% endif %}>
-            <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_internal_pbs_stations"><b>PBS Stations</b></label>
+            <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="plm_internal_pbs_stations"><b>PBS Stations</b>
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-PBS-Stations" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </label>
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 0px; margin-bottom: 10px;">
               <label class="form-check-label text-body mb-0" for="plm_internal_pbs_url_base"><b>VLC Bridge PBS Base URL:</b></label>
               <input type="text" id="plm_internal_pbs_url_base" name="plm_internal_pbs_url_base" value="{{ html_plm_internal_pbs_url_base }}" style="flex: 1;" title="{{ html_plm_internal_pbs_url_base }}" placeholder="i.e., http://localhost:7777">
             </div>
-            <p><em>Gain access to local PBS stations that are available in your market. This playlist is designed to make sure you can receive your legally available stations even when internet geolocation fails or is incorrect. A prior installation of the 'vlc-bridge-pbs' tool is required. Learn more <b><a href='https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-PBS-Stations' target="_blank">here</a></b>.</em></p>
+            <p><em>Gain access to local PBS stations that are available in your market. This playlist is designed to make sure you can receive your legally available stations even when internet geolocation fails or is incorrect. A prior installation of the 'vlc-bridge-pbs' tool is required.</em></p>
           </div>
         </div>
         <div style="display: flex; margin-top: 10px; width: 98%;">
@@ -312,7 +332,11 @@
         </div>
         <hr>
         <!-- Uploaded Playlists -->
-        <h4 id="uploaded_playlists_anchor">Uploaded and Generated Playlists, Guides, and Related Files</h4>
+        <h4 id="uploaded_playlists_anchor">Uploaded and Generated Playlists, Guides, and Related Files
+          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Manage-Playlists" target="_blank">
+            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+          </a>
+        </h4>
         {% if html_uploaded_playlist_files %}
           <div class="uploaded_playlists container-fluid">
             <div class="grid-container" style="text-align: center;">

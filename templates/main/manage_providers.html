@@ -91,7 +91,11 @@
         <form method="POST" action="/manage_providers">
           {% if html_slm_stream_link_file_manager %}
             <!-- Streaming Services -->
-            <h4 id="streaming_services_anchor">Streaming Services</h4>
+            <h4 id="streaming_services_anchor">Streaming Services
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Streaming-Services" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
             <div class="container">
               <style>
                 .listbox {
@@ -179,7 +183,11 @@
             <input type="hidden" id="streaming_services" name="streaming_services">
             <hr>
             <!-- Subscribed Streaming Services Settings -->
-            <h4 id="ssss_anchor">Subscribed Streaming Services Settings</h4>
+            <h4 id="ssss_anchor">Subscribed Streaming Services Settings
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Subscribed-Streaming-Services-Settings" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
             <div class="ssss container-fluid">
               <div class="grid-container" style="text-align: center;">
                 <div class="grid-item"><h6>Active</h6></div>
@@ -217,7 +225,11 @@
             </div>
             <hr>
             <!-- Provider Groups -->
-            <h4 id="provider_group_anchor">Provider Groups</h4>
+            <h4 id="provider_group_anchor">Provider Groups
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Provider-Groups" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
             <div class="provider-group container-fluid">
               <div class="grid-container" style="text-align: center;">
                 <div class="grid-item"><h6>Active</h6></div>
@@ -268,7 +280,11 @@
             </div>
             <hr>
             <!-- Stream Link Mappings -->
-            <h4 id="slmapping_anchor">Stream Link Mappings</h4>
+            <h4 id="slmapping_anchor">Stream Link Mappings
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Stream-Link-Mappings" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
             <div class="stream-link-mappings container-fluid">
               <div class="grid-container" style="text-align: center;">
                 <div class="grid-item"><h6>Active</h6></div>
@@ -351,7 +367,11 @@
             <hr>
           {% endif %}
           <!-- Labels -->
-          <h4 id="slm_label_anchor">Labels</h4>
+          <h4 id="slm_label_anchor">Labels
+            <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Labels" target="_blank">
+              <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+            </a>
+          </h4>
           <div class="slm-labels container-fluid">
             <div class="grid-container" style="text-align: center;">
               <div class="grid-item"><h6>Active</h6></div>
@@ -406,7 +426,11 @@
           <hr>
           {% if html_slm_channels_dvr_integration %}
             <!-- SLM Stream Address -->
-            <h4 id="slm_stream_address_anchor">SLM Stream Address</h4>
+            <h4 id="slm_stream_address_anchor">SLM Stream Address
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-SLM-Streams" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
             <p>SLM Stream Address currently set to <b>{{ html_slm_stream_address }}</b></p>
             <input type="text" id="slm_stream_address" name="slm_stream_address" value="{{ html_slm_stream_address_prior }}" style="width: calc(55%);" title="{{ html_slm_stream_address_prior }}">
             <button type="submit" name="action" value="slm_stream_address_test" class="btn bg-gradient-primary w-10 my-2 mb-2">Test</button>

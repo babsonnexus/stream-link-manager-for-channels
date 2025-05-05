@@ -16,7 +16,11 @@
       <div class="col-12">
         <form method="POST" action="/settings">
           <!-- Manage Extensions and Add-Ons -->
-          <h4 id="advanced_experimental_anchor">Manage Extensions and Add-Ons</h4>
+          <h4 id="advanced_experimental_anchor">Manage Extensions and Add-Ons
+            <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Extensions-and-Add%E2%80%90Ons" target="_blank">
+              <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+            </a>
+          </h4>
           <p><div id="html_advanced_experimental_message">{{ html_advanced_experimental_message }}</div></p>
           <div class="form-check form-switch ps-0 is-filled">
             <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
@@ -32,23 +36,39 @@
               </div>
               <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
                 <input type="checkbox" class="form-check-input ms-auto" id="channels_labels" name="channels_labels" {% if html_channels_labels == "On" %}checked{% endif %}>
-                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_labels"><b>Update 'Labels' in Channels DVR</b></label>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_labels"><b>Update 'Labels' in Channels DVR</b>
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Labels" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                </label>
                 <p><em>When on, this program will update the labels for the generated Stream Links/Files (or an equivalent assemblage like a TV Show or Video Group) in Channels DVR. Keep this off if you are managing labels for Stream Links/Files in Channels DVR directly. If you want to migrate to using SLM to maintain labels, it is recommended to first import labels and label assignments from Channels DVR in the 'Manage Providers' area. Please note that this function does not impact labels for non-SLM created/managed content (i.e., recordings, personal files, self-imported Stream Links/Files, etc...).</em></p>
               </div>
             {% endif %}
             <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
               <input type="checkbox" class="form-check-input ms-auto" id="stream_link_file_manager" name="stream_link_file_manager" {% if html_slm_stream_link_file_manager %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="stream_link_file_manager"><b>On-Demand: Stream Link/File Manager Extension [SLM]</b></label>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="stream_link_file_manager"><b>On-Demand: Stream Link/File Manager Extension [SLM]</b>
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Installation-and-Setup" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </label>
               <p><em>On-Demand movies, TV shows, and videos can be made available to stream without having to keep track of their sources by using ‘Stream Links’ and ‘Stream Files’. The Stream Link/File Manager Extension makes this possible by allowing users to simply ‘bookmark’ this content and letting the program handle the ‘where’ and ‘how’ questions. For users who are not consuming any on-demand media, they can turn this off.</em></p>
             </div>
             <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
               <input type="checkbox" class="form-check-input ms-auto" id="playlist_manager" name="playlist_manager" {% if html_slm_playlist_manager %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="playlist_manager"><b>Linear: Playlist Manager Extension [PLM]</b></label>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="playlist_manager"><b>Linear: Playlist Manager Extension [PLM]</b>
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Installation-and-Setup" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </label>
               <p><em>There are many sources for linear content including places like OTA (over-the-air with an antenna), TVE (TV Everywhere, i.e., streaming websites for cable stations), FAST (Free Ad-Supported Streaming Television, i.e., Pluto, Plex, Tubi), and plenty more. The Playlist Manger Extension allows users to bring all these disparate sources together into one unified front in order to eliminate repetition and resolve all other issues associated with just being able to consume the content. For users who are not integrating linear content like this, they can turn this feature off.</em></p>
             </div>
             <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
               <input type="checkbox" class="form-check-input ms-auto" id="media_tools_manager" name="media_tools_manager" {% if html_slm_media_tools_manager %}checked{% endif %}>
-              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="media_tools_manager"><b>Tools: Media Tools Manager Extension [MTM]</b></label>
+              <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="media_tools_manager"><b>Tools: Media Tools Manager Extension [MTM]</b>
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-Installation-and-Setup" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </label>
               <p><em>With so many shows, movies, videos, stations, and more available, keeping track and managing them all can be quite difficult. Even using this program can add layers of concerns, considerations, and questions. To resolve this quandary and quagmire is the tools included with the Media Tools Manager Extension. It is not recommended to turn this off as it will limit the functionality of this program—notably around Automation—however, it is still up the end-user whether they want these features available.</em></p>
             </div>
           </div>
@@ -59,7 +79,11 @@
           <hr>
           {% if html_slm_channels_dvr_integration %}
             <!-- Channels URL -->
-            <h4 id="channels_url_anchor">Channels URL</h4>
+            <h4 id="channels_url_anchor">Channels URL
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Channels-URL" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
             <p>Channel URL currently set to <b>{{ html_channels_url }}</b></p>
             <input type="text" id="channels_url" name="channels_url" value="{{ html_channels_url_prior }}" style="width: calc(55%);" title="{{ html_channels_url_prior }}">
             <button type="submit" name="action" value="channels_url_test" class="btn bg-gradient-primary w-10 my-2 mb-2">Test</button>
@@ -70,7 +94,11 @@
             <p><div id="html_channels_url_message">{{ html_channels_url_message }}</div></p>
             <hr>
             <!-- Channels Directory -->
-            <h4 id="channels_directory_anchor">Channels Directory</h4>
+            <h4 id="channels_directory_anchor">Channels Directory
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Channels-Directory" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
             <p>The Channels Directory is currently set to: <b><span id="channels_directory">{{ html_channels_directory }}</span></b></p>
             <p><div id="html_channels_directory_message">{{ html_channels_directory_message }}</div></p>
             <input type="text" id="current_directory" name="current_directory" value="{{ html_current_directory }}" readonly style="width: calc(65%); background-color: #d1cdcde5;" title="{{ html_current_directory }}">

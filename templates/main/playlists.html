@@ -65,7 +65,11 @@
   <div class="row min-vh-80 h-100">
     <div class="col-12">
       <form method="POST" action="/playlists/plm_main" id="process-form">
-        <h4>Station Statistics and Settings</h4>
+        <h4>Station Statistics and Settings
+          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Installation-and-Setup" target="_blank">
+            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+          </a>
+        </h4>
         <!-- Stat Chart -->
         <div class="chart-container">
           <div class="bar">
@@ -133,7 +137,11 @@
           <div class="col-12 my-2"></div>
         </div>
         <!-- Final Playlists -->
-        <h4 id="final_playlists_anchor">m3u(s) and XML EPG(s)</h4>
+        <h4 id="final_playlists_anchor">m3u(s) and XML EPG(s)
+          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Regular-Activity-%E2%80%90-m3u(s)-and-XML-EPG(s)" target="_blank">
+            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+          </a>
+        </h4>
         <table style="margin-left: 25px; margin-top: 10px; margin-bottom: 10px;">
           {% for html_playlist_file in html_playlist_files %}
             <tr>
