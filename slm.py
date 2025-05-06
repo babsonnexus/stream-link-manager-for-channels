@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.05.05.1603"
+slm_version = "v2025.05.06.1158"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.05.1603"
+    slm_version = "v2025.05.06.1158"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -51,10 +51,11 @@ app = Flask(__name__)
 class CustomRequest(Request):
     def __init__(self, *args, **kwargs):
         super(CustomRequest, self).__init__(*args, **kwargs)
-        self.max_form_parts = 1000000 # Individual web components
+        self.max_form_parts = 1000000                       # Individual web components
+        self.max_form_memory_size = 1024 * 1024 * 1024      # Last number is MB for form data
 
 app.request_class = CustomRequest
-app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 200 # MB for submitting requests/files
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024       # Last number is MB for submitting requests/files
 
 # Home webpage
 @app.route('/', methods=['GET', 'POST'])
@@ -4490,9 +4491,14 @@ def get_child_to_parents(sub_page):
 # Sets a child to a parent for a station
 def set_child_to_parent(child_m3u_id_channel_id, parent_channel_id, stream_format_override):
     child_to_parents = read_data(csv_playlistmanager_child_to_parent)
+    parents = read_data(csv_playlistmanager_parents)
 
     for child_to_parent in child_to_parents:
         if child_to_parent['child_m3u_id_channel_id'] == child_m3u_id_channel_id:
+
+            if parent_channel_id not in [parent['parent_channel_id'] for parent in parents] and parent_channel_id not in ["Unassigned", "Ignore"]:
+                parent_channel_id = "Unassigned"
+
             child_to_parent['parent_channel_id'] = parent_channel_id
             child_to_parent['stream_format_override'] = stream_format_override
             break
