@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.05.07.1102"
+slm_version = "v2025.05.07.1320"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.07.1102"
+    slm_version = "v2025.05.07.1320"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -4219,6 +4219,12 @@ def get_combined_m3us():
 def parse_m3u(m3u_id, m3u_name, response):
     print(f"{current_time()} INFO: Beginning parse of {m3u_name} ({m3u_id}).")
 
+    skip_lines = [  '#EXTVLCOPT', 
+                    '#EXT-X-STREAM-INF',
+                    '#EXT-X-MEDIA', 
+                    '#EXT-X-MAP'
+                 ]
+
     data = response.text.splitlines()
     cleaned_data = clean_m3u(data)
     
@@ -4300,7 +4306,7 @@ def parse_m3u(m3u_id, m3u_name, response):
                     'tvc_stream_acodec': metadata["tvc-stream-acodec"],
                     'url': ""
                 }
-        elif line.startswith('http') or '://' in line:
+        elif ( line.startswith('http') or '://' in line ) and not any(skip_line in line for skip_line in skip_lines):
             if current_record:
                 current_record['url'] = line.strip()
                 records.append(current_record)
