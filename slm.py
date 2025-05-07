@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.05.06.1158"
+slm_version = "v2025.05.07.1102"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.06.1158"
+    slm_version = "v2025.05.07.1102"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -3593,7 +3593,7 @@ def webpage_playlists(sub_page):
 
                                 if unassign_children:
                                     for unassign_child in unassign_children:
-                                        set_child_to_parent(unassign_child['child_m3u_id_channel_id'], "Unassigned", unassign_child['stream_format_override'])
+                                        set_child_to_parent(unassign_child['child_m3u_id_channel_id'], "Unassigned", unassign_child['stream_format_override'], parents)
 
                             unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents(sub_page)
 
@@ -3677,7 +3677,7 @@ def webpage_playlists(sub_page):
                             child_to_parents_stream_format_override_inputs = list(child_to_parents_stream_format_override_inputs.values())
                             child_to_parents_stream_format_override = child_to_parents_stream_format_override_inputs[child_to_parents_action_make_parent_index]
 
-                            set_child_to_parent(child_to_parents_channel_id, parents_parent_channel_id_input, child_to_parents_stream_format_override)
+                            set_child_to_parent(child_to_parents_channel_id, parents_parent_channel_id_input, child_to_parents_stream_format_override, parents)
                             unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents(sub_page)
 
                         parents.append({
@@ -3830,7 +3830,7 @@ def webpage_playlists(sub_page):
                         child_to_parents_channel_id = send_child_to_parent['child_m3u_id_channel_id']
                         child_to_parents_parent_channel_id = send_child_to_parent['parent_channel_id']
                         child_to_parents_stream_format_override = send_child_to_parent['stream_format_override']
-                        set_child_to_parent(child_to_parents_channel_id, child_to_parents_parent_channel_id, child_to_parents_stream_format_override)
+                        set_child_to_parent(child_to_parents_channel_id, child_to_parents_parent_channel_id, child_to_parents_stream_format_override, parents)
                     
                     parents = sorted(parents, key=lambda x: sort_key(x["parent_title"].casefold()))
                     write_data(csv_playlistmanager_parents, parents)
@@ -4489,9 +4489,8 @@ def get_child_to_parents(sub_page):
     return unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count
 
 # Sets a child to a parent for a station
-def set_child_to_parent(child_m3u_id_channel_id, parent_channel_id, stream_format_override):
+def set_child_to_parent(child_m3u_id_channel_id, parent_channel_id, stream_format_override, parents):
     child_to_parents = read_data(csv_playlistmanager_child_to_parent)
-    parents = read_data(csv_playlistmanager_parents)
 
     for child_to_parent in child_to_parents:
         if child_to_parent['child_m3u_id_channel_id'] == child_m3u_id_channel_id:
