@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.05.07.1320"
+slm_version = "v2025.05.11.0916"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.07.1320"
+    slm_version = "v2025.05.11.0916"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -10049,8 +10049,9 @@ def get_slm_channels_info():
     }
 
     for bookmark in bookmarks:
+        remove_channels_id = True
+
         for bookmarks_status in bookmarks_statuses:
-            remove_channels_id = True
             if bookmark['entry_id'] == bookmarks_status['entry_id']:
                 # Precompute the cleaned stream link file path
                 stream_link_file_path_check = f"slm/{clean_comparison_path(bookmarks_status['stream_link_file']).split('slm/', 1)[1]}"
