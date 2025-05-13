@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.13.1418"
+    slm_version = "v2025.05.13.1846"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -5639,7 +5639,11 @@ def streams_live():
                 filename = f"{sanitized_url}.m3u8"
                 playlist = f"#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1280000\n{m3u8_url}\n"
                 response = Response(playlist, content_type='application/vnd.apple.mpegurl')
-            
+
+            elif m3u8_protocol == 'm3u8_combined':
+                filename = f"{sanitized_url}_combined.m3u8"
+                response = Response(m3u8_url, content_type='application/vnd.apple.mpegurl')
+
             elif m3u8_protocol == 'http':
                 filename = f"{sanitized_url}.mp4"
                 response = Response(stream_with_context(stream_video(m3u8_url)), content_type='video/mp4')
@@ -5719,32 +5723,81 @@ def parse_online_video(url, ydl_opts):
                 if formats:
                     print(f"{current_time()} INFO: Found {len(formats)} formats.")
 
+                    protocol_m3u8_formats = []
+                    protocol_http_formats = []
+                    audio_formats = []
+                    video_formats = []
+
+                    # Separate formats into categories
                     for format in formats:
-                        # print(f"{current_time()} INFO: Found format: {format}") # Keep this for testing but not production
-                        if format.get('acodec') != 'none' and format.get('vcodec') != 'none' and format.get('has_drm') is False:
-                            if 'm3u8' in format.get('protocol', ''):
-                                protocol_m3u8_formats.append(format)
-                            elif 'http' in format.get('protocol', ''):
-                                protocol_http_formats.append(format)
+                        # print(f"{current_time()} INFO: Found format: {format}")  # Keep this for testing but not production
+                        if format.get('has_drm') is False:
+                            if format.get('acodec') != 'none' and format.get('vcodec') != 'none':
+                                if 'm3u8' in format.get('protocol', ''):
+                                    protocol_m3u8_formats.append(format)
+                                elif 'http' in format.get('protocol', ''):
+                                    protocol_http_formats.append(format)
+                            
+                            elif 'audio' in format.get('format_id', '').lower():  # Check if 'format_id' contains 'audio'
+                                audio_formats.append(format)
+                            
+                            elif format.get('acodec') == 'none' and format.get('vcodec') != 'none':
+                                video_formats.append(format)
 
                     best_format = None
                     m3u8_protocol = None
 
+                    # Select the best format from m3u8 or http protocols
                     for protocol_m3u8_format in protocol_m3u8_formats:
                         if not best_format or protocol_m3u8_format.get('tbr', 0) > best_format.get('tbr', 0):
                             best_format = protocol_m3u8_format
                             m3u8_protocol = 'm3u8'
-                    
+
                     if not best_format:
                         for protocol_http_format in protocol_http_formats:
                             if not best_format or protocol_http_format.get('tbr', 0) > best_format.get('tbr', 0):
                                 best_format = protocol_http_format
                                 m3u8_protocol = 'http'
-                    
+
+                    # If no suitable format is found, attempt to combine audio and video manifests
+                    if not best_format and video_formats and audio_formats:
+                        print(f"{current_time()} INFO: No suitable combined format found. Attempting to combine audio and video manifests.")
+                        best_video_format = None
+
+                        # Select the best video format
+                        for video_format in video_formats:
+                            if not best_video_format or video_format.get('tbr', 0) > best_video_format.get('tbr', 0):
+                                best_video_format = video_format
+
+                        # Combine video and all audio tracks into a single m3u8 manifest
+                        if best_video_format:
+                            video_manifest = best_video_format.get('url')
+                            audio_tracks = []
+
+                            for audio_format in audio_formats:
+                                audio_manifest = audio_format.get('url')
+                                if audio_manifest:
+                                    # Use 'format_note' as the track name, fallback to 'language' if missing
+                                    track_name = audio_format.get('format_note') or audio_format.get('language') or "Unknown"
+                                    audio_tracks.append(f"#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"audio\",NAME=\"{track_name}\",DEFAULT=NO,AUTOSELECT=YES,URI=\"{audio_manifest}\"")
+
+                            # Build the combined m3u8 manifest
+                            combined_manifest = f"#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1280000,AUDIO=\"audio\"\n{video_manifest}\n" + "\n".join(audio_tracks)
+                            m3u8_url = combined_manifest
+                            m3u8_protocol = 'm3u8_combined'
+                            print(f"{current_time()} INFO: Combined video and all audio tracks into a single m3u8 manifest.")
+
+                        else:
+                            print(f"{current_time()} WARNING: No suitable video format found for combining.")
+
+                    # If a best format is found, set the m3u8_url
                     if best_format:
                         m3u8_url = best_format.get('url')
                         print(f"{current_time()} INFO: Best format URL found using {m3u8_protocol} protocol: {m3u8_url}")
                     
+                    elif best_video_format and audio_formats:
+                        print(f"{current_time()} INFO: Combined audio tracks with best video URL found using {m3u8_protocol} protocol: {best_video_format.get('url')}")
+
                     else:
                         print(f"{current_time()} WARNING: No suitable format found.")
                 
