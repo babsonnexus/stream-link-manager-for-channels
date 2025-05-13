@@ -24,7 +24,7 @@ from jinja2 import TemplateNotFound
 import yt_dlp
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.11.0916"
+    slm_version = "v2025.05.13.1418"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -3134,6 +3134,7 @@ def webpage_playlists(sub_page):
     station_start_number = settings[11]['settings']
     max_stations = settings[12]['settings']
     plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
+    plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Stutus On/Off
     plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
     plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
     settings_message = ''
@@ -3207,6 +3208,7 @@ def webpage_playlists(sub_page):
                     station_start_number_input = request.form.get('station_start_number')
                     max_stations_input = request.form.get('max_stations')
                     plm_url_tag_in_m3us_input = request.form.get('plm_url_tag_in_m3us')
+                    plm_check_child_station_status_input = request.form.get('plm_check_child_station_status')
 
                     try:
                         if int(station_start_number_input) > 0 and int(max_stations_input) > 0:
@@ -3214,6 +3216,7 @@ def webpage_playlists(sub_page):
                             settings[11]['settings'] = int(station_start_number_input)
                             settings[12]['settings'] = int(max_stations_input)
                             settings[42]['settings'] = "On" if plm_url_tag_in_m3us_input == 'on' else "Off"
+                            settings[59]['settings'] = "On" if plm_check_child_station_status_input == 'on' else "Off"
                             if settings[42]['settings'] == "On":
                                 settings[43]['settings'] = f"{request.url_root}"
 
@@ -3246,6 +3249,7 @@ def webpage_playlists(sub_page):
                 station_start_number = settings[11]['settings']
                 max_stations = settings[12]['settings']
                 plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
+                plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Stutus On/Off
                 plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
                 plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
 
@@ -3294,6 +3298,7 @@ def webpage_playlists(sub_page):
                         playlists_stream_format_inputs = {}
                         playlists_m3u_active_inputs = {}
                         playlists_m3u_priority_inputs = {}
+                        playlists_station_check_inputs = {}
 
                         for key in request.form.keys():
                             if key.startswith('playlists_m3u_id_'):
@@ -3324,6 +3329,10 @@ def webpage_playlists(sub_page):
                                 index = key.split('_')[-1]
                                 playlists_m3u_priority_inputs[index] = request.form.get(key)
 
+                            if key.startswith('playlists_station_check_'):
+                                index = key.split('_')[-1]
+                                playlists_station_check_inputs[index] = request.form.get(key)
+
                         for row in playlists_m3u_id_inputs:
                             playlists_m3u_id_input =  playlists_m3u_id_inputs.get(row)
                             playlists_m3u_name_input = playlists_m3u_name_inputs.get(row)
@@ -3332,6 +3341,7 @@ def webpage_playlists(sub_page):
                             playlists_stream_format_input = playlists_stream_format_inputs.get(row)
                             playlists_m3u_active_input = "On" if playlists_m3u_active_inputs.get(row) == 'on' else "Off"
                             playlists_m3u_priority_input = playlists_m3u_priority_inputs.get(row)
+                            playlists_station_check_input = "On" if playlists_station_check_inputs.get(row) == 'on' else "Off"
 
                             for idx, playlist in enumerate(playlists):
                                 if idx == int(row) - 1:
@@ -3342,6 +3352,7 @@ def webpage_playlists(sub_page):
                                     playlist['stream_format'] = playlists_stream_format_input
                                     playlist['m3u_active'] = playlists_m3u_active_input
                                     playlist['m3u_priority'] = playlists_m3u_priority_input
+                                    playlist['station_check'] = playlists_station_check_input
 
                     elif playlists_action == "playlists_action_new":
                         playlists_m3u_id_input = f"m3u_{max((int(playlist['m3u_id'].split('_')[1]) for playlist in playlists), default=0) + 1:04d}"
@@ -3351,6 +3362,7 @@ def webpage_playlists(sub_page):
                         playlists_stream_format_input = request.form.get('playlists_stream_format_new')
                         playlists_m3u_active_input = "On" if request.form.get('playlists_m3u_active_new') == 'on' else "Off"
                         playlists_m3u_priority_input = max((int(playlist['m3u_priority']) for playlist in playlists), default=0) + 1
+                        playlists_station_check_input = "On" if request.form.get('playlists_station_check_new') == 'on' else "Off"
 
                         playlists.append({
                             "m3u_id": playlists_m3u_id_input,
@@ -3359,7 +3371,8 @@ def webpage_playlists(sub_page):
                             "epg_xml": playlists_epg_xml_input,
                             "stream_format": playlists_stream_format_input,
                             "m3u_active": playlists_m3u_active_input,
-                            "m3u_priority": playlists_m3u_priority_input
+                            "m3u_priority": playlists_m3u_priority_input,
+                            "station_check": playlists_station_check_input
                         })
 
                     elif playlists_action.startswith('playlists_action_delete_'):
@@ -3950,6 +3963,7 @@ def webpage_playlists(sub_page):
                             playlists_stream_format_input = make_playlist_type
                             playlists_m3u_active_input = "On"
                             playlists_m3u_priority_input = max((int(playlist['m3u_priority']) for playlist in playlists), default=0) + 1
+                            playlists_station_check_input = "Off"
 
                             playlists.append({
                                 "m3u_id": playlists_m3u_id_input,
@@ -3958,7 +3972,8 @@ def webpage_playlists(sub_page):
                                 "epg_xml": playlists_epg_xml_input,
                                 "stream_format": playlists_stream_format_input,
                                 "m3u_active": playlists_m3u_active_input,
-                                "m3u_priority": playlists_m3u_priority_input
+                                "m3u_priority": playlists_m3u_priority_input,
+                                "station_check": playlists_station_check_input
                             })
 
                             playlists = sorted(playlists, key=lambda x: sort_key(x["m3u_name"].casefold()))
@@ -4039,6 +4054,7 @@ def webpage_playlists(sub_page):
         html_station_start_number = station_start_number,
         html_max_stations = max_stations,
         html_plm_url_tag_in_m3us = plm_url_tag_in_m3us,
+        html_plm_check_child_station_status = plm_check_child_station_status,
         html_settings_message = settings_message,
         html_plm_internal_pbs_stations = plm_internal_pbs_stations,
         html_plm_internal_pbs_url_base = plm_internal_pbs_url_base
@@ -4210,10 +4226,64 @@ def get_combined_m3us():
     for station in stations:
         check_m3u_id_channel_id = f"{station['m3u_id']}_{station['channel_id']}"
         if check_m3u_id_channel_id not in [map['child_m3u_id_channel_id'] for map in maps]:
-            new_row = { 'child_m3u_id_channel_id': check_m3u_id_channel_id, 'parent_channel_id': 'Unassigned', 'stream_format_override': 'None' }
+            new_row = { 'child_m3u_id_channel_id': check_m3u_id_channel_id, 'parent_channel_id': 'Unassigned', 'stream_format_override': 'None', 'child_station_check': '' }
             append_data(csv_playlistmanager_child_to_parent, new_row)
 
     print(f"{current_time()} Finished combination of playlists.")
+
+    check_child_station_status()
+
+# Checks that status of child stations
+def check_child_station_status():
+    print(f"{current_time()} Starting check of child stations...")
+
+    settings = read_data(csv_settings)
+    plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Stutus On/Off
+
+    stations = read_data(csv_playlistmanager_combined_m3us)
+    maps = read_data(csv_playlistmanager_child_to_parent)
+    playlists = read_data(csv_playlistmanager_playlists)
+
+    map_lookup = {map['child_m3u_id_channel_id']: map['parent_channel_id'] for map in maps}
+    playlist_active_lookup = {playlist['m3u_id']: playlist['m3u_active'] for playlist in playlists}
+    playlist_station_check_lookup = {playlist['m3u_id']: playlist['station_check'] for playlist in playlists}
+
+    not_ignore_stations = []
+    disable_child_stations = []
+
+    if plm_check_child_station_status == "On":
+        for station in stations:
+            if station['m3u_id'] in playlist_active_lookup and station['m3u_id'] in playlist_station_check_lookup:
+                if playlist_active_lookup[station['m3u_id']] == 'On' and playlist_station_check_lookup[station['m3u_id']] == 'On':
+                    check_m3u_id_channel_id = f"{station['m3u_id']}_{station['channel_id']}"
+                    parent_channel_id = map_lookup.get(check_m3u_id_channel_id)
+                    if parent_channel_id and parent_channel_id != 'Ignore':
+                        not_ignore_stations.append(station)
+
+        if not_ignore_stations:
+            for not_ignore_station in not_ignore_stations:
+                check_m3u_id_channel_id = f"{not_ignore_station['m3u_id']}_{not_ignore_station['channel_id']}"
+                check_m3u_id_channel_id_url = not_ignore_station['url']
+                station_check_response = None
+
+                station_check_response = test_video_stream(check_m3u_id_channel_id_url)
+                print(f"{current_time()} INFO: {not_ignore_station['station_playlist']} responded '{station_check_response}'.")
+
+                if station_check_response == 'fail':
+                    disable_child_stations.append(check_m3u_id_channel_id)
+
+    else:
+        print(f"{current_time()} INFO: Check of child stations is disabled.")
+
+    for map in maps:
+        if map['child_m3u_id_channel_id'] in disable_child_stations:
+            map['child_station_check'] = 'Disabled'
+        else:
+            map['child_station_check'] = ''
+    
+    write_data(csv_playlistmanager_child_to_parent, maps)
+
+    print(f"{current_time()} Finished check of child stations.")
 
 # Parse the m3u Playlist to get all the details
 def parse_m3u(m3u_id, m3u_name, response):
@@ -4591,7 +4661,7 @@ def get_final_m3us_epgs():
 
             children = []
             for map in maps:
-                if map['parent_channel_id'] == channel_id:
+                if map['parent_channel_id'] == channel_id and map['child_station_check'] != 'Disabled':
                     children.append(map)
 
             children = [child for child in children if re.search(r'm3u_\d{4}', child['child_m3u_id_channel_id']).group(0) in playlist_preferences]
@@ -6272,7 +6342,8 @@ def run_query(query_name):
                     END AS "Parent Station",
                     plm_all_stations.station_playlist AS "Child Station",
                     COALESCE(plm_parents.parent_tvc_guide_stationid_override, '') AS "Gracenote ID (Override)",
-                    COALESCE(plm_all_stations.tvc_guide_stationid, '') AS "Gracenote ID (Imported)"
+                    COALESCE(plm_all_stations.tvc_guide_stationid, '') AS "Gracenote ID (Imported)",
+                    COALESCE(plm_child_to_parent_maps.child_station_check, '') AS "Child Station Status"
                 FROM plm_child_to_parent_maps
                 LEFT JOIN plm_parents ON plm_child_to_parent_maps.parent_channel_id = plm_parents.parent_channel_id
                 LEFT JOIN plm_all_stations ON plm_child_to_parent_maps.child_m3u_id_channel_id = plm_all_stations.m3u_id || '_' || plm_all_stations.channel_id
@@ -11667,6 +11738,9 @@ def check_and_create_csv(csv_file):
         check_and_add_column(csv_file, 'bookmark_action', 'None')
         check_and_add_column(csv_file, 'channels_id', '')
 
+    if csv_file == csv_playlistmanager_playlists:
+        check_and_add_column(csv_file, 'station_check', 'Off')
+
     if csv_file == csv_playlistmanager_parents:
         check_and_add_column(csv_file, 'parent_active', 'On')
         check_and_add_column(csv_file, 'parent_tvg_description_override', '')
@@ -11674,6 +11748,7 @@ def check_and_create_csv(csv_file):
 
     if csv_file == csv_playlistmanager_child_to_parent:
         check_and_add_column(csv_file, 'stream_format_override', 'None')
+        check_and_add_column(csv_file, 'child_station_check', '')
 
     if csv_file == csv_streaming_services:
         check_and_add_column(csv_file, 'streaming_service_active', 'On')
@@ -11749,6 +11824,7 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 58, "MTM: Remove old Channels DVR Backups Start Time")
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 59, "MTM: Remove old Channels DVR Backups Frequency")
         check_and_append(csv_file, {"settings": 7}, 60, "MTM: Remove old Channels DVR Backups Days to Keep")
+        check_and_append(csv_file, {"settings": "Off"}, 61, "PLM/MTM: Check Child Station Stutus On/Off")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -11812,7 +11888,8 @@ def initial_data(csv_file):
                     {"settings": "Off"},                                                       # [55] MTM: Remove old Channels DVR Backups On/Off
                     {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [56] MTM: Remove old Channels DVR Backups Start Time
                     {"settings": "Every 24 hours"},                                            # [57] MTM: Remove old Channels DVR Backups Frequency
-                    {"settings": 7}                                                            # [58] MTM: Remove old Channels DVR Backups Days to Keep
+                    {"settings": 7},                                                           # [58] MTM: Remove old Channels DVR Backups Days to Keep
+                    {"settings": "Off"}                                                        # [59] PLM/MTM: Check Child Station Stutus On/Off
         ]        
 
     # Stream Link/File Manager
@@ -11856,7 +11933,7 @@ def initial_data(csv_file):
     # Playlist Manager
     elif csv_file == csv_playlistmanager_playlists:
         data = [
-            {"m3u_id": None, "m3u_name": None, "m3u_url": None, "epg_xml": None, "stream_format": None, "m3u_priority": None}
+            {"m3u_id": None, "m3u_name": None, "m3u_url": None, "epg_xml": None, "stream_format": None, "m3u_priority": None, "station_check": None}
         ]
 
     elif csv_file == csv_playlistmanager_parents:
@@ -11866,7 +11943,7 @@ def initial_data(csv_file):
 
     elif csv_file == csv_playlistmanager_child_to_parent:
         data = [
-            {"child_m3u_id_channel_id": None, "parent_channel_id": None, "stream_format_override": None}
+            {"child_m3u_id_channel_id": None, "parent_channel_id": None, "stream_format_override": None, "child_station_check": None}
         ]    
 
     elif csv_file == csv_playlistmanager_combined_m3us:
@@ -11896,6 +11973,25 @@ def check_website(url):
         
         print(f"{current_time()} INFO: Retrying in 1 minute...")
         time.sleep(60)
+
+# Check if a video stream is working
+def test_video_stream(url):
+    status = None
+
+    try:
+        with requests.get(url, headers=url_headers, stream=True, timeout=10) as response:
+            if response.status_code == 200:
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        status = "ok"
+                        break
+            else:
+                status = "fail"
+    except requests.exceptions.RequestException as e:
+        print(f"{current_time()} ERROR: {url} reports {e}")
+        status = "fail"
+
+    return status
 
 # Used to loop through a URL that might error
 def fetch_url(url, retries, delay):
