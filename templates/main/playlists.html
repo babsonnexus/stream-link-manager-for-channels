@@ -122,14 +122,20 @@
         {% endif %}
         <div class="settings-box form-check form-switch ps-0 is-filled" style="width: 98%; display: flex; justify-content: center; align-items: center; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
           <label for="station_start_number" style="margin-top: 8px; margin-right: 5px;"><b>Station Start Number:</b></label>
-          <input type="text" id="station_start_number" name="station_start_number" style="width: 5%; margin-right: 10px;" value="{{ html_station_start_number }}">
+          <input type="text" id="station_start_number" name="station_start_number" style="width: 4%; margin-right: 10px;" value="{{ html_station_start_number }}">
           <label for="max_stations" style="margin-top: 8px; margin-right: 5px;"><b>Max Stations per m3u:</b></label>
-          <input type="text" id="max_stations" name="max_stations" style="width: 5%; margin-right: 10px;" value="{{ html_max_stations }}">
+          <input type="text" id="max_stations" name="max_stations" style="width: 4%; margin-right: 10px;" value="{{ html_max_stations }}">
           <label for="plm_url_tag_in_m3us" style="margin-top: 8px; margin-right: 5px;"><b>Add URL tag to m3u(s):</b></label>
           <input type="checkbox" class="form-check-input ms-1" id="plm_url_tag_in_m3us" name="plm_url_tag_in_m3us" {% if html_plm_url_tag_in_m3us == 'On' %}checked{% endif %}>
-          <button type="submit" name="action" value="playlist_manager_save_settings" class="btn bg-gradient-primary w-15 my-2 mb-2" style="margin-left: 25px; margin-right: 5px;">Save Settings</button>
-          <button type="submit" name="action" value="final_playlists_action_update_station_list" class="btn bg-gradient-primary w-15 my-2 mb-2" style="margin-right: 5px;">Update Station List</button>
-          <button type="submit" name="action" value="final_playlists_action_update_m3u_epg" class="btn bg-gradient-primary w-15 my-2 mb-2">Update m3u(s) & XML EPG(s)</button>
+          <label for="plm_check_child_station_status" style="margin-top: 8px; margin-right: 5px; margin-left: 15px;"><b>Check Station Status:</b>
+            <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Processes-%E2%80%90-Check-Station-Status" target="_blank">
+              <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+            </a>    
+          </label>
+          <input type="checkbox" class="form-check-input ms-1" id="plm_check_child_station_status" name="plm_check_child_station_status" {% if html_plm_check_child_station_status == 'On' %}checked{% endif %}>
+          <button type="submit" name="action" value="playlist_manager_save_settings" class="btn bg-gradient-primary my-2 mb-2" style="margin-left: 25px; margin-right: 5px; width: 14%;">Save Settings</button>
+          <button type="submit" name="action" value="final_playlists_action_update_station_list" class="btn bg-gradient-primary my-2 mb-2" style="margin-right: 5px; width: 14%;">Update Station List</button>
+          <button type="submit" name="action" value="final_playlists_action_update_m3u_epg" class="btn bg-gradient-primary my-2 mb-2" style="width: 14%;">Update m3u(s) & XML EPG(s)</button>
         </div>
         <hr>
         <!-- Spacer row -->

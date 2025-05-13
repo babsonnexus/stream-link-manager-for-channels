@@ -7,7 +7,7 @@
 <style> 
   .playlists .grid-container {
       display: grid;
-      grid-template-columns: 0.5fr 2fr 3fr 3fr 1fr 0.5fr 1fr;
+      grid-template-columns: 0.5fr 0.5fr 2fr 2.75fr 2.75fr 1fr 0.5fr 1fr;
       gap: 10px;
   }
 
@@ -214,6 +214,11 @@
         <div class="playlists container-fluid">
           <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
             <div class="grid-item"><h6>Active</h6></div>
+            <div class="grid-item"><h6>Check Station Status
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Processes-%E2%80%90-Check-Station-Status" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>              
+            </h6></div>
             <div class="grid-item"><h6>Name</h6></div>
             <div class="grid-item"><h6>m3u URL</h6></div>
             <div class="grid-item"><h6>[OPTIONAL]<br>EPG XML</h6></div>
@@ -226,8 +231,14 @@
             <div class="grid-container">
               <div class="grid-item">
                 <div class="enter-playlists form-check form-switch ps-0 is-filled">
-                  <input type="checkbox" id="playlists_m3u_active_{{ loop.index }}" name="playlists_m3u_active_{{ loop.index }}" class="enter-playlists form-check-input" 
+                  <input type="checkbox" id="playlists_m3u_active_{{ loop.index }}" name="playlists_m3u_active_{{ loop.index }}" class="enter-playlists form-check-input" style="margin-left: 3px;"
                     {% if item.m3u_active|lower == 'on' %}checked{% endif %}>
+                </div>
+              </div>
+              <div class="grid-item">
+                <div class="enter-playlists form-check form-switch ps-0 is-filled">
+                  <input type="checkbox" id="playlists_station_check_{{ loop.index }}" name="playlists_station_check_{{ loop.index }}" class="enter-playlists form-check-input" style="margin-left: 3px;"
+                    {% if item.station_check|lower == 'on' %}checked{% endif %}>
                 </div>
               </div>
               <div class="grid-item">
@@ -258,7 +269,12 @@
           <div class="grid-container">
             <div class="grid-item">
               <div class="enter-playlists form-check form-switch ps-0 is-filled">
-                <input type="checkbox" id="playlists_m3u_active_new" name="playlists_m3u_active_new" class="enter-playlists form-check-input" checked>
+                <input type="checkbox" id="playlists_m3u_active_new" name="playlists_m3u_active_new" class="enter-playlists form-check-input" style="margin-left: 3px;" checked>
+              </div>
+            </div>
+            <div class="grid-item">
+              <div class="enter-playlists form-check form-switch ps-0 is-filled">
+                <input type="checkbox" id="playlists_station_check_new" name="playlists_station_check_new" class="enter-playlists form-check-input" style="margin-left: 3px;">
               </div>
             </div>
             <div class="grid-item">
