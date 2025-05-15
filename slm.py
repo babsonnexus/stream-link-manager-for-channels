@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.05.14.1031"
+slm_version = "v2025.05.15.1632"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.14.1031"
+    slm_version = "v2025.05.15.1632"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -2724,24 +2724,6 @@ def webpage_manage_providers():
                             "label_description": slm_label_description_new_input
                         })
 
-                    # Delete a record
-                    elif settings_action.startswith('slm_label_delete_'):
-                        slm_label_delete_index = int(settings_action.split('_')[-1]) - 1
-
-                        slm_label_delete_id = slm_labels[slm_label_delete_index]['label_id']
-                        remove_row_csv(csv_slm_label_maps, slm_label_delete_id)
-
-                        # Create a temporary record with fields set to None
-                        temp_record = create_temp_record(slm_labels[0].keys())
-
-                        if 0 <= slm_label_delete_index < len(slm_labels):
-                            slm_labels.pop(slm_label_delete_index)
-
-                            # If the list is now empty, add the temp record to keep headers
-                            if not slm_labels:
-                                slm_labels.append(temp_record)
-                                run_empty_row = True
-
                     # Save record modifications
                     elif settings_action == 'slm_label_save':
                         slm_label_id_inputs = {}
@@ -2784,86 +2766,111 @@ def webpage_manage_providers():
                                 'label_description': slm_label_description_input
                             })
 
-                    # Import Labels from Channels
-                    elif settings_action == 'slm_label_import':
-                        print(f"{current_time()} INFO: Starting importing labels from Channels DVR...")
+                    elif settings_action.startswith('slm_label_delete_') or settings_action == 'slm_label_import':
 
-                        dvr_files, dvr_groups = get_slm_channels_info()
+                        # Create a temporary record with fields set to None
+                        if slm_labels:
+                            temp_record = create_temp_record(slm_labels[0].keys())
+                        else:
+                            temp_record = initial_data(csv_slm_labels)[0]
 
-                        base_labels = []
+                        # Delete a record
+                        if settings_action.startswith('slm_label_delete_'):
+                            slm_label_delete_index = int(settings_action.split('_')[-1]) - 1
 
-                        for dvr_file in dvr_files:
-                            item_labels = dvr_file.get('Labels', [])
-                            if item_labels:
-                                for item_label in item_labels:
-                                    if item_label not in base_labels:
-                                        base_labels.append(item_label)
+                            slm_label_delete_id = slm_labels[slm_label_delete_index]['label_id']
+                            remove_row_csv(csv_slm_label_maps, slm_label_delete_id)
 
-                        for dvr_group in dvr_groups:
-                            item_labels = dvr_group.get('Labels', [])
-                            if item_labels:
-                                for item_label in item_labels:
-                                    if item_label not in base_labels:
-                                        base_labels.append(item_label)
+                            if 0 <= slm_label_delete_index < len(slm_labels):
+                                slm_labels.pop(slm_label_delete_index)
 
-                        for base_label in base_labels:
-                            if base_label not in [slm_label['label_name'] for slm_label in slm_labels]:
-                                slm_label_id_new_input = f"slmlbl_{max((int(slm_label['label_id'].split('_')[1]) for slm_label in slm_labels), default=0) + 1:04d}"
-                                slm_label_active_new_input = 'On'
-                                slm_label_name_new_input = base_label
-                                slm_label_description_new_input = ''
+                        # Import Labels from Channels
+                        elif settings_action == 'slm_label_import':
+                            print(f"{current_time()} INFO: Starting importing labels from Channels DVR...")
 
-                                slm_labels.append({
-                                    "label_id": slm_label_id_new_input,
-                                    "label_active": slm_label_active_new_input,
-                                    "label_name": slm_label_name_new_input,
-                                    "label_description": slm_label_description_new_input
-                                })
+                            dvr_files, dvr_groups = get_slm_channels_info()
 
-                        bookmarks = read_data(csv_bookmarks)
-                        label_maps = read_data(csv_slm_label_maps)
+                            base_labels = []
 
-                        for bookmark in bookmarks:
-                            channels_id = bookmark['channels_id']
-                            entry_id = bookmark['entry_id']
-                            channels_labels = []
-                            mapped_channels_labels = []
+                            for dvr_file in dvr_files:
+                                item_labels = dvr_file.get('Labels', [])
+                                if item_labels:
+                                    for item_label in item_labels:
+                                        if item_label not in base_labels:
+                                            base_labels.append(item_label)
 
-                            if bookmark['object_type']  == "MOVIE":
-                                for dvr_file in dvr_files:
-                                    if channels_id == dvr_file["File ID"]:
-                                        channels_labels = dvr_file.get('Labels', [])
-                                        break
+                            for dvr_group in dvr_groups:
+                                item_labels = dvr_group.get('Labels', [])
+                                if item_labels:
+                                    for item_label in item_labels:
+                                        if item_label not in base_labels:
+                                            base_labels.append(item_label)
 
-                            else:
-                                for dvr_group in dvr_groups:
-                                    if channels_id == dvr_group["Group ID"]:
-                                        channels_labels = dvr_group.get('Labels', [])
-                                        break
+                            for base_label in base_labels:
+                                if base_label not in [slm_label['label_name'] for slm_label in slm_labels]:
+                                    slm_label_id_new_input = f"slmlbl_{max((int(slm_label['label_id'].split('_')[1]) for slm_label in slm_labels), default=0) + 1:04d}"
+                                    slm_label_active_new_input = 'On'
+                                    slm_label_name_new_input = base_label
+                                    slm_label_description_new_input = ''
 
-                            for channels_label in channels_labels:
-                                for slm_label in slm_labels:
-                                    if channels_label == slm_label['label_name']:
-                                        mapped_channels_labels.append(slm_label['label_id'])
-                                        break
-
-                            for mapped_channels_label in mapped_channels_labels:
-                                label_exists = False
-
-                                for label_map in label_maps:
-                                    if label_map['entry_id'] == entry_id and label_map['label_id'] == mapped_channels_label:
-                                        label_exists = True
-                                        break
-
-                                if not label_exists:
-                                    label_maps.append({
-                                        'label_id': mapped_channels_label,
-                                        'entry_id': entry_id
+                                    slm_labels.append({
+                                        "label_id": slm_label_id_new_input,
+                                        "label_active": slm_label_active_new_input,
+                                        "label_name": slm_label_name_new_input,
+                                        "label_description": slm_label_description_new_input
                                     })
 
-                        write_data(csv_slm_label_maps, label_maps)
+                            if slm_labels:
+                                bookmarks = read_data(csv_bookmarks)
+                                label_maps = read_data(csv_slm_label_maps)
 
-                        print(f"{current_time()} INFO: Finished importing labels from Channels DVR.")
+                                for bookmark in bookmarks:
+                                    channels_id = bookmark['channels_id']
+                                    entry_id = bookmark['entry_id']
+                                    channels_labels = []
+                                    mapped_channels_labels = []
+
+                                    if bookmark['object_type']  == "MOVIE":
+                                        for dvr_file in dvr_files:
+                                            if channels_id == dvr_file["File ID"]:
+                                                channels_labels = dvr_file.get('Labels', [])
+                                                break
+
+                                    else:
+                                        for dvr_group in dvr_groups:
+                                            if channels_id == dvr_group["Group ID"]:
+                                                channels_labels = dvr_group.get('Labels', [])
+                                                break
+
+                                    for channels_label in channels_labels:
+                                        for slm_label in slm_labels:
+                                            if channels_label == slm_label['label_name']:
+                                                mapped_channels_labels.append(slm_label['label_id'])
+                                                break
+
+                                    for mapped_channels_label in mapped_channels_labels:
+                                        label_exists = False
+
+                                        for label_map in label_maps:
+                                            if label_map['entry_id'] == entry_id and label_map['label_id'] == mapped_channels_label:
+                                                label_exists = True
+                                                break
+
+                                        if not label_exists:
+                                            label_maps.append({
+                                                'label_id': mapped_channels_label,
+                                                'entry_id': entry_id
+                                            })
+
+                                if label_maps:
+                                    write_data(csv_slm_label_maps, label_maps)
+
+                            print(f"{current_time()} INFO: Finished importing labels from Channels DVR.")
+
+                        # If the list is now empty, add the temp record to keep headers
+                        if not slm_labels:
+                            slm_labels.append(temp_record)
+                            run_empty_row = True
 
                     if not run_empty_row:
                         slm_labels = sorted(slm_labels, key=lambda x: sort_key(x["label_name"].casefold()))
@@ -10193,7 +10200,8 @@ def get_slm_channels_info():
             bookmark['channels_id'] = ''                    
 
     # Write updated bookmarks back to the file
-    write_data(csv_bookmarks, bookmarks)
+    if bookmarks:
+        write_data(csv_bookmarks, bookmarks)
     print(f"{current_time()} INFO: Finished importing Channels DVR info.")
 
     # Return dvr_files and dvr_groups as they are
