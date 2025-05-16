@@ -28,12 +28,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.05.15.1632"
+slm_version = "v2025.05.16.1217"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.15.1632"
+    slm_version = "v2025.05.16.1217"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -2281,7 +2281,10 @@ def webpage_modify_programs():
                     label_maps = read_data(csv_slm_label_maps)
 
                     if len(slm_labels) > 0:
-                        temp_record = create_temp_record(label_maps[0].keys())
+                        if label_maps:
+                            temp_record = create_temp_record(label_maps[0].keys())
+                        else:
+                            temp_record = initial_data(csv_slm_label_maps)[0]
                         run_empty_rows = False
 
                         webpage_label_active_inputs = {}
