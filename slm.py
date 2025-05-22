@@ -24,7 +24,7 @@ from jinja2 import TemplateNotFound
 import yt_dlp
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.16.1232"
+    slm_version = "v2025.05.22.1726"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -715,9 +715,9 @@ def get_country_code():
     timer.start()
 
     try:
-        response = requests.get('https://ipinfo.io', headers=url_headers)
+        response = requests.get('https://ipapi.co/json/', headers=url_headers)
         data = response.json()
-        user_country_code = data.get('country').upper()
+        user_country_code = data.get('country', '').upper()
         
         if user_country_code in valid_country_codes:
             country_code_input = user_country_code
@@ -2532,6 +2532,7 @@ def webpage_manage_providers():
         "MOVIE",
         "SHOW"
     ]
+
     slmappings_replace_type = [
         "Replace string with...",
         "Replace pattern (REGEX) with...",
@@ -3158,6 +3159,7 @@ def webpage_playlists(sub_page):
     playlists = read_data(csv_playlistmanager_playlists)
     parents = read_data(csv_playlistmanager_parents)
     child_to_parents = read_data(csv_playlistmanager_child_to_parent)
+    station_mappings = read_data(csv_playlistmanager_station_mappings)
 
     action_to_anchor = {
         'playlists': 'playlists_anchor',
@@ -3169,7 +3171,9 @@ def webpage_playlists(sub_page):
         'playlist_file_add_to': 'final_playlists_anchor',
         'uploaded_playlists': 'uploaded_playlists_anchor',
         'generated_playlists': 'uploaded_playlists_anchor',
-        'internal_playlists': 'internal_playlists_anchor'
+        'internal_playlists': 'internal_playlists_anchor',
+        'child_station_mapping': 'child_station_mappings_anchor',
+        'priority_child_station_mapping': 'priority_child_station_mappings_anchor'
     }
 
     preferred_playlists = []
@@ -3180,11 +3184,14 @@ def webpage_playlists(sub_page):
     preferred_playlists = get_preferred_playlists(preferred_playlists_default)
 
     child_to_parent_mappings = []
-    child_to_parent_mappings_default = [
-        { 'parent_channel_id': 'Unassigned', 'parent_title': 'Unassigned' },
+    child_to_parent_mappings_default_base_01 = [
+        { 'parent_channel_id': 'Unassigned', 'parent_title': 'Unassigned' }
+    ]
+    child_to_parent_mappings_default_base_02 = [
         { 'parent_channel_id': 'Ignore', 'parent_title': 'Ignore' },
         { 'parent_channel_id': 'Make Parent', 'parent_title': 'Make Parent' }
     ]
+    child_to_parent_mappings_default = child_to_parent_mappings_default_base_01 + child_to_parent_mappings_default_base_02
     child_to_parent_mappings = get_child_to_parent_mappings(child_to_parent_mappings_default)
 
     unassigned_child_to_parents = []
@@ -3202,6 +3209,8 @@ def webpage_playlists(sub_page):
     stream_formats_overrides = ["None"]
     for stream_format in stream_formats:
         stream_formats_overrides.append(stream_format)
+
+    station_mapping_source_m3u_ids, station_mapping_source_fields, station_mapping_target_fields, station_mapping_target_parent_channel_ids = get_station_mapping_data(playlists, child_to_parent_mappings_default_base_02)
 
     if request.method == 'POST':
         playlists_action = request.form['action']
@@ -3399,6 +3408,16 @@ def webpage_playlists(sub_page):
                             for combined_child in combined_children:
                                 if combined_child['m3u_id'] == playlists[playlists_action_delete_index]['m3u_id']:
                                     remove_row_csv(csv_playlistmanager_combined_m3us, combined_child['station_playlist'])
+
+                            write_station_mappings = False
+                            for station_mapping in station_mappings:
+                                if station_mapping['source_m3u_id'] == playlists[playlists_action_delete_index]['m3u_id']:
+                                    station_mapping['source_m3u_id'] = 'remove_warning'
+                                    station_mapping['station_mapping_active'] = 'Off'
+                                    write_station_mappings = True
+
+                            if write_station_mappings:
+                                write_data(csv_playlistmanager_station_mappings, station_mappings)
 
                             playlists.pop(playlists_action_delete_index)
 
@@ -3621,6 +3640,17 @@ def webpage_playlists(sub_page):
                                     for unassign_child in unassign_children:
                                         set_child_to_parent(unassign_child['child_m3u_id_channel_id'], "Unassigned", unassign_child['stream_format_override'], parents)
 
+                                # Unassign station mappings with that parent
+                                write_station_mappings = False
+                                for station_mapping in station_mappings:
+                                    if station_mapping['target_parent_channel_id'] == delete_parent_channel_id:
+                                        station_mapping['target_parent_channel_id'] = 'remove_warning'
+                                        station_mapping['station_mapping_active'] = 'Off'
+                                        write_station_mappings = True
+
+                                if write_station_mappings:
+                                    write_data(csv_playlistmanager_station_mappings, station_mappings)
+
                             unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents(sub_page)
 
                     elif playlists_action == "parents_action_new" or '_make_parent_' in playlists_action:
@@ -3732,6 +3762,172 @@ def webpage_playlists(sub_page):
                     csv_to_write = csv_playlistmanager_parents
                     data_to_write = parents
 
+                elif playlists_action.startswith('child_station_mapping_') or playlists_action.startswith('priority_child_station_mapping_'):
+
+                    if playlists_action == "child_station_mapping_save":
+                        child_station_mapping_station_mapping_id_inputs = {}
+                        child_station_mapping_station_mapping_name_inputs = {}
+                        child_station_mapping_station_mapping_active_inputs = {}
+                        child_station_mapping_station_mapping_priority_inputs = {}
+                        child_station_mapping_source_m3u_id_inputs = {}
+                        child_station_mapping_source_field_selected_inputs = {}
+                        child_station_mapping_source_field_compare_id_inputs = {}
+                        child_station_mapping_source_field_string_inputs = {}
+                        child_station_mapping_target_field_selected_inputs = {}
+                        child_station_mapping_target_field_compare_replace_id_inputs = {}
+                        child_station_mapping_target_field_string_inputs = {}
+                        child_station_mapping_target_parent_channel_id_inputs = {}
+                        child_station_mapping_target_stream_format_override_inputs = {}
+
+                        for key in request.form.keys():
+                            if key.startswith('child_station_mapping_station_mapping_id_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_station_mapping_id_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_station_mapping_name_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_station_mapping_name_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_station_mapping_active_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_station_mapping_active_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_station_mapping_priority_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_station_mapping_priority_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_source_m3u_id_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_source_m3u_id_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_source_field_selected_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_source_field_selected_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_source_field_compare_id_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_source_field_compare_id_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_source_field_string_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_source_field_string_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_target_field_selected_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_target_field_selected_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_target_field_compare_replace_id_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_target_field_compare_replace_id_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_target_field_string_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_target_field_string_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_target_parent_channel_id_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_target_parent_channel_id_inputs[index] = request.form.get(key)
+
+                            if key.startswith('child_station_mapping_target_stream_format_override_'):
+                                index = key.split('_')[-1]
+                                child_station_mapping_target_stream_format_override_inputs[index] = request.form.get(key)
+
+                        for row in child_station_mapping_station_mapping_id_inputs:
+                            child_station_mapping_station_mapping_id_input =  child_station_mapping_station_mapping_id_inputs.get(row)
+                            child_station_mapping_station_mapping_name_input = child_station_mapping_station_mapping_name_inputs.get(row)
+                            child_station_mapping_station_mapping_active_input = "On" if child_station_mapping_station_mapping_active_inputs.get(row) == 'on' else "Off"
+                            child_station_mapping_station_mapping_priority_input = child_station_mapping_station_mapping_priority_inputs.get(row)
+                            child_station_mapping_source_m3u_id_input = child_station_mapping_source_m3u_id_inputs.get(row)
+                            child_station_mapping_source_field_selected_input = child_station_mapping_source_field_selected_inputs.get(row)
+                            child_station_mapping_source_field_compare_id_input = child_station_mapping_source_field_compare_id_inputs.get(row)
+                            child_station_mapping_source_field_string_input = child_station_mapping_source_field_string_inputs.get(row)
+                            child_station_mapping_target_field_selected_input = child_station_mapping_target_field_selected_inputs.get(row)
+                            child_station_mapping_target_field_compare_replace_id_input = child_station_mapping_target_field_compare_replace_id_inputs.get(row)
+                            child_station_mapping_target_field_string_input = child_station_mapping_target_field_string_inputs.get(row)
+                            child_station_mapping_target_parent_channel_id_input = child_station_mapping_target_parent_channel_id_inputs.get(row)
+                            child_station_mapping_target_stream_format_override_input = child_station_mapping_target_stream_format_override_inputs.get(row)
+                            
+                            for idx, station_mapping in enumerate(station_mappings):
+                                if idx == int(row) - 1:
+                                    station_mapping['station_mapping_id'] = child_station_mapping_station_mapping_id_input
+                                    station_mapping['station_mapping_name'] = child_station_mapping_station_mapping_name_input
+                                    station_mapping['station_mapping_active'] = child_station_mapping_station_mapping_active_input
+                                    station_mapping['station_mapping_priority'] = child_station_mapping_station_mapping_priority_input
+                                    station_mapping['source_m3u_id'] = child_station_mapping_source_m3u_id_input
+                                    station_mapping['source_field'] = child_station_mapping_source_field_selected_input
+                                    station_mapping['source_field_compare_id'] = child_station_mapping_source_field_compare_id_input
+                                    station_mapping['source_field_string'] = child_station_mapping_source_field_string_input
+                                    station_mapping['target_field'] = child_station_mapping_target_field_selected_input
+                                    station_mapping['target_field_compare_replace_id'] = child_station_mapping_target_field_compare_replace_id_input
+                                    station_mapping['target_field_string'] = child_station_mapping_target_field_string_input
+                                    station_mapping['target_parent_channel_id'] = child_station_mapping_target_parent_channel_id_input
+                                    station_mapping['target_stream_format_override'] = child_station_mapping_target_stream_format_override_input
+                                    
+                    elif playlists_action == "child_station_mapping_new":
+                        child_station_mapping_station_mapping_id_input = f"plmmap_{max((int(station_mapping['station_mapping_id'].split('_')[1]) for station_mapping in station_mappings), default=0) + 1:04d}"
+                        child_station_mapping_station_mapping_name_input = request.form.get('child_station_mapping_station_mapping_name_new')
+                        child_station_mapping_station_mapping_active_input = "On" if request.form.get('child_station_mapping_station_mapping_active_new') == 'on' else "Off"
+                        child_station_mapping_station_mapping_priority_input = max((int(station_mapping['station_mapping_priority']) for station_mapping in station_mappings), default=0) + 1
+                        child_station_mapping_source_m3u_id_input = request.form.get('child_station_mapping_source_m3u_id_new')
+                        child_station_mapping_source_field_selected_input = request.form.get('child_station_mapping_source_field_selected_new')
+                        child_station_mapping_source_field_compare_id_input = request.form.get('child_station_mapping_source_field_compare_id_new')
+                        child_station_mapping_source_field_string_input = request.form.get('child_station_mapping_source_field_string_new')
+                        child_station_mapping_target_field_selected_input = request.form.get('child_station_mapping_target_field_selected_new')
+                        child_station_mapping_target_field_compare_replace_id_input = request.form.get('child_station_mapping_target_field_compare_replace_id_new')
+                        child_station_mapping_target_field_string_input = request.form.get('child_station_mapping_target_field_string_new')
+                        child_station_mapping_target_parent_channel_id_input = request.form.get('child_station_mapping_target_parent_channel_id_new')
+                        child_station_mapping_target_stream_format_override_input = request.form.get('child_station_mapping_target_stream_format_override_new')
+                        
+                        station_mappings.append({
+                            "station_mapping_id": child_station_mapping_station_mapping_id_input,
+                            "station_mapping_name": child_station_mapping_station_mapping_name_input,
+                            "station_mapping_active": child_station_mapping_station_mapping_active_input,
+                            "station_mapping_priority": child_station_mapping_station_mapping_priority_input,
+                            "source_m3u_id": child_station_mapping_source_m3u_id_input,
+                            "source_field": child_station_mapping_source_field_selected_input,
+                            "source_field_compare_id": child_station_mapping_source_field_compare_id_input,
+                            "source_field_string": child_station_mapping_source_field_string_input,
+                            "target_field": child_station_mapping_target_field_selected_input,
+                            "target_field_compare_replace_id": child_station_mapping_target_field_compare_replace_id_input,
+                            "target_field_string": child_station_mapping_target_field_string_input,
+                            "target_parent_channel_id": child_station_mapping_target_parent_channel_id_input,
+                            "target_stream_format_override": child_station_mapping_target_stream_format_override_input
+                        })
+
+                    elif playlists_action.startswith('child_station_mapping_delete_'):
+                        child_station_mapping_delete_index = int(playlists_action.split('_')[-1]) - 1
+
+                        # Create a temporary record with fields set to None
+                        temp_record = create_temp_record(station_mappings[0].keys())
+
+                        if 0 <= child_station_mapping_delete_index < len(station_mappings):
+                            station_mappings.pop(child_station_mapping_delete_index)
+
+                            # If the list is now empty, add the temp record to keep headers
+                            if not station_mappings:
+                                station_mappings.append(temp_record)
+                                run_empty_row = True
+
+                        if len (station_mappings) > 1:
+                            for index, station_mapping in enumerate(sorted(station_mappings, key=lambda x: int(x['station_mapping_priority'])), start=1):
+                                station_mapping['station_mapping_priority'] = str(index)
+                        else:
+                            if station_mappings[0]['station_mapping_id'] is None or station_mappings[0]['station_mapping_id'] == '':
+                                pass
+                            else:
+                                station_mappings[0]['station_mapping_priority'] = 1
+
+                    elif playlists_action == "priority_child_station_mapping_save":
+                        priority_child_station_mappings_input = request.form.get('priority_child_station_mappings')
+                        priority_child_station_mappings_input_json = json.loads(priority_child_station_mappings_input)
+                        station_mappings = priority_child_station_mappings_input_json
+
+                    if len(station_mappings) > 1:
+                        station_mappings = sorted(station_mappings, key=lambda x: sort_key(x["station_mapping_name"].casefold()))
+
+                    csv_to_write = csv_playlistmanager_station_mappings
+                    data_to_write = station_mappings
+
                 if csv_to_write:
 
                     write_data(csv_to_write, data_to_write)
@@ -3743,8 +3939,13 @@ def webpage_playlists(sub_page):
                             delete_all_rows_except_header(csv_playlistmanager_child_to_parent)
                             delete_all_rows_except_header(csv_playlistmanager_combined_m3us)
 
+                    if csv_to_write in [csv_playlistmanager_playlists, csv_playlistmanager_parents, csv_playlistmanager_station_mappings]:
+                        station_mappings = read_data(csv_playlistmanager_station_mappings)
+                        station_mapping_source_m3u_ids, station_mapping_source_fields, station_mapping_target_fields, station_mapping_target_parent_channel_ids = get_station_mapping_data(playlists, child_to_parent_mappings_default_base_02)
+
                     if csv_to_write == csv_playlistmanager_playlists:
                         playlists = read_data(csv_playlistmanager_playlists)
+                        preferred_playlists = get_preferred_playlists(preferred_playlists_default)                           
                     elif csv_to_write == csv_playlistmanager_parents:
                         parents = read_data(csv_playlistmanager_parents)
                         child_to_parent_mappings = get_child_to_parent_mappings(child_to_parent_mappings_default)
@@ -3992,6 +4193,8 @@ def webpage_playlists(sub_page):
                             playlists = sorted(playlists, key=lambda x: sort_key(x["m3u_name"].casefold()))
                             write_data(csv_playlistmanager_playlists, playlists)
                             playlists = read_data(csv_playlistmanager_playlists)
+                            preferred_playlists = get_preferred_playlists(preferred_playlists_default)
+                            station_mapping_source_m3u_ids, station_mapping_source_fields, station_mapping_target_fields, station_mapping_target_parent_channel_ids = get_station_mapping_data(playlists, child_to_parent_mappings_default_base_02)
 
             elif '_cancel' in playlists_action:
 
@@ -4070,7 +4273,14 @@ def webpage_playlists(sub_page):
         html_plm_check_child_station_status = plm_check_child_station_status,
         html_settings_message = settings_message,
         html_plm_internal_pbs_stations = plm_internal_pbs_stations,
-        html_plm_internal_pbs_url_base = plm_internal_pbs_url_base
+        html_plm_internal_pbs_url_base = plm_internal_pbs_url_base,
+        html_station_mappings = station_mappings,
+        html_station_mapping_source_m3u_ids = station_mapping_source_m3u_ids,
+        html_station_mapping_source_fields = station_mapping_source_fields,
+        html_compare_options = compare_options,
+        html_station_mapping_target_fields = station_mapping_target_fields,
+        html_compare_replace_options = compare_replace_options,
+        html_station_mapping_target_parent_channel_ids = station_mapping_target_parent_channel_ids
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -4244,7 +4454,157 @@ def get_combined_m3us():
 
     print(f"{current_time()} Finished combination of playlists.")
 
+    run_child_station_mapping()
     check_child_station_status()
+
+# Does the child station mapping
+def run_child_station_mapping():
+    print(f"{current_time()} Starting child station mapping...")
+
+    stations = read_data(csv_playlistmanager_combined_m3us)
+    station_mappings = read_data(csv_playlistmanager_station_mappings)
+    filtered_station_mappings = [station_mapping for station_mapping in station_mappings if station_mapping['station_mapping_active'] == 'On' and station_mapping['source_m3u_id'] != 'remove_warning' and station_mapping['target_parent_channel_id'] != 'remove_warning']
+    filtered_station_mappings.sort(key=lambda x: int(x.get("station_mapping_priority", float("inf"))))
+    child_to_parent_maps = read_data(csv_playlistmanager_child_to_parent)
+    child_to_parent_map_parent_channel_id_lookup = {child_to_parent_map['child_m3u_id_channel_id']: child_to_parent_map['parent_channel_id'] for child_to_parent_map in child_to_parent_maps}
+    child_to_parent_map_stream_format_override_lookup = {child_to_parent_map['child_m3u_id_channel_id']: child_to_parent_map['stream_format_override'] for child_to_parent_map in child_to_parent_maps}
+    parents = read_data(csv_playlistmanager_parents)
+
+    if station_mappings:
+
+        write_stations = False
+        write_parents = False
+
+        for station_mapping in filtered_station_mappings:
+
+            for station in stations:
+
+                for field in plm_fields_base:
+
+                    if station_mapping['source_field'] == field['field_id'] or station_mapping['source_field'] == 'all':
+
+                        source_field_value = station[field['field_id']]
+                        if station_mapping['target_field'] == 'source':
+                            target_field = field['field_id']
+                        else:
+                            target_field = station_mapping['target_field']
+
+                        if ( 
+                                ( station_mapping['source_field_compare_id'] == 'equal' and source_field_value == station_mapping['source_field_string'] ) or 
+                                ( station_mapping['source_field_compare_id'] == 'equal_not' and source_field_value != station_mapping['source_field_string'] ) or
+                                ( station_mapping['source_field_compare_id'] == 'contain' and station_mapping['source_field_string'] in source_field_value ) or
+                                ( station_mapping['source_field_compare_id'] == 'contain_not' and station_mapping['source_field_string'] not in source_field_value ) or
+                                ( station_mapping['source_field_compare_id'] == 'begin' and source_field_value.startswith(station_mapping['source_field_string']) ) or
+                                ( station_mapping['source_field_compare_id'] == 'begin_not' and not source_field_value.startswith(station_mapping['source_field_string']) ) or
+                                ( station_mapping['source_field_compare_id'] == 'end' and source_field_value.endswith(station_mapping['source_field_string']) ) or
+                                ( station_mapping['source_field_compare_id'] == 'end_not' and not source_field_value.endswith(station_mapping['source_field_string']) ) or
+                                ( station_mapping['source_field_compare_id'] == 'regex' and re.search(station_mapping['source_field_string'], source_field_value) ) or
+                                ( station_mapping['source_field_compare_id'] == 'regex_not' and not re.search(station_mapping['source_field_string'], source_field_value) ) 
+                            ):
+
+                                if station_mapping['target_field'] != 'no_field' and station_mapping['target_field_compare_replace_id'] != 'na':
+
+                                    if station_mapping['source_m3u_id'] == station['m3u_id'] or station_mapping['source_m3u_id'] == 'all':
+                        
+                                        target_field_base = station[target_field]
+                                        target_field_value = None
+
+                                        if station_mapping['target_field_compare_replace_id'].startswith('replace'):
+                                            if station_mapping['source_field_compare_id'] == 'equal' or station_mapping['target_field_compare_replace_id'] == 'replace_all':
+                                                target_field_value = station_mapping['target_field_string']
+                                            elif station_mapping['source_field_compare_id'] in ['contain', 'begin', 'end']:
+                                                target_field_value = target_field_base.replace(station_mapping['source_field_string'], station_mapping['target_field_string'])
+                                            elif station_mapping['source_field_compare_id'] == 'regex':
+                                                target_field_value = re.sub(station_mapping['source_field_string'], station_mapping['target_field_string'], target_field_base)
+
+                                        elif station_mapping['target_field_compare_replace_id'].startswith('append'):
+                                            if station_mapping['source_field_compare_id'] == 'equal' or station_mapping['target_field_compare_replace_id'] == 'append_all':
+                                                target_field_value = f"{target_field_base}{station_mapping['target_field_string']}"
+                                            elif station_mapping['source_field_compare_id'] in ['contain', 'begin', 'end']:
+                                                target_field_value = target_field_base.replace(station_mapping['source_field_string'], f"{station_mapping['source_field_string']}{station_mapping['target_field_string']}")
+                                            elif station_mapping['source_field_compare_id'] == 'regex':
+                                                target_field_value = re.sub(station_mapping['source_field_string'], f"{station_mapping['source_field_string']}{station_mapping['target_field_string']}", target_field_base)
+
+                                        elif station_mapping['target_field_compare_replace_id'].startswith('prepend'):
+                                            if station_mapping['source_field_compare_id'] == 'equal' or station_mapping['target_field_compare_replace_id'] == 'prepend_all':
+                                                target_field_value = f"{station_mapping['target_field_string']}{target_field_base}"
+                                            elif station_mapping['source_field_compare_id'] in ['contain', 'begin', 'end']:
+                                                target_field_value = target_field_base.replace(station_mapping['source_field_string'], f"{station_mapping['target_field_string']}{station_mapping['source_field_string']}")
+                                            elif station_mapping['source_field_compare_id'] == 'regex':
+                                                target_field_value = re.sub(station_mapping['source_field_string'], f"{station_mapping['target_field_string']}{station_mapping['source_field_string']}", target_field_base)
+
+                                        station[target_field] = target_field_value
+                                        write_stations = True
+                                        notification_add(f"    MAPPED: {station['station_playlist']}")
+
+                                if station_mapping['target_parent_channel_id'] != 'manual' or station_mapping['target_stream_format_override'] != 'None':
+
+                                    child_m3u_id_channel_id = f"{station['m3u_id']}_{station['channel_id']}"
+                                    target_parent = None
+                                    target_stream_format_override = None
+
+                                    if station_mapping['target_parent_channel_id'] != 'manual':
+
+                                        if station_mapping['target_parent_channel_id'] == 'Make Parent':
+
+                                            if child_to_parent_map_parent_channel_id_lookup[child_m3u_id_channel_id] == 'Unassigned':
+                                                write_parents = True
+                                                target_parent = f"plm_{max((int(parent['parent_channel_id'].split('_')[1]) for parent in parents), default=0) + 1:04d}"
+
+                                                parents.append({
+                                                    "parent_channel_id": target_parent,
+                                                    "parent_title": station['title'],
+                                                    "parent_tvg_id_override": None,
+                                                    "parent_tvg_logo_override": None,
+                                                    "parent_channel_number_override": None,
+                                                    "parent_tvc_guide_stationid_override": None,
+                                                    "parent_tvc_guide_art_override": None,
+                                                    "parent_tvc_guide_tags_override": None,
+                                                    "parent_tvc_guide_genres_override": None,
+                                                    "parent_tvc_guide_categories_override": None,
+                                                    "parent_tvc_guide_placeholders_override": None,
+                                                    "parent_tvc_stream_vcodec_override": None,
+                                                    "parent_tvc_stream_acodec_override": None,
+                                                    "parent_preferred_playlist": None,
+                                                    "parent_active": "On",
+                                                    "parent_tvg_description_override": None,
+                                                    "parent_group_title_override": None
+                                                })
+
+                                        else:
+                                            target_parent = station_mapping['target_parent_channel_id']
+
+                                    if station_mapping['target_stream_format_override'] != 'None':
+                                        target_stream_format_override = station_mapping['target_stream_format_override']
+
+                                    if target_parent or target_stream_format_override:
+                                        if target_parent:
+                                            parent_channel_id = target_parent
+                                        else:
+                                            parent_channel_id = child_to_parent_map_parent_channel_id_lookup[child_m3u_id_channel_id]
+
+                                        if target_stream_format_override:
+                                            stream_format_override = target_stream_format_override
+                                        else:
+                                            stream_format_override = child_to_parent_map_stream_format_override_lookup[child_m3u_id_channel_id]
+
+                                        set_child_to_parent(child_m3u_id_channel_id, parent_channel_id, stream_format_override, parents)
+                                        child_to_parent_maps = read_data(csv_playlistmanager_child_to_parent)
+                                        child_to_parent_map_parent_channel_id_lookup = {child_to_parent_map['child_m3u_id_channel_id']: child_to_parent_map['parent_channel_id'] for child_to_parent_map in child_to_parent_maps}
+                                        child_to_parent_map_stream_format_override_lookup = {child_to_parent_map['child_m3u_id_channel_id']: child_to_parent_map['stream_format_override'] for child_to_parent_map in child_to_parent_maps}
+
+        if write_stations:
+            write_data(csv_playlistmanager_combined_m3us, stations)
+
+        if write_parents:
+            if len(parents) > 1:
+                parents = sorted(parents, key=lambda x: sort_key(x["parent_title"].casefold()))
+            write_data(csv_playlistmanager_parents, parents)
+        
+    else:
+        print(f"{current_time()} INFO: No station mappings found. Skipping child station mapping.")
+
+    print(f"{current_time()} Finished child station mapping.")
 
 # Checks that status of child stations
 def check_child_station_status():
@@ -4448,6 +4808,39 @@ def get_preferred_playlists(preferred_playlists_default):
         })
     
     return preferred_playlists
+
+# Data for station mapping
+def get_station_mapping_data(playlists, child_to_parent_mappings_default_base_02):
+
+    station_mapping_source_m3u_ids = [{'m3u_id': 'all', 'm3u_name': 'All Source Playlists'}]
+    for playlist in playlists:
+        station_mapping_source_m3u_ids.append({
+            'm3u_id': playlist['m3u_id'],
+            'm3u_name': f"PLAYLIST: {playlist['m3u_name']}"
+        })
+    station_mapping_source_m3u_ids.append({'m3u_id': 'remove_warning','m3u_name': 'WARNING: Source Playlists Deleted'})
+
+    station_mapping_source_fields_base = [
+        {'field_id': 'all', 'field_name': 'All Fields'}
+    ]
+
+    station_mapping_target_fields_base = [
+        {'field_id': 'no_field', 'field_name': 'No Field'},
+        {'field_id': 'source', 'field_name': 'Source Field'}
+    ]
+
+    station_mapping_source_fields = station_mapping_source_fields_base + plm_fields_base
+    station_mapping_target_fields = station_mapping_target_fields_base + plm_fields_base
+
+    station_mapping_target_parent_channel_ids = []
+    station_mapping_target_parent_channel_ids_default_base_01 = [
+        { 'parent_channel_id': 'manual', 'parent_title': 'Manual Assignment' }
+    ]
+    station_mapping_target_parent_channel_ids_default = station_mapping_target_parent_channel_ids_default_base_01 + child_to_parent_mappings_default_base_02
+    station_mapping_target_parent_channel_ids = get_child_to_parent_mappings(station_mapping_target_parent_channel_ids_default)
+    station_mapping_target_parent_channel_ids.append({'parent_channel_id': 'remove_warning','parent_title': 'WARNING: Assigned Parent Deleted'})
+
+    return station_mapping_source_m3u_ids, station_mapping_source_fields, station_mapping_target_fields, station_mapping_target_parent_channel_ids
 
 # Creates the dropdown list of 'Parent Station'
 def get_child_to_parent_mappings(child_to_parent_mappings_default):
@@ -6102,6 +6495,8 @@ def run_query(query_name):
     plm_all_stations_data = read_data(csv_playlistmanager_combined_m3us)
     plm_parents_data = read_data(csv_playlistmanager_parents)
     plm_playlists_data = read_data(csv_playlistmanager_playlists)
+    plm_streaming_stations_data = read_data(csv_playlistmanager_streaming_stations)
+    plm_station_mappings_data = read_data(csv_playlistmanager_station_mappings)
 
     # Convert the data into pandas DataFrames
     settings = pd.DataFrame(settings_data)
@@ -6115,6 +6510,8 @@ def run_query(query_name):
     plm_all_stations = pd.DataFrame(plm_all_stations_data)
     plm_parents = pd.DataFrame(plm_parents_data)
     plm_playlists = pd.DataFrame(plm_playlists_data)
+    plm_streaming_stations = pd.DataFrame(plm_streaming_stations_data)
+    plm_station_mappings = pd.DataFrame(plm_station_mappings_data)
 
     if query_name in [
                         'query_slm_summary',
@@ -7023,6 +7420,7 @@ def webpage_tools_automation():
     slm_new_recent_releases_frequency = settings[34]["settings"]                    # [34] MTM: Automation - SLM New & Recent Releases Frequency
     slm_new_recent_releases_when = settings[35]["settings"]                         # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
     refresh_channels_m3u_playlists = settings[36]["settings"]                       # [36] MTM: Automation - Refresh Channels M3U Playlists On/Off
+    refresh_channels_m3u_playlists_exclude_never_refresh = settings[60]["settings"] # [60] MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off
     refresh_channels_m3u_playlists_time = settings[37]["settings"]                  # [37] MTM: Automation - Refresh Channels M3U Playlists Start Time
     refresh_channels_m3u_playlists_frequency = settings[38]["settings"]             # [38] MTM: Automation - Refresh Channels M3U Playlists Frequency
     mtm_channels_remove_old_logs_recording = settings[51]["settings"]               # [51] MTM: Remove old Channels DVR Recording Logs On/Off
@@ -7182,10 +7580,12 @@ def webpage_tools_automation():
 
                 elif action.startswith('refresh_channels_m3u_playlists'):
                     refresh_channels_m3u_playlists_input = request.form.get('refresh_channels_m3u_playlists')
+                    refresh_channels_m3u_playlists_exclude_never_refresh_input = request.form.get('refresh_channels_m3u_playlists_exclude_never_refresh')
                     refresh_channels_m3u_playlists_time_input = request.form.get('refresh_channels_m3u_playlists_time')
                     refresh_channels_m3u_playlists_frequency_input = request.form.get('refresh_channels_m3u_playlists_frequency')
 
                     settings[36]["settings"] = "On" if refresh_channels_m3u_playlists_input == 'on' else "Off"
+                    settings[60]["settings"] = "On" if refresh_channels_m3u_playlists_exclude_never_refresh_input == 'on' else "Off"
                     settings[37]["settings"] = refresh_channels_m3u_playlists_time_input
                     settings[38]["settings"] = refresh_channels_m3u_playlists_frequency_input
 
@@ -7329,6 +7729,7 @@ def webpage_tools_automation():
             slm_new_recent_releases_frequency = settings[34]["settings"]                    # [34] MTM: Automation - SLM New & Recent Releases Frequency
             slm_new_recent_releases_when = settings[35]["settings"]                         # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
             refresh_channels_m3u_playlists = settings[36]["settings"]                       # [36] MTM: Automation - Refresh Channels M3U Playlists On/Off
+            refresh_channels_m3u_playlists_exclude_never_refresh = settings[60]["settings"] # [60] MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off
             refresh_channels_m3u_playlists_time = settings[37]["settings"]                  # [37] MTM: Automation - Refresh Channels M3U Playlists Start Time
             refresh_channels_m3u_playlists_frequency = settings[38]["settings"]             # [38] MTM: Automation - Refresh Channels M3U Playlists Frequency
             mtm_channels_remove_old_logs_recording = settings[51]["settings"]               # [51] MTM: Remove old Channels DVR Recording Logs On/Off
@@ -7381,6 +7782,7 @@ def webpage_tools_automation():
         html_slm_new_recent_releases_frequency = slm_new_recent_releases_frequency,
         html_slm_new_recent_releases_when = slm_new_recent_releases_when,
         html_refresh_channels_m3u_playlists = refresh_channels_m3u_playlists,
+        html_refresh_channels_m3u_playlists_exclude_never_refresh = refresh_channels_m3u_playlists_exclude_never_refresh,
         html_refresh_channels_m3u_playlists_time = refresh_channels_m3u_playlists_time,
         html_refresh_channels_m3u_playlists_frequency = refresh_channels_m3u_playlists_frequency,
         html_mtm_channels_remove_old_logs_recording = mtm_channels_remove_old_logs_recording,
@@ -10462,6 +10864,7 @@ def run_reset_channels_passes():
 def run_refresh_channels_m3u_playlists():
     settings = read_data(csv_settings)
     channels_url = settings[0]["settings"]
+    refresh_channels_m3u_playlists_exclude_never_refresh = settings[60]["settings"] # [60] MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off
     providers_web = '/dvr/lineups'
     refresh_web_pt1 = '/providers/m3u/sources/'
     refresh_web_pt3 = '/refresh'
@@ -10494,21 +10897,39 @@ def run_refresh_channels_m3u_playlists():
 
         if providers_results_dictionary:
             for provider in providers_results_dictionary:
-                refresh_url = f"{refresh_url_pt1}{provider}{refresh_web_pt3}"
-                for attempt in range(3):
-                    try:
-                        requests.post(refresh_url, timeout=60)
-                        break  # Exit the retry loop if the request is successful
-                    except requests.Timeout:
-                        if attempt < 2:  # Only log a warning if we will retry
-                            print(f"{current_time()} WARNING: For m3u Playlist '{provider}', request timed out. Retrying...")
-                        else:
-                            print(f"{current_time()} ERROR: For m3u Playlist '{provider}', request timed out. Skipping refresh...")
+                details_url = f"{refresh_url_pt1}{provider}"
+                details_response = None
+                details_json = None
+                detail_refresh = None
+
+                try:
+                    details_response = requests.get(details_url, headers=url_headers)
+                    details_response.raise_for_status()
+                    details_json = details_response.json()
+                    detail_refresh = details_json.get('refresh', None)
+                except requests.RequestException as e:
+                    print(f"{current_time()} ERROR: For m3u Playlist '{provider}', received error {e}. Skipping refresh...")
+
+                if refresh_channels_m3u_playlists_exclude_never_refresh == "Off" or (refresh_channels_m3u_playlists_exclude_never_refresh == "On" and detail_refresh):
+                    refresh_url = f"{details_url}{refresh_web_pt3}"
+
+                    for attempt in range(3):
+                        try:
+                            requests.post(refresh_url, timeout=60)
+                            break  # Exit the retry loop if the request is successful
+                        except requests.Timeout:
+                            if attempt < 2:  # Only log a warning if we will retry
+                                print(f"{current_time()} WARNING: For m3u Playlist '{provider}', request timed out. Retrying...")
+                            else:
+                                print(f"{current_time()} ERROR: For m3u Playlist '{provider}', request timed out. Skipping refresh...")
+                                automation_error = True
+                        except requests.RequestException as e:
+                            print(f"{current_time()} ERROR: For m3u Playlist '{provider}', received error {e}. Skipping refresh...")
                             automation_error = True
-                    except requests.RequestException as e:
-                        print(f"{current_time()} ERROR: For m3u Playlist '{provider}', received error {e}. Skipping refresh...")
-                        automation_error = True
-                        break  # Exit the retry loop on other exceptions
+                            break  # Exit the retry loop on other exceptions
+
+                else:
+                    print(f"{current_time()} INFO: For m3u Playlist '{provider}', 'Never Refresh URL' is set. Skipping refresh...")
 
             if automation_error:
                 message = f"{current_time()} ERROR: 'Refresh Channels DVR m3u Playlists' completed with an issue, see log for details."
@@ -10577,7 +10998,8 @@ def webpage_files():
         {'file_name': 'Playlists', 'file': csv_playlistmanager_playlists },
         {'file_name': 'Parent Station', 'file': csv_playlistmanager_parents },
         {'file_name': 'Child to Parent Station Map', 'file': csv_playlistmanager_child_to_parent },
-        {'file_name': 'All Stations', 'file': csv_playlistmanager_combined_m3us }
+        {'file_name': 'All Stations', 'file': csv_playlistmanager_combined_m3us },
+        {'file_name': 'Station Mappings', 'file': csv_playlistmanager_station_mappings }
     ]
 
     plm_streaming_stations_file_lists = [
@@ -10886,7 +11308,8 @@ def webpage_settings():
                                 csv_playlistmanager_playlists,
                                 csv_playlistmanager_parents,
                                 csv_playlistmanager_child_to_parent,
-                                csv_playlistmanager_combined_m3us
+                                csv_playlistmanager_combined_m3us,
+                                csv_playlistmanager_station_mappings
                             ]
                             for plm_csv_file in plm_csv_files:
                                 check_and_create_csv(plm_csv_file)
@@ -11892,6 +12315,7 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 59, "MTM: Remove old Channels DVR Backups Frequency")
         check_and_append(csv_file, {"settings": 7}, 60, "MTM: Remove old Channels DVR Backups Days to Keep")
         check_and_append(csv_file, {"settings": "Off"}, 61, "PLM/MTM: Check Child Station Stutus On/Off")
+        check_and_append(csv_file, {"settings": "Off"}, 62, "MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -11956,7 +12380,8 @@ def initial_data(csv_file):
                     {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [56] MTM: Remove old Channels DVR Backups Start Time
                     {"settings": "Every 24 hours"},                                            # [57] MTM: Remove old Channels DVR Backups Frequency
                     {"settings": 7},                                                           # [58] MTM: Remove old Channels DVR Backups Days to Keep
-                    {"settings": "Off"}                                                        # [59] PLM/MTM: Check Child Station Stutus On/Off
+                    {"settings": "Off"},                                                       # [59] PLM/MTM: Check Child Station Stutus On/Off
+                    {"settings": "Off"}                                                        # [60] MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off
         ]        
 
     # Stream Link/File Manager
@@ -12020,7 +12445,12 @@ def initial_data(csv_file):
 
     elif csv_file == csv_playlistmanager_streaming_stations:
         data = [
-            {"channel_id": None, "source": None, "url": None, "title": None, "tvg_logo": None, "tvg_description": None,     "tvc_guide_tags": None, "tvc_guide_genres": None, "tvc_guide_categories": None, "tvc_guide_placeholders": None, "tvc_stream_vcodec": None, "tvc_stream_acodec": None}
+            {"channel_id": None, "source": None, "url": None, "title": None, "tvg_logo": None, "tvg_description": None, "tvc_guide_tags": None, "tvc_guide_genres": None, "tvc_guide_categories": None, "tvc_guide_placeholders": None, "tvc_stream_vcodec": None, "tvc_stream_acodec": None}
+        ]
+
+    elif csv_file == csv_playlistmanager_station_mappings:
+        data = [
+            {"station_mapping_id": None, "station_mapping_name": None, "station_mapping_active": None, "station_mapping_priority": None, "source_m3u_id": None, "source_field": None, "source_field_compare_id": None, "source_field_string": None, "target_field": None, "target_field_compare_replace_id": None, "target_field_string": None, "target_parent_channel_id": None, "target_stream_format_override": None}
         ]
 
     return data
@@ -12535,6 +12965,7 @@ csv_playlistmanager_combined_m3us = "PlaylistManager_Combinedm3us.csv"
 csv_playlistmanager_parents = "PlaylistManager_Parents.csv"
 csv_playlistmanager_child_to_parent = "PlaylistManager_ChildToParent.csv"
 csv_playlistmanager_streaming_stations = "PlaylistManager_StreamingStations.csv"
+csv_playlistmanager_station_mappings = "PlaylistManager_StationMappings.csv"
 csv_files = [
     csv_settings,
     csv_streaming_services,
@@ -12548,7 +12979,8 @@ csv_files = [
     csv_playlistmanager_combined_m3us,
     csv_playlistmanager_parents,
     csv_playlistmanager_child_to_parent,
-    csv_playlistmanager_streaming_stations
+    csv_playlistmanager_streaming_stations,
+    csv_playlistmanager_station_mappings
 ]
 program_files = csv_files + [log_filename]
 github_url = "https://github.com/babsonnexus/stream-link-manager-for-channels"
@@ -12801,6 +13233,49 @@ provider_statuses_default = [
 provider_status_input_prior = None
 provider_groups_default = [{"provider_group_id": "None","provider_group_name": "None"}]
 parent_channel_id_prior = None
+compare_options = [
+    {'compare_id': 'equal', 'compare_name': 'Equals...'},
+    {'compare_id': 'equal_not', 'compare_name': 'Does not equal...'},
+    {'compare_id': 'contain', 'compare_name': 'Contains...'},
+    {'compare_id': 'contain_not', 'compare_name': 'Does not contain...'},
+    {'compare_id': 'begin', 'compare_name': 'Begins with...'},
+    {'compare_id': 'begin_not', 'compare_name': 'Does not begin with...'},
+    {'compare_id': 'end', 'compare_name': 'Ends with...'},
+    {'compare_id': 'end_not', 'compare_name': 'Does not end with...'},
+    {'compare_id': 'regex', 'compare_name': 'Matches REGEX...'},
+    {'compare_id': 'regex_not', 'compare_name': 'Does not match REGEX...'}
+]
+compare_replace_options = [
+    {'compare_replace_id': 'na', 'compare_replace_name': 'N/A (Doing nothing with...)'},
+    {'compare_replace_id': 'replace_string', 'compare_replace_name': 'Replacing string/pattern with...'},
+    {'compare_replace_id': 'replace_all', 'compare_replace_name': 'Replacing entire contents with...'},
+    {'compare_replace_id': 'append_string', 'compare_replace_name': 'Appending string/pattern with...'},
+    {'compare_replace_id': 'append_all', 'compare_replace_name': 'Appending entire contents with...'},
+    {'compare_replace_id': 'prepend_string', 'compare_replace_name': 'Prepending string/pattern with...'},
+    {'compare_replace_id': 'prepend_all', 'compare_replace_name': 'Prepending entire contents with...'}
+]
+plm_fields_base = [
+    {'field_id': 'channel_id', 'field_name': 'Channel ID (channel-id)'},
+    {'field_id': 'title', 'field_name': 'Station Name'},
+    {'field_id': 'tvg_name', 'field_name': 'Guide Station Name/Callsign (tvg-name)'},
+    {'field_id': 'tvg_description', 'field_name': 'Station Description (tvg-description)'},
+    {'field_id': 'tvg_logo', 'field_name': 'Station Logo (tvg-logo)'},
+    {'field_id': 'tvg_chno', 'field_name': 'Channel Number (tvg-chno)'},
+    {'field_id': 'channel_number', 'field_name': 'Channel Number (channel-number)'},
+    {'field_id': 'tvc_guide_stationid', 'field_name': 'Gracenote ID (tvc-guide-stationid)'},
+    {'field_id': 'tvg_id', 'field_name': 'XML EPG Guide ID (tvg-id)'},
+    {'field_id': 'tvc_guide_placeholders', 'field_name': 'Guide Placeholders (tvc-guide-placeholders)'},
+    {'field_id': 'group_title', 'field_name': 'Categories (group-title)'},
+    {'field_id': 'tvc_stream_vcodec', 'field_name': 'Stream Video Codec (tvc-stream-vcodec)'},
+    {'field_id': 'tvc_stream_acodec', 'field_name': 'Stream Audio Codec (tvc-stream-acodec)'},
+    {'field_id': 'tvc_guide_title', 'field_name': 'Guide Item Title (tvc-guide-title)'},
+    {'field_id': 'tvc_guide_description', 'field_name': 'Guide Item Description (tvc-guide-description)'},
+    {'field_id': 'tvc_guide_art', 'field_name': 'Guide Item Art (tvc-guide-art)'},
+    {'field_id': 'tvc_guide_tags', 'field_name': 'Guide Item Tags (tvc-guide-tags)'},
+    {'field_id': 'tvc_guide_genres', 'field_name': 'Guide Item Genres (tvc-guide-genres)'},
+    {'field_id': 'tvc_guide_categories', 'field_name': 'Guide Item Categories (tvc-guide-categories)'},
+    {'field_id': 'url', 'field_name': 'URL'}
+]
 
 ### Start-up process and safety checks
 # Program directories
