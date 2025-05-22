@@ -309,6 +309,10 @@
                   <div>
                     <p><em>Runs a set of functions in Channels DVR to update m3u Playlists, thus getting the most up to date list of stations from those sources. Note that this does not run on non-m3u sources like HDHR, TVE, etc...</em></p>
                   </div>
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" class="form-check-input ms-auto" id="refresh_channels_m3u_playlists_exclude_never_refresh" name="refresh_channels_m3u_playlists_exclude_never_refresh" {% if html_refresh_channels_m3u_playlists_exclude_never_refresh == "On" %}checked{% endif %}>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="refresh_channels_m3u_playlists_exclude_never_refresh">Exclude 'Never Refresh URL'</label>
+                  </div>
                   <div>
                     <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="refresh_channels_m3u_playlists_time">Start at:</label>
                     <input type="time" id="refresh_channels_m3u_playlists_time" name="refresh_channels_m3u_playlists_time" value="{{ html_refresh_channels_m3u_playlists_time }}" class="ms-3">

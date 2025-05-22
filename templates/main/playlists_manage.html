@@ -6,15 +6,21 @@
 {% block stylesheets %}
 <style> 
   .playlists .grid-container {
-      display: grid;
-      grid-template-columns: 0.5fr 0.5fr 2fr 2.75fr 2.75fr 1fr 0.5fr 1fr;
-      gap: 10px;
+    display: grid;
+    grid-template-columns: 0.5fr 0.5fr 2fr 2.75fr 2.75fr 1fr 0.5fr 1fr;
+    gap: 10px;
   }
 
   .uploaded_playlists .grid-container {
     display: grid;
-      grid-template-columns: 3fr 4fr 2fr 2fr;
-      gap: 10px;
+    grid-template-columns: 3fr 4fr 2fr 2fr;
+    gap: 10px;
+  }
+
+  .child_station_mappings .grid-container {
+    display: grid;
+    grid-template-columns: 0.5fr 0.95fr 0.95fr 0.95fr 0.95fr 0.95fr 0.95fr 0.95fr 0.95fr 0.95fr 0.95fr 1fr;
+    gap: 10px;
   }
 
   .grid-item {
@@ -119,6 +125,50 @@
     border-color: #2c1a4a;
     color: #ccc;
   }
+
+  .listbox {
+    width: 400px;
+    height: 300px;
+    overflow-y: scroll;
+    border: 1px solid #ccc;
+  }
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .buttons {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .priority-container {
+    display: flex;
+    align-items: center;
+  }
+  .centered-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .box-container {
+    border: 1px solid #ccc;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    max-width: 482px;
+  }
+  .form-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 5px;
+    width: 100%;
+    margin-left: -72px;
+  }
 </style>
 {% endblock stylesheets %}
 
@@ -135,51 +185,6 @@
           </a>
         </h4>
         <div class="container">
-          <style>
-            .listbox {
-              width: 400px;
-              height: 300px;
-              overflow-y: scroll;
-              border: 1px solid #ccc;
-            }
-            .container {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-            }
-            .buttons {
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              align-items: center;
-            }
-            .priority-container {
-              display: flex;
-              align-items: center;
-            }
-            .centered-button {
-              display: flex;
-              justify-content: center;
-              align-items: center;
-            }
-            .box-container {
-              border: 1px solid #ccc;
-              padding: 10px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              position: relative;
-              width: 100%;
-              max-width: 482px;
-            }
-            .form-buttons {
-              display: flex;
-              justify-content: center;
-              margin-top: 5px;
-              width: 100%;
-              margin-left: -72px;
-            }
-          </style>
           <div class="box-container">
             <div class="priority-container">
               <div>
@@ -198,7 +203,7 @@
             </div>
           </div>
           <div class="form-buttons">
-            <button type="submit" name="action" value="priority_playlists_action_save" class="btn bg-gradient-primary w-25 my-2 mb-2" style="margin-right: 2px;">Save</button>
+            <button type="submit" name="action" value="priority_playlists_action_save" class="btn bg-gradient-primary w-25 my-2 mb-2" style="margin-right: 2px;" {% if not html_playlists %}disabled{% endif %}>Save</button>
             <button type="submit" name="action" value="priority_playlists_action_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2" style="margin-left: 2px;">Cancel / Reset</button>
           </div>
         </div>
@@ -399,6 +404,208 @@
           <label for="uploaded_playlists_action_new_file">Browse...</label>
         </div>
         <p><div id="html_uploaded_playlists_message">{{ html_uploaded_playlists_message }}</div></p>
+        <hr>
+        <!-- Prioritize Child Station Mappings -->
+        <h4 id="priority_child_station_mappings_anchor">Prioritize Child Station Mappings
+          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Manage-Playlists-%E2%80%90-Child-Station-Mappings" target="_blank">
+            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+          </a>
+        </h4>
+        <div class="container">
+          <div class="box-container">
+            <div class="priority-container">
+              <div>
+                <select id="priorityChildStationMappingsList" class="listbox" multiple>
+                  <!-- Priority list options will be populated by JavaScript -->
+                </select>
+              </div>
+              <div class="buttons">
+                <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="child_station_mappings_moveUp()">
+                  <i class="material-icons opacity-10">keyboard_arrow_up</i>
+                </button>
+                <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="child_station_mappings_moveDown()">
+                  <i class="material-icons opacity-10">keyboard_arrow_down</i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="form-buttons">
+            <button type="submit" name="action" value="priority_child_station_mapping_save" class="btn bg-gradient-primary w-25 my-2 mb-2" style="margin-right: 2px;" {% if not html_station_mappings %}disabled{% endif %}>Save</button>
+            <button type="submit" name="action" value="priority_child_station_mapping_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2" style="margin-left: 2px;">Cancel / Reset</button>
+          </div>
+        </div>
+        <input type="hidden" id="priority_child_station_mappings" name="priority_child_station_mappings">
+        <p></p>
+        <hr>
+        <!-- Child Station Mappings -->
+        <h4 id="child_station_mappings_anchor">Child Station Mappings
+          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Manage-Playlists-%E2%80%90-Child-Station-Mappings" target="_blank">
+            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+          </a>
+        </h4>
+        <div class="child_station_mappings container-fluid">
+          <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
+            <div class="grid-item"><h6>Active</h6></div>
+            <div class="grid-item"><h6>Name</h6></div>
+            <div class="grid-item"><h6>IF 'Source Playlist' is</div>
+            <div class="grid-item"><h6>AND field is</h6></div>
+            <div class="grid-item"><h6>THEN check IF field</h6></div>
+            <div class="grid-item"><h6>THIS value</h6></div>
+            <div class="grid-item"><h6>IF TRUE, THEN change field</h6></div>
+            <div class="grid-item"><h6>BY</h6></div>
+            <div class="grid-item"><h6>THIS value</h6></div>
+            <div class="grid-item"><h6>AND set 'Parent' to</h6></div>
+            <div class="grid-item"><h6>AND set 'Stream Format Override' to</h6></div>
+            <div class="grid-item"><h6>Action</h6></div>
+          </div>
+          {% for item in html_station_mappings %}
+            <input type="hidden" name="child_station_mapping_station_mapping_id_{{ loop.index }}" id="child_station_mapping_station_mapping_id_{{ loop.index }}" value="{{ item.station_mapping_id }}">
+            <input type="hidden" name="child_station_mapping_station_mapping_priority_{{ loop.index }}" id="child_station_mapping_station_mapping_priority_{{ loop.index }}" value="{{ item.station_mapping_priority }}">
+            <div class="grid-container">
+              <div class="grid-item">
+                <div class="enter-playlists form-check form-switch ps-0 is-filled">
+                  <input type="checkbox" id="child_station_mapping_station_mapping_active_{{ loop.index }}" name="child_station_mapping_station_mapping_active_{{ loop.index }}" class="enter-playlists form-check-input" style="margin-left: 3px;"
+                    {% if item.station_mapping_active|lower == 'on' %}checked{% endif %}>
+                </div>
+              </div>
+              <div class="grid-item">
+                <input type="text" id="child_station_mapping_station_mapping_name_{{ loop.index }}" name="child_station_mapping_station_mapping_name_{{ loop.index }}" value="{{ item.station_mapping_name }}" title="{{ item.station_mapping_name }}">
+              </div>
+              <div class="grid-item">
+                <select class="select2" name="child_station_mapping_source_m3u_id_{{ loop.index }}" id="child_station_mapping_source_m3u_id_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                  {% for html_station_mapping_source_m3u_id in html_station_mapping_source_m3u_ids %}
+                    <option value="{{ html_station_mapping_source_m3u_id.m3u_id }}" {% if html_station_mapping_source_m3u_id.m3u_id == item.source_m3u_id %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_station_mapping_source_m3u_id.m3u_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="grid-item">
+                <select class="select2" name="child_station_mapping_source_field_selected_{{ loop.index }}" id="child_station_mapping_source_field_selected_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                  {% for html_station_mapping_source_field in html_station_mapping_source_fields %}
+                    <option value="{{ html_station_mapping_source_field.field_id }}" {% if html_station_mapping_source_field.field_id == item.source_field %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_station_mapping_source_field.field_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="grid-item">
+                <select class="select2" name="child_station_mapping_source_field_compare_id_{{ loop.index }}" id="child_station_mapping_source_field_compare_id_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                  {% for html_compare_option in html_compare_options %}
+                    <option value="{{ html_compare_option.compare_id }}" {% if html_compare_option.compare_id == item.source_field_compare_id %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_compare_option.compare_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="grid-item">
+                <input type="text" id="child_station_mapping_source_field_string_{{ loop.index }}" name="child_station_mapping_source_field_string_{{ loop.index }}" value="{{ item.source_field_string }}" title="{{ item.source_field_string }}">
+              </div>
+              <div class="grid-item">
+                <select class="select2" name="child_station_mapping_target_field_selected_{{ loop.index }}" id="child_station_mapping_target_field_selected_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                  {% for html_station_mapping_target_field in html_station_mapping_target_fields %}
+                    <option value="{{ html_station_mapping_target_field.field_id }}" {% if html_station_mapping_target_field.field_id == item.target_field %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_station_mapping_target_field.field_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="grid-item">
+                <select class="select2" name="child_station_mapping_target_field_compare_replace_id_{{ loop.index }}" id="child_station_mapping_target_field_compare_replace_id_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                  {% for html_compare_replace_option in html_compare_replace_options %}
+                    <option value="{{ html_compare_replace_option.compare_replace_id }}" {% if html_compare_replace_option.compare_replace_id == item.target_field_compare_replace_id %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_compare_replace_option.compare_replace_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="grid-item">
+                <input type="text" id="child_station_mapping_target_field_string_{{ loop.index }}" name="child_station_mapping_target_field_string_{{ loop.index }}" value="{{ item.target_field_string }}" title="{{ item.target_field_string }}">
+              </div>
+              <div class="grid-item">
+                <select class="select2" name="child_station_mapping_target_parent_channel_id_{{ loop.index }}" id="child_station_mapping_target_parent_channel_id_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                  {% for html_station_mapping_target_parent_channel_id in html_station_mapping_target_parent_channel_ids %}
+                    <option value="{{ html_station_mapping_target_parent_channel_id.parent_channel_id }}" {% if html_station_mapping_target_parent_channel_id.parent_channel_id == item.target_parent_channel_id %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_station_mapping_target_parent_channel_id.parent_title }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="grid-item">
+                <select class="select2" name="child_station_mapping_target_stream_format_override_{{ loop.index }}" id="child_station_mapping_target_stream_format_override_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                  {% for html_stream_format_override in html_stream_formats_overrides %}
+                    <option value="{{ html_stream_format_override }}" {% if html_stream_format_override == item.target_stream_format_override %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_stream_format_override }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="grid-item">
+                <button type="submit" name="action" value="child_station_mapping_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
+              </div>
+            </div>
+            <input type="hidden" name="playlists_m3u_priority_{{ loop.index }}" id="playlists_m3u_priority_{{ loop.index }}" value="{{ item.m3u_priority }}">
+          {% endfor %}
+          <div class="grid-container">
+            <div class="grid-item">
+              <div class="enter-playlists form-check form-switch ps-0 is-filled">
+                <input type="checkbox" id="child_station_mapping_station_mapping_active_new" name="child_station_mapping_station_mapping_active_new" class="enter-playlists form-check-input" style="margin-left: 3px;"
+                  checked>
+              </div>
+            </div>
+            <div class="grid-item">
+              <input type="text" id="child_station_mapping_station_mapping_name_new" name="child_station_mapping_station_mapping_name_new" placeholder="i.e., 'Baseball Rule'" title="i.e., 'Baseball Rule'">
+            </div>             
+            <div class="grid-item">
+              <select class="select2" name="child_station_mapping_source_m3u_id_new" id="child_station_mapping_source_m3u_id_new" style="width: 100%; max-width: 100%;">
+                {% for html_station_mapping_source_m3u_id in html_station_mapping_source_m3u_ids %}
+                  <option value="{{ html_station_mapping_source_m3u_id.m3u_id }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_station_mapping_source_m3u_id.m3u_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="grid-item">
+              <select class="select2" name="child_station_mapping_source_field_selected_new" id="child_station_mapping_source_field_selected_new" style="width: 100%; max-width: 100%;">
+                {% for html_station_mapping_source_field in html_station_mapping_source_fields %}
+                  <option value="{{ html_station_mapping_source_field.field_id }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_station_mapping_source_field.field_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="grid-item">
+              <select class="select2" name="child_station_mapping_source_field_compare_id_new" id="child_station_mapping_source_field_compare_id_new" style="width: 100%; max-width: 100%;">
+                {% for html_compare_option in html_compare_options %}
+                  <option value="{{ html_compare_option.compare_id }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_compare_option.compare_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="grid-item">
+              <input type="text" id="child_station_mapping_source_field_string_new" name="child_station_mapping_source_field_string_new" placeholder="i.e., 'Baseball'" title="i.e., 'Baseball'">
+            </div>
+            <div class="grid-item">
+              <select class="select2" name="child_station_mapping_target_field_selected_new" id="child_station_mapping_target_field_selected_new" style="width: 100%; max-width: 100%;">
+                {% for html_station_mapping_target_field in html_station_mapping_target_fields %}
+                  <option value="{{ html_station_mapping_target_field.field_id }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_station_mapping_target_field.field_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="grid-item">
+              <select class="select2" name="child_station_mapping_target_field_compare_replace_id_new" id="child_station_mapping_target_field_compare_replace_id_new" style="width: 100%; max-width: 100%;">
+                {% for html_compare_replace_option in html_compare_replace_options %}
+                  <option value="{{ html_compare_replace_option.compare_replace_id }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_compare_replace_option.compare_replace_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="grid-item">
+              <input type="text" id="child_station_mapping_target_field_string_new" name="child_station_mapping_target_field_string_new" placeholder="i.e., 'http://www.somewebsite.com/baseball.gif'" title="i.e., 'http://www.somewebsite.com/baseball.gif'">
+            </div>
+            <div class="grid-item">
+              <select class="select2" name="child_station_mapping_target_parent_channel_id_new" id="child_station_mapping_target_parent_channel_id_new" style="width: 100%; max-width: 100%;">
+                {% for html_station_mapping_target_parent_channel_id in html_station_mapping_target_parent_channel_ids %}
+                  <option value="{{ html_station_mapping_target_parent_channel_id.parent_channel_id }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_station_mapping_target_parent_channel_id.parent_title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="grid-item">
+              <select class="select2" name="child_station_mapping_target_stream_format_override_new" id="child_station_mapping_target_stream_format_override_new" style="width: 100%; max-width: 100%;">
+                {% for html_stream_format_override in html_stream_formats_overrides %}
+                  <option value="{{ html_stream_format_override }}" {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_stream_format_override }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="grid-item">
+              <button type="submit" name="action" value="child_station_mapping_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
+            </div>
+          </div>
+          <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
+            <button type="submit" name="action" value="child_station_mapping_save" class="btn bg-gradient-primary w-25 my-2 mb-2" disabled>Save</button>
+            <button type="submit" name="action" value="child_station_mapping_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
+          </div>
+        </div>
       </form>
     </div>
   </div>
@@ -576,7 +783,8 @@
       epg_xml: playlist.epg_xml,
       stream_format: playlist.stream_format,
       m3u_active: playlist.m3u_active,
-      m3u_priority: playlist.m3u_priority
+      m3u_priority: playlist.m3u_priority,
+      station_check: playlist.station_check
     })));
     console.log("Hidden input updated:", priorityPlaylistsInput.value); // Debugging
   }
@@ -610,5 +818,173 @@
       });
     }
   });
+</script>
+<!-- Station Mapping Buttons -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const addMappingButton = document.querySelector('button[name="action"][value="child_station_mapping_new"]');
+    const saveMappingButton = document.querySelector('button[name="action"][value="child_station_mapping_save"]');
+
+    function isInvalidMapping(suffix) {
+      const sourceCompare = document.getElementById('child_station_mapping_source_field_compare_id_' + suffix);
+      const targetCompare = document.getElementById('child_station_mapping_target_field_compare_replace_id_' + suffix);
+      if (sourceCompare && targetCompare) {
+        return (
+          sourceCompare.value.endsWith('_not') &&
+          targetCompare.value.endsWith('_string')
+        );
+      }
+      return false;
+    }
+
+    function checkMappingNewInputs() {
+      const name = document.getElementById('child_station_mapping_station_mapping_name_new').value.trim();
+      const invalid = isInvalidMapping('new');
+      addMappingButton.disabled = !(name && !invalid);
+    }
+
+    function checkMappingExistingInputs() {
+      let allValid = true;
+      let hasRows = false;
+      document.querySelectorAll('input[id^="child_station_mapping_station_mapping_name_"]').forEach(input => {
+        if (input.id.endsWith('_new')) return;
+        hasRows = true;
+        const suffix = input.id.split('child_station_mapping_station_mapping_name_')[1];
+        const name = input.value.trim();
+        const invalid = isInvalidMapping(suffix);
+        if (!(name && !invalid)) allValid = false;
+      });
+      saveMappingButton.disabled = !allValid || !hasRows;
+    }
+
+    // Listen for changes on all relevant fields (names and selects)
+    document.querySelectorAll('input[id^="child_station_mapping_station_mapping_name_"]').forEach(input => {
+      if (input.id.endsWith('_new')) {
+        input.addEventListener('input', checkMappingNewInputs);
+      } else {
+        input.addEventListener('input', checkMappingExistingInputs);
+      }
+    });
+
+    // Use jQuery for Select2 fields
+    if (window.jQuery) {
+      $('select[id^="child_station_mapping_source_field_compare_id_"]').on('change.select2', function() {
+        if (this.id.endsWith('_new')) {
+          checkMappingNewInputs();
+        } else {
+          checkMappingExistingInputs();
+        }
+      });
+      $('select[id^="child_station_mapping_target_field_compare_replace_id_"]').on('change.select2', function() {
+        if (this.id.endsWith('_new')) {
+          checkMappingNewInputs();
+        } else {
+          checkMappingExistingInputs();
+        }
+      });
+    } else {
+      // Fallback for non-Select2 (shouldn't be needed, but safe)
+      document.querySelectorAll('select[id^="child_station_mapping_source_field_compare_id_"]').forEach(select => {
+        if (select.id.endsWith('_new')) {
+          select.addEventListener('change', checkMappingNewInputs);
+        } else {
+          select.addEventListener('change', checkMappingExistingInputs);
+        }
+      });
+      document.querySelectorAll('select[id^="child_station_mapping_target_field_compare_replace_id_"]').forEach(select => {
+        if (select.id.endsWith('_new')) {
+          select.addEventListener('change', checkMappingNewInputs);
+        } else {
+          select.addEventListener('change', checkMappingExistingInputs);
+        }
+      });
+    }
+
+    checkMappingNewInputs();
+    checkMappingExistingInputs();
+  });
+</script>
+<!-- Station Mapping Priority -->
+<script>
+  const priorityChildStationMappings = {{ html_station_mappings | tojson }};
+  const priorityChildStationMappingsList = document.getElementById('priorityChildStationMappingsList');
+  const priorityChildStationMappingsInput = document.getElementById('priority_child_station_mappings');
+
+  function populateChildStationMappingsLists() {
+    priorityChildStationMappingsList.innerHTML = '';
+    const activeChildStationMappings = priorityChildStationMappings.filter(station_mapping => station_mapping.station_mapping_active === 'On');
+    activeChildStationMappings.sort((a, b) => (a.station_mapping_priority || 0) - (b.station_mapping_priority || 0));
+    activeChildStationMappings.forEach(station_mapping => {
+        const option = document.createElement('option');
+        option.value = station_mapping.station_mapping_id;
+        option.text = station_mapping.station_mapping_name;
+        priorityChildStationMappingsList.appendChild(option);
+    });
+  }
+
+  function child_station_mappings_moveUp() {
+    const selectedChildStationMappingsOptions = Array.from(priorityChildStationMappingsList.selectedOptions);
+    selectedChildStationMappingsOptions.forEach(option => {
+      const previousChildStationMappingsOption = option.previousElementSibling;
+      if (previousChildStationMappingsOption) {
+        priorityChildStationMappingsList.insertBefore(option, previousChildStationMappingsOption);
+        child_station_mappings_updateChildStationMappingPriority();
+      }
+    });
+  }
+
+  function child_station_mappings_moveDown() {
+    const selectedChildStationMappingsOptions = Array.from(priorityChildStationMappingsList.selectedOptions);
+    selectedChildStationMappingsOptions.reverse().forEach(option => {
+      const nextChildStationMappingsOption = option.nextElementSibling;
+      if (nextChildStationMappingsOption) {
+        priorityChildStationMappingsList.insertBefore(nextChildStationMappingsOption, option);
+        child_station_mappings_updateChildStationMappingPriority();
+      }
+    });
+  }
+
+  function child_station_mappings_updateChildStationMappingPriority() {
+    const allChildStationMappingsOptions = Array.from(priorityChildStationMappingsList.options);
+    const activeChildStationMappings = priorityChildStationMappings.filter(station_mapping => station_mapping.station_mapping_active === 'On');
+    
+    // Ensure unique priorities for active station mappings first
+    allChildStationMappingsOptions.forEach((option, index) => {
+      const station_mapping = activeChildStationMappings.find(s => s.station_mapping_id === option.value);
+      if (station_mapping) {
+        station_mapping.station_mapping_priority = index + 1;
+      }
+    });
+
+    // Reorder priorities to ensure uniqueness across all station mappings
+    priorityChildStationMappings.sort((a, b) => (a.station_mapping_priority || 0) - (b.station_mapping_priority || 0));
+    priorityChildStationMappings.forEach((station_mapping, index) => {
+      station_mapping.station_mapping_priority = index + 1;
+    });
+
+    child_station_mappings_updateHiddenInput();
+  }
+
+  function child_station_mappings_updateHiddenInput() {
+    priorityChildStationMappingsInput.value = JSON.stringify(priorityChildStationMappings.map(station_mapping => ({
+      station_mapping_id: station_mapping.station_mapping_id,
+      station_mapping_name: station_mapping.station_mapping_name,
+      station_mapping_active: station_mapping.station_mapping_active,
+      station_mapping_priority: station_mapping.station_mapping_priority,
+      source_m3u_id: station_mapping.source_m3u_id,
+      source_field: station_mapping.source_field,
+      source_field_compare_id: station_mapping.source_field_compare_id,
+      source_field_string: station_mapping.source_field_string,
+      target_field: station_mapping.target_field,
+      target_field_compare_replace_id: station_mapping.target_field_compare_replace_id,
+      target_field_string: station_mapping.target_field_string,
+      target_parent_channel_id: station_mapping.target_parent_channel_id,
+      target_stream_format_override: station_mapping.target_stream_format_override
+    })));
+    console.log("Hidden input updated:", priorityChildStationMappingsInput.value); // Debugging
+  }
+
+  populateChildStationMappingsLists();
+  child_station_mappings_updateHiddenInput();
 </script>
 {% endblock javascripts %}
