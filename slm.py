@@ -33,7 +33,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.22.1726"
+    slm_version = "v2025.05.25.1735"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -3148,7 +3148,7 @@ def webpage_playlists(sub_page):
     station_start_number = settings[11]['settings']
     max_stations = settings[12]['settings']
     plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
-    plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Stutus On/Off
+    plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Status On/Off
     plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
     plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
     settings_message = ''
@@ -3271,7 +3271,7 @@ def webpage_playlists(sub_page):
                 station_start_number = settings[11]['settings']
                 max_stations = settings[12]['settings']
                 plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
-                plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Stutus On/Off
+                plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Status On/Off
                 plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
                 plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
 
@@ -3638,7 +3638,7 @@ def webpage_playlists(sub_page):
 
                                 if unassign_children:
                                     for unassign_child in unassign_children:
-                                        set_child_to_parent(unassign_child['child_m3u_id_channel_id'], "Unassigned", unassign_child['stream_format_override'], parents)
+                                        set_child_to_parent(unassign_child['child_m3u_id_channel_id'], "Unassigned", unassign_child['stream_format_override'], parents, unassign_child['enable_child_station_check'])
 
                                 # Unassign station mappings with that parent
                                 write_station_mappings = False
@@ -3712,6 +3712,7 @@ def webpage_playlists(sub_page):
                             # Modify Child to Parent table
                             child_to_parents_channel_id_inputs = {}
                             child_to_parents_stream_format_override_inputs = {}
+                            child_to_parents_enable_child_station_check_inputs = {}
 
                             keycheck_base = "_child_to_parents_channel_id_"
                             keycheck = f"{keycheck_prefix}{keycheck_base}"
@@ -3727,13 +3728,23 @@ def webpage_playlists(sub_page):
                                     index = key.split('_')[-1]
                                     child_to_parents_stream_format_override_inputs[index] = request.form.get(key)
 
+                            keycheck_base = "_child_to_parents_enable_child_station_check_"
+                            keycheck = f"{keycheck_prefix}{keycheck_base}"
+                            for key in request.form.keys():
+                                if key.startswith(keycheck):
+                                    index = key.split('_')[-1]
+                                    child_to_parents_enable_child_station_check_inputs[index] = request.form.get(key)
+
                             child_to_parents_channel_id_inputs = list(child_to_parents_channel_id_inputs.values())
                             child_to_parents_channel_id = child_to_parents_channel_id_inputs[child_to_parents_action_make_parent_index]
 
                             child_to_parents_stream_format_override_inputs = list(child_to_parents_stream_format_override_inputs.values())
                             child_to_parents_stream_format_override = child_to_parents_stream_format_override_inputs[child_to_parents_action_make_parent_index]
 
-                            set_child_to_parent(child_to_parents_channel_id, parents_parent_channel_id_input, child_to_parents_stream_format_override, parents)
+                            child_to_parents_enable_child_station_check_inputs = list(child_to_parents_enable_child_station_check_inputs.values())
+                            child_to_parents_enable_child_station_check = "On" if child_to_parents_enable_child_station_check_inputs[child_to_parents_action_make_parent_index] == "on" else "Off"
+
+                            set_child_to_parent(child_to_parents_channel_id, parents_parent_channel_id_input, child_to_parents_stream_format_override, parents, child_to_parents_enable_child_station_check)
                             unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents(sub_page)
 
                         parents.append({
@@ -3967,6 +3978,7 @@ def webpage_playlists(sub_page):
                     child_to_parents_channel_id_inputs = {}
                     child_to_parents_parent_channel_id_inputs = {}
                     child_to_parents_stream_format_override_inputs = {}
+                    child_to_parents_enable_child_station_check_inputs = {}
 
                     for key in request.form.keys():
                         
@@ -3995,9 +4007,28 @@ def webpage_playlists(sub_page):
                                 else:
                                     child_to_parents_stream_format_override_inputs[index] = request.form.get(key)
 
+                            keycheck = f"{keycheck_start}enable_child_station_check_"
+                            if key.startswith(keycheck):
+                                index = key.split('_')[-1]
+                                if playlists_action.endswith('_set_parent_all'):
+                                    all_key = f"{keycheck}all"
+                                    child_to_parents_enable_child_station_check_inputs[index] = request.form.get(all_key)
+                                else:
+                                    child_to_parents_enable_child_station_check_inputs[index] = request.form.get(key)
+
+                    keycheck = f"{keycheck_start}enable_child_station_check_all"
+                    if playlists_action.endswith('_set_parent_all'):
+                        child_to_parents_enable_child_station_check_all = "On" if request.form.get(keycheck) == "on" else "Off"
+                    else:
+                        child_to_parents_enable_child_station_check_all = None
+
                     for index in child_to_parents_channel_id_inputs.keys():
                         child_to_parents_channel_id_input = child_to_parents_channel_id_inputs.get(index)
                         child_to_parents_stream_format_override_input = child_to_parents_stream_format_override_inputs.get(index)
+                        if child_to_parents_enable_child_station_check_all:
+                            child_to_parents_enable_child_station_check_input = child_to_parents_enable_child_station_check_all
+                        else:
+                            child_to_parents_enable_child_station_check_input = "On" if child_to_parents_enable_child_station_check_inputs.get(index) == "on" else "Off"
                         
                         if child_to_parents_parent_channel_id_inputs.get(index) == "Make Parent":
                             stations = read_data(csv_playlistmanager_combined_m3us)
@@ -4033,7 +4064,7 @@ def webpage_playlists(sub_page):
                         else:
                             child_to_parents_parent_channel_id_input = child_to_parents_parent_channel_id_inputs.get(index)
 
-                        send_child_to_parents.append({'child_m3u_id_channel_id': child_to_parents_channel_id_input, 'parent_channel_id': child_to_parents_parent_channel_id_input, 'stream_format_override': child_to_parents_stream_format_override_input})
+                        send_child_to_parents.append({'child_m3u_id_channel_id': child_to_parents_channel_id_input, 'parent_channel_id': child_to_parents_parent_channel_id_input, 'stream_format_override': child_to_parents_stream_format_override_input, 'enable_child_station_check': child_to_parents_enable_child_station_check_input})
 
                     if '_set_parent_' in playlists_action:
 
@@ -4047,8 +4078,9 @@ def webpage_playlists(sub_page):
                             child_to_parents_channel_id_input_single = send_child_to_parents[child_to_parents_action_set_parent_index]['child_m3u_id_channel_id']
                             child_to_parents_parent_channel_id_input_single = send_child_to_parents[child_to_parents_action_set_parent_index]['parent_channel_id']
                             child_to_parents_stream_format_override_input_single = send_child_to_parents[child_to_parents_action_set_parent_index]['stream_format_override']
+                            child_to_parents_enable_child_station_check_input_single = send_child_to_parents[child_to_parents_action_set_parent_index]['enable_child_station_check']
 
-                            send_child_to_parents_single.append({'child_m3u_id_channel_id': child_to_parents_channel_id_input_single, 'parent_channel_id': child_to_parents_parent_channel_id_input_single, 'stream_format_override': child_to_parents_stream_format_override_input_single})
+                            send_child_to_parents_single.append({'child_m3u_id_channel_id': child_to_parents_channel_id_input_single, 'parent_channel_id': child_to_parents_parent_channel_id_input_single, 'stream_format_override': child_to_parents_stream_format_override_input_single, 'enable_child_station_check': child_to_parents_enable_child_station_check_input_single})
 
                             send_child_to_parents = send_child_to_parents_single
 
@@ -4057,7 +4089,8 @@ def webpage_playlists(sub_page):
                         child_to_parents_channel_id = send_child_to_parent['child_m3u_id_channel_id']
                         child_to_parents_parent_channel_id = send_child_to_parent['parent_channel_id']
                         child_to_parents_stream_format_override = send_child_to_parent['stream_format_override']
-                        set_child_to_parent(child_to_parents_channel_id, child_to_parents_parent_channel_id, child_to_parents_stream_format_override, parents)
+                        child_to_parents_enable_child_station_check = send_child_to_parent['enable_child_station_check']
+                        set_child_to_parent(child_to_parents_channel_id, child_to_parents_parent_channel_id, child_to_parents_stream_format_override, parents, child_to_parents_enable_child_station_check)
                     
                     parents = sorted(parents, key=lambda x: sort_key(x["parent_title"].casefold()))
                     write_data(csv_playlistmanager_parents, parents)
@@ -4449,7 +4482,7 @@ def get_combined_m3us():
     for station in stations:
         check_m3u_id_channel_id = f"{station['m3u_id']}_{station['channel_id']}"
         if check_m3u_id_channel_id not in [map['child_m3u_id_channel_id'] for map in maps]:
-            new_row = { 'child_m3u_id_channel_id': check_m3u_id_channel_id, 'parent_channel_id': 'Unassigned', 'stream_format_override': 'None', 'child_station_check': '' }
+            new_row = { 'child_m3u_id_channel_id': check_m3u_id_channel_id, 'parent_channel_id': 'Unassigned', 'stream_format_override': 'None', 'child_station_check': '', 'enable_child_station_check': 'On' }
             append_data(csv_playlistmanager_child_to_parent, new_row)
 
     print(f"{current_time()} Finished combination of playlists.")
@@ -4468,6 +4501,7 @@ def run_child_station_mapping():
     child_to_parent_maps = read_data(csv_playlistmanager_child_to_parent)
     child_to_parent_map_parent_channel_id_lookup = {child_to_parent_map['child_m3u_id_channel_id']: child_to_parent_map['parent_channel_id'] for child_to_parent_map in child_to_parent_maps}
     child_to_parent_map_stream_format_override_lookup = {child_to_parent_map['child_m3u_id_channel_id']: child_to_parent_map['stream_format_override'] for child_to_parent_map in child_to_parent_maps}
+    child_to_parent_map_enable_child_station_check_lookup = {child_to_parent_map['child_m3u_id_channel_id']: child_to_parent_map['enable_child_station_check'] for child_to_parent_map in child_to_parent_maps}
     parents = read_data(csv_playlistmanager_parents)
 
     if station_mappings:
@@ -4588,10 +4622,13 @@ def run_child_station_mapping():
                                         else:
                                             stream_format_override = child_to_parent_map_stream_format_override_lookup[child_m3u_id_channel_id]
 
-                                        set_child_to_parent(child_m3u_id_channel_id, parent_channel_id, stream_format_override, parents)
+                                        enable_child_station_check = child_to_parent_map_enable_child_station_check_lookup[child_m3u_id_channel_id]
+
+                                        set_child_to_parent(child_m3u_id_channel_id, parent_channel_id, stream_format_override, parents, enable_child_station_check)
                                         child_to_parent_maps = read_data(csv_playlistmanager_child_to_parent)
                                         child_to_parent_map_parent_channel_id_lookup = {child_to_parent_map['child_m3u_id_channel_id']: child_to_parent_map['parent_channel_id'] for child_to_parent_map in child_to_parent_maps}
                                         child_to_parent_map_stream_format_override_lookup = {child_to_parent_map['child_m3u_id_channel_id']: child_to_parent_map['stream_format_override'] for child_to_parent_map in child_to_parent_maps}
+                                        child_to_parent_map_enable_child_station_check_lookup = {child_to_parent_map['child_m3u_id_channel_id']: child_to_parent_map['enable_child_station_check'] for child_to_parent_map in child_to_parent_maps}
 
         if write_stations:
             write_data(csv_playlistmanager_combined_m3us, stations)
@@ -4611,13 +4648,14 @@ def check_child_station_status():
     print(f"{current_time()} Starting check of child stations...")
 
     settings = read_data(csv_settings)
-    plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Stutus On/Off
+    plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Status On/Off
 
     stations = read_data(csv_playlistmanager_combined_m3us)
     maps = read_data(csv_playlistmanager_child_to_parent)
     playlists = read_data(csv_playlistmanager_playlists)
 
     map_lookup = {map['child_m3u_id_channel_id']: map['parent_channel_id'] for map in maps}
+    enable_child_station_check_lookup = {map['child_m3u_id_channel_id'] for map in maps if map['enable_child_station_check'] == "On"}
     playlist_active_lookup = {playlist['m3u_id']: playlist['m3u_active'] for playlist in playlists}
     playlist_station_check_lookup = {playlist['m3u_id']: playlist['station_check'] for playlist in playlists}
 
@@ -4630,7 +4668,7 @@ def check_child_station_status():
                 if playlist_active_lookup[station['m3u_id']] == 'On' and playlist_station_check_lookup[station['m3u_id']] == 'On':
                     check_m3u_id_channel_id = f"{station['m3u_id']}_{station['channel_id']}"
                     parent_channel_id = map_lookup.get(check_m3u_id_channel_id)
-                    if parent_channel_id and parent_channel_id != 'Ignore':
+                    if parent_channel_id and parent_channel_id != 'Ignore' and check_m3u_id_channel_id in enable_child_station_check_lookup:
                         not_ignore_stations.append(station)
 
         if not_ignore_stations:
@@ -4911,6 +4949,7 @@ def get_child_to_parents(sub_page):
 
                     child_to_parent_parent_channel_id = child_to_parent['parent_channel_id']
                     child_to_parent_parent_stream_format_override = child_to_parent['stream_format_override']
+                    child_to_parent_parent_enable_child_station_check = child_to_parent['enable_child_station_check']
 
                     if all_child_to_parents_append:
                         all_child_to_parents.append({
@@ -4919,7 +4958,8 @@ def get_child_to_parents(sub_page):
                             'm3u_name': child_to_parent_m3u_name,
                             'description': child_to_parent_description,
                             'parent_channel_id': child_to_parent_parent_channel_id,
-                            'stream_format_override': child_to_parent_parent_stream_format_override
+                            'stream_format_override': child_to_parent_parent_stream_format_override, 
+                            'enable_child_station_check': child_to_parent_parent_enable_child_station_check
                         })
 
         # Split unassigned and assigned
@@ -4932,7 +4972,8 @@ def get_child_to_parents(sub_page):
                     'm3u_name': sorted_all_child_to_parent['m3u_name'],
                     'description': sorted_all_child_to_parent['description'],
                     'parent_channel_id': sorted_all_child_to_parent['parent_channel_id'],
-                    'stream_format_override': sorted_all_child_to_parent['stream_format_override']
+                    'stream_format_override': sorted_all_child_to_parent['stream_format_override'],
+                    'enable_child_station_check': sorted_all_child_to_parent['enable_child_station_check']
                 })
             else:
                 assigned_child_to_parents.append({
@@ -4941,7 +4982,8 @@ def get_child_to_parents(sub_page):
                     'm3u_name': sorted_all_child_to_parent['m3u_name'],
                     'description': sorted_all_child_to_parent['description'],
                     'parent_channel_id': sorted_all_child_to_parent['parent_channel_id'],
-                    'stream_format_override': sorted_all_child_to_parent['stream_format_override']
+                    'stream_format_override': sorted_all_child_to_parent['stream_format_override'],
+                    'enable_child_station_check': sorted_all_child_to_parent['enable_child_station_check']
                 })
 
     # Create statistics
@@ -4971,7 +5013,7 @@ def get_child_to_parents(sub_page):
     return unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count
 
 # Sets a child to a parent for a station
-def set_child_to_parent(child_m3u_id_channel_id, parent_channel_id, stream_format_override, parents):
+def set_child_to_parent(child_m3u_id_channel_id, parent_channel_id, stream_format_override, parents, enable_child_station_check):
     child_to_parents = read_data(csv_playlistmanager_child_to_parent)
 
     for child_to_parent in child_to_parents:
@@ -4982,6 +5024,7 @@ def set_child_to_parent(child_m3u_id_channel_id, parent_channel_id, stream_forma
 
             child_to_parent['parent_channel_id'] = parent_channel_id
             child_to_parent['stream_format_override'] = stream_format_override
+            child_to_parent['enable_child_station_check'] = enable_child_station_check
             break
 
     write_data(csv_playlistmanager_child_to_parent, child_to_parents)
@@ -12239,6 +12282,7 @@ def check_and_create_csv(csv_file):
     if csv_file == csv_playlistmanager_child_to_parent:
         check_and_add_column(csv_file, 'stream_format_override', 'None')
         check_and_add_column(csv_file, 'child_station_check', '')
+        check_and_add_column(csv_file, 'enable_child_station_check', 'On')
 
     if csv_file == csv_streaming_services:
         check_and_add_column(csv_file, 'streaming_service_active', 'On')
@@ -12314,7 +12358,7 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 58, "MTM: Remove old Channels DVR Backups Start Time")
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 59, "MTM: Remove old Channels DVR Backups Frequency")
         check_and_append(csv_file, {"settings": 7}, 60, "MTM: Remove old Channels DVR Backups Days to Keep")
-        check_and_append(csv_file, {"settings": "Off"}, 61, "PLM/MTM: Check Child Station Stutus On/Off")
+        check_and_append(csv_file, {"settings": "Off"}, 61, "PLM/MTM: Check Child Station Status On/Off")
         check_and_append(csv_file, {"settings": "Off"}, 62, "MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off")
 
 # Data records for initialization files
@@ -12380,7 +12424,7 @@ def initial_data(csv_file):
                     {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [56] MTM: Remove old Channels DVR Backups Start Time
                     {"settings": "Every 24 hours"},                                            # [57] MTM: Remove old Channels DVR Backups Frequency
                     {"settings": 7},                                                           # [58] MTM: Remove old Channels DVR Backups Days to Keep
-                    {"settings": "Off"},                                                       # [59] PLM/MTM: Check Child Station Stutus On/Off
+                    {"settings": "Off"},                                                       # [59] PLM/MTM: Check Child Station Status On/Off
                     {"settings": "Off"}                                                        # [60] MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off
         ]        
 
@@ -12435,7 +12479,7 @@ def initial_data(csv_file):
 
     elif csv_file == csv_playlistmanager_child_to_parent:
         data = [
-            {"child_m3u_id_channel_id": None, "parent_channel_id": None, "stream_format_override": None, "child_station_check": None}
+            {"child_m3u_id_channel_id": None, "parent_channel_id": None, "stream_format_override": None, "child_station_check": None, 'enable_child_station_check': None}
         ]    
 
     elif csv_file == csv_playlistmanager_combined_m3us:
@@ -12474,19 +12518,31 @@ def check_website(url):
 # Check if a video stream is working
 def test_video_stream(url):
     status = None
+    retries = 3
+    delay = 5
 
-    try:
-        with requests.get(url, headers=url_headers, stream=True, timeout=10) as response:
-            if response.status_code == 200:
-                for chunk in response.iter_content(chunk_size=1024):
-                    if chunk:
-                        status = "ok"
-                        break
-            else:
-                status = "fail"
-    except requests.exceptions.RequestException as e:
-        print(f"{current_time()} ERROR: {url} reports {e}")
-        status = "fail"
+    for attempt in range(retries):
+
+        try:
+            with requests.get(url, headers=url_headers, stream=True, timeout=10) as response:
+                if response.status_code == 200:
+                    for chunk in response.iter_content(chunk_size=1024):
+                        if chunk:
+                            status = "okay"
+                            break
+                else:
+                    status = "fail"
+        except requests.exceptions.RequestException as e:
+            print(f"{current_time()} ERROR: {url} reports {e}")
+            status = "fail"
+
+        if status == "okay":
+            break
+        elif attempt < retries - 1:
+            print(f"{current_time()} INFO: '{url}' failed. Retrying in {delay} seconds...")
+            time.sleep(delay)
+        else:
+            print(f"{current_time()} INFO: '{url}' still failed after {retries} attempts.")
 
     return status
 
