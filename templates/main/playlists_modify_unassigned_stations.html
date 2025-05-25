@@ -1,13 +1,13 @@
 {% extends "layouts/base.html" %}
 
-{% block title %} Linear - Set Unassigned Stations {% endblock %} 
+{% block title %} Linear - Unassigned Stations {% endblock %} 
 
 <!-- Specific Page CSS goes HERE  -->
 {% block stylesheets %}
 <style> 
   .child_to_parents .grid-container {
       display: grid;
-      grid-template-columns: 2fr 1fr 3fr 3fr 1fr 1fr;
+      grid-template-columns: 2fr 1fr 2.75fr 2.75fr 1fr 0.5fr 1fr;
       gap: 10px;
   }
 
@@ -70,6 +70,11 @@
             <div class="grid-item"><h6>Description</h6></div>
             <div class="grid-item"><h6>Parent Station</h6></div>
             <div class="grid-item"><h6>Stream Format Override</h6></div>
+            <div class="grid-item"><h6>Check Station Status
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Processes-%E2%80%90-Check-Station-Status" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>  
+            </h6></div>
             <div class="grid-item"><h6>Action</h6></div>
           </div>
           <div class="grid-container" style="margin-right: 17px;">
@@ -97,6 +102,11 @@
               </select>
             </div>
             <div class="grid-item">
+              <div class="form-check form-switch ps-0 is-filled">
+                <input type="checkbox" id="unassigned_child_to_parents_enable_child_station_check_all" name="unassigned_child_to_parents_enable_child_station_check_all" class="form-check-input" style="margin-left: 3px;" checked>
+              </div>              
+            </div>
+            <div class="grid-item">
               <button type="submit" name="action" value="unassigned_child_to_parents_action_set_parent_all" class="btn bg-gradient-primary my-2 mb-2">Set Visible</button>
             </div>
           </div>
@@ -115,6 +125,9 @@
             </div>
             <div class="grid-item">
               <input type="text" id="filter-stream-format-override" placeholder="Filter" name="filter-stream-format-override" value="{{ html_filter_stream_format_override_unassigned }}">
+            </div>
+            <div class="grid-item">
+              <hr style="border: 3px solid; width: 100%;">
             </div>
             <div class="grid-item">
               <hr style="border: 3px solid; width: 100%;">
@@ -312,6 +325,20 @@
             });
             streamFormatOverrideItem.appendChild(streamFormatOverrideInput);            
 
+            const enableChildStationCheckItem = document.createElement('div');
+            enableChildStationCheckItem.className = 'grid-item';
+            const formCheckDiv = document.createElement('div');
+            formCheckDiv.className = 'form-check form-switch ps-0 is-filled';
+            const enableChildStationCheckInput = document.createElement('input');
+            enableChildStationCheckInput.type = 'checkbox';
+            enableChildStationCheckInput.id = `unassigned_child_to_parents_enable_child_station_check_${adjustedIndex}`;
+            enableChildStationCheckInput.name = `unassigned_child_to_parents_enable_child_station_check_${adjustedIndex}`;
+            enableChildStationCheckInput.className = 'form-check-input';
+            enableChildStationCheckInput.style.marginLeft = '3px';
+            enableChildStationCheckInput.checked = item.enable_child_station_check.toLowerCase() === 'on';
+            formCheckDiv.appendChild(enableChildStationCheckInput);
+            enableChildStationCheckItem.appendChild(formCheckDiv);
+
             const setParentButtonItem = document.createElement('div');
             setParentButtonItem.className = 'grid-item';
             const setParentButton = document.createElement('button');
@@ -328,6 +355,7 @@
             gridContainer.appendChild(descriptionItem);
             gridContainer.appendChild(selectItem);
             gridContainer.appendChild(streamFormatOverrideItem);
+            gridContainer.appendChild(enableChildStationCheckItem);
             gridContainer.appendChild(setParentButtonItem);
 
             recordContainer.appendChild(gridContainer);
