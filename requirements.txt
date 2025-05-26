@@ -5,3 +5,4 @@ pandasql
 pyinstaller
 flask
 yt_dlp
+streamlink

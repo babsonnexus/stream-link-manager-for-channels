@@ -22,18 +22,19 @@ import io
 from flask import Flask, render_template, render_template_string, request, redirect, url_for, Response, send_file, Request, make_response, stream_with_context
 from jinja2 import TemplateNotFound
 import yt_dlp
+import streamlink
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.05.16.1232"
+slm_version = "v2025.05.26.1617"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.25.1735"
+    slm_version = "v2025.05.26.1617"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -5783,7 +5784,8 @@ def webpage_playlists_streams():
         "Custom (HLS)",
         "Custom (MPEG-TS)",
         "Stream Link (STRMLNK)",
-        "Live Stream (HLS)"
+        "Live Stream (HLS)",
+        "Live Stream (MPEG-TS)"
     ]
 
     test_url = ''
@@ -5825,8 +5827,11 @@ def webpage_playlists_streams():
                 if streaming_stations_source_test_input.startswith('Custom'):
                     test_url = streaming_stations_url_test_input
 
-                elif streaming_stations_source_test_input.startswith('Live Stream'):
+                elif streaming_stations_source_test_input == 'Live Stream (HLS)':
                     test_url = f"{request.url_root}playlists/streams/stream?url={streaming_stations_url_test_input}"
+
+                elif streaming_stations_source_test_input == 'Live Stream (MPEG-TS)':
+                    test_url = f"{request.url_root}playlists/streams/stream_mpegts?url={streaming_stations_url_test_input}"
 
         elif action.endswith('new') or action.endswith('save') or 'delete' in action:
             filter_streams_source = request.form.get('filter-source')
@@ -6069,7 +6074,7 @@ def webpage_playlists_streams():
         html_settings_message = settings_message
     )
 
-# Creates an m3u8 or video file for an individual live stream or static video
+# Creates an m3u8 or video file for an individual live stream (HLS) or static video
 @app.route('/playlists/streams/stream', methods=['GET'])
 @app.route('/playlists/streams/youtubelive', methods=['GET']) # Old method, to be removed in the future
 def streams_live():
@@ -6176,10 +6181,13 @@ def parse_online_video(url, ydl_opts):
                     protocol_http_formats = []
                     audio_formats = []
                     video_formats = []
+                    best_format = None
+                    best_video_format = None
+                    m3u8_protocol = None
 
                     # Separate formats into categories
                     for format in formats:
-                        # print(f"{current_time()} INFO: Found format: {format}")  # Keep this for testing but not production
+                        print(f"{current_time()} INFO: Found format: {format}")  # Keep this for testing but not production
                         if format.get('has_drm') is False:
                             if format.get('acodec') != 'none' and format.get('vcodec') != 'none':
                                 if 'm3u8' in format.get('protocol', ''):
@@ -6192,9 +6200,6 @@ def parse_online_video(url, ydl_opts):
                             
                             elif format.get('acodec') == 'none' and format.get('vcodec') != 'none':
                                 video_formats.append(format)
-
-                    best_format = None
-                    m3u8_protocol = None
 
                     # Select the best format from m3u8 or http protocols
                     for protocol_m3u8_format in protocol_m3u8_formats:
@@ -6211,7 +6216,6 @@ def parse_online_video(url, ydl_opts):
                     # If no suitable format is found, attempt to combine audio and video manifests
                     if not best_format and video_formats and audio_formats:
                         print(f"{current_time()} INFO: No suitable combined format found. Attempting to combine audio and video manifests.")
-                        best_video_format = None
 
                         # Select the best video format
                         for video_format in video_formats:
@@ -6340,6 +6344,61 @@ def parse_online_video_info_dict_formats(ydl, url):
 
 #     return po_token
 
+# Play live streams as MPEG-TS using Streamlink
+@app.route('/playlists/streams/stream_mpegts', methods=['GET'])
+def streams_live_mpegts():
+    url = request.args.get('url', type=str)
+    response = "URL is required"
+    print_response = True
+
+    streams = None
+    stream = None
+    fd = None
+
+    if url:
+
+        try:
+            session = streamlink.Streamlink()
+            session.set_option("ffmpeg-ffmpeg", "ffmpeg")  # Ensure ffmpeg is used
+            session.set_option("ffmpeg-fout", "mpegts")   # Force MPEG-TS output
+            session.set_option("mux-subtitles", False)    # Avoid subtitle muxing issues
+            streams = session.streams(url)
+
+            if streams:
+                stream = streams.get("best") or next(iter(streams.values()))
+            else:
+                response = f"No streams found for URL {url}"
+            
+            if stream:
+                fd = stream.open()
+            else:
+                response = f"No suitable stream found for URL {url}"
+
+            if fd:
+                response = Response(stream_with_context(chunk_play_stream(fd)), content_type='video/MP4')
+                print_response = False
+            else:
+                response = f"Failed to open stream for URL {url}"
+
+        except Exception as e:
+            response = f"Playing Live Stream (MPEG-TS) resulted in error: {e}"
+
+    if print_response:
+        print(f"{current_time()} INFO: {response}")
+
+    return response
+
+# Generates a stream of chunks for a MPEG-TS stream
+def chunk_play_stream(fd):
+    try:
+        while True:
+            chunk = fd.read(8192)
+            if not chunk:
+                break
+            yield chunk
+    finally:
+        fd.close()
+
 # Creates the m3u(s) for Streaming Stations
 def make_streaming_stations_m3us():
     settings = read_data(csv_settings)
@@ -6393,8 +6452,10 @@ def make_streaming_stations_m3us():
         tvc_guide_placeholders = streaming_station['tvc_guide_placeholders']
         tvc_stream_vcodec = streaming_station['tvc_stream_vcodec']
         tvc_stream_acodec = streaming_station['tvc_stream_acodec']
-        if 'Live Stream' in streaming_station['source']:
+        if streaming_station['source'] == 'Live Stream (HLS)':
             url = f"{request.url_root}playlists/streams/stream?url={streaming_station['url']}"
+        elif streaming_station['source'] == 'Live Stream (MPEG-TS)':
+            url = f"{request.url_root}playlists/streams/stream_mpegts?url={streaming_station['url']}"
         else:
             url = streaming_station['url']
         if 'HLS' in streaming_station['source']:
@@ -13414,6 +13475,18 @@ logging.basicConfig(
     filename=log_filename_fullpath,
     filemode="a",
 )
+
+### Lower specific loggers to WARNING to reduce verbosity
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+# logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("chardet").setLevel(logging.WARNING)
+logging.getLogger("charset_normalizer").setLevel(logging.WARNING)
+logging.getLogger("streamlink").setLevel(logging.WARNING)
+logging.getLogger("streamlink.session").setLevel(logging.WARNING)
+logging.getLogger("streamlink.plugin").setLevel(logging.WARNING)
+logging.getLogger("streamlink.stream").setLevel(logging.WARNING)
+logging.getLogger("streamlink.cli").setLevel(logging.WARNING)
+
 log = logger()
 
 notification_add(f"{current_time()} Beginning Initialization Process (see log for details)...")
