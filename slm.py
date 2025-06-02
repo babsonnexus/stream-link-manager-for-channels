@@ -29,12 +29,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.05.26.1617"
+slm_version = "v2025.06.02.1803"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.05.26.1617"
+    slm_version = "v2025.06.02.1803"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -4662,6 +4662,8 @@ def check_child_station_status():
 
     not_ignore_stations = []
     disable_child_stations = []
+    hls_child_stations = []
+    mpegts_child_stations = []
 
     if plm_check_child_station_status == "On":
         for station in stations:
@@ -4683,6 +4685,10 @@ def check_child_station_status():
 
                 if station_check_response == 'fail':
                     disable_child_stations.append(check_m3u_id_channel_id)
+                elif station_check_response == 'HLS':
+                    hls_child_stations.append(check_m3u_id_channel_id)
+                elif station_check_response == 'MPEG-TS':
+                    mpegts_child_stations.append(check_m3u_id_channel_id)
 
     else:
         print(f"{current_time()} INFO: Check of child stations is disabled.")
@@ -4690,6 +4696,10 @@ def check_child_station_status():
     for map in maps:
         if map['child_m3u_id_channel_id'] in disable_child_stations:
             map['child_station_check'] = 'Disabled'
+        elif map['child_m3u_id_channel_id'] in hls_child_stations:
+            map['child_station_check'] = 'HLS'
+        elif map['child_m3u_id_channel_id'] in mpegts_child_stations:
+            map['child_station_check'] = 'MPEG-TS'
         else:
             map['child_station_check'] = ''
     
@@ -5325,7 +5335,10 @@ def get_m3u_field_value(field, combined_children, children):
                             playlists = read_data(csv_playlistmanager_playlists)
                             for playlist in playlists:
                                 if playlist['m3u_id'] == combined_child['m3u_id']:
-                                    field_value = playlist['stream_format']
+                                    if child['child_station_check'] is None or child['child_station_check'] == '' or child['child_station_check'] == playlist['stream_format']:
+                                        field_value = playlist['stream_format']
+                                    else:
+                                        field_value = child['child_station_check']
                                     break
 
                         else:
@@ -5489,25 +5502,7 @@ def get_uploaded_playlist_files():
 
 # Gets the XML EPG for each m3u that needs one
 def get_epgs_for_m3us():
-    playlists = read_data(csv_playlistmanager_playlists)
-    temp_content = ""
-
-    # Fetch EPG XML data
-    for playlist in playlists:
-        if playlist['m3u_active'] == "On" and playlist['epg_xml']:
-            response = fetch_url(playlist['epg_xml'], 5, 10)
-            if response:
-                # Get the final URL after redirection
-                final_url = response.url
-
-                # Handle .gz files
-                if final_url.endswith('.gz'):
-                    gz = gzip.GzipFile(fileobj=io.BytesIO(response.content))
-                    response_text = gz.read().decode('utf-8')
-                else:
-                    response_text = response.content.decode('utf-8')
-
-                temp_content += response_text
+    temp_content = get_combined_xml_guide()
 
     extensions = ['m3u']
     m3u_files = get_all_prior_files(program_files_dir, extensions)
@@ -5562,6 +5557,30 @@ def get_epgs_for_m3us():
         file_delete(program_files_dir, all_prior_file['filename'], all_prior_file['extension'])
 
     rename_files_suffix(program_files_dir, ".xml.tmp", ".xml")
+
+# Combines all XML EPGs into one large XML guide
+def get_combined_xml_guide():
+    playlists = read_data(csv_playlistmanager_playlists)
+    temp_content = ""
+
+    # Fetch EPG XML data
+    for playlist in playlists:
+        if playlist['m3u_active'] == "On" and playlist['epg_xml']:
+            response = fetch_url(playlist['epg_xml'], 5, 10)
+            if response:
+                # Get the final URL after redirection
+                final_url = response.url
+
+                # Handle .gz files
+                if final_url.endswith('.gz'):
+                    gz = gzip.GzipFile(fileobj=io.BytesIO(response.content))
+                    response_text = gz.read().decode('utf-8')
+                else:
+                    response_text = response.content.decode('utf-8')
+
+                temp_content += response_text
+
+    return temp_content
 
 # More parent station settings
 @app.route('/playlists/plm_parent_stations_more', methods=['GET', 'POST'])
@@ -6534,9 +6553,11 @@ def webpage_reports_queries():
         reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Number of Files', 'value': 'query_mtm_programs_by_number_of_files'})
         reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Size on Disk', 'value': 'query_mtm_programs_by_size_on_disk'})
         reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Average Size per File', 'value': 'query_mtm_programs_by_average_file_size'})
+        reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Duration', 'value': 'query_mtm_programs_by_duration'})
 
     if slm_playlist_manager:
         reports_queries_lists.append({'name': 'Linear: Stations - Parents and Children', 'value': 'query_plm_parent_children'})
+        reports_queries_lists.append({'name': 'Linear: Combined XML Guide Stations', 'value': 'query_plm_combined_xml_guide_stations'})
         if slm_channels_dvr_integration:
             reports_queries_lists.append({'name': 'Channels DVR: Stations by Channel Collection', 'value': 'query_mtm_stations_by_channel_collection'})
 
@@ -6971,7 +6992,8 @@ def run_query(query_name):
                             'query_mtm_programs_by_library_collection',
                             'query_mtm_programs_by_size_on_disk',
                             'query_mtm_programs_by_number_of_files',
-                            'query_mtm_programs_by_average_file_size'
+                            'query_mtm_programs_by_average_file_size',
+                            'query_mtm_programs_by_duration'
                        ]:
 
         # Get a list of Channels DVR Movies
@@ -7063,7 +7085,8 @@ def run_query(query_name):
             elif query_name in [
                                     'query_mtm_programs_by_size_on_disk',
                                     'query_mtm_programs_by_number_of_files',
-                                    'query_mtm_programs_by_average_file_size'
+                                    'query_mtm_programs_by_average_file_size',
+                                    'query_mtm_programs_by_duration'
                             ]:
 
                 dvr_files_data = get_channels_dvr_json('dvr_files')
@@ -7076,7 +7099,8 @@ def run_query(query_name):
                         dvr_files_data_processed.append({
                             "File ID": item.get("File ID", ''),
                             "Group ID": item.get("Group ID", ''),
-                            "File Size": item.get("File Size", 0)
+                            "File Size": item.get("File Size", 0),
+                            "Duration": item.get("Duration", 0)
                         })
 
                     dvr_files = pd.DataFrame(dvr_files_data_processed)
@@ -7152,7 +7176,35 @@ def run_query(query_name):
                                     END
                                 ) / 1073741824.0, 1
                             ) || ' GB'
-                        END AS "Average Size per File"
+                        END AS "Average Size per File",
+                        CASE
+                            WHEN SUM(
+                                CASE 
+                                    WHEN dvr_files."Duration" < 0 THEN 0
+                                    ELSE dvr_files."Duration"
+                                END
+                            ) IS NULL THEN NULL
+                            ELSE
+                                printf(
+                                    '%04d Hour(s) | %02d Minute(s)',
+                                    CAST(
+                                        (CAST(CEIL(SUM(
+                                            CASE 
+                                                WHEN dvr_files."Duration" < 0 THEN 0
+                                                ELSE dvr_files."Duration"
+                                            END
+                                        ) / 60.0) AS INTEGER)) / 60
+                                    AS INTEGER),
+                                    CAST(
+                                        (CAST(CEIL(SUM(
+                                            CASE 
+                                                WHEN dvr_files."Duration" < 0 THEN 0
+                                                ELSE dvr_files."Duration"
+                                            END
+                                        ) / 60.0) AS INTEGER)) % 60
+                                    AS INTEGER)
+                                )
+                        END AS "Total Duration"
                     FROM
                         channels_programs
                     LEFT JOIN
@@ -7166,6 +7218,39 @@ def run_query(query_name):
                         channels_programs.program_title,
                         channels_programs.program_year            
                     """
+
+    elif query_name in [
+                            'query_plm_combined_xml_guide_stations'
+                       ]:
+        
+        combined_xml_guide_stations_data = get_combined_xml_guide_stations()
+
+        if combined_xml_guide_stations_data:
+            run_query = True
+
+            for row in combined_xml_guide_stations_data:
+                logo_url = row.get('Station EPG Logo', '')
+                if logo_url:
+                    row['Station EPG Logo'] = (
+                        f'<img src="{logo_url}" '
+                        'style="width:55px;height:55px;object-fit:contain;display:block;margin-left:auto;margin-right:auto;vertical-align:middle;">'
+                    )
+                else:
+                    row['Station EPG Logo'] = ''
+
+            combined_xml_guide_stations = pd.DataFrame(combined_xml_guide_stations_data)
+
+            query = """
+            SELECT
+                "Station EPG Logo",
+                "Station EPG Name",
+                "Station EPG Guide ID"
+            FROM
+                combined_xml_guide_stations
+            ORDER BY
+                "Station EPG Name",
+                "Station EPG Guide ID"
+        """
 
     # Execute the query
     if run_query:
@@ -7189,6 +7274,53 @@ def run_query(query_name):
                 x["Type"].casefold(),
                 x["Name"].casefold()
             ))
+        elif query_name == 'query_mtm_programs_by_duration':
+            results = sorted(results, key=lambda x: (
+                -int(x["Total Duration"].split()[0]) if x["Total Duration"] not in [None, ""] else 0,
+                x["Type"].casefold(),
+                x["Name"].casefold()
+            ))
+
+    return results
+
+# Creates a list of guide stations from the combined XML guide
+def get_combined_xml_guide_stations():
+    temp_content = get_combined_xml_guide()
+    lines = temp_content.splitlines()
+    results = []
+    write_results = False
+    get_more = False
+    channel_id = ''
+    logo = ''
+    display_name = ''
+
+    for line in lines:
+
+        if "channel id=" in line:
+            channel_id = re.search(r'id="([^"]+)"', line).group(1)
+            get_more = True
+
+        if get_more:
+            if "display-name" in line:
+                display_name = re.search(r'<display-name>(.*?)</display-name>', line).group(1)
+            if "icon src" in line:
+                logo = re.search(r'icon src="([^"]+)"', line).group(1)
+
+        if "</channel>" in line:
+            write_results = True
+
+        if write_results:
+            results.append({
+                'Station EPG Logo': logo,
+                'Station EPG Name': display_name,
+                'Station EPG Guide ID': channel_id
+            })
+
+            write_results = False
+            get_more = False
+            channel_id = ''
+            logo = ''
+            display_name = ''
 
     return results
 
@@ -12576,28 +12708,42 @@ def check_website(url):
         print(f"{current_time()} INFO: Retrying in 1 minute...")
         time.sleep(60)
 
-# Check if a video stream is working
+# Check if a video stream is working and determine its type (HLS or MPEG-TS)
 def test_video_stream(url):
     status = None
     retries = 3
     delay = 5
 
     for attempt in range(retries):
-
         try:
-            with requests.get(url, headers=url_headers, stream=True, timeout=10) as response:
-                if response.status_code == 200:
-                    for chunk in response.iter_content(chunk_size=1024):
-                        if chunk:
-                            status = "okay"
-                            break
-                else:
-                    status = "fail"
-        except requests.exceptions.RequestException as e:
+            with requests.Session() as session:
+                resp = session.get(url, headers=url_headers, stream=True, timeout=10, allow_redirects=True)
+
+                with session.get(resp.url, headers=url_headers, stream=True, timeout=10) as response:
+                    if response.status_code == 200:
+                        first_byte = None
+                        for chunk in response.iter_content(chunk_size=1):
+                            if chunk:
+                                first_byte = chunk[0:1]
+                                break
+
+                        if first_byte is not None:
+                            if first_byte == b'G' or first_byte == b'\x47':
+                                status = "MPEG-TS"
+                            elif first_byte == b'#':
+                                status = "HLS"
+                            else:
+                                status = "okay"
+                        else:
+                            status = "fail"
+                    else:
+                        status = "fail"
+
+        except Exception as e:
             print(f"{current_time()} ERROR: {url} reports {e}")
             status = "fail"
 
-        if status == "okay":
+        if status in ("HLS", "MPEG-TS", "okay"):
             break
         elif attempt < retries - 1:
             print(f"{current_time()} INFO: '{url}' failed. Retrying in {delay} seconds...")
