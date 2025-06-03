@@ -29,12 +29,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.06.02.1803"
+slm_version = "v2025.06.03.1327"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.06.02.1803"
+    slm_version = "v2025.06.03.1327"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -3121,11 +3121,13 @@ def webpage_playlists(sub_page):
     global filter_description_assigned
     global filter_parent_assigned
     global filter_stream_format_override_assigned
+    global filter_station_status_assigned
     global filter_title_unassigned
     global filter_m3u_name_unassigned
     global filter_description_unassigned
     global filter_parent_unassigned
     global filter_stream_format_override_unassigned
+    global filter_station_status_unassigned
     global filter_parent_title
     global filter_parent_tvg_id_override
     global filter_parent_tvg_logo_override
@@ -3288,6 +3290,7 @@ def webpage_playlists(sub_page):
                     filter_description_unassigned = request.form.get('filter-description')
                     filter_parent_unassigned = request.form.get('filter-parent')
                     filter_stream_format_override_unassigned = request.form.get('filter-stream-format-override')
+                    filter_station_status_unassigned = request.form.get('filter-station-status')
 
                 elif sub_page == 'plm_modify_assigned_stations':
                     filter_title_assigned = request.form.get('filter-title')
@@ -3295,6 +3298,7 @@ def webpage_playlists(sub_page):
                     filter_description_assigned = request.form.get('filter-description')
                     filter_parent_assigned = request.form.get('filter-parent')
                     filter_stream_format_override_assigned = request.form.get('filter-stream-format-override')
+                    filter_station_status_assigned = request.form.get('filter-station-status')
                 
                 elif sub_page == 'plm_parent_stations':
                     filter_parent_title = request.form.get('filter-parent-title')
@@ -4241,6 +4245,7 @@ def webpage_playlists(sub_page):
                     filter_description_unassigned = ''
                     filter_parent_unassigned = ''
                     filter_stream_format_override_unassigned = ''
+                    filter_station_status_unassigned = ''
 
                 elif sub_page == 'plm_modify_assigned_stations':
                     filter_title_assigned = ''
@@ -4248,6 +4253,7 @@ def webpage_playlists(sub_page):
                     filter_description_assigned = ''
                     filter_parent_assigned = ''
                     filter_stream_format_override_assigned = ''
+                    filter_station_status_assigned = ''
                 
                 elif sub_page == 'plm_parent_stations':
                     filter_parent_title = ''
@@ -4290,11 +4296,13 @@ def webpage_playlists(sub_page):
         html_filter_description_assigned = filter_description_assigned,
         html_filter_parent_assigned = filter_parent_assigned,
         html_filter_stream_format_override_assigned = filter_stream_format_override_assigned,
+        html_filter_station_status_assigned = filter_station_status_assigned,
         html_filter_title_unassigned = filter_title_unassigned,
         html_filter_m3u_name_unassigned = filter_m3u_name_unassigned,
         html_filter_description_unassigned = filter_description_unassigned,
         html_filter_parent_unassigned = filter_parent_unassigned,
         html_filter_stream_format_override_unassigned = filter_stream_format_override_unassigned,
+        html_filter_station_status_unassigned = filter_station_status_unassigned,
         html_filter_parent_title = filter_parent_title,
         html_filter_parent_tvg_id_override = filter_parent_tvg_id_override,
         html_filter_parent_tvg_logo_override = filter_parent_tvg_logo_override,
@@ -4960,6 +4968,7 @@ def get_child_to_parents(sub_page):
 
                     child_to_parent_parent_channel_id = child_to_parent['parent_channel_id']
                     child_to_parent_parent_stream_format_override = child_to_parent['stream_format_override']
+                    child_to_parent_parent_child_station_check = child_to_parent['child_station_check']
                     child_to_parent_parent_enable_child_station_check = child_to_parent['enable_child_station_check']
 
                     if all_child_to_parents_append:
@@ -4969,7 +4978,8 @@ def get_child_to_parents(sub_page):
                             'm3u_name': child_to_parent_m3u_name,
                             'description': child_to_parent_description,
                             'parent_channel_id': child_to_parent_parent_channel_id,
-                            'stream_format_override': child_to_parent_parent_stream_format_override, 
+                            'stream_format_override': child_to_parent_parent_stream_format_override,
+                            'child_station_check': child_to_parent_parent_child_station_check,
                             'enable_child_station_check': child_to_parent_parent_enable_child_station_check
                         })
 
@@ -4984,6 +4994,7 @@ def get_child_to_parents(sub_page):
                     'description': sorted_all_child_to_parent['description'],
                     'parent_channel_id': sorted_all_child_to_parent['parent_channel_id'],
                     'stream_format_override': sorted_all_child_to_parent['stream_format_override'],
+                    'child_station_check': sorted_all_child_to_parent['child_station_check'],
                     'enable_child_station_check': sorted_all_child_to_parent['enable_child_station_check']
                 })
             else:
@@ -4994,6 +5005,7 @@ def get_child_to_parents(sub_page):
                     'description': sorted_all_child_to_parent['description'],
                     'parent_channel_id': sorted_all_child_to_parent['parent_channel_id'],
                     'stream_format_override': sorted_all_child_to_parent['stream_format_override'],
+                    'child_station_check': sorted_all_child_to_parent['child_station_check'],
                     'enable_child_station_check': sorted_all_child_to_parent['enable_child_station_check']
                 })
 
@@ -5001,13 +5013,14 @@ def get_child_to_parents(sub_page):
     if sub_page is None or sub_page == 'plm_main':
         total_records = len(all_child_to_parents)
 
-        unassigned_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Unassigned")
+        disabled_count = sum(1 for record in all_child_to_parents if record['child_station_check'] == "Disabled")
+        unassigned_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Unassigned" and record['child_station_check'] != "Disabled")
         ignore_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Ignore")
 
-        assigned_to_parent_ids = {record['parent_channel_id'] for record in all_child_to_parents if record['parent_channel_id'] not in ["Unassigned", "Ignore"]}
+        assigned_to_parent_ids = {record['parent_channel_id'] for record in all_child_to_parents if record['parent_channel_id'] not in ["Unassigned", "Ignore"] and record['child_station_check'] != "Disabled"}
         assigned_to_parent_count = len(assigned_to_parent_ids)
 
-        redundant_count = total_records - (unassigned_count + ignore_count + assigned_to_parent_count)
+        redundant_count = total_records - (unassigned_count + ignore_count + assigned_to_parent_count + disabled_count)
         
         all_child_to_parents_stats = {
             'total_records': total_records,
@@ -5019,6 +5032,8 @@ def get_child_to_parents(sub_page):
             'assigned_to_parent_percentage': calc_percentage(assigned_to_parent_count, total_records),
             'redundant_count': redundant_count,
             'redundant_percentage': calc_percentage(redundant_count, total_records),
+            'disabled_count': disabled_count,
+            'disabled_percentage': calc_percentage(disabled_count, total_records)
         }
 
     return unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count
@@ -6554,6 +6569,7 @@ def webpage_reports_queries():
         reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Size on Disk', 'value': 'query_mtm_programs_by_size_on_disk'})
         reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Average Size per File', 'value': 'query_mtm_programs_by_average_file_size'})
         reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Duration', 'value': 'query_mtm_programs_by_duration'})
+        reports_queries_lists.append({'name': 'Channels DVR: Movies / Shows / Video Groups by Average Size per Duration', 'value': 'query_mtm_programs_by_average_file_size_per_duration'})
 
     if slm_playlist_manager:
         reports_queries_lists.append({'name': 'Linear: Stations - Parents and Children', 'value': 'query_plm_parent_children'})
@@ -6993,7 +7009,8 @@ def run_query(query_name):
                             'query_mtm_programs_by_size_on_disk',
                             'query_mtm_programs_by_number_of_files',
                             'query_mtm_programs_by_average_file_size',
-                            'query_mtm_programs_by_duration'
+                            'query_mtm_programs_by_duration',
+                            'query_mtm_programs_by_average_file_size_per_duration'
                        ]:
 
         # Get a list of Channels DVR Movies
@@ -7086,7 +7103,8 @@ def run_query(query_name):
                                     'query_mtm_programs_by_size_on_disk',
                                     'query_mtm_programs_by_number_of_files',
                                     'query_mtm_programs_by_average_file_size',
-                                    'query_mtm_programs_by_duration'
+                                    'query_mtm_programs_by_duration',
+                                    'query_mtm_programs_by_average_file_size_per_duration'
                             ]:
 
                 dvr_files_data = get_channels_dvr_json('dvr_files')
@@ -7204,7 +7222,50 @@ def run_query(query_name):
                                         ) / 60.0) AS INTEGER)) % 60
                                     AS INTEGER)
                                 )
-                        END AS "Total Duration"
+                        END AS "Total Duration",
+                        CASE
+                            WHEN SUM(
+                                CASE 
+                                    WHEN dvr_files."Duration" < 0 THEN 0
+                                    ELSE dvr_files."Duration"
+                                END
+                            ) IS NULL OR SUM(
+                                CASE 
+                                    WHEN dvr_files."Duration" < 0 THEN 0
+                                    ELSE dvr_files."Duration"
+                                END
+                            ) = 0 THEN '<0.1 GB/Hour'
+                            WHEN ROUND(
+                                (SUM(
+                                    CASE 
+                                        WHEN channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                        WHEN channels_programs.program_type != 'MOVIE' AND dvr_files."Group ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                        ELSE 0
+                                    END
+                                ) / 1073741824.0) /
+                                (SUM(
+                                    CASE 
+                                        WHEN dvr_files."Duration" < 0 THEN 0
+                                        ELSE dvr_files."Duration"
+                                    END
+                                ) / 60.0 / 60.0), 1
+                            ) < 0.1 THEN '<0.1 GB/Hour'
+                            ELSE ROUND(
+                                (SUM(
+                                    CASE 
+                                        WHEN channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                        WHEN channels_programs.program_type != 'MOVIE' AND dvr_files."Group ID" = channels_programs.program_id THEN dvr_files."File Size"
+                                        ELSE 0
+                                    END
+                                ) / 1073741824.0) /
+                                (SUM(
+                                    CASE 
+                                        WHEN dvr_files."Duration" < 0 THEN 0
+                                        ELSE dvr_files."Duration"
+                                    END
+                                ) / 60.0 / 60.0), 1
+                            ) || ' GB/Hour'
+                        END AS "Average Size per Duration"
                     FROM
                         channels_programs
                     LEFT JOIN
@@ -7276,12 +7337,30 @@ def run_query(query_name):
             ))
         elif query_name == 'query_mtm_programs_by_duration':
             results = sorted(results, key=lambda x: (
-                -int(x["Total Duration"].split()[0]) if x["Total Duration"] not in [None, ""] else 0,
+                -parse_total_duration(x.get("Total Duration", "")),
+                x["Type"].casefold(),
+                x["Name"].casefold()
+            ))
+        elif query_name == 'query_mtm_programs_by_average_file_size_per_duration':
+            results = sorted(results, key=lambda x: (
+                -float(x["Average Size per Duration"].split()[0]) if x["Average Size per Duration"] not in ["<0.1 GB/Hour", None, ""] else 0,
                 x["Type"].casefold(),
                 x["Name"].casefold()
             ))
 
     return results
+
+# Parse "Total Duration" as hours and minutes for sorting
+def parse_total_duration(duration_str):
+    if not duration_str or "|" not in duration_str:
+        return 0
+    try:
+        hours_part, minutes_part = duration_str.split("|")
+        hours = int(hours_part.strip().split()[0])
+        minutes = int(minutes_part.strip().split()[0])
+        return hours * 60 + minutes
+    except Exception:
+        return 0
 
 # Creates a list of guide stations from the combined XML guide
 def get_combined_xml_guide_stations():
@@ -13465,11 +13544,13 @@ filter_m3u_name_assigned = ''
 filter_description_assigned = ''
 filter_parent_assigned = ''
 filter_stream_format_override_assigned = ''
+filter_station_status_assigned = ''
 filter_title_unassigned = ''
 filter_m3u_name_unassigned = ''
 filter_description_unassigned = ''
 filter_parent_unassigned = ''
 filter_stream_format_override_unassigned = ''
+filter_station_status_unassigned = ''
 filter_parent_title = ''
 filter_parent_tvg_id_override = ''
 filter_parent_tvg_logo_override = ''
