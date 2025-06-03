@@ -108,6 +108,17 @@
               </div>
             </div>
           </div>
+          {% if html_plm_check_child_station_status == 'On' %}
+            <div class="bar">
+              <div class="bar-label">Disabled</div>
+              <div class="bar-graph">
+                <div class="bar-fill" style="width: {{ html_all_child_to_parents_stats['disabled_percentage'] }};"></div>
+                <div class="bar-value">
+                  {{ '{:,.0f}'.format(html_all_child_to_parents_stats['disabled_count']) }} ({{ html_all_child_to_parents_stats['disabled_percentage'] }})
+                </div>
+              </div>
+            </div>
+          {% endif %}
         </div>
         <!-- Spacer row -->
         <div class="row">

@@ -7,7 +7,7 @@
 <style> 
   .child_to_parents .grid-container {
       display: grid;
-      grid-template-columns: 2fr 1fr 2.75fr 2.75fr 1fr 0.5fr 1fr;
+      grid-template-columns: 2fr 1fr 2.25fr 2.25fr 1fr 0.5fr 1fr 1fr;
       gap: 10px;
   }
 
@@ -70,7 +70,8 @@
             <div class="grid-item"><h6>Description</h6></div>
             <div class="grid-item"><h6>Parent Station</h6></div>
             <div class="grid-item"><h6>Stream Format Override</h6></div>
-            <div class="grid-item"><h6>Check Station Status
+            <div class="grid-item"><h6>Check Station Status</h6></div>
+            <div class="grid-item"><h6>Station Status
               <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Processes-%E2%80%90-Check-Station-Status" target="_blank">
                 <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
               </a>  
@@ -107,6 +108,9 @@
               </div>              
             </div>
             <div class="grid-item">
+              <hr style="border: 3px solid; width: 100%;">
+            </div>
+            <div class="grid-item">
               <button type="submit" name="action" value="assigned_child_to_parents_action_set_parent_all" class="btn bg-gradient-primary my-2 mb-2">Set Visible</button>
             </div>
           </div>
@@ -129,6 +133,9 @@
             <div class="grid-item">
               <hr style="border: 3px solid; width: 100%;">
             </div>            
+            <div class="grid-item">
+              <input type="text" id="filter-station-status" placeholder="Filter" name="filter-station-status" value="{{ html_filter_station_status_assigned }}">
+            </div>
             <div class="grid-item">
               <hr style="border: 3px solid; width: 100%;">
             </div>
@@ -225,6 +232,7 @@
     const filterDescription = document.getElementById('filter-description');
     const filterParent = document.getElementById('filter-parent');
     const filterStreamFormatOverride = document.getElementById('filter-stream-format-override');
+    const filterStationStatus = document.getElementById('filter-station-status');
 
     function applyFilters(records) {
         return records.filter(item => {
@@ -233,7 +241,8 @@
                 item.m3u_name.toLowerCase().includes(filterM3UName.value.toLowerCase()) &&
                 item.description.toLowerCase().includes(filterDescription.value.toLowerCase()) &&
                 parentMappings.find(mapping => mapping.parent_channel_id === item.parent_channel_id)?.parent_title.toLowerCase().includes(filterParent.value.toLowerCase()) &&
-                item.stream_format_override.toLowerCase().includes(filterStreamFormatOverride.value.toLowerCase())
+                item.stream_format_override.toLowerCase().includes(filterStreamFormatOverride.value.toLowerCase()) &&
+                item.child_station_check.toLowerCase().includes(filterStationStatus.value.toLowerCase())
             );
         });
     }
@@ -339,6 +348,18 @@
             formCheckDiv.appendChild(enableChildStationCheckInput);
             enableChildStationCheckItem.appendChild(formCheckDiv);
 
+            const stationStatusItem = document.createElement('div');
+            stationStatusItem.className = 'grid-item';
+            const stationStatusInput = document.createElement('input');
+            stationStatusInput.type = 'text';
+            stationStatusInput.id = `assigned_child_to_parents_child_station_check_${adjustedIndex}`;
+            stationStatusInput.name = `assigned_child_to_parents_child_station_check_${adjustedIndex}`;
+            stationStatusInput.value = item.child_station_check;
+            stationStatusInput.readOnly = true;
+            stationStatusInput.style.backgroundColor = '#d1cdcde5';
+            stationStatusInput.title = item.child_station_check;
+            stationStatusItem.appendChild(stationStatusInput);
+
             const setParentButtonItem = document.createElement('div');
             setParentButtonItem.className = 'grid-item';
             const setParentButton = document.createElement('button');
@@ -356,6 +377,7 @@
             gridContainer.appendChild(selectItem);
             gridContainer.appendChild(streamFormatOverrideItem);
             gridContainer.appendChild(enableChildStationCheckItem);
+            gridContainer.appendChild(stationStatusItem);
             gridContainer.appendChild(setParentButtonItem);
 
             recordContainer.appendChild(gridContainer);
@@ -403,6 +425,7 @@
     filterDescription.addEventListener('input', resetAndLoadRecords);
     filterParent.addEventListener('input', resetAndLoadRecords);
     filterStreamFormatOverride.addEventListener('input', resetAndLoadRecords);
+    filterStationStatus.addEventListener('input', resetAndLoadRecords);
 
     recordContainer.addEventListener('scroll', onScroll);
 
