@@ -29,12 +29,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.06.03.1327"
+slm_version = "v2025.06.05.1546"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.06.03.1327"
+    slm_version = "v2025.06.05.1546"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -7311,7 +7311,7 @@ def run_query(query_name):
             ORDER BY
                 "Station EPG Name",
                 "Station EPG Guide ID"
-        """
+            """
 
     # Execute the query
     if run_query:
@@ -7347,6 +7347,8 @@ def run_query(query_name):
                 x["Type"].casefold(),
                 x["Name"].casefold()
             ))
+        elif query_name == 'query_plm_combined_xml_guide_stations':
+            results = sorted(results, key=lambda x: (sort_key(x["Station EPG Name"].casefold()), sort_key(x["Station EPG Guide ID"].casefold())))
 
     return results
 
@@ -7372,34 +7374,57 @@ def get_combined_xml_guide_stations():
     channel_id = ''
     logo = ''
     display_name = ''
+    inside_display_name = False
+    display_name_buffer = []
 
     for line in lines:
 
-        if "channel id=" in line:
-            channel_id = re.search(r'id="([^"]+)"', line).group(1)
-            get_more = True
+        try:
 
-        if get_more:
-            if "display-name" in line:
-                display_name = re.search(r'<display-name>(.*?)</display-name>', line).group(1)
-            if "icon src" in line:
-                logo = re.search(r'icon src="([^"]+)"', line).group(1)
+            if "channel id=" in line:
+                channel_id = re.search(r'id="([^"]+)"', line).group(1)
+                get_more = True
 
-        if "</channel>" in line:
-            write_results = True
+            if get_more:
+                if not inside_display_name and re.search(r'<\s*display-name\s*>', line, re.IGNORECASE):
+                    match = re.search(r'<\s*display-name\s*>(.*?)<\s*/\s*display-name\s*>', line, re.IGNORECASE)
+                    if match:
+                        display_name = match.group(1).strip()
+                    else:
+                        inside_display_name = True
+                        after_open = re.split(r'<\s*display-name\s*>', line, flags=re.IGNORECASE)[-1]
+                        display_name_buffer = [after_open]
+                elif inside_display_name:
+                    if re.search(r'<\s*/\s*display-name\s*>', line, re.IGNORECASE):
+                        before_close = re.split(r'<\s*/\s*display-name\s*>', line, flags=re.IGNORECASE)[0]
+                        display_name_buffer.append(before_close)
+                        display_name = ' '.join(display_name_buffer).strip()
+                        inside_display_name = False
+                        display_name_buffer = []
+                    else:
+                        display_name_buffer.append(line)
 
-        if write_results:
-            results.append({
-                'Station EPG Logo': logo,
-                'Station EPG Name': display_name,
-                'Station EPG Guide ID': channel_id
-            })
+                if "icon src" in line:
+                    logo = re.search(r'icon src="([^"]+)"', line).group(1)
 
-            write_results = False
-            get_more = False
-            channel_id = ''
-            logo = ''
-            display_name = ''
+            if "</channel>" in line:
+                write_results = True
+
+            if write_results:
+                results.append({
+                    'Station EPG Logo': logo,
+                    'Station EPG Name': display_name,
+                    'Station EPG Guide ID': channel_id
+                })
+
+                write_results = False
+                get_more = False
+                channel_id = ''
+                logo = ''
+                display_name = ''
+
+        except Exception as e:
+            print(f"{current_time()} ERROR: While processing line '{line}', encountered '{e}'")
 
     return results
 
