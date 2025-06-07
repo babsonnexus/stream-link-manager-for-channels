@@ -29,12 +29,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.06.05.1546"
+slm_version = "v2025.06.07.1512"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.06.05.1546"
+    slm_version = "v2025.06.07.1512"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -10224,6 +10224,15 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
 
             if auto_bookmark['entry_id'] == bookmarks_status['entry_id']:
 
+                if auto_bookmark['object_type'] == "MOVIE":
+                    node_id = bookmarks_status['entry_id']
+                elif auto_bookmark['object_type'] == "SHOW":
+                    node_id = bookmarks_status['season_episode_id']
+                else:
+                    print(f"{current_time()} ERROR: Invalid object_type")
+
+                special_action = bookmarks_status['special_action']
+
                 stream_link_dirty = None
                 stream_link_reason = None
 
@@ -10233,8 +10242,6 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
                     bookmarks_status['stream_link_file'] = ''
         
                 if bookmarks_status['status'].lower() == "unwatched":
-
-                    special_action = bookmarks_status['special_action']
 
                     if special_action == "Make STRM" and original_release_date_list is None:
 
@@ -10252,13 +10259,6 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
 
                         for attempt in range(3):  # Limit retries to 3 attempts
                             try:
-
-                                if auto_bookmark['object_type'] == "MOVIE":
-                                    node_id = bookmarks_status['entry_id']
-                                elif auto_bookmark['object_type'] == "SHOW":
-                                    node_id = bookmarks_status['season_episode_id']
-                                else:
-                                    print(f"{current_time()} ERROR: Invalid object_type")
                                 
                                 if original_release_date_list is None or node_id in original_release_date_list:
                                     stream_link_details = get_offers(node_id, auto_bookmark['country_code'], auto_bookmark['language_code'])
@@ -10970,7 +10970,7 @@ def run_slm_new_recent_releases():
     # Get new episodes
     get_new_episodes(None)
     time.sleep(2)
-
+    
     # Generate Stream Links for New & Recent Releases
     original_release_date_list = get_original_release_date_list()
     generate_stream_links(original_release_date_list)
