@@ -29,12 +29,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.06.07.1512"
+slm_version = "v2025.07.06.1709"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.06.07.1512"
+    slm_version = "v2025.07.06.1709"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -72,6 +72,7 @@ def webpage_home():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_notifications = notifications
     )
 
@@ -668,6 +669,7 @@ def webpage_add_programs():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_valid_country_codes = valid_country_codes,
         html_country_code = country_code,
         html_valid_language_codes = valid_language_codes,
@@ -2477,6 +2479,7 @@ def webpage_modify_programs():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_sorted_bookmarks = sorted_bookmarks,
         html_entry_id_selected = entry_id_prior,
         html_program_modify_message = program_modify_message,
@@ -3022,6 +3025,7 @@ def webpage_manage_providers():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_settings_anchor_id = settings_anchor_id,
         html_slm_stream_address = slm_stream_address,
         html_slm_stream_address_prior = slm_stream_address_prior,
@@ -3136,6 +3140,7 @@ def webpage_playlists(sub_page):
     global filter_parent_preferred_playlist
     global parent_channel_id_prior
     global plm_streaming_stations
+    global plm_check_child_station_status_global
 
     templates = {
         'plm_main': 'main/playlists.html',
@@ -3224,7 +3229,7 @@ def webpage_playlists(sub_page):
                 break
 
         posts = ['_cancel', '_save', 'save_all', '_new']
-        inposts = ['_delete_', '_update_','_make_parent_', '_set_parent_', '_add_to_', '_more_']
+        inposts = ['_delete_', '_update_','_make_parent_', '_set_parent_', '_examine_', '_add_to_', '_more_']
         if playlists_action.endswith('_settings'):
 
             if playlists_action in ['playlist_manager_save_settings', 'internal_playlists_save_settings']:
@@ -3242,6 +3247,7 @@ def webpage_playlists(sub_page):
                             settings[12]['settings'] = int(max_stations_input)
                             settings[42]['settings'] = "On" if plm_url_tag_in_m3us_input == 'on' else "Off"
                             settings[59]['settings'] = "On" if plm_check_child_station_status_input == 'on' else "Off"
+                            plm_check_child_station_status_global = True if settings[59]['settings'] == "On" else None
                             if settings[42]['settings'] == "On":
                                 settings[43]['settings'] = f"{request.url_root}"
 
@@ -3282,7 +3288,7 @@ def webpage_playlists(sub_page):
 
         elif any(playlists_action.endswith(post) for post in posts) or any(inpost in playlists_action for inpost in inposts):
 
-            filter_inposts = ['_save', '_new', '_delete_', '_set_parent_', '_more_']
+            filter_inposts = ['_save', '_new', '_delete_', '_set_parent_', '_examine_', '_more_']
             if any(filter_inpost in playlists_action for filter_inpost in filter_inposts):
                 if sub_page is None or sub_page == 'plm_modify_unassigned_stations':
                     filter_title_unassigned = request.form.get('filter-title')
@@ -3966,7 +3972,7 @@ def webpage_playlists(sub_page):
                         parents = read_data(csv_playlistmanager_parents)
                         child_to_parent_mappings = get_child_to_parent_mappings(child_to_parent_mappings_default)
 
-            elif playlists_action.endswith('_save_all') or '_set_parent_' in playlists_action:
+            elif playlists_action.endswith('_save_all') or '_set_parent_' in playlists_action or '_examine_' in playlists_action:
 
                 if '_child_to_parents_action_' in playlists_action:
 
@@ -4071,11 +4077,12 @@ def webpage_playlists(sub_page):
 
                         send_child_to_parents.append({'child_m3u_id_channel_id': child_to_parents_channel_id_input, 'parent_channel_id': child_to_parents_parent_channel_id_input, 'stream_format_override': child_to_parents_stream_format_override_input, 'enable_child_station_check': child_to_parents_enable_child_station_check_input})
 
-                    if '_set_parent_' in playlists_action:
+                    if '_set_parent_' in playlists_action or '_examine_' in playlists_action:
 
                         if playlists_action.endswith('_set_parent_all'):
                             pass
 
+                        # This is currently removed from the webpage, but leaving the backend code in case it is decided to add this function back in. Also still using for Examine.
                         else:
                             send_child_to_parents_single = []
                             child_to_parents_action_set_parent_index = int(playlists_action.split('_')[-1]) - 1
@@ -4089,19 +4096,25 @@ def webpage_playlists(sub_page):
 
                             send_child_to_parents = send_child_to_parents_single
 
-                    # Write back
-                    for send_child_to_parent in send_child_to_parents:
-                        child_to_parents_channel_id = send_child_to_parent['child_m3u_id_channel_id']
-                        child_to_parents_parent_channel_id = send_child_to_parent['parent_channel_id']
-                        child_to_parents_stream_format_override = send_child_to_parent['stream_format_override']
-                        child_to_parents_enable_child_station_check = send_child_to_parent['enable_child_station_check']
-                        set_child_to_parent(child_to_parents_channel_id, child_to_parents_parent_channel_id, child_to_parents_stream_format_override, parents, child_to_parents_enable_child_station_check)
-                    
-                    parents = sorted(parents, key=lambda x: sort_key(x["parent_title"].casefold()))
-                    write_data(csv_playlistmanager_parents, parents)
-                    parents = read_data(csv_playlistmanager_parents)
-                    child_to_parent_mappings = get_child_to_parent_mappings(child_to_parent_mappings_default)
-                    unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents(sub_page)
+                    if '_examine_' in playlists_action:
+                        get_station_status(child_to_parents_channel_id_input_single, None)
+                        return redirect('/playlists/station_status')
+
+                    else:
+
+                        # Write back
+                        for send_child_to_parent in send_child_to_parents:
+                            child_to_parents_channel_id = send_child_to_parent['child_m3u_id_channel_id']
+                            child_to_parents_parent_channel_id = send_child_to_parent['parent_channel_id']
+                            child_to_parents_stream_format_override = send_child_to_parent['stream_format_override']
+                            child_to_parents_enable_child_station_check = send_child_to_parent['enable_child_station_check']
+                            set_child_to_parent(child_to_parents_channel_id, child_to_parents_parent_channel_id, child_to_parents_stream_format_override, parents, child_to_parents_enable_child_station_check)
+                        
+                        parents = sorted(parents, key=lambda x: sort_key(x["parent_title"].casefold()))
+                        write_data(csv_playlistmanager_parents, parents)
+                        parents = read_data(csv_playlistmanager_parents)
+                        child_to_parent_mappings = get_child_to_parent_mappings(child_to_parent_mappings_default)
+                        unassigned_child_to_parents, assigned_child_to_parents, all_child_to_parents_stats, playlists_station_count = get_child_to_parents(sub_page)
 
             elif '_update_' in playlists_action:
 
@@ -4276,6 +4289,7 @@ def webpage_playlists(sub_page):
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_playlists_anchor_id = playlists_anchor_id,
         html_playlists = playlists,
         html_preferred_playlists = preferred_playlists,
@@ -4497,7 +4511,7 @@ def get_combined_m3us():
     print(f"{current_time()} Finished combination of playlists.")
 
     run_child_station_mapping()
-    check_child_station_status()
+    check_child_station_status(None, None)
 
 # Does the child station mapping
 def run_child_station_mapping():
@@ -4653,11 +4667,16 @@ def run_child_station_mapping():
     print(f"{current_time()} Finished child station mapping.")
 
 # Checks that status of child stations
-def check_child_station_status():
+def check_child_station_status(check_child_station_status_single, check_child_station_status_single_url):
     print(f"{current_time()} Starting check of child stations...")
 
     settings = read_data(csv_settings)
     plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Status On/Off
+    plm_station_status_skip_after_fails = int(settings[63]['settings'])         # [63] PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)
+
+    playlists_fail_count = {}
+    skip_playlists = []
+    message = None
 
     stations = read_data(csv_playlistmanager_combined_m3us)
     maps = read_data(csv_playlistmanager_child_to_parent)
@@ -4670,17 +4689,56 @@ def check_child_station_status():
 
     not_ignore_stations = []
     disable_child_stations = []
+    skipped_child_stations = []
+    drm_child_stations = []
     hls_child_stations = []
     mpegts_child_stations = []
 
     if plm_check_child_station_status == "On":
-        for station in stations:
-            if station['m3u_id'] in playlist_active_lookup and station['m3u_id'] in playlist_station_check_lookup:
-                if playlist_active_lookup[station['m3u_id']] == 'On' and playlist_station_check_lookup[station['m3u_id']] == 'On':
+        
+        if check_child_station_status_single:
+            
+            if check_child_station_status_single == 'm3u_0000_manual':
+                not_ignore_stations.append({
+                    'station_playlist': f"Manual ({check_child_station_status_single_url})",
+                    'm3u_id': 'm3u_0000',
+                    'title': "Manual",
+                    'tvc_guide_title': "Manual",
+                    'channel_id': 'manual',
+                    'tvg_id': '',
+                    'tvg_name': '',
+                    'tvg_logo': '',
+                    'tvg_chno': '',
+                    'channel_number': '',
+                    'tvg_description': '',
+                    'tvc_guide_description': '',
+                    'group_title': '',
+                    'tvc_guide_stationid': '',
+                    'tvc_guide_art': '',
+                    'tvc_guide_tags': '',
+                    'tvc_guide_genres': '',
+                    'tvc_guide_categories': '',
+                    'tvc_guide_placeholders': '',
+                    'tvc_stream_vcodec': '',
+                    'tvc_stream_acodec': '',
+                    'url': check_child_station_status_single_url
+                })
+            
+            else:
+                for station in stations:
                     check_m3u_id_channel_id = f"{station['m3u_id']}_{station['channel_id']}"
-                    parent_channel_id = map_lookup.get(check_m3u_id_channel_id)
-                    if parent_channel_id and parent_channel_id != 'Ignore' and check_m3u_id_channel_id in enable_child_station_check_lookup:
+                    if check_m3u_id_channel_id == check_child_station_status_single:
                         not_ignore_stations.append(station)
+                        break
+            
+        else:
+            for station in stations:
+                if station['m3u_id'] in playlist_active_lookup and station['m3u_id'] in playlist_station_check_lookup:
+                    if playlist_active_lookup[station['m3u_id']] == 'On' and playlist_station_check_lookup[station['m3u_id']] == 'On':
+                        check_m3u_id_channel_id = f"{station['m3u_id']}_{station['channel_id']}"
+                        parent_channel_id = map_lookup.get(check_m3u_id_channel_id)
+                        if parent_channel_id and parent_channel_id != 'Ignore' and check_m3u_id_channel_id in enable_child_station_check_lookup:
+                            not_ignore_stations.append(station)
 
         if not_ignore_stations:
             for not_ignore_station in not_ignore_stations:
@@ -4688,32 +4746,61 @@ def check_child_station_status():
                 check_m3u_id_channel_id_url = not_ignore_station['url']
                 station_check_response = None
 
-                station_check_response = test_video_stream(check_m3u_id_channel_id_url)
-                print(f"{current_time()} INFO: {not_ignore_station['station_playlist']} responded '{station_check_response}'.")
+                if not_ignore_station['m3u_id'] in skip_playlists:
+                    station_check_response = 'Skipped'
+                else:
+                    station_check_response, stream_metadata = test_video_stream(check_m3u_id_channel_id_url)
+                message = f"{current_time()} INFO: {not_ignore_station['station_playlist']} responded '{station_check_response}'."
+                print(f"{message}")
 
                 if station_check_response == 'fail':
                     disable_child_stations.append(check_m3u_id_channel_id)
+
+                    # Increment the fail count for the playlist
+                    if not_ignore_station['m3u_id'] in playlists_fail_count:
+                        playlists_fail_count[not_ignore_station['m3u_id']] += 1
+                    else:
+                        playlists_fail_count[not_ignore_station['m3u_id']] = 1
+
+                    # If the fail count exceeds the threshold, add to skip list
+                    if plm_station_status_skip_after_fails != 0 and playlists_fail_count[not_ignore_station['m3u_id']] >= plm_station_status_skip_after_fails:
+                        skip_playlists.append(not_ignore_station['m3u_id'])                    
+
+                elif station_check_response == 'Skipped':
+                    skipped_child_stations.append(check_m3u_id_channel_id)
+                    
+                elif station_check_response == 'DRM':
+                    drm_child_stations.append(check_m3u_id_channel_id)
+
                 elif station_check_response == 'HLS':
                     hls_child_stations.append(check_m3u_id_channel_id)
+                
                 elif station_check_response == 'MPEG-TS':
                     mpegts_child_stations.append(check_m3u_id_channel_id)
 
     else:
         print(f"{current_time()} INFO: Check of child stations is disabled.")
 
-    for map in maps:
-        if map['child_m3u_id_channel_id'] in disable_child_stations:
-            map['child_station_check'] = 'Disabled'
-        elif map['child_m3u_id_channel_id'] in hls_child_stations:
-            map['child_station_check'] = 'HLS'
-        elif map['child_m3u_id_channel_id'] in mpegts_child_stations:
-            map['child_station_check'] = 'MPEG-TS'
-        else:
-            map['child_station_check'] = ''
-    
-    write_data(csv_playlistmanager_child_to_parent, maps)
+    if check_child_station_status_single != 'm3u_0000_manual':
+        for map in maps:
+            if map['child_m3u_id_channel_id'] in disable_child_stations:
+                map['child_station_check'] = 'Disabled'
+            elif map['child_m3u_id_channel_id'] in skipped_child_stations:
+                map['child_station_check'] = 'Disabled (Skipped Check)'
+            elif map['child_m3u_id_channel_id'] in drm_child_stations:
+                map['child_station_check'] = 'Disabled (DRM)'
+            elif map['child_m3u_id_channel_id'] in hls_child_stations:
+                map['child_station_check'] = 'HLS'
+            elif map['child_m3u_id_channel_id'] in mpegts_child_stations:
+                map['child_station_check'] = 'MPEG-TS'
+            elif check_child_station_status_single is None or check_child_station_status_single == '':
+                map['child_station_check'] = ''
+        
+        write_data(csv_playlistmanager_child_to_parent, maps)
 
     print(f"{current_time()} Finished check of child stations.")
+    
+    return stream_metadata, message
 
 # Parse the m3u Playlist to get all the details
 def parse_m3u(m3u_id, m3u_name, response):
@@ -5013,11 +5100,11 @@ def get_child_to_parents(sub_page):
     if sub_page is None or sub_page == 'plm_main':
         total_records = len(all_child_to_parents)
 
-        disabled_count = sum(1 for record in all_child_to_parents if record['child_station_check'] == "Disabled")
-        unassigned_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Unassigned" and record['child_station_check'] != "Disabled")
+        disabled_count = sum(1 for record in all_child_to_parents if record['child_station_check'].startswith("Disabled"))
+        unassigned_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Unassigned" and not record['child_station_check'].startswith("Disabled"))
         ignore_count = sum(1 for record in all_child_to_parents if record['parent_channel_id'] == "Ignore")
 
-        assigned_to_parent_ids = {record['parent_channel_id'] for record in all_child_to_parents if record['parent_channel_id'] not in ["Unassigned", "Ignore"] and record['child_station_check'] != "Disabled"}
+        assigned_to_parent_ids = {record['parent_channel_id'] for record in all_child_to_parents if record['parent_channel_id'] not in ["Unassigned", "Ignore"] and not record['child_station_check'].startswith("Disabled")}
         assigned_to_parent_count = len(assigned_to_parent_ids)
 
         redundant_count = total_records - (unassigned_count + ignore_count + assigned_to_parent_count + disabled_count)
@@ -5136,7 +5223,7 @@ def get_final_m3us_epgs():
 
             children = []
             for map in maps:
-                if map['parent_channel_id'] == channel_id and map['child_station_check'] != 'Disabled':
+                if map['parent_channel_id'] == channel_id and not map['child_station_check'].startswith('Disabled'):
                     children.append(map)
 
             children = [child for child in children if re.search(r'm3u_\d{4}', child['child_m3u_id_channel_id']).group(0) in playlist_preferences]
@@ -5769,6 +5856,7 @@ def webpage_playlists_parent_stations_more():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_parents = parents,
         html_parent_channel_id_prior = parent_channel_id_prior,
         html_parent_title = parent_title,
@@ -6087,6 +6175,7 @@ def webpage_playlists_streams():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_streaming_stations = streaming_stations,
         html_streaming_station_options = streaming_station_options,
         html_streaming_stations_source_test_prior = streaming_stations_source_test_prior,
@@ -6107,6 +6196,137 @@ def webpage_playlists_streams():
         html_plm_streaming_stations_max_stations = plm_streaming_stations_max_stations,
         html_settings_message = settings_message
     )
+
+# Check a Station Status and get additional details
+@app.route('/playlists/station_status', methods=['GET', 'POST'])
+def webpage_playlists_station_status():
+    global station_status_child_m3u_id_channel_id_prior
+    global station_status_manual_link_prior
+    global station_status_results_prior
+    global station_status_message_prior
+
+    settings = read_data(csv_settings)
+    plm_station_status_number_attempts = settings[61]['settings']           # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
+    plm_station_status_delay_attempts = settings[62]['settings']            # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
+    plm_station_status_skip_after_fails = settings[63]['settings']          # [63] PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)
+    settings_message = ''
+    
+    station_status_child_m3u_id_channel_id_input = None
+    station_status_manual_link_input = None
+    
+    station_status_selections = [{
+        'child_m3u_id_channel_id': 'm3u_0000_manual',
+        'station_playlist': 'Manual (Input Link Below)'
+    }]
+    
+    stations = read_data(csv_playlistmanager_combined_m3us)
+    stations = sorted(stations, key=lambda x: sort_key(x["station_playlist"].casefold()))
+    
+    for station in stations:
+        station_status_selections.append({
+            'child_m3u_id_channel_id': f"{station['m3u_id']}_{station['channel_id']}",
+            'station_playlist': station['station_playlist']
+        })
+
+    if request.method == 'POST':
+        action = request.form['action']
+
+        if action.endswith('settings'):
+
+            if action == 'plm_station_status_save_settings':
+                plm_station_status_number_attempts_input = request.form.get('plm_station_status_number_attempts')
+                plm_station_status_delay_attempts_input = request.form.get('plm_station_status_delay_attempts')
+                plm_station_status_skip_after_fails_input = request.form.get('plm_station_status_skip_after_fails')
+
+                try:
+                    if int(plm_station_status_number_attempts_input) > 0 and int(plm_station_status_delay_attempts_input) > 0 and int(plm_station_status_skip_after_fails_input) >= 0:
+                        settings[61]['settings'] = int(plm_station_status_number_attempts_input)
+                        settings[62]['settings'] = int(plm_station_status_delay_attempts_input)
+                        settings[63]['settings'] = int(plm_station_status_skip_after_fails_input)
+
+                    else:
+                        settings_message = f"{current_time()} ERROR: For Station Status 'Number of Attempts' and 'Delay Between Attempts' must be positive integers, and 'Skip Playlist After Fails' must be the same or zero to disable."
+                
+                except ValueError:
+                    settings_message = f"{current_time()} ERROR: For Station Status, 'Number of Attempts', 'Delay Between Attempts', and 'Skip Playlist After Fails' must be numbers."
+
+                write_data(csv_settings, settings)
+                settings = read_data(csv_settings)
+                plm_station_status_number_attempts = settings[61]['settings']           # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
+                plm_station_status_delay_attempts = settings[62]['settings']            # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
+                plm_station_status_skip_after_fails = settings[63]['settings']          # [63] PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)
+
+        if action.startswith('station_status'):
+            
+            if action.endswith('examine'):
+                station_status_child_m3u_id_channel_id_input = request.form.get('station_status_child_m3u_id_channel_id')
+                
+                if station_status_child_m3u_id_channel_id_input == 'm3u_0000_manual':
+                    station_status_manual_link_input = request.form.get('station_status_manual_link')
+                    
+                get_station_status(station_status_child_m3u_id_channel_id_input, station_status_manual_link_input)
+
+            elif action.endswith('cancel'):
+                station_status_child_m3u_id_channel_id_prior = 'm3u_0000_manual'
+                station_status_manual_link_prior = ''
+                station_status_results_prior = []
+                station_status_message_prior = ''
+
+    return render_template(
+        'main/playlists_station_status.html',
+        segment = 'plm_station_status',
+        html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
+        html_settings_message = settings_message,
+        html_plm_station_status_number_attempts = plm_station_status_number_attempts,
+        html_plm_station_status_delay_attempts = plm_station_status_delay_attempts,
+        html_plm_station_status_skip_after_fails = plm_station_status_skip_after_fails,
+        html_station_status_selections = station_status_selections,
+        html_station_status_child_m3u_id_channel_id_prior = station_status_child_m3u_id_channel_id_prior,
+        html_station_status_manual_link_prior = station_status_manual_link_prior,
+        html_station_status_results_prior = station_status_results_prior,
+        html_station_status_message_prior = station_status_message_prior
+    )
+
+# Gets the Station Status for a single child station
+def get_station_status(station_status_child_m3u_id_channel_id_input, station_status_manual_link_input):
+    global station_status_child_m3u_id_channel_id_prior
+    global station_status_manual_link_prior
+    global station_status_results_prior
+    global station_status_message_prior
+
+    station_status_results_input = []
+    station_status_message_input = ''
+
+    if station_status_child_m3u_id_channel_id_input:
+        
+        if station_status_manual_link_input is None or station_status_manual_link_input == '':
+            if station_status_child_m3u_id_channel_id_input == 'm3u_0000_manual':
+                station_status_manual_link_input = "You must enter a link to use the 'Manual' examination"
+            else:
+                station_status_manual_link_input = ''
+                
+        station_status_manual_link_prior = station_status_manual_link_input
+            
+        station_status_results_input, station_status_message_input = check_child_station_status(station_status_child_m3u_id_channel_id_input, station_status_manual_link_input)
+
+    station_status_child_m3u_id_channel_id_prior = station_status_child_m3u_id_channel_id_input
+    
+    if station_status_results_input:                      
+        station_status_results_prior = station_status_results_input    
+    else:
+        station_status_results_prior = []
+
+    if station_status_message_input:
+        station_status_message_prior = station_status_message_input
+    else:
+        station_status_message_prior = ''
 
 # Creates an m3u8 or video file for an individual live stream (HLS) or static video
 @app.route('/playlists/streams/stream', methods=['GET'])
@@ -6609,6 +6829,7 @@ def webpage_reports_queries():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_slm_query = slm_query,
         html_reports_queries_lists = reports_queries_lists,
         html_select_report_query_prior = select_report_query_prior
@@ -7035,7 +7256,8 @@ def run_query(query_name):
                         "program_type": "MOVIE",
                         "program_id": item.get("ID", ''),
                         "program_title": item.get("Title", ''),
-                        "program_year": '' if item.get("Release Year", 0) == 0 else item.get("Release Year", '')
+                        "program_year": '' if item.get("Release Year", 0) == 0 else item.get("Release Year", ''),
+                        "program_labels": item.get("Labels", '')
                     }
                 )
 
@@ -7046,7 +7268,8 @@ def run_query(query_name):
                         "program_type": "SHOW",
                         "program_id": item.get("ID", ''),
                         "program_title": item.get("Name", ''),
-                        "program_year": '' if item.get("Release Year", 0) == 0 else item.get("Release Year", '')
+                        "program_year": '' if item.get("Release Year", 0) == 0 else item.get("Release Year", ''),
+                        "program_labels": item.get("Labels", '')
                     }
                 )
 
@@ -7057,7 +7280,8 @@ def run_query(query_name):
                         "program_type": "VIDEO",
                         "program_id": item.get("ID", ''),
                         "program_title": item.get("Name", ''),
-                        "program_year": '' if item.get("Release Year", 0) == 0 else item.get("Release Year", '')
+                        "program_year": '' if item.get("Release Year", 0) == 0 else item.get("Release Year", ''),
+                        "program_labels": item.get("Labels", '')
                     }
                 )
 
@@ -7083,6 +7307,7 @@ def run_query(query_name):
                                 WHEN channels_programs.program_type = 'SHOW' THEN ' (' || channels_programs.program_year || ')' 
                                 ELSE '' 
                             END AS "Name",
+                        channels_programs.program_labels AS "Labels",
                         CASE
                             WHEN GROUP_CONCAT(items_by_library_collection.library_collection_name, ', ') IS NULL THEN 'No Library Collection'
                             ELSE GROUP_CONCAT(items_by_library_collection.library_collection_name, ', ')
@@ -7096,7 +7321,8 @@ def run_query(query_name):
                     GROUP BY
                         channels_programs.program_type,
                         channels_programs.program_title,
-                        channels_programs.program_year
+                        channels_programs.program_year,
+                        channels_programs.program_labels
                     """
 
             elif query_name in [
@@ -7131,6 +7357,7 @@ def run_query(query_name):
                                 WHEN channels_programs.program_type = 'SHOW' THEN ' (' || channels_programs.program_year || ')' 
                                 ELSE '' 
                             END AS "Name",
+                        channels_programs.program_labels AS "Labels",
                         COUNT(
                             CASE 
                                 WHEN channels_programs.program_type = 'MOVIE' AND dvr_files."File ID" = channels_programs.program_id THEN 1
@@ -7277,7 +7504,8 @@ def run_query(query_name):
                     GROUP BY
                         channels_programs.program_type,
                         channels_programs.program_title,
-                        channels_programs.program_year            
+                        channels_programs.program_year,
+                        channels_programs.program_labels
                     """
 
     elif query_name in [
@@ -7508,6 +7736,7 @@ def webpage_tools_gracenotesearch():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_gracenote_search_results = gracenote_search_results,
         html_gracenote_search_entry_prior = gracenote_search_entry_prior,
         html_gracenote_search_message = gracenote_search_message
@@ -7556,6 +7785,7 @@ def webpage_tools_csvexplorer():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_channels_api_url = channels_api_url,
         html_tools_csvexplorer_message = tools_csvexplorer_message,
         html_csv_explorer_results = csv_explorer_results,
@@ -7718,6 +7948,7 @@ def webpage_tools_channelsclients():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_tools_channelsclients_message = tools_channelsclients_message,
         html_channels_clients = channels_clients,
         html_local_channels_clients = local_channels_clients,
@@ -8091,6 +8322,7 @@ def webpage_tools_automation():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_anchor = anchor,
         html_automation_message = automation_message,
         html_automation_frequencies = automation_frequencies,
@@ -11386,6 +11618,7 @@ def webpage_files():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         table_html=table_html,
         replace_message=replace_message,
         html_file_lists = file_lists,
@@ -11519,6 +11752,7 @@ def webpage_logs():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_log_filename_fullpath=log_filename_fullpath,
         html_page_lines=page_lines,
         html_page=page,
@@ -11721,6 +11955,7 @@ def webpage_settings():
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
+        html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_settings_anchor_id = settings_anchor_id,
         html_channels_url = channels_url,
         html_channels_url_prior = channels_url_prior,
@@ -12657,6 +12892,9 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": 7}, 60, "MTM: Remove old Channels DVR Backups Days to Keep")
         check_and_append(csv_file, {"settings": "Off"}, 61, "PLM/MTM: Check Child Station Status On/Off")
         check_and_append(csv_file, {"settings": "Off"}, 62, "MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off")
+        check_and_append(csv_file, {"settings": 3}, 63, "PLM/MTM: Check Child Station Status Max Number of Retry Attempts")
+        check_and_append(csv_file, {"settings": 5}, 64, "PLM/MTM: Check Child Station Status Retry Delay in Seconds")
+        check_and_append(csv_file, {"settings": 0}, 65, "PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -12722,7 +12960,10 @@ def initial_data(csv_file):
                     {"settings": "Every 24 hours"},                                            # [57] MTM: Remove old Channels DVR Backups Frequency
                     {"settings": 7},                                                           # [58] MTM: Remove old Channels DVR Backups Days to Keep
                     {"settings": "Off"},                                                       # [59] PLM/MTM: Check Child Station Status On/Off
-                    {"settings": "Off"}                                                        # [60] MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off
+                    {"settings": "Off"},                                                       # [60] MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off
+                    {"settings": 3},                                                           # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
+                    {"settings": 5},                                                           # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
+                    {"settings": 0}                                                            # [63] PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)
         ]        
 
     # Stream Link/File Manager
@@ -12815,8 +13056,10 @@ def check_website(url):
 # Check if a video stream is working and determine its type (HLS or MPEG-TS)
 def test_video_stream(url):
     status = None
-    retries = 3
-    delay = 5
+
+    settings = read_data(csv_settings)
+    retries = int(settings[61]['settings'])  # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
+    delay = int(settings[62]['settings'])    # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
 
     for attempt in range(retries):
         try:
@@ -12855,7 +13098,187 @@ def test_video_stream(url):
         else:
             print(f"{current_time()} INFO: '{url}' still failed after {retries} attempts.")
 
-    return status
+    stream_metadata = []
+    if status in ("HLS", "MPEG-TS", "okay"):
+        try:
+            with requests.Session() as session:
+                response = session.get(url, headers=url_headers, stream=True, timeout=10, allow_redirects=True)
+                # HTTP headers
+                for k, v in response.headers.items():
+                    stream_metadata.append({"field": f"Header: {k}", "value": v})
+
+                # Content-Type
+                if "Content-Type" in response.headers:
+                    stream_metadata.append({"field": "Content Type", "value": response.headers["Content-Type"]})
+
+                # Content-Length
+                if "Content-Length" in response.headers:
+                    stream_metadata.append({"field": "Content Length", "value": response.headers["Content-Length"]})
+
+                # DRM detection (headers)
+                drm_detected = False
+                drm_headers = ["x-drm", "drm-type", "x-playready", "x-widevine", "x-fairplay", "license", "x-license-url"]
+                for h in drm_headers:
+                    if h in response.headers:
+                        stream_metadata.append({"field": "DRM Detected", "value": True})
+                        stream_metadata.append({"field": "DRM Type", "value": response.headers[h]})
+                        drm_detected = True
+                        break
+
+                # Manifest/playlist inspection for HLS/DASH
+                content_type = response.headers.get("Content-Type", "")
+                manifest_drm_type = None
+                if status == "HLS" or "application/vnd.apple.mpegurl" in content_type or url.endswith(".m3u8"):
+                    manifest = response.content.decode(errors="ignore")
+                    if "#EXT-X-STREAM-INF" in manifest:
+                        stream_metadata.append({"field": "HLS Variant Playlist", "value": True})
+                    codecs_found = []
+                    resolutions_found = []
+                    for line in manifest.splitlines():
+                        if line.startswith("#EXT-X-STREAM-INF"):
+                            # Extract RESOLUTION
+                            res_match = re.search(r'RESOLUTION=([0-9]+x[0-9]+)', line)
+                            if res_match:
+                                resolutions_found.append(res_match.group(1))
+                            # Extract CODECS
+                            codecs_match = re.search(r'CODECS="([^"]+)"', line)
+                            if codecs_match:
+                                codecs_found.append(codecs_match.group(1))
+                    if codecs_found:
+                        stream_metadata.append({"field": "Codecs", "value": "; ".join(codecs_found)})
+                    if resolutions_found:
+                        stream_metadata.append({"field": "Resolutions", "value": ", ".join(resolutions_found)})
+                    # DRM in manifest
+                    if "widevine" in manifest.lower():
+                        stream_metadata.append({"field": "DRM Detected (HLS)", "value": True})
+                        stream_metadata.append({"field": "DRM Type (HLS)", "value": "Widevine"})
+                        drm_detected = True
+                        manifest_drm_type = "Widevine"
+                    elif "playready" in manifest.lower():
+                        stream_metadata.append({"field": "DRM Detected (HLS)", "value": True})
+                        stream_metadata.append({"field": "DRM Type (HLS)", "value": "PlayReady"})
+                        drm_detected = True
+                        manifest_drm_type = "PlayReady"
+                    elif "fairplay" in manifest.lower():
+                        stream_metadata.append({"field": "DRM Detected (HLS)", "value": True})
+                        stream_metadata.append({"field": "DRM Type (HLS)", "value": "FairPlay"})
+                        drm_detected = True
+                        manifest_drm_type = "FairPlay"
+
+                # MPEG-TS advanced inspection (pure Python)
+                if status == "MPEG-TS":
+                    try:
+                        ts_bytes = response.raw.read(188 * 1000)
+                        ts_info = inspect_mpeg_ts_stream(ts_bytes)
+                        if ts_info.get("pids"):
+                            stream_metadata.append({"field": "MPEG-TS PIDs", "value": str(ts_info["pids"])})
+                        if ts_info.get("programs"):
+                            stream_metadata.append({"field": "MPEG-TS Programs", "value": str(ts_info["programs"])})
+                        if ts_info.get("streams"):
+                            stream_metadata.append({"field": "MPEG-TS Streams", "value": str(ts_info["streams"])})
+                        if ts_info.get("codec_hints"):
+                            stream_metadata.append({"field": "MPEG-TS Codecs", "value": ", ".join(ts_info["codec_hints"])})
+                        # MPEG-TS DRM detection (heuristic)
+                        if ts_info.get("drm_detected"):
+                            stream_metadata.append({"field": "DRM Detected (MPEG-TS)", "value": True})
+                            stream_metadata.append({"field": "DRM Type (MPEG-TS)", "value": ts_info.get("drm_type", "Conditional Access/ECM/EMM/Private Data")})
+                            drm_detected = True
+                    except Exception as e:
+                        stream_metadata.append({"field": "MPEG-TS Inspect Error", "value": str(e)})
+
+                # If DRM detected, update status
+                if drm_detected or manifest_drm_type:
+                    status = "DRM"
+
+        except Exception as e:
+            stream_metadata.append({"field": "Metadata Error", "value": str(e)})
+
+    return status, stream_metadata
+
+# Inspect MPEG-TS stream bytes and extract basic metadata. Returns a dict with PIDs, program info, stream types, and DRM heuristic.
+def inspect_mpeg_ts_stream(ts_bytes, max_packets=1000):
+    from collections import defaultdict
+
+    PACKET_SIZE = 188
+    pids = set()
+    programs = {}
+    streams = defaultdict(list)
+    codec_hints = set()
+    pat_pid = 0x0000
+    pmt_pids = set()
+    program_map = {}
+    drm_detected = False
+    drm_type = None
+
+    # Common CA/DRM PIDs and stream types
+    drm_pids = {0x0B, 0x09, 0x0E, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x1FFF}
+    drm_stream_types = {0x06}  # Private data, often used for ECM/EMM
+
+    def parse_pat(packet):
+        section_length = ((packet[6] & 0x0F) << 8) | packet[7]
+        i = 8
+        while i < 8 + section_length - 4:
+            program_number = (packet[i] << 8) | packet[i+1]
+            pid = ((packet[i+2] & 0x1F) << 8) | packet[i+3]
+            if program_number != 0:
+                program_map[program_number] = pid
+                pmt_pids.add(pid)
+            i += 4
+
+    def parse_pmt(packet):
+        nonlocal drm_detected, drm_type
+        section_length = ((packet[6] & 0x0F) << 8) | packet[7]
+        program_info_length = ((packet[10] & 0x0F) << 8) | packet[11]
+        i = 12 + program_info_length
+        while i < 8 + section_length - 4:
+            if i+4 > len(packet):
+                break
+            stream_type = packet[i]
+            elementary_pid = ((packet[i+1] & 0x1F) << 8) | packet[i+2]
+            streams[elementary_pid].append(stream_type)
+            # Codec hints
+            if stream_type == 0x1B:
+                codec_hints.add("H.264/AVC")
+            elif stream_type == 0x24:
+                codec_hints.add("H.265/HEVC")
+            elif stream_type == 0x0F:
+                codec_hints.add("AAC")
+            elif stream_type == 0x03 or stream_type == 0x04:
+                codec_hints.add("MPEG-2 Audio")
+            elif stream_type == 0x02:
+                codec_hints.add("MPEG-2 Video")
+            elif stream_type == 0x06:
+                codec_hints.add("Private data")
+            # Heuristic DRM detection
+            if elementary_pid in drm_pids or stream_type in drm_stream_types:
+                drm_detected = True
+                drm_type = "Conditional Access/ECM/EMM/Private Data"
+            i += 5
+
+    for i in range(0, min(len(ts_bytes), PACKET_SIZE * max_packets), PACKET_SIZE):
+        packet = ts_bytes[i:i+PACKET_SIZE]
+        if len(packet) < PACKET_SIZE or packet[0] != 0x47:
+            continue
+        pid = ((packet[1] & 0x1F) << 8) | packet[2]
+        pids.add(pid)
+        payload_unit_start = (packet[1] & 0x40) != 0
+        if pid == pat_pid and payload_unit_start:
+            pointer_field = packet[4]
+            pat_start = 5 + pointer_field
+            parse_pat(packet[pat_start:])
+        elif pid in pmt_pids and payload_unit_start:
+            pointer_field = packet[4]
+            pmt_start = 5 + pointer_field
+            parse_pmt(packet[pmt_start:])
+
+    return {
+        "pids": sorted(pids),
+        "programs": program_map,
+        "streams": {pid: types for pid, types in streams.items()},
+        "codec_hints": sorted(codec_hints),
+        "drm_detected": drm_detected,
+        "drm_type": drm_type
+    }
 
 # Used to loop through a URL that might error
 def fetch_url(url, retries, delay):
@@ -13645,6 +14068,10 @@ plm_fields_base = [
     {'field_id': 'tvc_guide_categories', 'field_name': 'Guide Item Categories (tvc-guide-categories)'},
     {'field_id': 'url', 'field_name': 'URL'}
 ]
+station_status_child_m3u_id_channel_id_prior = 'm3u_0000_manual'
+station_status_manual_link_prior = ''
+station_status_results_prior = []
+station_status_message_prior = ''
 
 ### Start-up process and safety checks
 # Program directories
@@ -13749,21 +14176,27 @@ for csv_file in csv_files:
     check_and_create_csv(csv_file)
 
 global_settings = read_data(csv_settings)
+
 slm_playlist_manager = None
 if global_settings[10]['settings'] == "On":
     slm_playlist_manager = True
+
 slm_stream_link_file_manager = None
 if global_settings[23]['settings'] == "On":
     slm_stream_link_file_manager = True
+
 slm_channels_dvr_integration = None
 if global_settings[24]['settings'] == "On":
     slm_channels_dvr_integration = True
+
 slm_media_tools_manager = None
 if global_settings[28]['settings'] == "On":
     slm_media_tools_manager = True
+
 plm_streaming_stations = None
 if global_settings[39]['settings'] == "On":
     plm_streaming_stations = True
+
     if global_settings[45]['settings'] == "On":
         streaming_stations = read_data(csv_playlistmanager_streaming_stations)
 
@@ -13776,6 +14209,10 @@ if global_settings[39]['settings'] == "On":
         # Turn off to not run again
         global_settings[45]['settings'] = "Off"
         write_data(csv_settings, global_settings)
+
+plm_check_child_station_status_global = None
+if global_settings[59]['settings'] == "On":
+    plm_check_child_station_status_global = True
 
 if slm_channels_dvr_integration:
     check_channels_url(None)
