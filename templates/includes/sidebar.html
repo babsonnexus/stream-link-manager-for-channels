@@ -62,85 +62,96 @@
         </li>
       {% endif %}
       {% if html_slm_playlist_manager %}
-      <li class="nav-item">
-        <a class="nav-link text-white" 
-            data-bs-toggle="collapse" href="#collapsePlaylistManager" role="button" aria-expanded="false" aria-controls="collapsePlaylistManager">
-          <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-            <i class="material-icons opacity-10">playlist_play</i>
-          </div>
-          <span class="nav-link-text ms-1">Linear</span>
-        </a>
-        {% set playlist_segments = ['plm_main', 'plm_modify_assigned_stations', 'plm_modify_unassigned_stations', 'plm_parent_stations', 'plm_parent_stations_more', 'plm_manage', 'plm_streams'] %}
-        <div class="collapse {% if segment in playlist_segments %}show{% endif %}" id="collapsePlaylistManager">
-          <ul class="navbar-nav ms-3">
-            <li class="nav-item">
-              <a class="nav-link text-white {% if 'plm_main' in segment %} active bg-gradient-primary {% endif %}" 
-                  href="/playlists/plm_main">
-                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                  <i class="material-icons opacity-10">playlist_add_check</i>
-                </div>
-                <span class="nav-link-text ms-1">Final Playlists</span>
-              </a>
-            </li>
-            {% if html_plm_streaming_stations %}
+        <li class="nav-item">
+          <a class="nav-link text-white" 
+              data-bs-toggle="collapse" href="#collapsePlaylistManager" role="button" aria-expanded="false" aria-controls="collapsePlaylistManager">
+            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="material-icons opacity-10">playlist_play</i>
+            </div>
+            <span class="nav-link-text ms-1">Linear</span>
+          </a>
+          {% set playlist_segments = ['plm_main', 'plm_modify_assigned_stations', 'plm_modify_unassigned_stations', 'plm_parent_stations', 'plm_parent_stations_more', 'plm_manage', 'plm_streams', 'plm_station_status'] %}
+          <div class="collapse {% if segment in playlist_segments %}show{% endif %}" id="collapsePlaylistManager">
+            <ul class="navbar-nav ms-3">
               <li class="nav-item">
-                <a class="nav-link text-white {% if 'plm_streams' in segment %} active bg-gradient-primary {% endif %}" 
-                    href="/playlists/streams">
+                <a class="nav-link text-white {% if 'plm_main' in segment %} active bg-gradient-primary {% endif %}" 
+                    href="/playlists/plm_main">
                   <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                    <i class="material-icons opacity-10">queue_play_next</i>
+                    <i class="material-icons opacity-10">playlist_add_check</i>
                   </div>
-                  <span class="nav-link-text ms-1">Streaming Stations</span>
+                  <span class="nav-link-text ms-1">Final Playlists</span>
                 </a>
               </li>
-            {% endif %}
-            <li class="nav-item">
-              <a class="nav-link text-white {% if 'plm_modify_unassigned_stations' in segment %} active bg-gradient-primary {% endif %}" 
-                  href="/playlists/plm_modify_unassigned_stations">
-                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                  <i class="material-icons opacity-10">assignment_late</i>
-                </div>
-                <span class="nav-link-text ms-1">Unassigned Stations</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link text-white {% if 'plm_modify_assigned_stations' in segment %} active bg-gradient-primary {% endif %}" 
-                  href="/playlists/plm_modify_assigned_stations">
-                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                  <i class="material-icons opacity-10">assignment</i>
-                </div>
-                <span class="nav-link-text ms-1">Assigned Stations</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link text-white {% if segment == 'plm_parent_stations' %} active bg-gradient-primary {% endif %}" 
-                  href="/playlists/plm_parent_stations">
-                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                  <i class="material-icons opacity-10">escalator_warning</i>
-                </div>
-                <span class="nav-link-text ms-1">Parent Stations</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link text-white {% if segment == 'plm_parent_stations_more' %} active bg-gradient-primary {% endif %}" 
-                  href="/playlists/plm_parent_stations_more">
-                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                  <i class="material-icons opacity-10">family_restroom</i>
-                </div>
-                <span class="nav-link-text ms-1">More Parents</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link text-white {% if 'plm_manage' in segment %} active bg-gradient-primary {% endif %}" 
-                  href="/playlists/plm_manage">
-                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                  <i class="material-icons opacity-10">subscriptions</i>
-                </div>
-                <span class="nav-link-text ms-1">Manage Playlists</span>
-              </a>
-            </li>
-          </ul>
-        </div>
-      </li>
+              {% if html_plm_streaming_stations %}
+                <li class="nav-item">
+                  <a class="nav-link text-white {% if 'plm_streams' in segment %} active bg-gradient-primary {% endif %}" 
+                      href="/playlists/streams">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                      <i class="material-icons opacity-10">queue_play_next</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Streaming Stations</span>
+                  </a>
+                </li>
+              {% endif %}
+              <li class="nav-item">
+                <a class="nav-link text-white {% if 'plm_modify_unassigned_stations' in segment %} active bg-gradient-primary {% endif %}" 
+                    href="/playlists/plm_modify_unassigned_stations">
+                  <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                    <i class="material-icons opacity-10">assignment_late</i>
+                  </div>
+                  <span class="nav-link-text ms-1">Unassigned Stations</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-white {% if 'plm_modify_assigned_stations' in segment %} active bg-gradient-primary {% endif %}" 
+                    href="/playlists/plm_modify_assigned_stations">
+                  <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                    <i class="material-icons opacity-10">assignment</i>
+                  </div>
+                  <span class="nav-link-text ms-1">Assigned Stations</span>
+                </a>
+              </li>
+              {% if html_plm_check_child_station_status_global %}
+                <li class="nav-item">
+                  <a class="nav-link text-white {% if 'plm_station_status' in segment %} active bg-gradient-primary {% endif %}" 
+                      href="/playlists/station_status">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                      <i class="material-icons opacity-10">preview</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Station Status</span>
+                  </a>
+                </li>
+              {% endif %}
+              <li class="nav-item">
+                <a class="nav-link text-white {% if segment == 'plm_parent_stations' %} active bg-gradient-primary {% endif %}" 
+                    href="/playlists/plm_parent_stations">
+                  <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                    <i class="material-icons opacity-10">escalator_warning</i>
+                  </div>
+                  <span class="nav-link-text ms-1">Parent Stations</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-white {% if segment == 'plm_parent_stations_more' %} active bg-gradient-primary {% endif %}" 
+                    href="/playlists/plm_parent_stations_more">
+                  <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                    <i class="material-icons opacity-10">family_restroom</i>
+                  </div>
+                  <span class="nav-link-text ms-1">More Parents</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-white {% if 'plm_manage' in segment %} active bg-gradient-primary {% endif %}" 
+                    href="/playlists/plm_manage">
+                  <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                    <i class="material-icons opacity-10">subscriptions</i>
+                  </div>
+                  <span class="nav-link-text ms-1">Manage Playlists</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </li>
       {% endif %}
       {% if html_slm_media_tools_manager %}
         <li class="nav-item">
