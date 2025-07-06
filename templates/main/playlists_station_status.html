@@ -1,0 +1,185 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Linear - Station Status {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<style> 
+  .file-input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 2px solid #4c2588;
+    border-radius: 0.25em;
+    padding: 0.5em;
+    background: linear-gradient(195deg, #6a4ca8 0%, #6a4eaa 100%);
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .file-input-wrapper input[type="file"] {
+    display: none;
+  }
+
+  .file-input-wrapper label {
+    color: white;
+    border: none;
+    padding: 0.5em 1em;
+    border-radius: 0.25em;
+    margin-left: 10px;
+    width: auto;
+    white-space: nowrap;
+  }
+  
+  .dark-version .file-input-wrapper {
+    background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+    border-color: #2c1a4a;
+  }
+
+  .dark-version .file-input-wrapper label {
+    color: #ccc;
+  }
+  
+  .grid-container {
+      display: grid;
+      grid-template-columns: 4fr 7fr;
+      gap: 10px;
+  }
+
+  .grid-item {
+      display: flex;
+      min-width: 0;
+  }
+
+  .form-check {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 2em;
+  }
+
+  .form-check-input {
+      flex-shrink: 0;
+  }
+
+  input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+  }
+
+  .btn {
+      width: 100%;
+      box-sizing: border-box;
+  }
+
+  .select2-container {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+  .select2-selection {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+  <div class="row min-vh-80 h-100">
+    <div class="col-12">
+      <form method="POST" action="station_status" id="process-form">
+        <!-- Manage Station Status -->
+        <h4 id="station_status_anchor" style="margin: 0;">Station Status
+          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Processes-%E2%80%90-Check-Station-Status-%E2%80%90-Settings-and-More" target="_blank">
+            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+          </a>
+        </h4>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
+        <!-- Station Status Settings -->
+        {% if html_settings_message %}
+          <em>{{ html_settings_message}}</em>
+          <div class="row">
+            <div class="col-12 my-2"></div>
+          </div>
+        {% endif %}
+        <div class="settings-box" style="width: 98%; display: flex; justify-content: center; align-items: center; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+          <label for="plm_station_status_number_attempts" style="margin-top: 8px; margin-right: 5px;"><b>Number of Attempts:</b></label>
+          <input type="text" id="plm_station_status_number_attempts" name="plm_station_status_number_attempts" style="width: 5%; margin-right: 10px;" value="{{ html_plm_station_status_number_attempts }}">
+          <label for="plm_station_status_delay_attempts" style="margin-top: 8px; margin-right: 5px;"><b>Delay Between Attempts:</b></label>
+          <input type="text" id="plm_station_status_delay_attempts" name="plm_station_status_delay_attempts" style="width: 5%; margin-right: 10px;" value="{{ html_plm_station_status_delay_attempts }}">
+          <label for="plm_station_status_skip_after_fails" style="margin-top: 8px; margin-right: 5px;"><b>Skip Playlist After Fails (0 = Disabled):</b></label>
+          <input type="text" id="plm_station_status_skip_after_fails" name="plm_station_status_skip_after_fails" style="width: 5%; margin-right: 25px;" value="{{ html_plm_station_status_skip_after_fails }}">
+          <button type="submit" name="action" value="plm_station_status_save_settings" class="btn bg-gradient-primary w-15 my-2 mb-2">Save Settings</button>
+        </div>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
+        <!-- Selection -->
+        <div class="row justify-content-center">
+          <div style="width: 80%;">
+            <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+              <div style="width: 100%; margin-bottom: 10px; margin-top: 10px;">
+                <select class="select2" name="station_status_child_m3u_id_channel_id" id="station_status_child_m3u_id_channel_id" style="width: 100%;">
+                  {% for html_station_status_selection in html_station_status_selections %}
+                    <option value="{{ html_station_status_selection.child_m3u_id_channel_id }}" {% if html_station_status_child_m3u_id_channel_id_prior == html_station_status_selection.child_m3u_id_channel_id %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_station_status_selection.station_playlist }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div style="width: 100%;">
+                <input type="text" id="station_status_manual_link" name="station_status_manual_link" value="{{ html_station_status_manual_link_prior }}" placeholder="Or enter a manual link here..." title="Or enter a manual link here..." style="width: 50%;">
+                <button type="submit" name="action" value="station_status_examine" class="btn bg-gradient-primary h-15 my-2 mb-2" style="margin-left: 10px; width: 23.5%;">Examine</button>
+                <button type="submit" name="action" value="station_status_cancel" class="btn bg-gradient-primary h-15 my-2 mb-2" style="margin-left: 10px; width: 23.5%;">Cancel / Clear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Details -->
+        {% if html_station_status_message_prior %}
+          <!-- Spacer row -->
+          <div class="row">
+            <div class="col-12 my-2"></div>
+          </div>
+          <em>{{ html_station_status_message_prior}}</em>
+          <div class="row">
+            <div class="col-12 my-2"></div>
+          </div>
+        {% endif %}
+        {% if html_station_status_results_prior %}
+          <!-- Spacer row -->
+          <div class="row">
+            <div class="col-12 my-2"></div>
+          </div>
+          <div class="container-fluid" style="width: 98%;">
+            {% for item in html_station_status_results_prior %}
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>{{ item.field }}</b>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="html_station_status_results_prior__{{ loop.index }}" name="html_station_status_results_prior__{{ loop.index }}" value="{{ item.value }}" title="{{ item.value }}" readonly style="background-color: #d1cdcde5;">
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- {% include 'includes/footer.html' %} -->
+
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<!-- Processing Box -->
+<script>
+</script>
+{% endblock javascripts %}

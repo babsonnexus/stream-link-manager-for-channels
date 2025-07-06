@@ -143,7 +143,7 @@
           <div id="record-container" style="height: 100vh; overflow-y: scroll; contain: strict; overscroll-behavior: contain;"><!-- Records handled by 'Infinite Scroll' --></div>
           <div id="loading-spinner" style="display: none; text-align: center;">Loading...</div>
           <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
-            <button type="submit" name="action" value="unassigned_child_to_parents_action_save_all" class="btn bg-gradient-primary w-25 my-2 mb-2">Save All</button>
+            <button type="submit" name="action" value="unassigned_child_to_parents_action_save_all" class="btn bg-gradient-primary w-25 my-2 mb-2">Save Visible</button>
             <button type="submit" name="action" value="unassigned_child_to_parents_action_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
           </div>
         </div>
@@ -365,9 +365,9 @@
             const setParentButton = document.createElement('button');
             setParentButton.type = 'submit';
             setParentButton.name = 'action';
-            setParentButton.value = `unassigned_child_to_parents_action_set_parent_${adjustedIndex}`;
+            setParentButton.value = `unassigned_child_to_parents_action_examine_${adjustedIndex}`;
             setParentButton.className = 'btn bg-gradient-primary my-2 mb-2';
-            setParentButton.textContent = 'Save';
+            setParentButton.textContent = 'Examine';
             setParentButtonItem.appendChild(setParentButton);
 
             gridContainer.appendChild(hiddenInput);
