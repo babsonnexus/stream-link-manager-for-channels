@@ -92,6 +92,7 @@
    * **[PBS Stations](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-PBS-Stations)**
 * **[Processes](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Processes)**
    * **[Check Station Status](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Processes-%E2%80%90-Check-Station-Status)**
+      * **[Settings and More](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Processes-%E2%80%90-Check-Station-Status-%E2%80%90-Settings-and-More)**
 
 ### Tools: MTM
 * **[Installation & Setup](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-Installation-and-Setup)**
