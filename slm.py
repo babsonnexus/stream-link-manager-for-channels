@@ -23,18 +23,19 @@ from flask import Flask, render_template, render_template_string, request, redir
 from jinja2 import TemplateNotFound
 import yt_dlp
 import streamlink
+from collections import OrderedDict
 
 # Top Controls
 slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.07.06.1709"
+slm_version = "v2025.07.07.1207"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.07.06.1709"
+    slm_version = "v2025.07.07.1207"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -4677,6 +4678,7 @@ def check_child_station_status(check_child_station_status_single, check_child_st
     playlists_fail_count = {}
     skip_playlists = []
     message = None
+    stream_metadata = []
 
     stations = read_data(csv_playlistmanager_combined_m3us)
     maps = read_data(csv_playlistmanager_child_to_parent)
@@ -7160,35 +7162,92 @@ def run_query(query_name):
             if query_name == 'query_plm_parent_children':
 
                 query = """
-                SELECT
-                    CASE
-                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN plm_child_to_parent_maps.parent_channel_id
-                        ELSE plm_parents.parent_title
-                    END AS "Parent Station",
-                    plm_all_stations.station_playlist AS "Child Station",
-                    COALESCE(plm_parents.parent_tvc_guide_stationid_override, '') AS "Gracenote ID (Override)",
-                    COALESCE(plm_all_stations.tvc_guide_stationid, '') AS "Gracenote ID (Imported)",
-                    COALESCE(plm_child_to_parent_maps.child_station_check, '') AS "Child Station Status"
-                FROM plm_child_to_parent_maps
-                LEFT JOIN plm_parents ON plm_child_to_parent_maps.parent_channel_id = plm_parents.parent_channel_id
-                LEFT JOIN plm_all_stations ON plm_child_to_parent_maps.child_m3u_id_channel_id = plm_all_stations.m3u_id || '_' || plm_all_stations.channel_id
-                LEFT JOIN plm_playlists ON plm_all_stations.m3u_id = plm_playlists.m3u_id
-                WHERE plm_all_stations.station_playlist IS NOT NULL
-                ORDER BY
-                    CASE
-                        WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN 2
-                        ELSE 1
-                    END,
-                    "Parent Station",
-                    CASE
-                        WHEN plm_parents.parent_preferred_playlist IS NOT NULL AND plm_parents.parent_preferred_playlist != '' THEN 
-                            CASE 
-                                WHEN plm_all_stations.m3u_id = plm_parents.parent_preferred_playlist THEN 0
-                                ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
-                            END
-                        ELSE CAST(plm_playlists.m3u_priority AS INTEGER)
-                    END,
-                    "Child Station"
+                    WITH parent_child_base AS (
+                        SELECT
+                            CASE
+                                WHEN plm_child_to_parent_maps.parent_channel_id IN ('Ignore', 'Unassigned') THEN plm_child_to_parent_maps.parent_channel_id
+                                ELSE plm_parents.parent_title
+                            END AS "Parent Station",
+                            plm_all_stations.station_playlist AS "Child Station",
+                            COALESCE(plm_parents.parent_tvc_guide_stationid_override, '') AS "Gracenote ID (Override)",
+                            COALESCE(plm_all_stations.tvc_guide_stationid, '') AS "Gracenote ID (Imported)",
+                            COALESCE(plm_child_to_parent_maps.child_station_check, '') AS "Child Station Status",
+                            plm_parents.parent_preferred_playlist,
+                            plm_all_stations.m3u_id,
+                            plm_playlists.m3u_priority
+                        FROM plm_child_to_parent_maps
+                        LEFT JOIN plm_parents ON plm_child_to_parent_maps.parent_channel_id = plm_parents.parent_channel_id
+                        LEFT JOIN plm_all_stations ON plm_child_to_parent_maps.child_m3u_id_channel_id = plm_all_stations.m3u_id || '_' || plm_all_stations.channel_id
+                        LEFT JOIN plm_playlists ON plm_all_stations.m3u_id = plm_playlists.m3u_id
+                        WHERE plm_all_stations.station_playlist IS NOT NULL
+                    ),
+                    parent_list AS (
+                        SELECT DISTINCT
+                            CASE
+                                WHEN parent_channel_id IN ('Ignore', 'Unassigned') THEN parent_channel_id
+                                ELSE parent_title
+                            END AS "Parent Station"
+                        FROM plm_parents
+                        UNION
+                        SELECT DISTINCT parent_channel_id FROM plm_child_to_parent_maps WHERE parent_channel_id IN ('Ignore', 'Unassigned')
+                    ),
+                    parent_child_full AS (
+                        SELECT
+                            p."Parent Station",
+                            b."Child Station",
+                            b."Gracenote ID (Override)",
+                            b."Gracenote ID (Imported)",
+                            b."Child Station Status",
+                            b.parent_preferred_playlist,
+                            b.m3u_id,
+                            b.m3u_priority
+                        FROM parent_list p
+                        LEFT JOIN parent_child_base b ON p."Parent Station" = b."Parent Station"
+                    ),
+                    parent_child_with_none AS (
+                        SELECT
+                            "Parent Station",
+                            COALESCE("Child Station", 'None') AS "Child Station",
+                            CASE WHEN "Child Station" IS NULL THEN '' ELSE "Gracenote ID (Override)" END AS "Gracenote ID (Override)",
+                            CASE WHEN "Child Station" IS NULL THEN '' ELSE "Gracenote ID (Imported)" END AS "Gracenote ID (Imported)",
+                            CASE WHEN "Child Station" IS NULL THEN '' ELSE "Child Station Status" END AS "Child Station Status",
+                            parent_preferred_playlist,
+                            m3u_id,
+                            m3u_priority
+                        FROM parent_child_full
+                    ),
+                    available_children_status AS (
+                        SELECT
+                            "Parent Station",
+                            CASE
+                                WHEN COUNT(*) = 1 AND MAX("Child Station") = 'None' THEN 'False'
+                                WHEN SUM(CASE WHEN "Child Station Status" LIKE '%Disabled%' THEN 1 ELSE 0 END) = COUNT(*) THEN 'False'
+                                ELSE 'True'
+                            END AS "Available Children"
+                        FROM parent_child_with_none
+                        GROUP BY "Parent Station"
+                    )
+                    SELECT
+                        pc."Parent Station",
+                        pc."Child Station",
+                        ac."Available Children",
+                        pc."Gracenote ID (Override)",
+                        pc."Gracenote ID (Imported)",
+                        pc."Child Station Status"
+                    FROM parent_child_with_none pc
+                    LEFT JOIN available_children_status ac ON pc."Parent Station" = ac."Parent Station"
+                    ORDER BY
+                        CASE
+                            WHEN pc."Parent Station" IN ('Ignore', 'Unassigned') THEN 2
+                            ELSE 1
+                        END,
+                        pc."Parent Station",
+                        CASE
+                            WHEN pc.parent_preferred_playlist IS NOT NULL AND pc.parent_preferred_playlist != ''
+                                THEN CASE WHEN pc.m3u_id = pc.parent_preferred_playlist THEN 0 ELSE CAST(pc.m3u_priority AS INTEGER) END
+                            ELSE CAST(pc.m3u_priority AS INTEGER)
+                        END,
+                        pc."Child Station"
                 """
 
     elif query_name in [
@@ -7547,36 +7606,65 @@ def run_query(query_name):
 
         if query_name == 'query_mtm_stations_by_channel_collection':
             results = sorted(results, key=lambda x: (sort_key(x["Station Name"].casefold()), sort_key(x["Channel Collection Name"].casefold())))
+
         elif query_name == 'query_mtm_programs_by_library_collection':
             results = sorted(results, key=lambda x: (x["Type"], sort_key(x["Name"].casefold()), sort_key(x["Library Collection"].casefold())))
+
         elif query_name == 'query_mtm_programs_by_size_on_disk':
             results = sorted(results, key=lambda x: (
                 -float(x["Size on Disk"].split()[0]) if x["Size on Disk"] not in ["<0.1 GB", None, ""] else 0,
                 x["Type"].casefold(),
                 x["Name"].casefold()
             ))
+
         elif query_name == 'query_mtm_programs_by_number_of_files':
             results = sorted(results, key=lambda x: (-x["# of Files"], sort_key(x["Type"].casefold()), sort_key(x["Name"].casefold())))
+
         elif query_name == 'query_mtm_programs_by_average_file_size':
             results = sorted(results, key=lambda x: (
                 -float(x["Average Size per File"].split()[0]) if x["Average Size per File"] not in ["<0.1 GB", None, ""] else 0,
                 x["Type"].casefold(),
                 x["Name"].casefold()
             ))
+
         elif query_name == 'query_mtm_programs_by_duration':
             results = sorted(results, key=lambda x: (
                 -parse_total_duration(x.get("Total Duration", "")),
                 x["Type"].casefold(),
                 x["Name"].casefold()
             ))
+
         elif query_name == 'query_mtm_programs_by_average_file_size_per_duration':
             results = sorted(results, key=lambda x: (
                 -float(x["Average Size per Duration"].split()[0]) if x["Average Size per Duration"] not in ["<0.1 GB/Hour", None, ""] else 0,
                 x["Type"].casefold(),
                 x["Name"].casefold()
             ))
+
         elif query_name == 'query_plm_combined_xml_guide_stations':
             results = sorted(results, key=lambda x: (sort_key(x["Station EPG Name"].casefold()), sort_key(x["Station EPG Guide ID"].casefold())))
+
+        elif query_name == 'query_plm_parent_children':
+            def parent_sort_key(row):
+                parent = row["Parent Station"]
+                if parent in ("Ignore", "Unassigned"):
+                    return (1, "")
+                return (0, sort_key(parent.casefold()))
+
+            # Group rows by parent, preserving order
+            grouped = OrderedDict()
+            for row in results:
+                parent = row["Parent Station"]
+                if parent not in grouped:
+                    grouped[parent] = []
+                grouped[parent].append(row)
+
+            # Resort parent groups using parent_sort_key, but keep child order as in SQL
+            sorted_results = []
+            for parent, rows in sorted(grouped.items(), key=lambda item: parent_sort_key(item[1][0])):
+                sorted_results.extend(rows)
+
+            results = sorted_results
 
     return results
 
