@@ -72,9 +72,13 @@
    * **[Special Actions](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions)**
       * **[Stream Files](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-Stream-Files)**
       * **[SLM Streams](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-SLM-Streams)**
-   * **[Bookmark Actions](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Actions)**
+   * **[Advanced Selections and Overrides](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Advanced-Selections-and-Overrides)**
+   * **Program Level Management**
+      * **[Bookmark Actions](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Actions)**
+      * **[Bookmark Overrides](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Overrides)**
 * **[Modify Programs](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Modify-Programs)**
 * **[Processes](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Processes)**
+
 
 ### Linear: PLM
 * **[Installation & Setup](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Installation-and-Setup)**
