@@ -7,7 +7,7 @@
 <style>
   .grid-container {
     display: grid;
-    grid-template-columns: 1.5fr 3fr 2fr 1fr;
+    grid-template-columns: 1.5fr 2fr 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
     gap: 10px;
   }
 
@@ -83,6 +83,56 @@
       width: 14%;
       margin-left: 1%;
   }
+
+  .listbox {
+    width: 400px;
+    height: 300px;
+    overflow-y: scroll;
+    border: 1px solid #ccc;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .buttons {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .manual-order-video-container {
+    display: flex;
+    align-items: center;
+  }
+
+  .centered-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .box-container {
+    border: 1px solid #ccc;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    max-width: 482px;
+  }
+
+  .form-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 5px;
+    width: 100%;
+    margin-left: -72px;
+  }
 </style>
 {% endblock stylesheets %}
 
@@ -96,7 +146,7 @@
           {% if html_program_add_message %}
             <div id="html_program_add_message">
               <button type="submit" name="action" value="program_add_cancel" class="btn bg-gradient-primary my-2 mb-2" style="width: 27%; margin-right: 10px;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Cancel / Clear</button>
-              {{ html_program_add_message }}
+              <b>{{ html_program_add_message }}</b>
             </div>
             <hr>
           {% endif %}
@@ -391,48 +441,147 @@
           <!-- Bookmark Section -->
           <div>
             {% if html_done_generate_flag %}
-              <label for="field_title"><b>Title:</b></label>
-              <input type="text" id="field_title" name="field_title" value="{{ html_title_selected }}" placeholder="A 'Title' is required..." style="width: 30%; margin-right: 10px;" title="{{ html_title_selected }}">
-              <label for="field_release_year"><b>Release Year:</b></label>
-              <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected }}" placeholder="Enter year (i.e., 2024)" style="width: 10%; margin-right: 10px;" title="{{ html_release_year_selected }}">
-              <label for="field_bookmark_action"><b>Bookmark Action:</b>
-                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Actions" target="_blank">
-                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
-                </a>
-              </label>
-              <select class="select2" name="field_bookmark_action" id="field_bookmark_action" style="width: 15%;">
-                {% for html_bookmark_action in html_bookmark_actions %}
-                  <option {% if html_bookmark_action_selected == html_bookmark_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_bookmark_action }}</option>
-                {% endfor %}
-              </select>
-              <button class="btn bg-gradient-primary my-2 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#labelPanel" aria-expanded="true" aria-controls="labelPanel" style="width: 10%; margin-right: 10px; margin-left: 10px;">
-                Labels
-              </button>
-              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Labels" target="_blank">
-                <i class="material-icons opacity-10" style="position: relative; top: 3px; left: -5px;">help_outline</i>
-              </a>
+              <div class="container-fluid">
+                <div class="grid-container dynamic-bg" style="text-align: center;">
+                  <div class="grid-item"><h6>Labels
+                    <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Labels" target="_blank">
+                      <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                    </a>                  
+                  </h6></div>
+                  <div class="grid-item"><h6>Title</h6></div>
+                  <div class="grid-item"><h6>Release Year</h6></div>
+                  <div class="grid-item"><h6>Bookmark Action
+                    <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Actions" target="_blank">
+                      <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                    </a>
+                  </h6></div>
+                  {% if html_slm_channels_dvr_integration %}
+                    {% if html_object_type_selected == 'MOVIE' or html_object_type_selected == 'SHOW' %}
+                      <div class="grid-item"><h6>Channels DVR Title Override
+                        <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Overrides" target="_blank">
+                          <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                        </a>                      
+                      </h6></div>
+                    {% endif %}  
+                    {% if html_object_type_selected == 'VIDEO' or html_object_type_selected == 'SHOW' %}
+                      <div class="grid-item"><h6>Channels DVR Summary Override</h6></div>
+                      <div class="grid-item"><h6>Channels DVR Image Type Override</h6></div>
+                      <div class="grid-item"><h6>Channels DVR Image (Manual) Override</h6></div>
+                    {% endif %}   
+                    {% if html_object_type_selected == 'VIDEO' %}
+                      <div class="grid-item"><h6>Channels DVR Sort and Sort Order Override</h6></div>
+                      <div class="grid-item"><h6>Channels DVR Video Overrides
+                        <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Overrides" target="_blank">
+                          <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                        </a>
+                      </h6></div>
+                    {% endif %} 
+                  {% endif %}
+                </div>
+                <div class="grid-container">
+                  <div class="grid-item">
+                    <button class="btn bg-gradient-primary my-2 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#labelPanel" aria-expanded="true" aria-controls="labelPanel">Show / Hide</button>
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="field_title" name="field_title" value="{{ html_title_selected }}" placeholder="A 'Title' is required..." title="{{ html_title_selected }}">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="field_release_year" name="field_release_year" value="{{ html_release_year_selected }}" placeholder="Enter year (i.e., 2024)" title="{{ html_release_year_selected }}">
+                  </div>
+                  <div class="grid-item">
+                    <select class="select2" name="field_bookmark_action" id="field_bookmark_action" style="width: 100%;">
+                      {% for html_bookmark_action in html_bookmark_actions %}
+                        <option {% if html_bookmark_action_selected == html_bookmark_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_bookmark_action }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  {% if html_slm_channels_dvr_integration %}
+                    {% if html_object_type_selected == 'MOVIE' or html_object_type_selected == 'SHOW' %}
+                      <div class="grid-item">
+                        <input type="text" id="field_override_program_title" name="field_override_program_title" value="{{ html_override_program_title_selected }}" title="{{ html_override_program_title_selected }}">
+                      </div>
+                    {% endif %}  
+                    {% if html_object_type_selected == 'VIDEO' or html_object_type_selected == 'SHOW' %}
+                      <div class="grid-item">
+                        <input type="text" id="field_override_program_summary" name="field_override_program_summary" value="{{ html_override_program_summary_selected }}" title="{{ html_override_program_summary_selected }}">
+                      </div>
+                      <div class="grid-item">
+                        <select class="select2" name="field_override_program_image_type" id="field_override_program_image_type" style="width: 100%;">
+                          {% for html_override_program_image_type in html_override_program_image_types %}
+                            <option value="{{ html_override_program_image_type.override_id }}" {% if html_override_program_image_type_selected == html_override_program_image_type.override_id %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_override_program_image_type.override_name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>                    
+                      <div class="grid-item">
+                        <input type="text" id="field_override_program_image_manual" name="field_override_program_image_manual" value="{{ html_override_program_image_manual_selected }}" title="{{ html_override_program_image_manual_selected }}">
+                      </div>
+                    {% endif %}   
+                    {% if html_object_type_selected == 'VIDEO' %}
+                      <div class="grid-item">
+                        <select class="select2" name="field_override_program_sort" id="field_override_program_sort" style="width: 100%;">
+                          {% for html_override_program_sort in html_override_program_sorts %}
+                            <option value="{{ html_override_program_sort.override_id }}" {% if html_override_program_sort_selected == html_override_program_sort.override_id %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_override_program_sort.override_name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="grid-item">
+                        <button type="submit" name="action" value="program_add_import_episode_all" class="btn bg-gradient-primary my-2 mb-2" onclick="allowNavigation_done_generate()">Import All</button>
+                      </div>
+                    {% endif %} 
+                  {% endif %}
+                </div>
+              </div>
+              <!-- Labels Section -->
               <div class="collapse" id="labelPanel">
                 <div class="content-placeholder">
-                  <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
-                    <div class="grid-item"><h6>Assign</h6></div>
-                    <div class="grid-item"><h6>Label</h6></div>
-                  </div>
-                  {% for item in html_webpage_label_maps %}
-                    <input type="hidden" name="webpage_label_id_{{ loop.index }}" id="webpage_label_id_{{ loop.index }}" value="{{ item.webpage_label_id }}">
-                    <div class="grid-container">
-                      <div class="grid-item">
-                        <div class="form-check form-switch ps-0 is-filled">
-                          <input type="checkbox" id="webpage_label_active_{{ loop.index }}" name="webpage_label_active_{{ loop.index }}" class="form-check-input" {% if item.webpage_label_active == 'On' %}checked{% endif %}>
+                  <div class="container-fluid">
+                    <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
+                      <div class="grid-item"><h6>Assign</h6></div>
+                      <div class="grid-item"><h6>Label</h6></div>
+                    </div>
+                    {% for item in html_webpage_label_maps %}
+                      <input type="hidden" name="webpage_label_id_{{ loop.index }}" id="webpage_label_id_{{ loop.index }}" value="{{ item.webpage_label_id }}">
+                      <div class="grid-container">
+                        <div class="grid-item">
+                          <div class="form-check form-switch ps-0 is-filled">
+                            <input type="checkbox" id="webpage_label_active_{{ loop.index }}" name="webpage_label_active_{{ loop.index }}" class="form-check-input" style="margin-left: 5px;" {% if item.webpage_label_active == 'On' %}checked{% endif %}>
+                          </div>
+                        </div>
+                        <div class="grid-item">
+                          <input type="text" id="webpage_label_name_{{ loop.index }}" name="webpage_label_name_{{ loop.index }}" value="{{ item.webpage_label_name }}" readonly style="background-color: #d1cdcde5;" title="{{ item.webpage_label_name }}">
                         </div>
                       </div>
-                      <div class="grid-item">
-                        <input type="text" id="webpage_label_name_{{ loop.index }}" name="webpage_label_name_{{ loop.index }}" value="{{ item.webpage_label_name }}" readonly style="background-color: #d1cdcde5;" title="{{ item.webpage_label_name }}">
-                      </div>
-                    </div>
-                  {% endfor %}
+                    {% endfor %}
+                  </div>
                 </div>    
               </div>
               <hr>
+              <!-- Manual Order Videos Section -->
+              {% if html_slm_channels_dvr_integration and html_object_type_selected == 'VIDEO' and html_override_program_sort_selected == 'manual' %}
+                <div class="container">
+                  <h6 id="manual_order_videos_anchor">Manual Order Videos</h6>
+                  <div class="box-container">
+                    <div class="manual-order-video-container">
+                      <div>
+                        <select id="manualOrderVideosList" class="listbox" multiple>
+                          <!-- Manual Order Videos will be populated by JavaScript -->
+                        </select>
+                      </div>
+                      <div class="buttons">
+                        <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="manual_order_videos_moveUp()">
+                          <i class="material-icons opacity-10">keyboard_arrow_up</i>
+                        </button>
+                        <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="manual_order_videos_moveDown()">
+                          <i class="material-icons opacity-10">keyboard_arrow_down</i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <input type="hidden" id="manual_order_videos" name="manual_order_videos">
+                <p></p>
+                <hr>
+              {% endif %}
             {% endif %}
           </div>
           <!-- Selected Movie Options -->
@@ -460,23 +609,43 @@
                   <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
                 </a>
               </h6></div>
+              {% if html_slm_channels_dvr_integration %}
+                <div class="grid-item"><h6>Channels DVR Summary Override</h6></div>
+                <div class="grid-item"><h6>Channels DVR Image Override</h6></div>
+                <div class="grid-item"><h6>Channels DVR Duration Override
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Advanced-Selections-and-Overrides" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>                    
+                </h6></div>
+              {% endif %}
             </div>
             <div class="grid-container" style="text-align: center;">
               <div class="grid-item">
                 <div class="form-check form-switch ps-0 is-filled">
-                  <input type="checkbox" class="form-check-input" id="status_movie" name="status_movie" checked>
+                  <input type="checkbox" class="form-check-input" id="status_movie" name="status_movie" style="margin-left: 5px;" {% if html_status_movie != 'watched' %}checked{% endif %}>
                 </div>
               </div>
               <div class="grid-item">
-                <input type="text" id="stream_link_override_movie" name="stream_link_override_movie" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
+                <input type="text" id="stream_link_override_movie" name="stream_link_override_movie" value="{{ html_stream_link_override_movie }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="i.e., https://link_to_website.com/path_to_streamlink">
               </div>
               <div class="grid-item">
                 <select name="special_action_movie" id="special_action_movie" style="width: 100%; max-width: 100%;">
                   {% for html_special_action in html_special_actions %}
-                    <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
+                    <option {% if html_special_action == html_special_action_movie %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                   {% endfor %}
                 </select>
               </div>
+              {% if html_slm_channels_dvr_integration %}
+                <div class="grid-item">
+                  <input type="text" id="override_summary_movie" name="override_summary_movie" value="{{ html_override_summary_movie }}" placeholder="i.e., Here is a description of what happens here." title="i.e., Here is a description of what happens here.">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="override_image_movie" name="override_image_movie" value="{{ html_override_image_movie }}" placeholder="i.e., http://linktosomething.com/image.jpg" title="i.e., http://linktosomething.com/image.jpg">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="override_duration_movie" name="override_duration_movie" value="{{ html_override_duration_movie }}" placeholder="i.e., 3600" title="i.e., 3600">
+                </div>
+              {% endif %}
             </div>
             <hr>
             {% endif %}
@@ -508,6 +677,16 @@
                   </a>
                 </h6></div>
                 <div class="grid-item"><h6>Episode Prefix</h6></div>
+                {% if html_slm_channels_dvr_integration %}
+                  <div class="grid-item"><h6>Channels DVR Episode Title Override</h6></div>
+                  <div class="grid-item"><h6>Channels DVR Summary Override</h6></div>
+                  <div class="grid-item"><h6>Channels DVR Image Override</h6></div>
+                  <div class="grid-item"><h6>Channels DVR Duration Override
+                    <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Advanced-Selections-and-Overrides" target="_blank">
+                      <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                    </a>                    
+                  </h6></div>
+                {% endif %}
               </div>
               <div class="grid-container" style="text-align: center;">
                 <div class="grid-item">
@@ -527,8 +706,22 @@
                   </select>
                 </div>
                 <div class="grid-item">
-                  <input type="text" id="global_episode_prefix" name="global_episode_prefix" placeholder="i.e., (SUB), (DUB)" oninput="toggleAllTextBoxes(this)">
+                  <input type="text" id="global_episode_prefix" name="global_episode_prefix" placeholder="i.e., (SUB), (DUB)" oninput="toggleAllTextBoxes(this)" title="i.e., (SUB), (DUB)">
                 </div>
+                {% if html_slm_channels_dvr_integration %}
+                  <div class="grid-item">
+                    <hr style="border: 3px solid; width: 100%;">
+                  </div>
+                  <div class="grid-item">
+                    <hr style="border: 3px solid; width: 100%;">
+                  </div>
+                  <div class="grid-item">
+                    <hr style="border: 3px solid; width: 100%;">
+                  </div>                    
+                  <div class="grid-item">
+                    <hr style="border: 3px solid; width: 100%;">
+                  </div>
+                {% endif %}                
               </div>
               {% set processed_seasons = {} %}
               {% for item in html_season_episodes %}
@@ -553,11 +746,26 @@
                       </select>
                     </div>
                     <div class="grid-item">
-                      <input type="text" id="season_episode_prefix_{{ season }}" name="season_episode_prefix_{{ season }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}" oninput="toggleSeasonTextBoxes('{{ season }}', this)">
+                      <input type="text" id="season_episode_prefix_{{ season }}" name="season_episode_prefix_{{ season }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}" oninput="toggleSeasonTextBoxes('{{ season }}', this)" title="i.e., (SUB), (DUB)">
                     </div>
+                    {% if html_slm_channels_dvr_integration %}
+                      <div class="grid-item">
+                        <hr style="border: 3px solid; width: 100%;">
+                      </div>
+                      <div class="grid-item">
+                        <hr style="border: 3px solid; width: 100%;">
+                      </div>
+                      <div class="grid-item">
+                        <hr style="border: 3px solid; width: 100%;">
+                      </div>                    
+                      <div class="grid-item">
+                        <hr style="border: 3px solid; width: 100%;">
+                      </div>
+                    {% endif %}
                   </div>
                 {% endif %}
                 <input type="hidden" name="field_season_episode_{{ loop.index }}" id="field_season_episode_{{ loop.index }}" value="{{ item.season_episode }}">
+                <input type="hidden" name="field_original_release_date_{{ loop.index }}" id="field_original_release_date_{{ loop.index }}" value="{{ item.original_release_date }}">
                 <div class="grid-container">
                   <div class="grid-item">
                     <div class="form-check form-switch ps-0 is-filled">
@@ -566,18 +774,32 @@
                     </div>
                   </div>
                   <div class="grid-item">
-                    <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
+                    <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="i.e., https://link_to_website.com/path_to_streamlink">
                   </div>
                   <div class="grid-item">
                     <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" class="{{ season }}" style="width: 100%; max-width: 100%;">
                       {% for html_special_action in html_special_actions %}
-                        <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
+                        <option {% if html_special_action == item.special_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                       {% endfor %}
                     </select>
                   </div>
                   <div class="grid-item">
-                    <input type="text" id="field_episode_prefix_{{ loop.index }}" name="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}">
+                    <input type="text" id="field_episode_prefix_{{ loop.index }}" name="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}" placeholder="i.e., (SUB), (DUB)" class="{{ season }}" title="i.e., (SUB), (DUB)">
                   </div>
+                  {% if html_slm_channels_dvr_integration %}
+                    <div class="grid-item">
+                      <input type="text" id="field_override_episode_title_{{ loop.index }}" name="field_override_episode_title_{{ loop.index }}" value="{{ item.override_episode_title }}" placeholder="i.e., This Episode Name" title="i.e., This Episode Name">
+                    </div>
+                    <div class="grid-item">
+                      <input type="text" id="field_override_summary_{{ loop.index }}" name="field_override_summary_{{ loop.index }}" value="{{ item.override_summary }}" placeholder="i.e., Here is a description of what happens here." title="i.e., Here is a description of what happens here.">
+                    </div>
+                    <div class="grid-item">
+                      <input type="text" id="field_override_image_{{ loop.index }}" name="field_override_image_{{ loop.index }}" value="{{ item.override_image }}" placeholder="i.e., http://linktosomething.com/image.jpg" title="i.e., http://linktosomething.com/image.jpg">
+                    </div>
+                    <div class="grid-item">
+                      <input type="text" id="field_override_duration_{{ loop.index }}" name="field_override_duration_{{ loop.index }}" value="{{ item.override_duration }}" placeholder="i.e., 3600" title="i.e., 3600">
+                    </div>
+                  {% endif %}
                 </div>
               {% endfor %}
               <hr>
@@ -614,28 +836,57 @@
                     <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
                   </a>
                 </h6></div>
+                {% if html_slm_channels_dvr_integration %}
+                  <div class="grid-item"><h6>Channels DVR Video Title Override</h6></div>
+                  <div class="grid-item"><h6>Channels DVR Summary Override</h6></div>
+                  <div class="grid-item"><h6>Channels DVR Image Override</h6></div>
+                  <div class="grid-item"><h6>Channels DVR Duration Override</h6></div>
+                  <div class="grid-item"><h6>Channels DVR Video Overrides
+                    <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Advanced-Selections-and-Overrides" target="_blank">
+                      <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                    </a>                    
+                  </h6></div>
+                {% endif %}
               </div>
               {% for item in html_video_season_episodes %}
                 <input type="hidden" name="field_episode_prefix_{{ loop.index }}" id="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}">
+                <input type="hidden" name="field_original_release_date_{{ loop.index }}" id="field_original_release_date_{{ loop.index }}" value="{{ item.original_release_date }}">
                 <div class="grid-container">
                   <div class="grid-item">
                     <div class="form-check form-switch ps-0 is-filled">
-                      <input type="checkbox" class="form-check-input" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" checked>
+                      <input type="checkbox" class="form-check-input" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" style="margin-left: 5px;" checked>
                     </div>
                   </div>
                   <div class="grid-item">
-                    <input type="text" id="field_season_episode_{{ loop.index }}" name="field_season_episode_{{ loop.index }}" value="{{ item.season_episode }}" placeholder="i.e., Unique Video Name 01">
+                    <input type="text" id="field_season_episode_{{ loop.index }}" name="field_season_episode_{{ loop.index }}" value="{{ item.season_episode }}" placeholder="i.e., Unique Video Name 01" title="i.e., Unique Video Name 01">
                   </div>
                   <div class="grid-item">
-                    <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink">
+                    <input type="text" id="field_stream_link_override_{{ loop.index }}" name="field_stream_link_override_{{ loop.index }}" value="{{ item.stream_link_override }}" placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="i.e., https://link_to_website.com/path_to_streamlink">
                   </div>
                   <div class="grid-item">
                     <select name="field_special_action_{{ loop.index }}" id="field_special_action_{{ loop.index }}" style="width: 100%; max-width: 100%;">
                       {% for html_special_action in html_special_actions %}
-                        <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
+                        <option {% if html_special_action == item.special_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                       {% endfor %}
                     </select>
                   </div>
+                  {% if html_slm_channels_dvr_integration %}
+                    <div class="grid-item">
+                      <input type="text" id="field_override_episode_title_{{ loop.index }}" name="field_override_episode_title_{{ loop.index }}" value="{{ item.override_episode_title }}" placeholder="i.e., This Override Video Name" title="i.e., This Override Video Name">
+                    </div>
+                    <div class="grid-item">
+                      <input type="text" id="field_override_summary_{{ loop.index }}" name="field_override_summary_{{ loop.index }}" value="{{ item.override_summary }}" placeholder="i.e., Here is a description of what happens here." title="i.e., Here is a description of what happens here.">
+                    </div>
+                    <div class="grid-item">
+                      <input type="text" id="field_override_image_{{ loop.index }}" name="field_override_image_{{ loop.index }}" value="{{ item.override_image }}" placeholder="i.e., http://linktosomething.com/image.jpg" title="i.e., http://linktosomething.com/image.jpg">
+                    </div>
+                    <div class="grid-item">
+                      <input type="text" id="field_override_duration_{{ loop.index }}" name="field_override_duration_{{ loop.index }}" value="{{ item.override_duration }}" placeholder="i.e., 3600" title="i.e., 3600">
+                    </div>
+                    <div class="grid-item">
+                      <button type="submit" name="action" value="program_add_import_episode_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2" onclick="allowNavigation_done_generate()">Import</button>
+                    </div>       
+                  {% endif %}
                 </div>
               {% endfor %}
               <hr>
@@ -644,8 +895,9 @@
           <!-- Display Done / Generate Stream Link/File Buttons -->
           {% if html_done_generate_flag %}
             <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
-              <button type="submit" name="action" value="program_add_done" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Done</button>
+              <button type="submit" name="action" value="program_add_save" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Save</button>
               <button type="submit" name="action" value="program_add_generate" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Generate Stream Links/Files</button>
+              <button type="submit" name="action" value="program_add_done" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Close / Next</button>
             </div>
             <hr>
             <h4 style="text-align: center;" for="log-output">Live Process Log (While Running)</h4>
@@ -892,5 +1144,79 @@
       });
     });
   });
+</script>
+<!-- Manual Video Order -->
+<script>
+  const manualOrderVideos = {{ html_video_season_episodes | tojson }};
+  const manualOrderVideosList = document.getElementById('manualOrderVideosList');
+  const manualOrderVideosInput = document.getElementById('manual_order_videos');
+
+  function populateManualOrderVideosLists() {
+    manualOrderVideosList.innerHTML = '';
+    const unwatchedManualOrderVideos = manualOrderVideos.filter(manual_order => manual_order.status.toLowerCase() === 'unwatched');
+    unwatchedManualOrderVideos.sort((a, b) => (a.manual_order || 0) - (b.manual_order || 0));
+    unwatchedManualOrderVideos.forEach(manual_order => {
+        const option = document.createElement('option');
+        option.value = manual_order.season_episode;
+        option.text = manual_order.override_episode_title && manual_order.override_episode_title.trim() !== "" 
+            ? manual_order.override_episode_title 
+            : manual_order.season_episode;
+        manualOrderVideosList.appendChild(option);
+    });
+  }
+
+  function manual_order_videos_moveUp() {
+    const selectedManualOrderVideosOptions = Array.from(manualOrderVideosList.selectedOptions);
+    selectedManualOrderVideosOptions.forEach(option => {
+      const previousManualOrderVideosOption = option.previousElementSibling;
+      if (previousManualOrderVideosOption) {
+        manualOrderVideosList.insertBefore(option, previousManualOrderVideosOption);
+        manual_order_videos_updateManualOrderVideos();
+      }
+    });
+  }
+
+  function manual_order_videos_moveDown() {
+    const selectedManualOrderVideosOptions = Array.from(manualOrderVideosList.selectedOptions);
+    selectedManualOrderVideosOptions.reverse().forEach(option => {
+      const nextManualOrderVideosOption = option.nextElementSibling;
+      if (nextManualOrderVideosOption) {
+        manualOrderVideosList.insertBefore(nextManualOrderVideosOption, option);
+        manual_order_videos_updateManualOrderVideos();
+      }
+    });
+  }
+
+  function manual_order_videos_updateManualOrderVideos() {
+    const allManualOrderVideosOptions = Array.from(manualOrderVideosList.options);
+    const unwatchedManualOrderVideos = manualOrderVideos.filter(manual_order => manual_order.status.toLowerCase() === 'unwatched');
+    
+    // Ensure unique order for unwatched videos first
+    allManualOrderVideosOptions.forEach((option, index) => {
+      const manual_order = unwatchedManualOrderVideos.find(s => s.season_episode === option.value);
+      if (manual_order) {
+        manual_order.manual_order = index + 1;
+      }
+    });
+
+    // Reorder order to ensure uniqueness across all videos
+    manualOrderVideos.sort((a, b) => (a.manual_order || 0) - (b.manual_order || 0));
+    manualOrderVideos.forEach((manual_order, index) => {
+      manual_order.manual_order = index + 1;
+    });
+
+    manual_order_videos_updateHiddenInput();
+  }
+
+  function manual_order_videos_updateHiddenInput() {
+    manualOrderVideosInput.value = JSON.stringify(manualOrderVideos.map(manual_order => ({
+      season_episode: manual_order.season_episode,
+      manual_order: manual_order.manual_order
+    })));
+    console.log("Hidden input updated:", manualOrderVideosInput.value); // Debugging
+  }
+
+  populateManualOrderVideosLists();
+  manual_order_videos_updateHiddenInput();
 </script>
 {% endblock javascripts %}
