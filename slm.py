@@ -39,7 +39,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.08.16.2022"
+    slm_version = "v2025.08.16.2105"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -16104,3 +16104,4 @@ else:
 if __name__ == "__main__":
     notification_add(f"{current_time()} INFO: Server starting on port {slm_port}")
     app.run(host='0.0.0.0', port=slm_port)
+
