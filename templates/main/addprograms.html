@@ -155,30 +155,37 @@
             <div class="common-div column-div-1">
               <hr>
               <h4 style="text-align: center;">Search Selections
-                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Searching-for-Movies-and-Shows" target="_blank">
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Searching-for-Movies,-TV-Shows,-Videos,-and-Channels" target="_blank">
                   <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
                 </a>
               </h4>
               <hr>
               <div style="margin-top: 8px;">
-                <label for="program_add"><b>Search / Manual Term</b></label>
+                <label for="program_add"><b>Search Query, Manual Title, or Link</b></label>
                 <input type="text" id="program_add" name="program_add" placeholder="i.e., Golden Girls" value="{{ html_program_add_prior }}" style="width: 99%;"{% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>
               </div>
               <div style="margin-top: 8px;">
-                <label for="num_results"><b>Number of Results</b></label>
+                <label for="num_results"><b>Number of Results (Per Type)</b></label>
                 <input type="text" id="num_results" name="num_results" value="{{ html_num_results }}" placeholder="i.e., 9" title="{{ html_num_results }}" style="width: 98%;">
+              </div>
+              <div style="margin-top: 8px;">
+                <label for="provider_status"><b>Search Selection</b></label>
+                <select class="select2" name="add_programs_search_selection" id="add_programs_search_selection" style="width: 98%;">
+                  {% for html_search_selection in html_search_selections %}
+                      <option value="{{ html_search_selection.search_selection_id }}" {% if html_search_selection.search_selection_id == html_settings_search_selection %}selected{% endif %}>{{ html_search_selection.search_selection_name }}</option>
+                  {% endfor %}
+                </select>
               </div>
               <hr>
               <div>
-                <button type="submit" name="action" value="program_add_search" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Search Movies & Shows</button>
-                <button type="submit" name="action" value="program_add_search_videos" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag or html_search_videos_disabled %}disabled{% endif %}>Search Videos</button>
+                <button type="submit" name="action" value="program_add_search" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Search</button>
               </div>
             </div>
             <!-- Provider Fields -->
             <div class="common-div column-div-2">
               <hr>
               <h4 style="text-align: center;">New & Updated On My Providers
-                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Searching-for-Movies-and-Shows" target="_blank">
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Search-New-&-Updated" target="_blank">
                   <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
                 </a>
               </h4>
@@ -229,6 +236,7 @@
               <hr>
               <div>
                 <button type="submit" name="action" value="program_add_manual" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Add Manual</button>
+                <button type="submit" name="action" value="program_import_playlist" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;" {% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>Import Playlist</button>
               </div>
             </div>
             <!-- Search Options -->
@@ -240,15 +248,12 @@
                 </a>
               </h4>
               <hr>
-              <h6 style="text-align: center;">General</h6>
               <div style="margin-top: 8px;">
                 <label for="hide_bookmarked"><b>Hide Bookmarked</b></label>
                 <div class="form-check form-switch ps-0 is-filled" style="margin-left: 2.7em;">
                   <input type="checkbox" class="form-check-input" id="hide_bookmarked" name="hide_bookmarked"{% if html_hide_bookmarked == "On" %}checked{% endif %}>
                 </div>
               </div>
-              <hr>
-              <h6 style="text-align: center;">Movies & Shows</h6>
               <div style="margin-top: 8px;">
                 <label for="country_code"><b>Country Code</b></label>
                 <select class="select2" name="country_code" id="country_code" style="width: 98%;">
@@ -281,11 +286,17 @@
           <div class="text-center">
             {% if html_program_search_results %}
               <div style="margin-right: 70px;">
+                <h4 style="text-align: center;">Search Results & Selections
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Selecting-from-Search-Results" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                </h4>
                 {% if html_program_add_filter_panel == 'on' %}
                   <div>
-                    <button type="submit" name="action" value="program_add_resort_filter_movie" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Movies</button>
-                    <button type="submit" name="action" value="program_add_resort_filter_show" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Shows</button>
-                    <button type="submit" name="action" value="program_add_resort_filter_video" class="btn bg-gradient-primary w-15 my-2 mb-2" {% if html_search_videos_disabled %}disabled{% endif %}>Only Videos</button>
+                    {% if html_movies_filter_button_visible %}<button type="submit" name="action" value="program_add_resort_filter_movie" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Movies</button>{% endif %}
+                    {% if html_shows_filter_button_visible %}<button type="submit" name="action" value="program_add_resort_filter_show" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Shows</button>{% endif %}
+                    {% if html_videos_filter_button_visible %}<button type="submit" name="action" value="program_add_resort_filter_video" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Videos</button>{% endif %}
+                    {% if html_channels_filter_button_visible %}<button type="submit" name="action" value="program_add_resort_filter_channel" class="btn bg-gradient-primary w-15 my-2 mb-2">Only Channels</button>{% endif %}
                   </div>
                 {% endif %}
                 {% if html_program_add_resort_panel == 'on' %}
@@ -308,7 +319,7 @@
                       <div style="font-size: 2em;">{{ program.title }} ({{ program.release_year }}) | {{ program.object_type }}</div>
                       <hr>
                       <div style="text-align: left; text-transform: none; font-weight: normal; font-size: 1.25em;">{{ program.short_description }}</div>
-                      <div style="text-align: left; text-transform: none; font-weight: normal; font-size: 0.9em;">IMDB: {{ program.score }} / 10.0</div>
+                      <div style="text-align: left; text-transform: none; font-weight: normal; font-size: 0.9em;">{% if program.object_type == 'MOVIE' or program.object_type == 'SHOW' %}IMDB: {% endif %}{{ program.score }}{% if program.object_type == 'MOVIE' or program.object_type == 'SHOW' %} / 10.0{% endif %}</div>
                       <div class="row">
                         <div class="col-12 my-1"></div>
                       </div>
@@ -438,9 +449,29 @@
               </script>
             {% endif %}
           </div>
+          <!-- Select Video Group Section -->
+          <div>
+            {% if html_done_generate_flag and html_select_video_group_flag == 'yes' %}
+              <div class="container-fluid">
+                <div class="grid-container dynamic-bg" style="text-align: center;">
+                  <div class="grid-item"><h6>Select a Video Group (Playlist)</h6></div>
+                </div>
+                <div class="grid-container">
+                  <div class="grid-item">
+                    <select class="select2" name="field_select_video_group" id="field_select_video_group" style="width: 100%;">
+                      {% for html_select_video_group in html_select_video_groups %}
+                        <option value="{{ html_select_video_group.entry_id }}" style="width: auto; min-width: 100%;">{{ html_select_video_group.title_release_year }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <hr>
+            {% endif %}
+          </div>
           <!-- Bookmark Section -->
           <div>
-            {% if html_done_generate_flag %}
+            {% if html_done_generate_flag and html_object_type_selected != 'CHANNEL' and html_select_video_group_flag != 'yes' %}
               <div class="container-fluid">
                 <div class="grid-container dynamic-bg" style="text-align: center;">
                   <div class="grid-item"><h6>Labels
@@ -558,27 +589,33 @@
               <hr>
               <!-- Manual Order Videos Section -->
               {% if html_slm_channels_dvr_integration and html_object_type_selected == 'VIDEO' and html_override_program_sort_selected == 'manual' %}
-                <div class="container">
-                  <h6 id="manual_order_videos_anchor">Manual Order Videos</h6>
-                  <div class="box-container">
-                    <div class="manual-order-video-container">
-                      <div>
-                        <select id="manualOrderVideosList" class="listbox" multiple>
-                          <!-- Manual Order Videos will be populated by JavaScript -->
-                        </select>
-                      </div>
-                      <div class="buttons">
-                        <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="manual_order_videos_moveUp()">
-                          <i class="material-icons opacity-10">keyboard_arrow_up</i>
-                        </button>
-                        <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="manual_order_videos_moveDown()">
-                          <i class="material-icons opacity-10">keyboard_arrow_down</i>
-                        </button>
+                {% if html_video_season_episodes|length > 1 %}
+                  <div class="container">
+                    <h6 id="manual_order_videos_anchor">Manual Order Videos</h6>
+                    <div class="box-container">
+                      <div class="manual-order-video-container">
+                        <div>
+                          <select id="manualOrderVideosList" class="listbox" multiple>
+                            <!-- Manual Order Videos will be populated by JavaScript -->
+                          </select>
+                        </div>
+                        <div class="buttons">
+                          <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="manual_order_videos_moveUp()">
+                            <i class="material-icons opacity-10">keyboard_arrow_up</i>
+                          </button>
+                          <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="manual_order_videos_moveDown()">
+                            <i class="material-icons opacity-10">keyboard_arrow_down</i>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <input type="hidden" id="manual_order_videos" name="manual_order_videos">
+                  <input type="hidden" id="manual_order_videos" name="manual_order_videos">
+                {% else %}
+                  <div>
+                    <h6 id="manual_order_videos_anchor">Manage Manual Video Order in 'Modify Programs'</h6>
+                  </div>
+                {% endif %}
                 <p></p>
                 <hr>
               {% endif %}
@@ -770,7 +807,7 @@
                   <div class="grid-item">
                     <div class="form-check form-switch ps-0 is-filled">
                       <label class="form-check-label text-body text-truncate w-80 mb-0" for="field_status_{{ loop.index }}">{{ item.season_episode }}</label>
-                      <input type="checkbox" class="form-check-input episode-checkbox {{ season }}" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" checked>
+                      <input type="checkbox" class="form-check-input episode-checkbox {{ season }}" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" {% if item.status|lower == 'unwatched' %}checked{% endif %}>
                     </div>
                   </div>
                   <div class="grid-item">
@@ -805,7 +842,7 @@
               <hr>
             {% endif %}
           </div>
-          <!-- Selected Video Group Options -->
+          <!-- Selected Video Options -->
           <div>
             {% if html_video_season_episodes %}
               <h4 for="select_episodes">REQUIRED: Video Settings
@@ -849,12 +886,12 @@
                 {% endif %}
               </div>
               {% for item in html_video_season_episodes %}
-                <input type="hidden" name="field_episode_prefix_{{ loop.index }}" id="field_episode_prefix_{{ loop.index }}" value="{{ item.season_episode_prefix }}">
+                <input type="hidden" name="field_episode_prefix_{{ loop.index }}" id="field_episode_prefix_{{ loop.index }}" value="">
                 <input type="hidden" name="field_original_release_date_{{ loop.index }}" id="field_original_release_date_{{ loop.index }}" value="{{ item.original_release_date }}">
                 <div class="grid-container">
                   <div class="grid-item">
                     <div class="form-check form-switch ps-0 is-filled">
-                      <input type="checkbox" class="form-check-input" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" style="margin-left: 5px;" checked>
+                      <input type="checkbox" class="form-check-input" id="field_status_{{ loop.index }}" name="field_status_{{ loop.index }}" style="margin-left: 5px;" {% if item.status|lower == 'unwatched' %}checked{% endif %}>
                     </div>
                   </div>
                   <div class="grid-item">
@@ -892,12 +929,77 @@
               <hr>
             {% endif %}
           </div>
+          <!-- Selected Video Channel Options -->
+          <div>
+            {% if html_subscribed_video_channel_flag %}
+              <h4 for="select_episodes">OPTIONAL: Video Channel Settings
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Videos-and-Channels" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </h4>
+              <ul>
+                <li>Mark Video Channels as 'inactive' by unchecking.</li>
+                <li>Modify the display name, user (i.e., '@' address), description, or image.</li>
+                <li>If desired, select a 'Group'
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Provider-Groups" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                  assignment.</li>
+              </ul>
+              <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10;">
+                <div class="grid-item"><h6>Active</h6></div>
+                <div class="grid-item"><h6>Name</h6></div>
+                <div class="grid-item"><h6>User</h6></div>
+                <div class="grid-item"><h6>Description</h6></div>
+                <div class="grid-item"><h6>Link</h6></div>
+                <div class="grid-item"><h6>Image</h6></div>
+                <div class="grid-item"><h6>Group</h6></div>
+              </div>
+              <input type="hidden" name="subscribed_video_channel_id_selected" id="subscribed_video_channel_id_selected" value="{{ html_subscribed_video_channel_id_selected }}">
+              <div class="grid-container">
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" id="subscribed_video_channel_active_selected" name="subscribed_video_channel_active_selected" class="form-check-input" 
+                      {% if html_subscribed_video_channel_active_selected|lower == 'on' %}checked{% endif %} 
+                      onchange="this.value = this.checked ? 'On' : 'Off'" 
+                      value="On" style="margin-left: 5px;">
+                  </div>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="subscribed_video_channel_name_selected" name="subscribed_video_channel_name_selected" value="{{ html_subscribed_video_channel_name_selected }}" title="{{ html_subscribed_video_channel_name_selected }}">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="subscribed_video_channel_user_selected" name="subscribed_video_channel_user_selected" value="{{ html_subscribed_video_channel_user_selected }}" title="{{ html_subscribed_video_channel_user_selected }}">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="subscribed_video_channel_description_selected" name="subscribed_video_channel_description_selected" value="{{ html_subscribed_video_channel_description_selected }}" title="{{ html_subscribed_video_channel_description_selected }}">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="subscribed_video_channel_url_selected" name="subscribed_video_channel_url_selected" value="{{ html_subscribed_video_channel_url_selected }}" title="{{ html_subscribed_video_channel_url_selected }}" readonly style="background-color: #d1cdcde5;">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="subscribed_video_channel_image_selected" name="subscribed_video_channel_image_selected" value="{{ html_subscribed_video_channel_image_selected }}" title="{{ html_subscribed_video_channel_image_selected }}">
+                </div>
+                <div class="grid-item">
+                  <select class="select2" name="subscribed_video_channel_streaming_service_group_selected" id="subscribed_video_channel_streaming_service_group_selected" style="width: 100%; max-width: 100%;">
+                    {% for provider_group_item in html_provider_groups %}
+                      <option value="{{ provider_group_item.provider_group_id }}" {% if provider_group_item.provider_group_id == html_subscribed_video_channel_streaming_service_group_selected %}selected{% endif %} style="width: auto; min-width: 100%;">{{ provider_group_item.provider_group_name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            {% endif %}
+          </div>
           <!-- Display Done / Generate Stream Link/File Buttons -->
           {% if html_done_generate_flag %}
             <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px;">
-              <button type="submit" name="action" value="program_add_save" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Save</button>
-              <button type="submit" name="action" value="program_add_generate" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Generate Stream Links/Files</button>
-              <button type="submit" name="action" value="program_add_done" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Close / Next</button>
+              <button type="submit" name="action" value="program_add_save" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Save and Continue</button>
+              {% if html_select_video_group_flag != 'yes' %}
+                <button type="submit" name="action" value="program_add_done" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">Close / Next</button>
+                {% if html_object_type_selected != 'CHANNEL' %}
+                  <button type="submit" name="action" value="program_add_generate" class="btn bg-gradient-primary w-25 my-2 mb-2" onclick="allowNavigation_done_generate()">+ Generate Stream Links/Files</button>
+                {% endif %}
+              {% endif %}
             </div>
             <hr>
             <h4 style="text-align: center;" for="log-output">Live Process Log (While Running)</h4>
@@ -914,7 +1016,7 @@
         
               window.onbeforeunload = function() {
                 if (!allowNavigate_done_generate) {
-                  return "WARNING: Do not navigate away before selecting 'Done' or 'Generate Stream Links/Files' as your program may not be saved correctly.";
+                  return "WARNING: Do not navigate away before selecting 'Close / Next' or '+ Generate Stream Links/Files' as your program may not be saved correctly.";
                 }
               };
             </script>

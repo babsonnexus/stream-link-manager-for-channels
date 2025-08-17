@@ -29,6 +29,13 @@
       gap: 10px;
   }
 
+  .slm-subscribed-video-channels .grid-container {
+      display: grid;
+      grid-template-columns: 0.5fr 2fr 1fr 2fr 2fr 1fr 1.5fr 1fr;
+      gap: 10px;
+  }
+
+  .slm-subscribed-video-channels .grid-item,
   .slm-labels .grid-item,
   .provider-group .grid-item,
   .ssss .grid-item,
@@ -39,6 +46,7 @@
       min-width: 0;
   }
 
+  .slm-subscribed-video-channels .form-check,
   .slm-labels .form-check,
   .provider-group .form-check,
   .ssss .form-check,
@@ -48,6 +56,7 @@
       gap: 3.5em; /* Adjust the gap as needed */
   }
 
+  .slm-subscribed-video-channels .form-check-label,
   .slm-labels .form-check-label,
   .provider-group .form-check-label,
   .ssss .form-check-label,
@@ -58,6 +67,7 @@
       text-overflow: ellipsis;
   }
 
+  .slm-subscribed-video-channels .form-check-input,
   .slm-labels .form-check-input,
   .provider-group .form-check-input,
   .ssss .form-check-input,
@@ -65,6 +75,7 @@
       flex-shrink: 0;
   }
 
+  .slm-subscribed-video-channels input[type="text"],
   .slm-labels input[type="text"],
   .provider-group input[type="text"],
   .ssss input[type="text"],
@@ -73,6 +84,7 @@
       box-sizing: border-box;
   }
 
+  .slm-subscribed-video-channels .btn,
   .slm-labels .btn,
   .provider-group .btn,
   .ssss .btn,
@@ -90,8 +102,8 @@
       <div class="col-12">
         <form method="POST" action="/manage_providers">
           {% if html_slm_stream_link_file_manager %}
-            <!-- Streaming Services -->
-            <h4 id="streaming_services_anchor">Streaming Services
+            <!-- Movies & TV Shows Streaming Services -->
+            <h4 id="streaming_services_anchor">Movies & TV Shows Streaming Services
               <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Streaming-Services" target="_blank">
                 <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
               </a>
@@ -182,6 +194,99 @@
             </div>
             <input type="hidden" id="streaming_services" name="streaming_services">
             <hr>
+            <!-- Subscribed Video Channels -->
+            <h4 id="subscribed_video_channels_anchor">Subscribed Video Channels
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Subscribed-Video-Channels" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
+            <div class="slm-subscribed-video-channels container-fluid">
+              <div class="grid-container" style="text-align: center;">
+                <div class="grid-item"><h6>Active</h6></div>
+                <div class="grid-item"><h6>Name</h6></div>
+                <div class="grid-item"><h6>User</h6></div>
+                <div class="grid-item"><h6>Description</h6></div>
+                <div class="grid-item"><h6>Link</h6></div>
+                <div class="grid-item"><h6>Image</h6></div>
+                <div class="grid-item"><h6>Group</h6></div>
+                <div class="grid-item"><h6>Action</h6></div>
+              </div>
+              {% for item in html_subscribed_video_channels %}
+                <input type="hidden" name="subscribed_video_channel_id_{{ loop.index }}" id="subscribed_video_channel_id_{{ loop.index }}" value="{{ item.channel_id }}">
+                <div class="grid-container">
+                  <div class="grid-item">
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" id="subscribed_video_channel_active_{{ loop.index }}" name="subscribed_video_channel_active_{{ loop.index }}" class="form-check-input" 
+                        {% if item.channel_active|lower == 'on' %}checked{% endif %} 
+                        onchange="this.value = this.checked ? 'On' : 'Off'" 
+                        value="On" style="margin-left: 5px;">
+                    </div>
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="subscribed_video_channel_name_{{ loop.index }}" name="subscribed_video_channel_name_{{ loop.index }}" value="{{ item.channel_name }}" title="{{ item.channel_name }}">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="subscribed_video_channel_user_{{ loop.index }}" name="subscribed_video_channel_user_{{ loop.index }}" value="{{ item.channel_user }}" title="{{ item.channel_user }}">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="subscribed_video_channel_description_{{ loop.index }}" name="subscribed_video_channel_description_{{ loop.index }}" value="{{ item.channel_description }}" title="{{ item.channel_description }}">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="subscribed_video_channel_url_{{ loop.index }}" name="subscribed_video_channel_url_{{ loop.index }}" value="{{ item.channel_url }}" title="{{ item.channel_url }}">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="subscribed_video_channel_image_{{ loop.index }}" name="subscribed_video_channel_image_{{ loop.index }}" value="{{ item.channel_image }}" title="{{ item.channel_image }}">
+                  </div>
+                  <div class="grid-item">
+                    <select class="select2" name="subscribed_video_channel_streaming_service_group_{{ loop.index }}" id="subscribed_video_channel_streaming_service_group_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                      {% for provider_group_item in html_provider_groups %}
+                        <option value="{{ provider_group_item.provider_group_id }}" {% if provider_group_item.provider_group_id == item.channel_streaming_service_group %}selected{% endif %} style="width: auto; min-width: 100%;">{{ provider_group_item.provider_group_name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="grid-item">
+                    <button type="submit" name="action" value="subscribed_video_channel_delete_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Delete</button>
+                  </div>
+                </div>
+              {% endfor %}
+              <div class="grid-container">
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" id="subscribed_video_channel_active_new" name="subscribed_video_channel_active_new" class="form-check-input"  style="margin-left: 5px;" checked>
+                  </div>
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="subscribed_video_channel_name_new" name="subscribed_video_channel_name_new" title="i.e., Super Awesome Channel" placeholder="i.e., Super Awesome Channel">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="subscribed_video_channel_user_new" name="subscribed_video_channel_user_new" title="i.e., @superawesomechannel" placeholder="i.e., @superawesomechannel">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="subscribed_video_channel_description_new" name="subscribed_video_channel_description_new" title="This is a channel of super awesome stuff!" placeholder="i.e., This is a channel of super awesome stuff!">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="subscribed_video_channel_url_new" name="subscribed_video_channel_url_new" title="i.e., https://www.youtube.com/channel/UChog1pAtNqX2S9GzxF2lryg" placeholder="i.e., https://www.youtube.com/channel/UChog1pAtNqX2S9GzxF2lryg">
+                </div>
+                <div class="grid-item">
+                  <input type="text" id="subscribed_video_channel_image_new" name="subscribed_video_channel_image_new" title="i.e., https://yt3.googleusercontent.com/ytc/AIdro_n4YNQmAew201Ay95Ow2ZX3EH6a7AzOuYjlgF3WyMC_8ZI=s176-c-k-c0x00ffffff-no-rj-mo" placeholder="i.e., https://yt3.googleusercontent.com/ytc/AIdro_n4YNQmAew201Ay95Ow2ZX3EH6a7AzOuYjlgF3WyMC_8ZI=s176-c-k-c0x00ffffff-no-rj-mo">
+                </div>
+                <div class="grid-item">
+                  <select class="select2" name="subscribed_video_channel_streaming_service_group_new" id="subscribed_video_channel_streaming_service_group_new" style="width: 100%; max-width: 100%;">
+                    {% for provider_group_item in html_provider_groups %}
+                      <option value="{{ provider_group_item.provider_group_id }}" style="width: auto; min-width: 100%;">{{ provider_group_item.provider_group_name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="grid-item">
+                  <button type="submit" name="action" value="subscribed_video_channel_new" class="btn bg-gradient-primary my-2 mb-2">Add</button>
+                </div>
+              </div>
+              <button type="submit" name="action" value="subscribed_video_channel_save" class="btn bg-gradient-primary w-25 my-2 mb-2">Save All</button>
+              <button type="submit" name="action" value="show_hidden_subscribed_video_channels" class="btn bg-gradient-primary w-25 my-2 mb-2">Show Hidden</button>
+              <button type="submit" name="action" value="subscribed_video_channel_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
+            </div>
+            <p><div id="html_subscribed_video_channels_message"><b>{{ html_subscribed_video_channels_message }}</b></div></p>
+            <hr>
             <!-- Subscribed Streaming Services Settings -->
             <h4 id="ssss_anchor">Subscribed Streaming Services Settings
               <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Subscribed-Streaming-Services-Settings" target="_blank">
@@ -202,7 +307,7 @@
                       <input type="checkbox" id="ssss_streaming_service_active_{{ loop.index }}" name="ssss_streaming_service_active_{{ loop.index }}" class="form-check-input" 
                         {% if item.streaming_service_active|lower == 'on' %}checked{% endif %} 
                         onchange="this.value = this.checked ? 'On' : 'Off'" 
-                        value="On">
+                        value="On" style="margin-left: 5px;">
                     </div>
                   </div>
                   <div class="grid-item">
@@ -245,7 +350,7 @@
                       <input type="checkbox" id="provider_group_active_{{ loop.index }}" name="provider_group_active_{{ loop.index }}" class="form-check-input" 
                         {% if item.provider_group_active|lower == 'on' %}checked{% endif %} 
                         onchange="this.value = this.checked ? 'On' : 'Off'" 
-                        value="On">
+                        value="On" style="margin-left: 5px;">
                     </div>
                   </div>
                   <div class="grid-item">
@@ -262,7 +367,7 @@
               <div class="grid-container">
                 <div class="grid-item">
                   <div class="form-check form-switch ps-0 is-filled">
-                    <input type="checkbox" id="provider_group_active_new" name="provider_group_active_new" class="form-check-input" checked>
+                    <input type="checkbox" id="provider_group_active_new" name="provider_group_active_new" class="form-check-input" style="margin-left: 5px;" checked>
                   </div>
                 </div>
                 <div class="grid-item">
@@ -303,7 +408,7 @@
                       <input type="checkbox" id="slmapping_active_existing_{{ loop.index }}" name="slmapping_active_existing_{{ loop.index }}" class="form-check-input" 
                         {% if item.active|lower == 'on' %}checked{% endif %} 
                         onchange="this.value = this.checked ? 'On' : 'Off'" 
-                        value="On">
+                        value="On" style="margin-left: 5px;">
                     </div>
                   </div>
                   <div class="grid-item">
@@ -334,7 +439,7 @@
               <div class="grid-container">
                 <div class="grid-item">
                   <div class="form-check form-switch ps-0 is-filled">
-                    <input type="checkbox" id="slmapping_active_new" name="slmapping_active_new" class="form-check-input" checked>
+                    <input type="checkbox" id="slmapping_active_new" name="slmapping_active_new" class="form-check-input" style="margin-left: 5px;" checked>
                   </div>
                 </div>
                 <div class="grid-item">
@@ -387,7 +492,7 @@
                     <input type="checkbox" id="slm_label_active_{{ loop.index }}" name="slm_label_active_{{ loop.index }}" class="form-check-input" 
                       {% if item.label_active|lower == 'on' %}checked{% endif %} 
                       onchange="this.value = this.checked ? 'On' : 'Off'" 
-                      value="On">
+                      value="On" style="margin-left: 5px;">
                   </div>
                 </div>
                 <div class="grid-item">
@@ -404,7 +509,7 @@
             <div class="grid-container">
               <div class="grid-item">
                 <div class="form-check form-switch ps-0 is-filled">
-                  <input type="checkbox" id="slm_label_active_new" name="slm_label_active_new" class="form-check-input" checked>
+                  <input type="checkbox" id="slm_label_active_new" name="slm_label_active_new" class="form-check-input" style="margin-left: 5px;" checked>
                 </div>
               </div>
               <div class="grid-item">
@@ -437,7 +542,7 @@
             <button type="submit" name="action" value="slm_stream_address_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
             <button type="submit" name="action" value="slm_stream_address_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
             <p><em>WARNING: Do not use 'https' as it may cause Stream Files on Channels DVR clients to fail.</em></p>
-            <p><div id="html_slm_stream_address_message">{{ html_slm_stream_address_message }}</div></p>
+            <p><div id="html_slm_stream_address_message"><b>{{ html_slm_stream_address_message }}</b></div></p>
             <hr>
           {% endif %}
         </form>
