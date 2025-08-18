@@ -70,7 +70,7 @@
    * **[Search New & Updated](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Search-New-&-Updated)**
    * **[Selecting from Search Results](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Selecting-from-Search-Results)**
    * **[Adding Manual Movies, Shows, and Videos](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Adding-Manual-Movies,-Shows,-and-Videos)**
-* **Bookmarked Programs & Channels**
+* **Selections for Bookmarked Programs & Channels**
    * **[Basic Selections](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Basic-Selections)**
    * **[Videos & Channels](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Videos-and-Channels)**
    * **[Special Actions](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions)**
@@ -80,7 +80,9 @@
    * **Program Level Management**
       * **[Bookmark Actions](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Actions)**
       * **[Bookmark Overrides](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Overrides)**
-* **[Modify Programs](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Modify-Programs)**
+* **Editing Bookmarked Programs**
+   * **[Modify Programs](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Modify-Programs)**
+   * **[Manage Videos](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Manage-Videos)**
 * **[Processes](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Processes)**
 
 ### Linear: PLM
