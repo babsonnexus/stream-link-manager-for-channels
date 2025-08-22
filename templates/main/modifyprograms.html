@@ -676,7 +676,7 @@
                 <div class="grid-item">
                   <select name="program_modify_add_episode_special_action" id="program_modify_add_episode_special_action" style="width: 100%; max-width: 100%;">
                     {% for html_special_action in html_special_actions %}
-                      <option {% if loop.first %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
+                      <option {% if html_special_action == "Make SLM Stream" %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_special_action }}</option>
                     {% endfor %}
                   </select>
                 </div>

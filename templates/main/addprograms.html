@@ -273,7 +273,11 @@
                   {% for language_code_item in html_valid_language_codes %}
                       <option value="{{ language_code_item }}" {% if language_code_item == html_language_code %}selected{% endif %}>{{ language_code_item }}</option>
                   {% endfor %}
-              </select>
+                </select>
+              </div>
+              <div style="margin-top: 8px;">
+                <label for="minimum_video_length"><b>Minimum Video Length (Seconds)</b></label>
+                <input type="text" id="minimum_video_length" name="minimum_video_length" value="{{ html_minimum_video_length }}" style="width: 99%;"{% if html_done_generate_flag or html_season_episode_manual_flag %}disabled{% endif %}>
               </div>
               <hr>
               <div>
