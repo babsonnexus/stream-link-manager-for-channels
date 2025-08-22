@@ -39,7 +39,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.08.16.2105"
+    slm_version = "v2025.08.22.1637"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -116,6 +116,7 @@ def webpage_add_programs():
     global select_program_to_bookmarks
     global provider_status_input_prior
     global settings_search_selection_input_prior
+    global minimum_video_length_input_prior
 
     settings = read_data(csv_settings)
     country_code = settings[2]["settings"]
@@ -124,6 +125,7 @@ def webpage_add_programs():
     hide_bookmarked = settings[9]["settings"]
     provider_status = settings[47]["settings"]
     settings_search_selection = settings[64]["settings"]    # [64] SLM: 'Add Programs' Search Selection (Default)
+    minimum_video_length = settings[65]["settings"]         # [65] SLM: Minimum Video Length (in Seconds) for Search
 
     # Provider Lists
     provider_statuses = []
@@ -238,143 +240,178 @@ def webpage_add_programs():
             hide_bookmarked_input = "On" if hide_bookmarked_input in ['on', 'On'] else "Off"
             provider_status_input = request.form.get('provider_status')
             settings_search_selection_input = request.form.get('add_programs_search_selection')
+            minimum_video_length_input = request.form.get('minimum_video_length')
 
-            if add_programs_action in ['program_add_search', 'search_defaults_save']:
-                num_results_input = request.form.get('num_results')
-                num_results_test = get_num_results(num_results_input)
-
-                if num_results_test == "pass":
-                    if add_programs_action == 'search_defaults_save':
-                        settings[2]["settings"] = country_code_input
-                        settings[3]["settings"] = language_code_input
-                        settings[4]["settings"] = int(num_results_input)
-                        settings[9]["settings"] = "On" if hide_bookmarked_input in ['on', 'On'] else "Off"
-                        settings[47]["settings"] = provider_status_input
-                        settings[64]["settings"] = settings_search_selection_input                              # [64] SLM: 'Add Programs' Search Selection (Default)
-
-                        write_data(csv_settings, settings)
-                        program_add_message = f"{current_time()} INFO: Search defaults saved!"
-
-                        settings = read_data(csv_settings)
-                        country_code = settings[2]["settings"]
-                        language_code = settings[3]["settings"]
-                        num_results = settings[4]["settings"]
-                        hide_bookmarked = settings[9]["settings"]
-                        provider_status = settings[47]["settings"]
-                        settings_search_selection = settings[64]["settings"]    # [64] SLM: 'Add Programs' Search Selection (Default)
-
-                        update_streaming_services()
-
-                    elif add_programs_action.startswith('program_add_search'):
-                        program_search_results = []
-                        movies_shows_search_results = []
-                        videos_search_results = []
-                        channels_search_results = []
-                        
-                        country_code_input_prior = country_code_input
-                        language_code_input_prior = language_code_input              
-
-                        if settings_search_selection_input in ['all', 'movies_shows_videos', 'movies_shows']:
-                            movies_shows_search_results = search_bookmark(country_code_input, language_code_input, num_results_input, program_add_input)
-                        if settings_search_selection_input in ['all', 'movies_shows_videos', 'videos_channels', 'videos']:
-                            videos_search_results, program_add_message = search_video_providers(video_providers, program_add_input, 'videos', num_results_input, language_code_input, country_code_input)
-                        if settings_search_selection_input in ['all', 'videos_channels', 'channels']:
-                            channels_search_results, program_add_message = search_video_providers(video_providers, program_add_input, 'channels', num_results_input, language_code_input, country_code_input)
-
-                        if 'ERROR' not in program_add_message:
-                            
-                            if movies_shows_search_results:
-                                program_search_results = program_search_results + movies_shows_search_results
-                                movies_filter_button_visible = True
-                                shows_filter_button_visible = True
-                            if videos_search_results:
-                                program_search_results = program_search_results + videos_search_results
-                                if settings_search_selection_input != 'videos':
-                                    videos_filter_button_visible = True
-                            if channels_search_results:
-                                program_search_results = program_search_results + channels_search_results
-                                if settings_search_selection_input != 'channels':
-                                    channels_filter_button_visible = True
-                            
-                            if program_search_results:
-                                program_add_resort_panel = 'on'
-                                program_add_filter_panel = 'on'
-                                                                
-                                program_add_message = f"{current_time()} INFO: Showing {num_results_input} results (per type) for search in {search_selection_lookup[settings_search_selection_input]}."
-                            
-                            else:
-                                program_add_message = f"{current_time()} INFO: No results for search."
-
+            minimum_video_length_test = False
+            try:
+                if not minimum_video_length_input:
+                    program_add_message = f"{current_time()} ERROR: 'Minimum Video Length' is required."
+                if int(minimum_video_length_input) >= 0:
+                    minimum_video_length_test = True
                 else:
-                    program_add_message = num_results_test
+                    program_add_message = f"{current_time()} ERROR: For 'Minimum Video Length', please enter a positive integer."
+            except ValueError:
+                program_add_message = f"{current_time()} ERROR: 'Minimum Video Length' must be a number."
 
-            elif add_programs_action in ['program_new_search', 'program_new_today']:
-                if add_programs_action == 'program_new_search':
-                    date_new_input = request.form.get('date_new')
-                elif add_programs_action == 'program_new_today':
-                    date_new_input = date_new_default
+            if minimum_video_length_test:
 
-                date_new_default_prior = date_new_input
-                num_results_input = 100 # Maximum number of new programs
+                if add_programs_action in ['program_add_search', 'search_defaults_save']:
+                    num_results_input = request.form.get('num_results')
+                    num_results_test = get_num_results(num_results_input)
 
-                program_search_results = get_program_new(date_new_input, country_code_input, language_code_input, num_results_input, provider_status_input, video_providers)
-                program_search_results = sorted(program_search_results, key=lambda x: sort_key(x["title"].casefold()))
-                country_code_input_prior = country_code_input
-                language_code_input_prior = language_code_input
-                provider_status_input_prior = provider_status_input
-                settings_search_selection_input_prior = settings_search_selection_input
-                program_add_resort_panel = ''
-                program_add_filter_panel = 'on'
+                    if num_results_test == "pass":
+                        if add_programs_action == 'search_defaults_save':
+                            settings[2]["settings"] = country_code_input
+                            settings[3]["settings"] = language_code_input
+                            settings[4]["settings"] = int(num_results_input)
+                            settings[9]["settings"] = "On" if hide_bookmarked_input in ['on', 'On'] else "Off"
+                            settings[47]["settings"] = provider_status_input
+                            settings[64]["settings"] = settings_search_selection_input                              # [64] SLM: 'Add Programs' Search Selection (Default)
+                            settings[65]["settings"] = minimum_video_length_input                                   # [65] SLM: Minimum Video Length (in Seconds) for Search
+
+                            write_data(csv_settings, settings)
+                            program_add_message = f"{current_time()} INFO: Search defaults saved!"
+
+                            settings = read_data(csv_settings)
+                            country_code = settings[2]["settings"]
+                            language_code = settings[3]["settings"]
+                            num_results = settings[4]["settings"]
+                            hide_bookmarked = settings[9]["settings"]
+                            provider_status = settings[47]["settings"]
+                            settings_search_selection = settings[64]["settings"]    # [64] SLM: 'Add Programs' Search Selection (Default)
+                            minimum_video_length = settings[65]["settings"]         # [65] SLM: Minimum Video Length (in Seconds) for Search
+
+                            update_streaming_services()
+
+                        elif add_programs_action.startswith('program_add_search'):
+                            program_search_results = []
+                            movies_shows_search_results = []
+                            videos_search_results = []
+                            channels_search_results = []
+                            
+                            country_code_input_prior = country_code_input
+                            language_code_input_prior = language_code_input
+                            minimum_video_length_input_prior = minimum_video_length_input
+
+                            if settings_search_selection_input in ['all', 'movies_shows_videos', 'movies_shows']:
+                                movies_shows_search_results = search_bookmark(country_code_input, language_code_input, num_results_input, program_add_input)
+                            if settings_search_selection_input in ['all', 'movies_shows_videos', 'videos_channels', 'videos']:
+                                videos_search_results, program_add_message = search_video_providers(video_providers, program_add_input, 'videos', num_results_input, language_code_input, country_code_input)
+                            if settings_search_selection_input in ['all', 'videos_channels', 'channels']:
+                                channels_search_results, program_add_message = search_video_providers(video_providers, program_add_input, 'channels', num_results_input, language_code_input, country_code_input)
+
+                            if 'ERROR' not in program_add_message:
+                                
+                                if movies_shows_search_results:
+                                    program_search_results = program_search_results + movies_shows_search_results
+                                    movies_filter_button_visible = True
+                                    shows_filter_button_visible = True
+                                if videos_search_results:
+                                    program_search_results = program_search_results + videos_search_results
+                                    if settings_search_selection_input != 'videos':
+                                        videos_filter_button_visible = True
+                                if channels_search_results:
+                                    program_search_results = program_search_results + channels_search_results
+                                    if settings_search_selection_input != 'channels':
+                                        channels_filter_button_visible = True
+                                
+                                if program_search_results:
+                                    program_add_resort_panel = 'on'
+                                    program_add_filter_panel = 'on'
+                                                                    
+                                    program_add_message = f"{current_time()} INFO: Showing {num_results_input} results (per type) for search in {search_selection_lookup[settings_search_selection_input]}."
+                                
+                                else:
+                                    program_add_message = f"{current_time()} INFO: No results for search."
+
+                    else:
+                        program_add_message = num_results_test
+
+                elif add_programs_action in ['program_new_search', 'program_new_today']:
+                    if add_programs_action == 'program_new_search':
+                        date_new_input = request.form.get('date_new')
+                    elif add_programs_action == 'program_new_today':
+                        date_new_input = date_new_default
+
+                    date_new_default_prior = date_new_input
+                    num_results_input = 100 # Maximum number of new programs
+
+                    program_search_results = get_program_new(date_new_input, country_code_input, language_code_input, num_results_input, provider_status_input, video_providers)
+                    program_search_results = sorted(program_search_results, key=lambda x: sort_key(x["title"].casefold()))
+                    country_code_input_prior = country_code_input
+                    language_code_input_prior = language_code_input
+                    minimum_video_length_input_prior = minimum_video_length_input
+                    provider_status_input_prior = provider_status_input
+                    settings_search_selection_input_prior = settings_search_selection_input
+                    minimum_video_length_input_prior = minimum_video_length_input
+                    program_add_resort_panel = ''
+                    program_add_filter_panel = 'on'
+
+                    if program_search_results:
+                        program_add_message = f"{current_time()} INFO: Showing New & Updated from '{provider_status_input}' on {date_new_input}."
+                        
+                        for program_search_result in program_search_results:
+                            if program_search_result['object_type'] == "MOVIE":
+                                movies_filter_button_visible = True
+                                break
+
+                        for program_search_result in program_search_results:
+                            if program_search_result['object_type'] == "SHOW":
+                                shows_filter_button_visible = True
+                                break
+
+                        for program_search_result in program_search_results:
+                            if program_search_result['object_type'] == "VIDEO":
+                                videos_filter_button_visible = True
+                                break
+
+                        if movies_filter_button_visible:
+                            if not shows_filter_button_visible and not videos_filter_button_visible:
+                                movies_filter_button_visible = False
+
+                        if shows_filter_button_visible:
+                            if not movies_filter_button_visible and not videos_filter_button_visible:
+                                shows_filter_button_visible = False
+
+                        if videos_filter_button_visible:
+                            if not shows_filter_button_visible and not movies_filter_button_visible:
+                                videos_filter_button_visible = False
+
+                    else:
+                        program_add_message = f"{current_time()} INFO: No New & Updated content from '{provider_status_input}' on {date_new_input}."
 
                 if program_search_results:
-                    program_add_message = f"{current_time()} INFO: Showing New & Updated from '{provider_status_input}' on {date_new_input}."
-                    
-                    for program_search_result in program_search_results:
-                        if program_search_result['object_type'] == "MOVIE":
-                            movies_filter_button_visible = True
-                            break
+                    bookmarks = read_data(csv_bookmarks)
+                    bookmarks_statuses = read_data(csv_bookmarks_status)
+                    subscribed_video_channels = read_data(csv_slm_subscribed_video_channels)
 
-                    for program_search_result in program_search_results:
-                        if program_search_result['object_type'] == "SHOW":
-                            shows_filter_button_visible = True
-                            break
+                    # Filter out previously bookmarked
+                    if hide_bookmarked_input == "On":
+                        bookmarked_entry_ids = {bookmark['entry_id'] for bookmark in bookmarks}
+                        bookmarks_statuses_slm_stream_urls = {bookmarks_status["stream_link_override"] for bookmarks_status in bookmarks_statuses if bookmarks_status['special_action'] == "Make SLM Stream"}
+                        subscribed_video_channels_url_lookup = {subscribed_video_channel["channel_url"] for subscribed_video_channel in subscribed_video_channels}
+                        program_search_results = [entry for entry in program_search_results if entry['entry_id'] not in bookmarked_entry_ids and entry['url'] not in bookmarks_statuses_slm_stream_urls and entry['url'] not in subscribed_video_channels_url_lookup]
 
-                    for program_search_result in program_search_results:
-                        if program_search_result['object_type'] == "VIDEO":
-                            videos_filter_button_visible = True
-                            break
+                    # Do not show already hidden
+                    hidden_bookmarks = {bookmark['entry_id'] for bookmark in bookmarks if bookmark['bookmark_action'] == "Hide"}
+                    hidden_videos = {bookmarks_status["stream_link_override"] for bookmarks_status in bookmarks_statuses if bookmarks_status['entry_id'] == "intHiddenVideos"}
+                    hidden_subscribed_video_channels = {subscribed_video_channel["channel_url"] for subscribed_video_channel in subscribed_video_channels if subscribed_video_channel["channel_hidden"] == "True"}
+                    program_search_results = [entry for entry in program_search_results if entry['entry_id'] not in hidden_bookmarks and entry['url'] not in hidden_videos and entry['url'] not in hidden_subscribed_video_channels]
 
-                else:
-                    program_add_message = f"{current_time()} INFO: No New & Updated content from '{provider_status_input}' on {date_new_input}."
+                    # Filter out videos with durations less than xxx seconds
+                    below_minimum_video_length_lookup = [program_search_result['url'] for program_search_result in program_search_results if program_search_result['object_type'] == "VIDEO" and int(parse_duration_to_seconds(program_search_result['score'])) <= int(minimum_video_length_input_prior) ]
+                    program_search_results = [entry for entry in program_search_results if entry['url'] not in below_minimum_video_length_lookup]
 
-            if program_search_results:
-                bookmarks = read_data(csv_bookmarks)
-                bookmarks_statuses = read_data(csv_bookmarks_status)
-                subscribed_video_channels = read_data(csv_slm_subscribed_video_channels)
+                    # Replace None in 'poster' with the default URL
+                    default_poster_url = 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Missing_barnstar.jpg'
+                    for entry in program_search_results:
+                        if entry['poster'] is None or entry['poster'] == '':
+                            entry['poster'] = default_poster_url
 
-                # Filter out previously bookmarked
-                if hide_bookmarked_input == "On":
-                    bookmarked_entry_ids = {bookmark['entry_id'] for bookmark in bookmarks}
-                    bookmarks_statuses_slm_stream_urls = {bookmarks_status["stream_link_override"] for bookmarks_status in bookmarks_statuses if bookmarks_status['special_action'] == "Make SLM Stream"}
-                    subscribed_video_channels_url_lookup = {subscribed_video_channel["channel_url"] for subscribed_video_channel in subscribed_video_channels}
-                    program_search_results = [entry for entry in program_search_results if entry['entry_id'] not in bookmarked_entry_ids and entry['url'] not in bookmarks_statuses_slm_stream_urls and entry['url'] not in subscribed_video_channels_url_lookup]
+                    if not program_search_results:
+                        program_add_message = f"{current_time()} INFO: After filtering for bookmarked and/or hidden content, no additional results available."
 
-                # Do not show already hidden
-                hidden_bookmarks = {bookmark['entry_id'] for bookmark in bookmarks if bookmark['bookmark_action'] == "Hide"}
-                hidden_videos = {bookmarks_status["stream_link_override"] for bookmarks_status in bookmarks_statuses if bookmarks_status['entry_id'] == "intHiddenVideos"}
-                hidden_subscribed_video_channels = {subscribed_video_channel["channel_url"] for subscribed_video_channel in subscribed_video_channels if subscribed_video_channel["channel_hidden"] == "True"}
-                program_search_results = [entry for entry in program_search_results if entry['entry_id'] not in hidden_bookmarks and entry['url'] not in hidden_videos and entry['url'] not in hidden_subscribed_video_channels]
-
-                # Replace None in 'poster' with the default URL
-                default_poster_url = 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Missing_barnstar.jpg'
-                for entry in program_search_results:
-                    if entry['poster'] is None or entry['poster'] == '':
-                        entry['poster'] = default_poster_url
-
-                if not program_search_results:
-                    program_add_message = f"{current_time()} INFO: After filtering for bookmarked and/or hidden content, no additional results available."
-
-                program_search_results_prior = program_search_results
+                    program_search_results_prior = program_search_results
 
         # Filter and resort search results
         elif add_programs_action.startswith('program_add_resort_') or add_programs_action.startswith('hide_program_search_result_'):
@@ -620,7 +657,8 @@ def webpage_add_programs():
                 video_season_episodes.append({
                     "season_episode_id": "VIDEO",
                     "season_episode": video_season_episode,
-                    "status": "unwatched"
+                    "status": "unwatched",
+                    "special_action": "Make SLM Stream"
                 })
 
             season_episodes_prior = video_season_episodes
@@ -789,6 +827,7 @@ def webpage_add_programs():
                         field_override_image_inputs = {}
                         field_override_duration_inputs = {}
                     video_names = []
+                    video_links = []
                     
                     status_missing = True
 
@@ -861,6 +900,12 @@ def webpage_add_programs():
                         status = field_status_inputs.get(index, 'watched')
                         
                         stream_link_override = field_stream_link_override_inputs.get(index)
+                        if season_episodes_prior[int(index) - 1]['season_episode_id'] == "VIDEO":
+                            if stream_link_override in video_links:
+                                stream_link_override = f"http://duplicate_video_link_{int(index):02d}"
+                            else:
+                                video_links.append(stream_link_override)
+                        
                         special_action = field_special_action_inputs.get(index)
                         original_release_date = field_original_release_date_inputs.get(index)
 
@@ -926,15 +971,23 @@ def webpage_add_programs():
                                     break
 
                         manual_order = None
-                        if field_select_video_group_input is None and len(season_episodes_prior) > 1:
-                            if old_override_program_sort == 'manual' and new_override_program_sort == 'manual':
-                                if season_episode in manual_order_lookup:
-                                    manual_order = manual_order_lookup[season_episode]
-                            elif old_override_program_sort != 'manual' and new_override_program_sort == 'manual':
-                                manual_order = new_manual_order
-                                new_manual_order = new_manual_order + 1
-                            elif old_override_program_sort == 'manual' and new_override_program_sort != 'manual':
-                                manual_order = None
+                        if field_select_video_group_input is None:
+                            if len(season_episodes_prior) > 1:
+                                if old_override_program_sort == 'manual' and new_override_program_sort == 'manual':
+                                    if season_episode in manual_order_lookup:
+                                        manual_order = manual_order_lookup[season_episode]
+                                elif old_override_program_sort != 'manual' and new_override_program_sort == 'manual':
+                                    manual_order = new_manual_order
+                                    new_manual_order = new_manual_order + 1
+                                elif old_override_program_sort == 'manual' and new_override_program_sort != 'manual':
+                                    manual_order = None
+                            else:
+                                if old_override_program_sort == 'manual' and new_override_program_sort == 'manual':
+                                    manual_order = max(int(bookmarks_status['manual_order']) for bookmarks_status in bookmarks_statuses if bookmarks_status['entry_id'] == entry_id_prior) + 1
+                                elif old_override_program_sort != 'manual' and new_override_program_sort == 'manual':
+                                    manual_order = 1
+                                elif old_override_program_sort == 'manual' and new_override_program_sort != 'manual':
+                                    manual_order = None
 
                         if add_programs_action in ['program_add_done', 'program_add_generate']:
                             bookmarks_statuses.append({
@@ -1096,6 +1149,7 @@ def webpage_add_programs():
                 language_code_input_prior = None
                 provider_status_input_prior = None
                 settings_search_selection_input_prior = None
+                minimum_video_length_input_prior = 0
                 entry_id_prior = None
                 object_type_selected_prior = None
                 season_episodes_prior = []
@@ -1309,6 +1363,7 @@ def webpage_add_programs():
         html_override_duration_movie = override_duration_movie,
         html_search_selections = search_selections,
         html_settings_search_selection = settings_search_selection,
+        html_minimum_video_length = minimum_video_length,
         html_visible_subscribed_video_channels = visible_subscribed_video_channels,
         html_provider_groups = provider_groups,
         html_subscribed_video_channel_flag = subscribed_video_channel_flag,
@@ -1431,6 +1486,30 @@ def get_release_year(release_year_input):
         release_year_test = f"{current_time()} ERROR: For 'Release Year', please enter a numeric value."
 
     return release_year_test
+
+# For videos, converts duration value into seconds for filtering out
+def parse_duration_to_seconds(duration_str):
+    total_seconds = 0
+
+    if "Unknown" not in duration_str:
+        # Find all time components using regex
+        time_matches = re.findall(r'(\d+)\s*(hours?|minutes?|seconds?)', duration_str)
+
+        # Map units to their multiplier
+        unit_multipliers = {
+            'hour': 3600,
+            'hours': 3600,
+            'minute': 60,
+            'minutes': 60,
+            'second': 1,
+            'seconds': 1
+        }
+
+        # Accumulate total seconds
+        for value, unit in time_matches:
+            total_seconds += int(value) * unit_multipliers[unit]
+
+    return total_seconds
 
 # Search for a program to bookmark
 def search_bookmark(country_code, language_code, num_results, program_search):
@@ -1874,13 +1953,11 @@ def search_video_providers(providers, query, search_type, num_results, language_
                     if search_type == "channels":
                         poster = f"https:{poster}"
                     
-                    if search_type == "videos":
-                        score = processed_result.get('viewCount', {}).get('text', 'Unknown views')
-                    elif search_type == "channels":
+                    if search_type == "channels":
                         score = f"Subscribe"
                     elif search_type == "videos_from_playlist":
                         score = base_info.get('title', 'Unknown Playlist Name')
-                    elif search_type == "videos_from_channel":
+                    elif search_type in ["videos", "videos_from_channel"]:
                         score = f"Duration: {processed_result.get('accessibility', {}).get('duration', 'Unknown')}"
 
                     extracted_data.append({
@@ -3511,6 +3588,8 @@ def webpage_modify_programs():
 
                     elif field_object_type_input == 'SHOW' or field_object_type_input == 'VIDEO':
                         video_names = []
+                        video_links = []
+                        stream_link_override_lookup = [bookmarks_status['stream_link_override'] for bookmarks_status in bookmarks_statuses if bookmarks_status['special_action'] == 'Make SLM Stream' and bookmarks_status['entry_id'] != entry_id_prior]
 
                         for index in field_season_episode_inputs.keys():
                             field_status_input = field_status_inputs.get(index, 'watched')
@@ -3559,6 +3638,11 @@ def webpage_modify_programs():
                                         else:
                                             bookmarks_status['season_episode'] = field_season_episode_input
                                             video_names.append(field_season_episode_input)
+                                        
+                                        if field_stream_link_override_input in video_links or field_stream_link_override_input in stream_link_override_lookup:
+                                            bookmarks_status['stream_link_override'] = f"http://duplicate_video_link_{int(index):02d}"
+                                        else:
+                                            video_links.append(field_stream_link_override_input)
 
                     if old_override_program_sort == 'manual' and new_override_program_sort == 'manual':
                         raw_manual_order_videos_inputs = request.form.get('manual_order_videos')
@@ -3683,6 +3767,404 @@ def webpage_modify_programs():
         html_override_program_image_types = override_program_image_types,
         html_override_program_sorts = override_program_sorts
     )
+
+@app.route('/manage_videos', methods=['GET', 'POST'])
+def webpage_manage_videos():
+    global filter_video_entry_id
+    global filter_video_season_episode
+    global filter_video_stream_link_override
+    global filter_video_special_action
+    global filter_video_override_episode_title
+    global filter_video_override_summary
+    global filter_video_override_image
+    global filter_video_override_duration
+
+    bookmarks = read_data(csv_bookmarks)
+    video_bookmarks_lookup = {}
+    if bookmarks:
+        video_bookmarks_lookup = [bookmark['entry_id'] for bookmark in bookmarks if bookmark['object_type'] == "VIDEO" and not bookmark['entry_id'].startswith('int') and bookmark['bookmark_action'] != 'Hide']
+
+    video_groups = []
+    for bookmark in bookmarks:
+        if bookmark['entry_id'] in video_bookmarks_lookup:
+                video_groups.append({
+                    'entry_id': bookmark['entry_id'],
+                    'title_release_year': f"{bookmark['title']} ({bookmark['release_year']})"
+                })
+    if video_groups:
+        video_groups = sorted(video_groups, key=lambda x: sort_key(x['title_release_year'].casefold()))
+    
+    bookmarks_statuses = read_data(csv_bookmarks_status)
+    video_bookmark_statuses = []
+    if bookmarks_statuses:
+        video_bookmark_statuses = [bookmarks_status for bookmarks_status in bookmarks_statuses if bookmarks_status['entry_id'] in video_bookmarks_lookup]
+        if video_bookmark_statuses:
+            video_bookmark_statuses = sorted(video_bookmark_statuses, key=lambda x: sort_key(x['season_episode'].casefold()))
+
+    special_actions = special_actions_default.copy()
+
+    select_actions =[
+        {'select_action_id': 'save', 'select_action_name': 'Save'},
+        {'select_action_id': 'hide', 'select_action_name': 'Hide'},
+        {'select_action_id': 'delete', 'select_action_name': 'Delete'},
+        {'select_action_id': 'import_metadata', 'select_action_name': 'Import Metadata'},
+    ]
+
+    manage_videos_message = ''
+
+    if request.method == 'POST':
+        action = request.form['action']
+
+        if action.endswith('new') or action.endswith('save'):
+            filter_video_entry_id = request.form.get('filter-video-entry-id')
+            filter_video_season_episode = request.form.get('filter-video-season-episode')
+            filter_video_stream_link_override = request.form.get('filter-video-stream-link-override')
+            filter_video_special_action = request.form.get('filter-video-special-action')
+            filter_video_override_episode_title = request.form.get('filter-video-override-episode-title')
+            filter_video_override_summary = request.form.get('filter-video-override-summary')
+            filter_video_override_image = request.form.get('filter-video-override-image')
+            filter_video_override_duration = request.form.get('filter-video-override-duration')
+
+            run_empty_row = False
+
+            if action.endswith('save'):
+
+                field_status_inputs = {}
+                field_entry_id_inputs = {}
+                field_season_episode_inputs = {}
+                field_stream_link_override_inputs = {}
+                field_special_action_inputs = {}
+                field_override_episode_title_inputs = {}
+                field_override_summary_inputs = {}
+                field_override_image_inputs = {}
+                field_override_duration_inputs = {}
+                field_select_action_inputs = {}
+                prior_entry_id_inputs = {}
+                prior_season_episode_inputs = {}
+
+                for key in request.form.keys():
+
+                    if key.startswith('field_status_'):
+                        index = key.split('_')[-1]
+                        field_status_inputs[index] = 'unwatched' if request.form.get(key) in ['on', 'On', 'ON'] else 'watched'
+
+                    if key.startswith('field_entry_id_'):
+                        index = key.split('_')[-1]
+                        field_entry_id_inputs[index] = request.form.get(key)
+
+                    if key.startswith('field_season_episode_'):
+                        index = key.split('_')[-1]
+                        field_season_episode_inputs[index] = request.form.get(key)
+
+                    if key.startswith('field_stream_link_override_'):
+                        index = key.split('_')[-1]
+                        field_stream_link_override_inputs[index] = request.form.get(key)
+
+                    if key.startswith('field_special_action_'):
+                        index = key.split('_')[-1]
+                        field_special_action_inputs[index] = request.form.get(key)
+
+                    if key.startswith('field_override_episode_title_'):
+                        index = key.split('_')[-1]
+                        field_override_episode_title_inputs[index] = request.form.get(key)
+
+                    if key.startswith('field_override_summary_'):
+                        index = key.split('_')[-1]
+                        field_override_summary_inputs[index] = request.form.get(key)
+
+                    if key.startswith('field_override_image_'):
+                        index = key.split('_')[-1]
+                        field_override_image_inputs[index] = request.form.get(key)
+
+                    if key.startswith('field_override_duration_'):
+                        index = key.split('_')[-1]
+                        field_override_duration_inputs[index] = request.form.get(key)
+
+                    if key.startswith('field_select_action_'):
+                        index = key.split('_')[-1]
+                        field_select_action_inputs[index] = request.form.get(key)
+
+                    if key.startswith('prior_entry_id_'):
+                        index = key.split('_')[-1]
+                        prior_entry_id_inputs[index] = request.form.get(key)
+
+                    if key.startswith('prior_season_episode_'):
+                        index = key.split('_')[-1]
+                        prior_season_episode_inputs[index] = request.form.get(key)
+
+                submitted_videos = []
+                for row in prior_season_episode_inputs:
+                    field_status_input = None
+                    field_entry_id_input = None
+                    field_season_episode_input = None
+                    field_stream_link_override_input = None
+                    field_special_action_input = None
+                    field_override_episode_title_input = None
+                    field_override_summary_input = None
+                    field_override_image_input = None
+                    field_override_duration_input = None
+                    field_select_action_input = None
+                    prior_entry_id_input = None
+                    prior_season_episode_input = None
+
+                    field_status_input = field_status_inputs.get(row, 'watched')
+                    field_entry_id_input = field_entry_id_inputs.get(row)
+                    field_season_episode_input = field_season_episode_inputs.get(row)
+                    field_stream_link_override_input = field_stream_link_override_inputs.get(row)
+                    field_special_action_input = field_special_action_inputs.get(row)
+                    field_override_episode_title_input = field_override_episode_title_inputs.get(row)
+                    field_override_summary_input = field_override_summary_inputs.get(row)
+                    field_override_image_input = field_override_image_inputs.get(row)
+                    field_override_duration_input = field_override_duration_inputs.get(row)
+                    field_select_action_input = field_select_action_inputs.get(row)
+                    prior_entry_id_input = prior_entry_id_inputs.get(row)
+                    prior_season_episode_input = prior_season_episode_inputs.get(row)
+
+                    submitted_videos.append({
+                        'status': field_status_input,
+                        'entry_id': field_entry_id_input,
+                        'season_episode': field_season_episode_input,
+                        'stream_link_override': field_stream_link_override_input,
+                        'special_action': field_special_action_input,
+                        'override_episode_title': field_override_episode_title_input,
+                        'override_summary': field_override_summary_input,
+                        'override_image': field_override_image_input,
+                        'override_duration': field_override_duration_input,
+                        'select_action': field_select_action_input,
+                        'prior_entry_id': prior_entry_id_input,
+                        'prior_season_episode': prior_season_episode_input
+                    })
+
+                temp_record = create_temp_record(bookmarks_statuses[0].keys())
+                save_error_season_episode = 0
+                save_error_stream_link_override = 0
+
+                for submitted_video in submitted_videos:
+
+                    for bookmarks_status in bookmarks_statuses:
+
+                        if submitted_video['prior_entry_id'] == bookmarks_status['entry_id'] and submitted_video['prior_season_episode'] == bookmarks_status['season_episode']:
+
+                            if submitted_video['select_action'] in ['save', 'hide', 'import_metadata']:
+                                
+                                status = None
+                                entry_id =  None
+                                season_episode = None
+                                stream_link_override = None
+                                special_action = None
+                                override_episode_title = None
+                                override_summary = None
+                                override_image = None
+                                override_duration = None
+                                manual_order = None
+
+                                if submitted_video['select_action'] == 'hide':
+                                    status = 'watched'
+                                    entry_id = 'intHiddenVideos'
+                                
+                                else:
+                                    status = submitted_video['status']
+                                    entry_id = submitted_video['entry_id']
+
+                                season_episode = submitted_video['season_episode']
+                                season_episode_lookup = [bookmarks_status['season_episode'] for bookmarks_status in bookmarks_statuses if bookmarks_status['entry_id'] == entry_id and submitted_video['prior_season_episode'] != bookmarks_status['season_episode']]
+                                if season_episode in season_episode_lookup:
+                                    save_error_season_episode = int(save_error_season_episode) + 1
+                                    season_episode = submitted_video['prior_season_episode']
+                                if submitted_video['prior_entry_id'] != entry_id:
+                                    season_episode_lookup = [bookmarks_status['season_episode'] for bookmarks_status in bookmarks_statuses if bookmarks_status['entry_id'] == entry_id]
+                                    if season_episode in season_episode_lookup:
+                                        save_error_season_episode = int(save_error_season_episode) + 1
+                                        season_episode = f"Duplicate Video Name {save_error_season_episode}"
+
+                                stream_link_override = submitted_video['stream_link_override']
+                                stream_link_override_lookup = [bookmarks_status['stream_link_override'] for bookmarks_status in bookmarks_statuses if bookmarks_status['special_action'] == 'Make SLM Stream' and submitted_video['prior_season_episode'] != bookmarks_status['season_episode']]
+                                if stream_link_override in stream_link_override_lookup:
+                                    save_error_stream_link_override = int(save_error_stream_link_override) + 1
+                                    stream_link_override = bookmarks_status['stream_link_override']
+                                                                
+                                special_action = submitted_video['special_action']
+
+                                if submitted_video['select_action'] == 'import_metadata':
+                                    original_release_date, override_episode_title, override_summary, override_image, override_duration = get_video_metadata(stream_link_override)
+                                    bookmarks_status['original_release_date'] = original_release_date
+
+                                else:
+                                    override_episode_title = submitted_video['override_episode_title']
+                                    override_summary = submitted_video['override_summary']
+                                    override_image = submitted_video['override_image']
+                                    override_duration = submitted_video['override_duration']
+
+                                for bookmark in bookmarks:
+                                    if bookmark['entry_id'] == entry_id:
+                                        if bookmark['override_program_sort'] == 'manual':
+                                            if bookmarks_status['manual_order'] is None or bookmarks_status['manual_order'] == '':
+                                                manual_order = max(int(bookmarks_status['manual_order']) for bookmarks_status in bookmarks_statuses if bookmarks_status['entry_id'] == entry_id) + 1
+                                            else:
+                                                manual_order = bookmarks_status['manual_order']
+                                        break
+
+                                bookmarks_status['status'] = status
+                                bookmarks_status['entry_id'] = entry_id
+                                bookmarks_status['season_episode'] = season_episode
+                                bookmarks_status['stream_link_override'] = stream_link_override
+                                bookmarks_status['special_action'] = special_action
+                                bookmarks_status['override_episode_title'] = override_episode_title
+                                bookmarks_status['override_summary'] = override_summary
+                                bookmarks_status['override_image'] = override_image
+                                bookmarks_status['override_duration'] = override_duration
+                                bookmarks_status['manual_order'] = manual_order
+
+                            elif submitted_video['select_action'] == 'delete':
+                                bookmarks_statuses.remove(bookmarks_status)
+
+                            break
+
+                if not bookmarks_statuses:
+                    bookmarks_statuses.append(temp_record)
+                    run_empty_row = True
+
+                if int(save_error_season_episode) > 0 and int(save_error_stream_link_override) > 0:
+                    manage_videos_message = f"{current_time()} WARNING: There were {save_error_season_episode} duplicate Video name(s) within the Video Group and {save_error_stream_link_override} link(s) that are already bookmarked or hidden. These were reverted to their prior value(s) or changed for uniqueness. Please review and update accordingly."
+                elif int(save_error_season_episode) > 0:
+                    manage_videos_message = f"{current_time()} WARNING: There were {save_error_season_episode} duplicate Video name(s) within the Video Group. These were reverted to their prior value(s) or changed for uniqueness. Please review and update accordingly."
+                elif int(save_error_stream_link_override) > 0:
+                    manage_videos_message = f"{current_time()} WARNING: There were {save_error_stream_link_override} link(s) that are already bookmarked or hidden. These were reverted to their prior value(s) or changed for uniqueness. Please review and update accordingly."
+
+            elif action.endswith('new'):
+                field_status_new_input = None
+                field_entry_id_new_input = None
+                field_season_episode_new_input = None
+                field_stream_link_override_new_input = None
+                field_special_action_new_input = None
+                field_override_episode_title_new_input = None
+                field_override_summary_new_input = None
+                field_override_image_new_input = None
+                field_override_duration_new_input = None
+
+                field_status_new_input = 'unwatched' if request.form.get('field_status_new') == 'on' else 'watched'
+                field_entry_id_new_input = request.form.get('field_entry_id_new')
+                field_season_episode_new_input = request.form.get('field_season_episode_new')
+                field_stream_link_override_new_input = request.form.get('field_stream_link_override_new')
+                field_special_action_new_input = request.form.get('field_special_action_new')
+                field_override_episode_title_new_input = request.form.get('field_override_episode_new_title')
+                field_override_summary_new_input = request.form.get('field_override_summary_new')
+                field_override_image_new_input = request.form.get('field_override_image_new')
+                field_override_duration_new_input = request.form.get('field_override_duration_new')
+
+                status = None
+                entry_id =  None
+                season_episode = None
+                stream_link_override = None
+                special_action = None
+                override_episode_title = None
+                override_summary = None
+                override_image = None
+                override_duration = None
+                manual_order = None
+
+                entry_id = field_entry_id_new_input
+                
+                season_episode = field_season_episode_new_input
+                season_episode_lookup = [bookmarks_status['season_episode'] for bookmarks_status in bookmarks_statuses if bookmarks_status['entry_id'] == entry_id]
+                if season_episode in season_episode_lookup:
+                    manage_videos_message = f"{current_time()} ERROR: '{season_episode}' is already assoicated with another Video in this Video Group. New Video has not been added."
+                
+                if field_status_new_input is None or field_status_new_input == '':
+                    status = 'unwatched'
+                else:
+                    status = field_status_new_input
+
+                stream_link_override = field_stream_link_override_new_input
+                stream_link_override_lookup = [bookmarks_status['stream_link_override'] for bookmarks_status in bookmarks_statuses if bookmarks_status['special_action'] == 'Make SLM Stream']
+                if stream_link_override in stream_link_override_lookup:
+                    manage_videos_message = f"{current_time()} ERROR: '{stream_link_override}' is already bookmarked or hidden. New Video has not been added."
+
+
+                special_action = field_special_action_new_input
+
+                if 'youtu' in stream_link_override:
+                    original_release_date, override_episode_title, override_summary, override_image, override_duration = get_video_metadata(stream_link_override)
+
+                else:
+                    original_release_date = None
+                    override_episode_title = field_override_episode_title_new_input
+                    override_summary = field_override_summary_new_input
+                    override_image = field_override_image_new_input
+                    override_duration = field_override_duration_new_input
+
+                for bookmark in bookmarks:
+                    if bookmark['entry_id'] == entry_id:
+                        if bookmark['override_program_sort'] == 'manual':
+                            manual_order = max(int(bookmarks_status['manual_order']) for bookmarks_status in bookmarks_statuses if bookmarks_status['entry_id'] == entry_id) + 1
+                        break
+
+                if 'ERROR' not in manage_videos_message:
+                    bookmarks_statuses.append({
+                        "entry_id": entry_id,
+                        "season_episode_id": None,
+                        "season_episode_prefix": None,
+                        "season_episode": season_episode,
+                        "status": status,
+                        "stream_link": None,
+                        "stream_link_override": stream_link_override,
+                        "stream_link_file": None,
+                        "special_action": special_action,
+                        "original_release_date": original_release_date,
+                        "override_episode_title": override_episode_title,
+                        "override_summary": override_summary,
+                        "override_image": override_image,
+                        "override_duration": override_duration,
+                        "channels_id": None,
+                        "manual_order": manual_order
+                    })
+
+            write_data(csv_bookmarks_status, bookmarks_statuses)
+            if run_empty_row:
+                remove_empty_row(csv_bookmarks_status)
+
+            bookmarks_statuses = read_data(csv_bookmarks_status)
+            video_bookmark_statuses = []
+            if bookmarks_statuses:
+                video_bookmark_statuses = [bookmarks_status for bookmarks_status in bookmarks_statuses if bookmarks_status['entry_id'] in video_bookmarks_lookup]
+                if video_bookmark_statuses:
+                    video_bookmark_statuses = sorted(video_bookmark_statuses, key=lambda x: sort_key(x['season_episode'].casefold()))
+
+        elif action.endswith('cancel'):
+            filter_video_entry_id = ''
+            filter_video_season_episode = ''
+            filter_video_stream_link_override = ''
+            filter_video_special_action = ''
+            filter_video_override_episode_title = ''
+            filter_video_override_summary = ''
+            filter_video_override_image = ''
+            filter_video_override_duration = ''
+
+    return render_template(
+        'main/slm_manage_videos.html',
+        segment = 'manage_videos',
+        html_slm_version = slm_version,
+        html_gen_upgrade_flag = gen_upgrade_flag,
+        html_slm_playlist_manager = slm_playlist_manager,
+        html_slm_stream_link_file_manager = slm_stream_link_file_manager,
+        html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_tools_manager = slm_media_tools_manager,
+        html_plm_streaming_stations = plm_streaming_stations,
+        html_video_bookmark_statuses = video_bookmark_statuses,
+        html_video_groups = video_groups,
+        html_special_actions = special_actions,
+        html_select_actions = select_actions,
+        html_filter_video_entry_id = filter_video_entry_id,
+        html_filter_video_season_episode = filter_video_season_episode,
+        html_filter_video_stream_link_override = filter_video_stream_link_override,
+        html_filter_video_special_action = filter_video_special_action,
+        html_filter_video_override_episode_title = filter_video_override_episode_title,
+        html_filter_video_override_summary = filter_video_override_summary,
+        html_filter_video_override_image = filter_video_override_image,
+        html_filter_video_override_duration = filter_video_override_duration,
+        html_manage_videos_message = manage_videos_message
+    )
+
 
 # Manage Providers Webpage
 @app.route('/manage_providers', methods=['GET', 'POST'])
@@ -11849,6 +12331,7 @@ def generate_stream_links(original_release_date_list):
     auto_bookmarks = [
         bookmark for bookmark in bookmarks 
         if not bookmark['entry_id'].startswith('slm') 
+        and not bookmark['entry_id'].startswith('int') 
         and bookmark['bookmark_action'] not in ["Hide"]
     ]
 
@@ -11895,14 +12378,18 @@ def generate_stream_links_single(entry_id):
         run_generation = True
         
     if run_generation:
-        if not entry_id.startswith('slm'):
+        if not entry_id.startswith('slm') and not entry_id.startswith('int'):
             find_stream_links(modify_bookmarks, None)
 
-        if slm_channels_dvr_integration:
+        if entry_id.startswith('int'):
+            generate_stream_links_single_message = f"{current_time()} INFO: 'SLM INTERNAL' selections cannot generate Stream Links/Files."
+
+        elif slm_channels_dvr_integration:
             create_stream_link_files(modify_bookmarks, None, None)
-            generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links! Please execute process 'Run Updates in Channels' in order to see this program."
+            generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links/Files! Please execute process 'Run Updates in Channels' in order to see this program."
+
         else:
-            generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links! Please use 'Modify Programs' to see values."
+            generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links/Files! Please use 'Modify Programs' to see values."
 
     return generate_stream_links_single_message
 
@@ -12334,6 +12821,7 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
     bookmarks = [
         base_bookmark for base_bookmark in base_bookmarks 
         if base_bookmark['bookmark_action'] not in ["Hide"]
+        and not base_bookmark['entry_id'].startswith('int') 
     ]
 
     bookmarks_statuses = read_data(csv_bookmarks_status)
@@ -14578,6 +15066,7 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": 5}, 64, "PLM/MTM: Check Child Station Status Retry Delay in Seconds")
         check_and_append(csv_file, {"settings": 0}, 65, "PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)")
         check_and_append(csv_file, {"settings": "movies_shows"}, 66, "SLM: 'Add Programs' Search Selection (Default)")
+        check_and_append(csv_file, {"settings": 0}, 67, "SLM: Minimum Video Length (in Seconds) for Search")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -14647,7 +15136,8 @@ def initial_data(csv_file):
                     {"settings": 3},                                                           # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
                     {"settings": 5},                                                           # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
                     {"settings": 0},                                                           # [63] PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)
-                    {"settings": "movies_shows"}                                               # [64] SLM: 'Add Programs' Search Selection (Default)
+                    {"settings": "movies_shows"},                                              # [64] SLM: 'Add Programs' Search Selection (Default)
+                    {"settings": 0}                                                            # [65] SLM: Minimum Video Length (in Seconds) for Search
         ]        
 
     # Stream Link/File Manager
@@ -15852,6 +16342,14 @@ filter_streams_tvc_guide_categories = ''
 filter_streams_tvc_guide_placeholders = ''
 filter_streams_tvc_stream_vcodec = ''
 filter_streams_tvc_stream_acodec = ''
+filter_video_entry_id = ''
+filter_video_season_episode = ''
+filter_video_stream_link_override = ''
+filter_video_special_action = ''
+filter_video_override_episode_title = ''
+filter_video_override_summary = ''
+filter_video_override_image = ''
+filter_video_override_duration = ''
 select_report_query_prior = 'reports_queries_cancel'
 provider_statuses_default = [
     "All Providers",
@@ -15943,6 +16441,7 @@ search_selections = [
 ]
 search_selection_lookup = {search_selection['search_selection_id']: search_selection['search_selection_name'] for search_selection in search_selections}
 settings_search_selection_input_prior = None
+minimum_video_length_input_prior = 0
 
 ### Start-up process and safety checks
 # Program directories
@@ -16104,4 +16603,3 @@ else:
 if __name__ == "__main__":
     notification_add(f"{current_time()} INFO: Server starting on port {slm_port}")
     app.run(host='0.0.0.0', port=slm_port)
-
