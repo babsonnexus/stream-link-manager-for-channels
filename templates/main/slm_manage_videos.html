@@ -113,18 +113,20 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="grid-item">
-              <input type="text" id="field_override_episode_title_new" name="field_override_episode_title_new" placeholder="i.e., This Episode Name">
-            </div>
-            <div class="grid-item">
-              <input type="text" id="field_override_summary_new" name="field_override_summary_new" placeholder="i.e., Here is a description of what happens here.">
-            </div>
-            <div class="grid-item">
-              <input type="text" id="field_override_image_new" name="field_override_image_new" placeholder="i.e., http://linktosomething.com/image.jpg">
-            </div>
-            <div class="grid-item">
-              <input type="text" id="field_override_duration_new" name="field_override_duration_new" placeholder="i.e., 3600">
-            </div>
+            {% if html_slm_channels_dvr_integration %}
+              <div class="grid-item">
+                <input type="text" id="field_override_episode_title_new" name="field_override_episode_title_new" placeholder="i.e., This Episode Name">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="field_override_summary_new" name="field_override_summary_new" placeholder="i.e., Here is a description of what happens here.">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="field_override_image_new" name="field_override_image_new" placeholder="i.e., http://linktosomething.com/image.jpg">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="field_override_duration_new" name="field_override_duration_new" placeholder="i.e., 3600">
+              </div>
+            {% endif %}
             <div class="grid-item">
               <button type="submit" name="action" value="manage_videos_action_new" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
             </div>
@@ -145,18 +147,20 @@
             <div class="grid-item">
               <input type="text" id="filter-video-special-action" placeholder="Filter" name="filter-video-special-action" value="{{ html_filter_video_special_action }}">
             </div>
-            <div class="grid-item">
-              <input type="text" id="filter-video-override-episode-title" placeholder="Filter" name="filter-video-override-episode-title" value="{{ html_filter_video_override_episode_title }}">
-            </div>
-            <div class="grid-item">
-              <input type="text" id="filter-video-override-summary" placeholder="Filter" name="filter-video-override-summary" value="{{ html_filter_video_override_summary }}">
-            </div>
-            <div class="grid-item">
-              <input type="text" id="filter-video-override-image" placeholder="Filter" name="filter-video-override-image" value="{{ html_filter_video_override_image }}">
-            </div>
-            <div class="grid-item">
-              <input type="text" id="filter-video-override-duration" placeholder="Filter" name="filter-video-override-duration" value="{{ html_filter_video_override_duration }}">
-            </div>
+            {% if html_slm_channels_dvr_integration %}
+              <div class="grid-item">
+                <input type="text" id="filter-video-override-episode-title" placeholder="Filter" name="filter-video-override-episode-title" value="{{ html_filter_video_override_episode_title }}">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="filter-video-override-summary" placeholder="Filter" name="filter-video-override-summary" value="{{ html_filter_video_override_summary }}">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="filter-video-override-image" placeholder="Filter" name="filter-video-override-image" value="{{ html_filter_video_override_image }}">
+              </div>
+              <div class="grid-item">
+                <input type="text" id="filter-video-override-duration" placeholder="Filter" name="filter-video-override-duration" value="{{ html_filter_video_override_duration }}">
+              </div>
+            {% endif %}
             <div class="grid-item">
               <hr style="border: 3px solid; width: 100%;">
             </div>
@@ -244,10 +248,12 @@
       const filterVideoSeasonEpisode = document.getElementById('filter-video-season-episode');
       const filterVideoStreamLinkOverride = document.getElementById('filter-video-stream-link-override');
       const filterVideoSpecialAction = document.getElementById('filter-video-special-action');
-      const filterVideoOverrideEpisodeTitle = document.getElementById('filter-video-override-episode-title');
-      const filterVideoOverrideSummary = document.getElementById('filter-video-override-summary');
-      const filterVideoOverrideImage = document.getElementById('filter-video-override-image');
-      const filterVideoOverrideDuration = document.getElementById('filter-video-override-duration');
+      {% if html_slm_channels_dvr_integration %}
+        const filterVideoOverrideEpisodeTitle = document.getElementById('filter-video-override-episode-title');
+        const filterVideoOverrideSummary = document.getElementById('filter-video-override-summary');
+        const filterVideoOverrideImage = document.getElementById('filter-video-override-image');
+        const filterVideoOverrideDuration = document.getElementById('filter-video-override-duration');
+      {% endif %}
 
       const addButton = document.querySelector('button[name="action"][value="manage_videos_action_new"]');
       const saveButton = document.querySelector('button[name="action"][value="manage_videos_action_save"]');
@@ -283,11 +289,14 @@
                 VideoEntryIDName.includes(filterVideoEntryID.value.toLowerCase()) &&
                 item.season_episode.toLowerCase().includes(filterVideoSeasonEpisode.value.toLowerCase()) &&
                 item.stream_link_override.toLowerCase().includes(filterVideoStreamLinkOverride.value.toLowerCase()) &&
-                item.special_action.toLowerCase().includes(filterVideoSpecialAction.value.toLowerCase()) &&
-                item.override_episode_title.toLowerCase().includes(filterVideoOverrideEpisodeTitle.value.toLowerCase()) &&
-                item.override_summary.toLowerCase().includes(filterVideoOverrideSummary.value.toLowerCase()) &&
-                item.override_image.toLowerCase().includes(filterVideoOverrideImage.value.toLowerCase()) &&
-                item.override_duration.toLowerCase().includes(filterVideoOverrideDuration.value.toLowerCase())
+                item.special_action.toLowerCase().includes(filterVideoSpecialAction.value.toLowerCase())
+                {% if html_slm_channels_dvr_integration %}
+                  &&
+                  item.override_episode_title.toLowerCase().includes(filterVideoOverrideEpisodeTitle.value.toLowerCase()) &&
+                  item.override_summary.toLowerCase().includes(filterVideoOverrideSummary.value.toLowerCase()) &&
+                  item.override_image.toLowerCase().includes(filterVideoOverrideImage.value.toLowerCase()) &&
+                  item.override_duration.toLowerCase().includes(filterVideoOverrideDuration.value.toLowerCase())
+                {% endif %}
             );
         });
       }
@@ -370,45 +379,49 @@
               });
               videoSpecialActionItem.appendChild(videoSpecialActionSelect);
 
-              const videoOverrideEpisodeTitleItem = document.createElement('div');
-              videoOverrideEpisodeTitleItem.className = 'grid-item';
-              const videoOverrideEpisodeTitleInput = document.createElement('input');
-              videoOverrideEpisodeTitleInput.type = 'text';
-              videoOverrideEpisodeTitleInput.id = `field_override_episode_title_${adjustedIndex}`;
-              videoOverrideEpisodeTitleInput.name = `field_override_episode_title_${adjustedIndex}`;
-              videoOverrideEpisodeTitleInput.value = item.override_episode_title;
-              videoOverrideEpisodeTitleInput.title = item.override_episode_title;
-              videoOverrideEpisodeTitleItem.appendChild(videoOverrideEpisodeTitleInput);
-  
-              const videoOverrideSummaryItem = document.createElement('div');
-              videoOverrideSummaryItem.className = 'grid-item';
-              const videoOverrideSummaryInput = document.createElement('input');
-              videoOverrideSummaryInput.type = 'text';
-              videoOverrideSummaryInput.id = `field_override_summary_${adjustedIndex}`;
-              videoOverrideSummaryInput.name = `field_override_summary_${adjustedIndex}`;
-              videoOverrideSummaryInput.value = item.override_summary;
-              videoOverrideSummaryInput.title = item.override_summary;
-              videoOverrideSummaryItem.appendChild(videoOverrideSummaryInput);
-  
-              const videoOverrideImageItem = document.createElement('div');
-              videoOverrideImageItem.className = 'grid-item';
-              const videoOverrideImageInput = document.createElement('input');
-              videoOverrideImageInput.type = 'text';
-              videoOverrideImageInput.id = `field_override_image_${adjustedIndex}`;
-              videoOverrideImageInput.name = `field_override_image_${adjustedIndex}`;
-              videoOverrideImageInput.value = item.override_image;
-              videoOverrideImageInput.title = item.override_image;
-              videoOverrideImageItem.appendChild(videoOverrideImageInput);
-  
-              const videoOverrideDurationItem = document.createElement('div');
-              videoOverrideDurationItem.className = 'grid-item';
-              const videoOverrideDurationInput = document.createElement('input');
-              videoOverrideDurationInput.type = 'text';
-              videoOverrideDurationInput.id = `field_override_duration_${adjustedIndex}`;
-              videoOverrideDurationInput.name = `field_override_duration_${adjustedIndex}`;
-              videoOverrideDurationInput.value = item.override_duration;
-              videoOverrideDurationInput.title = item.override_duration;
-              videoOverrideDurationItem.appendChild(videoOverrideDurationInput);
+              {% if html_slm_channels_dvr_integration %}
+
+                const videoOverrideEpisodeTitleItem = document.createElement('div');
+                videoOverrideEpisodeTitleItem.className = 'grid-item';
+                const videoOverrideEpisodeTitleInput = document.createElement('input');
+                videoOverrideEpisodeTitleInput.type = 'text';
+                videoOverrideEpisodeTitleInput.id = `field_override_episode_title_${adjustedIndex}`;
+                videoOverrideEpisodeTitleInput.name = `field_override_episode_title_${adjustedIndex}`;
+                videoOverrideEpisodeTitleInput.value = item.override_episode_title;
+                videoOverrideEpisodeTitleInput.title = item.override_episode_title;
+                videoOverrideEpisodeTitleItem.appendChild(videoOverrideEpisodeTitleInput);
+    
+                const videoOverrideSummaryItem = document.createElement('div');
+                videoOverrideSummaryItem.className = 'grid-item';
+                const videoOverrideSummaryInput = document.createElement('input');
+                videoOverrideSummaryInput.type = 'text';
+                videoOverrideSummaryInput.id = `field_override_summary_${adjustedIndex}`;
+                videoOverrideSummaryInput.name = `field_override_summary_${adjustedIndex}`;
+                videoOverrideSummaryInput.value = item.override_summary;
+                videoOverrideSummaryInput.title = item.override_summary;
+                videoOverrideSummaryItem.appendChild(videoOverrideSummaryInput);
+    
+                const videoOverrideImageItem = document.createElement('div');
+                videoOverrideImageItem.className = 'grid-item';
+                const videoOverrideImageInput = document.createElement('input');
+                videoOverrideImageInput.type = 'text';
+                videoOverrideImageInput.id = `field_override_image_${adjustedIndex}`;
+                videoOverrideImageInput.name = `field_override_image_${adjustedIndex}`;
+                videoOverrideImageInput.value = item.override_image;
+                videoOverrideImageInput.title = item.override_image;
+                videoOverrideImageItem.appendChild(videoOverrideImageInput);
+    
+                const videoOverrideDurationItem = document.createElement('div');
+                videoOverrideDurationItem.className = 'grid-item';
+                const videoOverrideDurationInput = document.createElement('input');
+                videoOverrideDurationInput.type = 'text';
+                videoOverrideDurationInput.id = `field_override_duration_${adjustedIndex}`;
+                videoOverrideDurationInput.name = `field_override_duration_${adjustedIndex}`;
+                videoOverrideDurationInput.value = item.override_duration;
+                videoOverrideDurationInput.title = item.override_duration;
+                videoOverrideDurationItem.appendChild(videoOverrideDurationInput);
+
+              {% endif %}
 
               const videoSelectActionItem = document.createElement('div');
               videoSelectActionItem.className = 'grid-item';
@@ -443,10 +456,12 @@
               gridContainer.appendChild(videoSeasonEpisodeItem);
               gridContainer.appendChild(videoStreamLinkOverrideItem);
               gridContainer.appendChild(videoSpecialActionItem);
-              gridContainer.appendChild(videoOverrideEpisodeTitleItem);
-              gridContainer.appendChild(videoOverrideSummaryItem);
-              gridContainer.appendChild(videoOverrideImageItem);
-              gridContainer.appendChild(videoOverrideDurationItem);
+              {% if html_slm_channels_dvr_integration %}
+                gridContainer.appendChild(videoOverrideEpisodeTitleItem);
+                gridContainer.appendChild(videoOverrideSummaryItem);
+                gridContainer.appendChild(videoOverrideImageItem);
+                gridContainer.appendChild(videoOverrideDurationItem);
+              {% endif %}
               gridContainer.appendChild(videoSelectActionItem);
               gridContainer.appendChild(hiddenEntryIdInput);
               gridContainer.appendChild(hiddenSeasonEpisodeInput);
@@ -506,10 +521,12 @@
       filterVideoEntryID.addEventListener('input', resetAndLoadRecords);
       filterVideoStreamLinkOverride.addEventListener('input', resetAndLoadRecords);
       filterVideoSpecialAction.addEventListener('input', resetAndLoadRecords);
-      filterVideoOverrideEpisodeTitle.addEventListener('input', resetAndLoadRecords);
-      filterVideoOverrideSummary.addEventListener('input', resetAndLoadRecords);
-      filterVideoOverrideImage.addEventListener('input', resetAndLoadRecords);
-      filterVideoOverrideDuration.addEventListener('input', resetAndLoadRecords);
+      {% if html_slm_channels_dvr_integration %}
+        filterVideoOverrideEpisodeTitle.addEventListener('input', resetAndLoadRecords);
+        filterVideoOverrideSummary.addEventListener('input', resetAndLoadRecords);
+        filterVideoOverrideImage.addEventListener('input', resetAndLoadRecords);
+        filterVideoOverrideDuration.addEventListener('input', resetAndLoadRecords);
+      {% endif %}
 
       recordContainer.addEventListener('scroll', onScroll);
   

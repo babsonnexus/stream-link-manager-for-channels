@@ -194,6 +194,48 @@
             </div>
             <input type="hidden" id="streaming_services" name="streaming_services">
             <hr>
+            <!-- Subscribed Streaming Services Settings -->
+            <h4 id="ssss_anchor">Subscribed Streaming Services Settings
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Subscribed-Streaming-Services-Settings" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
+            <div class="ssss container-fluid">
+              <div class="grid-container" style="text-align: center;">
+                <div class="grid-item"><h6>Active</h6></div>
+                <div class="grid-item"><h6>Name</h6></div>
+                <div class="grid-item"><h6>Group</h6></div>
+                <div class="grid-item"><h6>Action</h6></div>
+              </div>
+              {% for item in html_streaming_services_subscribed %}
+                <div class="grid-container">
+                  <div class="grid-item">
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" id="ssss_streaming_service_active_{{ loop.index }}" name="ssss_streaming_service_active_{{ loop.index }}" class="form-check-input" 
+                        {% if item.streaming_service_active|lower == 'on' %}checked{% endif %} 
+                        onchange="this.value = this.checked ? 'On' : 'Off'" 
+                        value="On" style="margin-left: 5px;">
+                    </div>
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="ssss_streaming_service_name_{{ loop.index }}" name="ssss_streaming_service_name_{{ loop.index }}" value="{{ item.streaming_service_name }}" title="{{ item.streaming_service_name }}" readonly style="background-color: #d1cdcde5;">
+                  </div>
+                  <div class="grid-item">
+                    <select class="select2" name="ssss_streaming_service_group_{{ loop.index }}" id="ssss_streaming_service_group_{{ loop.index }}" style="width: 100%; max-width: 100%;">
+                      {% for provider_group_item in html_provider_groups %}
+                        <option value="{{ provider_group_item.provider_group_id }}" {% if provider_group_item.provider_group_id == item.streaming_service_group %}selected{% endif %} style="width: auto; min-width: 100%;">{{ provider_group_item.provider_group_name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="grid-item">
+                    <button type="submit" name="action" value="ssss_save_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Save</button>
+                  </div>
+                </div>
+              {% endfor %}                                 
+              <button type="submit" name="action" value="ssss_save_all" class="btn bg-gradient-primary w-25 my-2 mb-2">Save All</button>
+              <button type="submit" name="action" value="ssss_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
+            </div>
+            <hr>
             <!-- Subscribed Video Channels -->
             <h4 id="subscribed_video_channels_anchor">Subscribed Video Channels
               <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Subscribed-Video-Channels" target="_blank">
@@ -286,48 +328,6 @@
               <button type="submit" name="action" value="subscribed_video_channel_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
             </div>
             <p><div id="html_subscribed_video_channels_message"><b>{{ html_subscribed_video_channels_message }}</b></div></p>
-            <hr>
-            <!-- Subscribed Streaming Services Settings -->
-            <h4 id="ssss_anchor">Subscribed Streaming Services Settings
-              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Subscribed-Streaming-Services-Settings" target="_blank">
-                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
-              </a>
-            </h4>
-            <div class="ssss container-fluid">
-              <div class="grid-container" style="text-align: center;">
-                <div class="grid-item"><h6>Active</h6></div>
-                <div class="grid-item"><h6>Name</h6></div>
-                <div class="grid-item"><h6>Group</h6></div>
-                <div class="grid-item"><h6>Action</h6></div>
-              </div>
-              {% for item in html_streaming_services_subscribed %}
-                <div class="grid-container">
-                  <div class="grid-item">
-                    <div class="form-check form-switch ps-0 is-filled">
-                      <input type="checkbox" id="ssss_streaming_service_active_{{ loop.index }}" name="ssss_streaming_service_active_{{ loop.index }}" class="form-check-input" 
-                        {% if item.streaming_service_active|lower == 'on' %}checked{% endif %} 
-                        onchange="this.value = this.checked ? 'On' : 'Off'" 
-                        value="On" style="margin-left: 5px;">
-                    </div>
-                  </div>
-                  <div class="grid-item">
-                    <input type="text" id="ssss_streaming_service_name_{{ loop.index }}" name="ssss_streaming_service_name_{{ loop.index }}" value="{{ item.streaming_service_name }}" title="{{ item.streaming_service_name }}" readonly style="background-color: #d1cdcde5;">
-                  </div>
-                  <div class="grid-item">
-                    <select class="select2" name="ssss_streaming_service_group_{{ loop.index }}" id="ssss_streaming_service_group_{{ loop.index }}" style="width: 100%; max-width: 100%;">
-                      {% for provider_group_item in html_provider_groups %}
-                        <option value="{{ provider_group_item.provider_group_id }}" {% if provider_group_item.provider_group_id == item.streaming_service_group %}selected{% endif %} style="width: auto; min-width: 100%;">{{ provider_group_item.provider_group_name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                  <div class="grid-item">
-                    <button type="submit" name="action" value="ssss_save_{{ loop.index }}" class="btn bg-gradient-primary my-2 mb-2">Save</button>
-                  </div>
-                </div>
-              {% endfor %}                                 
-              <button type="submit" name="action" value="ssss_save_all" class="btn bg-gradient-primary w-25 my-2 mb-2">Save All</button>
-              <button type="submit" name="action" value="ssss_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
-            </div>
             <hr>
             <!-- Provider Groups -->
             <h4 id="provider_group_anchor">Provider Groups
