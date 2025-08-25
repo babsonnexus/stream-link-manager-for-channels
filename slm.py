@@ -39,7 +39,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.08.22.1637"
+    slm_version = "v2025.08.25.1355"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -3803,12 +3803,16 @@ def webpage_manage_videos():
 
     special_actions = special_actions_default.copy()
 
-    select_actions =[
+    select_actions = [
         {'select_action_id': 'save', 'select_action_name': 'Save'},
         {'select_action_id': 'hide', 'select_action_name': 'Hide'},
-        {'select_action_id': 'delete', 'select_action_name': 'Delete'},
-        {'select_action_id': 'import_metadata', 'select_action_name': 'Import Metadata'},
+        {'select_action_id': 'delete', 'select_action_name': 'Delete'}
     ]
+
+    if slm_channels_dvr_integration:
+        select_actions.append(
+            {'select_action_id': 'import_metadata', 'select_action_name': 'Import Metadata'}
+        )
 
     manage_videos_message = ''
 
@@ -3820,10 +3824,11 @@ def webpage_manage_videos():
             filter_video_season_episode = request.form.get('filter-video-season-episode')
             filter_video_stream_link_override = request.form.get('filter-video-stream-link-override')
             filter_video_special_action = request.form.get('filter-video-special-action')
-            filter_video_override_episode_title = request.form.get('filter-video-override-episode-title')
-            filter_video_override_summary = request.form.get('filter-video-override-summary')
-            filter_video_override_image = request.form.get('filter-video-override-image')
-            filter_video_override_duration = request.form.get('filter-video-override-duration')
+            if slm_channels_dvr_integration:
+                filter_video_override_episode_title = request.form.get('filter-video-override-episode-title')
+                filter_video_override_summary = request.form.get('filter-video-override-summary')
+                filter_video_override_image = request.form.get('filter-video-override-image')
+                filter_video_override_duration = request.form.get('filter-video-override-duration')
 
             run_empty_row = False
 
@@ -3834,10 +3839,11 @@ def webpage_manage_videos():
                 field_season_episode_inputs = {}
                 field_stream_link_override_inputs = {}
                 field_special_action_inputs = {}
-                field_override_episode_title_inputs = {}
-                field_override_summary_inputs = {}
-                field_override_image_inputs = {}
-                field_override_duration_inputs = {}
+                if slm_channels_dvr_integration:
+                    field_override_episode_title_inputs = {}
+                    field_override_summary_inputs = {}
+                    field_override_image_inputs = {}
+                    field_override_duration_inputs = {}
                 field_select_action_inputs = {}
                 prior_entry_id_inputs = {}
                 prior_season_episode_inputs = {}
@@ -3864,21 +3870,23 @@ def webpage_manage_videos():
                         index = key.split('_')[-1]
                         field_special_action_inputs[index] = request.form.get(key)
 
-                    if key.startswith('field_override_episode_title_'):
-                        index = key.split('_')[-1]
-                        field_override_episode_title_inputs[index] = request.form.get(key)
+                    if slm_channels_dvr_integration:
 
-                    if key.startswith('field_override_summary_'):
-                        index = key.split('_')[-1]
-                        field_override_summary_inputs[index] = request.form.get(key)
+                        if key.startswith('field_override_episode_title_'):
+                            index = key.split('_')[-1]
+                            field_override_episode_title_inputs[index] = request.form.get(key)
 
-                    if key.startswith('field_override_image_'):
-                        index = key.split('_')[-1]
-                        field_override_image_inputs[index] = request.form.get(key)
+                        if key.startswith('field_override_summary_'):
+                            index = key.split('_')[-1]
+                            field_override_summary_inputs[index] = request.form.get(key)
 
-                    if key.startswith('field_override_duration_'):
-                        index = key.split('_')[-1]
-                        field_override_duration_inputs[index] = request.form.get(key)
+                        if key.startswith('field_override_image_'):
+                            index = key.split('_')[-1]
+                            field_override_image_inputs[index] = request.form.get(key)
+
+                        if key.startswith('field_override_duration_'):
+                            index = key.split('_')[-1]
+                            field_override_duration_inputs[index] = request.form.get(key)
 
                     if key.startswith('field_select_action_'):
                         index = key.split('_')[-1]
@@ -3912,10 +3920,11 @@ def webpage_manage_videos():
                     field_season_episode_input = field_season_episode_inputs.get(row)
                     field_stream_link_override_input = field_stream_link_override_inputs.get(row)
                     field_special_action_input = field_special_action_inputs.get(row)
-                    field_override_episode_title_input = field_override_episode_title_inputs.get(row)
-                    field_override_summary_input = field_override_summary_inputs.get(row)
-                    field_override_image_input = field_override_image_inputs.get(row)
-                    field_override_duration_input = field_override_duration_inputs.get(row)
+                    if slm_channels_dvr_integration:
+                        field_override_episode_title_input = field_override_episode_title_inputs.get(row)
+                        field_override_summary_input = field_override_summary_inputs.get(row)
+                        field_override_image_input = field_override_image_inputs.get(row)
+                        field_override_duration_input = field_override_duration_inputs.get(row)
                     field_select_action_input = field_select_action_inputs.get(row)
                     prior_entry_id_input = prior_entry_id_inputs.get(row)
                     prior_season_episode_input = prior_season_episode_inputs.get(row)
@@ -3985,15 +3994,16 @@ def webpage_manage_videos():
                                                                 
                                 special_action = submitted_video['special_action']
 
-                                if submitted_video['select_action'] == 'import_metadata':
-                                    original_release_date, override_episode_title, override_summary, override_image, override_duration = get_video_metadata(stream_link_override)
-                                    bookmarks_status['original_release_date'] = original_release_date
+                                if slm_channels_dvr_integration:
+                                    if submitted_video['select_action'] == 'import_metadata':
+                                        original_release_date, override_episode_title, override_summary, override_image, override_duration = get_video_metadata(stream_link_override)
+                                        bookmarks_status['original_release_date'] = original_release_date
 
-                                else:
-                                    override_episode_title = submitted_video['override_episode_title']
-                                    override_summary = submitted_video['override_summary']
-                                    override_image = submitted_video['override_image']
-                                    override_duration = submitted_video['override_duration']
+                                    else:
+                                        override_episode_title = submitted_video['override_episode_title']
+                                        override_summary = submitted_video['override_summary']
+                                        override_image = submitted_video['override_image']
+                                        override_duration = submitted_video['override_duration']
 
                                 for bookmark in bookmarks:
                                     if bookmark['entry_id'] == entry_id:
@@ -4030,6 +4040,8 @@ def webpage_manage_videos():
                     manage_videos_message = f"{current_time()} WARNING: There were {save_error_season_episode} duplicate Video name(s) within the Video Group. These were reverted to their prior value(s) or changed for uniqueness. Please review and update accordingly."
                 elif int(save_error_stream_link_override) > 0:
                     manage_videos_message = f"{current_time()} WARNING: There were {save_error_stream_link_override} link(s) that are already bookmarked or hidden. These were reverted to their prior value(s) or changed for uniqueness. Please review and update accordingly."
+                elif int(save_error_season_episode) == 0 and int(save_error_stream_link_override) == 0:
+                    manage_videos_message = f"{current_time()} INFO: Updates to Videos executed successfully."
 
             elif action.endswith('new'):
                 field_status_new_input = None
@@ -4047,16 +4059,18 @@ def webpage_manage_videos():
                 field_season_episode_new_input = request.form.get('field_season_episode_new')
                 field_stream_link_override_new_input = request.form.get('field_stream_link_override_new')
                 field_special_action_new_input = request.form.get('field_special_action_new')
-                field_override_episode_title_new_input = request.form.get('field_override_episode_new_title')
-                field_override_summary_new_input = request.form.get('field_override_summary_new')
-                field_override_image_new_input = request.form.get('field_override_image_new')
-                field_override_duration_new_input = request.form.get('field_override_duration_new')
+                if slm_channels_dvr_integration:
+                    field_override_episode_title_new_input = request.form.get('field_override_episode_new_title')
+                    field_override_summary_new_input = request.form.get('field_override_summary_new')
+                    field_override_image_new_input = request.form.get('field_override_image_new')
+                    field_override_duration_new_input = request.form.get('field_override_duration_new')
 
                 status = None
                 entry_id =  None
                 season_episode = None
                 stream_link_override = None
                 special_action = None
+                original_release_date = None
                 override_episode_title = None
                 override_summary = None
                 override_image = None
@@ -4083,15 +4097,15 @@ def webpage_manage_videos():
 
                 special_action = field_special_action_new_input
 
-                if 'youtu' in stream_link_override:
-                    original_release_date, override_episode_title, override_summary, override_image, override_duration = get_video_metadata(stream_link_override)
+                if slm_channels_dvr_integration:
+                    if 'youtu' in stream_link_override:
+                        original_release_date, override_episode_title, override_summary, override_image, override_duration = get_video_metadata(stream_link_override)
 
-                else:
-                    original_release_date = None
-                    override_episode_title = field_override_episode_title_new_input
-                    override_summary = field_override_summary_new_input
-                    override_image = field_override_image_new_input
-                    override_duration = field_override_duration_new_input
+                    else:
+                        override_episode_title = field_override_episode_title_new_input
+                        override_summary = field_override_summary_new_input
+                        override_image = field_override_image_new_input
+                        override_duration = field_override_duration_new_input
 
                 for bookmark in bookmarks:
                     if bookmark['entry_id'] == entry_id:
@@ -4100,6 +4114,15 @@ def webpage_manage_videos():
                         break
 
                 if 'ERROR' not in manage_videos_message:
+                    if slm_channels_dvr_integration:
+                        if 'youtu' in stream_link_override:
+                            manage_videos_message = f"{current_time()} INFO: '{season_episode}' successfully added and imported metadata from YoutTube. Please review Channels DVR Overrides and modify, if desired."
+                        else:
+                            manage_videos_message = f"{current_time()} INFO: '{season_episode}' successfully added. Please modify Channels DVR Overrides, if desired."
+
+                    else:
+                        manage_videos_message = f"{current_time()} INFO: '{season_episode}' successfully added."
+
                     bookmarks_statuses.append({
                         "entry_id": entry_id,
                         "season_episode_id": None,
