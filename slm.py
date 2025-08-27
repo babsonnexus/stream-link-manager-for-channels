@@ -39,7 +39,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.08.26.1655"
+    slm_version = "v2025.08.27.1413"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -2915,7 +2915,7 @@ def get_video_metadata(url):
         override_duration
     ]
 
-    m3u8_url, m3u8_protocol, info_dict = get_online_video(url)
+    m3u8_url, m3u8_protocol, info_dict = get_online_video(url, "metadata")
 
     if info_dict:
         original_release_date = info_dict.get('upload_date', None)
@@ -8214,7 +8214,7 @@ def streams_live():
     
         sanitized_url = sanitize_name(url)
 
-        m3u8_url, m3u8_protocol, info_dict = get_online_video(url)
+        m3u8_url, m3u8_protocol, info_dict = get_online_video(url, "all")
         
         if m3u8_url:
             
@@ -8246,7 +8246,7 @@ def stream_video(url):
                 yield chunk
 
 # Gets the manifest needed for the live stream or static video
-def get_online_video(url):
+def get_online_video(url, parse_type):
     print(f"{current_time()} INFO: Starting to retrieve manifest for {url}.")
 
     youtube_player_clients = ['web_safari', 'web']
@@ -8274,15 +8274,15 @@ def get_online_video(url):
             }
         }
 
-        m3u8_url, m3u8_protocol, info_dict = parse_online_video(url, ydl_opts)
+        m3u8_url, m3u8_protocol, info_dict = parse_online_video(url, ydl_opts, parse_type)
 
-        if (m3u8_url and m3u8_protocol) or (not 'youtu' in url):
+        if (m3u8_url and m3u8_protocol) or (not 'youtu' in url) or (parse_type == "metadata"):
             break
 
     return m3u8_url, m3u8_protocol, info_dict
 
 # Parses a URL to extract and select the optimal video or audio stream based on language preferences
-def parse_online_video(url, ydl_opts):
+def parse_online_video(url, ydl_opts, parse_type):
     settings = read_data(csv_settings)
     country_code = settings[2]["settings"]
     language_code = settings[3]["settings"]
@@ -8301,91 +8301,93 @@ def parse_online_video(url, ydl_opts):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             print(f"{current_time()} INFO: Extracting info from {url}...")
-            info_dict, formats = parse_online_video_info_dict_formats(ydl, url)
+            info_dict, formats = parse_online_video_info_dict_formats(ydl, url, parse_type)
 
-            if info_dict and not formats:
+            if info_dict and not formats and parse_type == "all":
                 url_override = info_dict.get("url")
                 if url_override:
                     print(f"{current_time()} INFO: URL redirected to {url_override}.")
-                    info_dict, formats = parse_online_video_info_dict_formats(ydl, url_override)
+                    info_dict, formats = parse_online_video_info_dict_formats(ydl, url_override, parse_type)
 
             if info_dict:
                 print(f"{current_time()} INFO: Extraction successful for {url}.")
-                if formats:
-                    print(f"{current_time()} INFO: Found {len(formats)} formats.")
+                if parse_type == "all":
+                    
+                    if formats:
+                        print(f"{current_time()} INFO: Found {len(formats)} formats.")
 
-                    protocol_m3u8_formats = []
-                    protocol_http_formats = []
-                    audio_formats = []
-                    video_formats = []
+                        protocol_m3u8_formats = []
+                        protocol_http_formats = []
+                        audio_formats = []
+                        video_formats = []
 
-                    for format in formats:
-                        # print(f"{current_time()} INFO: Found format: {format}") # Keep this for testing but not production
+                        for format in formats:
+                            # print(f"{current_time()} INFO: Found format: {format}") # Keep this for testing but not production
 
-                        if format.get("has_drm") is False:
-                            acodec = format.get("acodec")
-                            vcodec = format.get("vcodec")
-                            protocol = format.get("protocol", "")
+                            if format.get("has_drm") is False:
+                                acodec = format.get("acodec")
+                                vcodec = format.get("vcodec")
+                                protocol = format.get("protocol", "")
 
-                            if acodec != "none" and vcodec != "none":
-                                if "m3u8" in protocol:
-                                    protocol_m3u8_formats.append(format)
-                                elif "http" in protocol:
-                                    protocol_http_formats.append(format)
+                                if acodec != "none" and vcodec != "none":
+                                    if "m3u8" in protocol:
+                                        protocol_m3u8_formats.append(format)
+                                    elif "http" in protocol:
+                                        protocol_http_formats.append(format)
 
-                            elif acodec == "none" and vcodec != "none":
-                                video_formats.append(format)
+                                elif acodec == "none" and vcodec != "none":
+                                    video_formats.append(format)
 
-                            else:
-                                audio_formats.append(format)
+                                else:
+                                    audio_formats.append(format)
 
-                    best_format = parse_online_video_formats(protocol_m3u8_formats, language_preferences)
-                    if best_format:
-                        m3u8_protocol = "m3u8"
-                        m3u8_url = best_format.get("url")
-                        print(f"{current_time()} INFO: Best format URL found using m3u8: {m3u8_url}")
+                        best_format = parse_online_video_formats(protocol_m3u8_formats, language_preferences)
+                        if best_format:
+                            m3u8_protocol = "m3u8"
+                            m3u8_url = best_format.get("url")
+                            print(f"{current_time()} INFO: Best format URL found using m3u8: {m3u8_url}")
+
+                        else:
+                            best_format = parse_online_video_formats(protocol_http_formats, language_preferences)
+                            if best_format:
+                                m3u8_protocol = "http"
+                                m3u8_url = best_format.get("url")
+                                print(f"{current_time()} INFO: Best format URL found using http: {m3u8_url}")
+
+                        if not best_format and video_formats and audio_formats:
+                            print(f"{current_time()} INFO: No single-stream found. Combining audio + video tracks.")
+                            best_video = parse_online_video_formats(video_formats, language_preferences)
+
+                            sorted_audio_formats = sorted(
+                                audio_formats,
+                                key=lambda f: (
+                                    language_preferences.index((f.get("language") or "").strip().lower())
+                                    if (f.get("language") or "").strip().lower() in language_preferences
+                                    else len(language_preferences)
+                                )
+                            )
+
+                            manifest_lines = ["#EXTM3U"]
+                            manifest_lines.append(
+                                f'#EXT-X-STREAM-INF:BANDWIDTH={best_video.get("tbr", 0)},AUDIO="audio"'
+                            )
+                            manifest_lines.append(best_video.get("url"))
+
+                            for audio_format in sorted_audio_formats:
+                                audio_url = audio_format.get("url")
+                                if audio_url:
+                                    track_name = audio_format.get("format_note") or audio_format.get("language") or "Unknown"
+                                    manifest_lines.append(
+                                        f'#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",'
+                                        f'NAME="{track_name}",DEFAULT=NO,AUTOSELECT=YES,URI="{audio_url}"'
+                                    )
+
+                            m3u8_protocol = "m3u8_combined"
+                            m3u8_url = "\n".join(manifest_lines)
+                            print(f"{current_time()} INFO: Combined manifest created with m3u8_combined protocol.")
 
                     else:
-                        best_format = parse_online_video_formats(protocol_http_formats, language_preferences)
-                        if best_format:
-                            m3u8_protocol = "http"
-                            m3u8_url = best_format.get("url")
-                            print(f"{current_time()} INFO: Best format URL found using http: {m3u8_url}")
-
-                    if not best_format and video_formats and audio_formats:
-                        print(f"{current_time()} INFO: No single-stream found. Combining audio + video tracks.")
-                        best_video = parse_online_video_formats(video_formats, language_preferences)
-
-                        sorted_audio_formats = sorted(
-                            audio_formats,
-                            key=lambda f: (
-                                language_preferences.index((f.get("language") or "").strip().lower())
-                                if (f.get("language") or "").strip().lower() in language_preferences
-                                else len(language_preferences)
-                            )
-                        )
-
-                        manifest_lines = ["#EXTM3U"]
-                        manifest_lines.append(
-                            f'#EXT-X-STREAM-INF:BANDWIDTH={best_video.get("tbr", 0)},AUDIO="audio"'
-                        )
-                        manifest_lines.append(best_video.get("url"))
-
-                        for audio_format in sorted_audio_formats:
-                            audio_url = audio_format.get("url")
-                            if audio_url:
-                                track_name = audio_format.get("format_note") or audio_format.get("language") or "Unknown"
-                                manifest_lines.append(
-                                    f'#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",'
-                                    f'NAME="{track_name}",DEFAULT=NO,AUTOSELECT=YES,URI="{audio_url}"'
-                                )
-
-                        m3u8_protocol = "m3u8_combined"
-                        m3u8_url = "\n".join(manifest_lines)
-                        print(f"{current_time()} INFO: Combined manifest created with m3u8_combined protocol.")
-
-                else:
-                    print(f"{current_time()} WARNING: No formats available for {url}.")
+                        print(f"{current_time()} WARNING: No formats available for {url}.")
             else:
                 print(f"{current_time()} ERROR: Failed to extract info for {url}.")
 
@@ -8395,12 +8397,12 @@ def parse_online_video(url, ydl_opts):
     return m3u8_url, m3u8_protocol, info_dict
 
 # Parses the online video info dictionary and formats
-def parse_online_video_info_dict_formats(ydl, url):
+def parse_online_video_info_dict_formats(ydl, url, parse_type):
     info_dict = {}
     formats = {}
 
     info_dict = ydl.extract_info(url, download=False, process=False)
-    if info_dict:
+    if info_dict and parse_type == "all":
         formats = info_dict.get('formats', None)
 
     return info_dict, formats
