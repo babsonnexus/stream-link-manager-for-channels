@@ -22,6 +22,10 @@ RUN cat requirements.txt
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Update yt-dlp to the bleeding edge to fix Docker issues
+RUN pip install -U pip hatchling wheel
+RUN pip install --force-reinstall "yt-dlp[default] @ https://github.com/yt-dlp/yt-dlp/archive/master.tar.gz"
+
 # Copy the rest of the application code into the container
 COPY . .
 
@@ -33,3 +37,4 @@ ENV PORT=5000
 
 # Run slm.py when the container launches
 CMD ["python", "slm.py"]
+
