@@ -30,16 +30,16 @@ from youtubesearchpython import Playlist as get_youtube_playlist_info
 from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtube_channel_info
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.07.07.1207"
+slm_version = "v2025.08.27.1520"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.08.27.1413"
+    slm_version = "v2025.08.27.1520"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
