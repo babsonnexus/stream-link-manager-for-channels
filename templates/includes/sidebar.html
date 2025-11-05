@@ -27,41 +27,23 @@
             </div>
             <span class="nav-link-text ms-1">On-Demand</span>
           </a>
-          {% set stream_link_segments = ['addprograms', 'modifyprograms', 'manage_videos', 'manage_providers'] %}
+          {% set stream_link_segments = ['manage_providers', 'manage_programs'] %}
           <div class="collapse {% if segment in stream_link_segments %}show{% endif %}" id="collapseStreamLinkFileManager">
             <ul class="navbar-nav ms-3">
               <li class="nav-item">
-                <a class="nav-link text-white {% if 'addprograms' in segment %} active bg-gradient-primary {% endif %}" 
-                    href="/addprograms">
-                  <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                    <i class="material-icons opacity-10">add_box</i>
-                  </div>
-                  <span class="nav-link-text ms-1">Add Programs</span>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link text-white {% if 'modifyprograms' in segment %} active bg-gradient-primary {% endif %}" 
-                    href="/modifyprograms">
-                  <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                    <i class="material-icons opacity-10">edit</i>
-                  </div>
-                  <span class="nav-link-text ms-1">Modify Programs</span>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link text-white {% if 'manage_videos' in segment %} active bg-gradient-primary {% endif %}" 
-                    href="/manage_videos">
+                <a class="nav-link text-white {% if 'manage_programs' in segment %} active bg-gradient-primary {% endif %}" 
+                    href="/manage_programs">
                   <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                     <i class="material-icons opacity-10">video_library</i>
                   </div>
-                  <span class="nav-link-text ms-1">Manage Videos</span>
+                  <span class="nav-link-text ms-1">Manage Programs</span>
                 </a>
               </li>
               <li class="nav-item">
                 <a class="nav-link text-white {% if 'manage_providers' in segment %} active bg-gradient-primary {% endif %}" 
                     href="/manage_providers">
                   <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                    <i class="material-icons opacity-10">movie_filter</i>
+                    <i class="material-icons opacity-10">edit</i>
                   </div>
                   <span class="nav-link-text ms-1">Manage Providers</span>
                 </a>
@@ -267,7 +249,7 @@
       </li>
       <li class="nav-item">
         <a class="nav-link text-white {% if 'about' in segment %} active bg-gradient-primary {% endif %}" 
-            href="/about">
+            href="/general_about">
           <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
             <i class="material-icons opacity-10">info</i>
           </div>
