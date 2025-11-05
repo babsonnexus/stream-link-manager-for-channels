@@ -1,0 +1,2055 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} On-Demand - Manage Programs {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<style> 
+  .common-div {
+      border: 0px;
+  }
+
+  .column-div-1 {
+      width: 79%;
+  }
+
+  .column-div-2 {
+      width: 20%;
+      margin-left: -15px;
+  }
+
+  .file-input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 2px solid #4c2588;
+    border-radius: 0.25em;
+    padding: 0.5em;
+    background: linear-gradient(195deg, #6a4ca8 0%, #6a4eaa 100%);
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .file-input-wrapper input[type="file"] {
+    display: none;
+  }
+
+  .file-input-wrapper label {
+    color: white;
+  }
+  
+  .file-input-wrapper h5 {
+    color: white;
+  }
+
+  .file-input-wrapper h6 {
+    color: white;
+  }
+
+  .file-input-wrapper .material-icons {
+    color: white;
+  }
+
+  .dark-version .file-input-wrapper {
+    background: linear-gradient(195deg, #2c1a4a 0%, #2c1b4c 100%);
+    border-color: #2c1a4a;
+  }
+
+  .dark-version .file-input-wrapper label {
+    color: #ccc;
+  }
+
+  .search .grid-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+      gap: 10px;
+  }
+
+  .search_results .grid-container {
+      display: grid;
+      grid-template-columns: 1fr 0.5fr 1.5fr 1fr 2fr 1fr 0.5fr 1.5fr 2fr;
+      gap: 10px;
+  }
+
+  .modify_program_sidebar .grid-container {
+      display: grid;
+      grid-template-columns: 3fr 1fr;
+      gap: 10px;
+  }
+
+  .modify_program_sidebar .select2-container {
+    margin-top: -8px;
+  }
+
+  .modify_program_bookmark .grid-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.05fr;
+      gap: 10px;
+  }
+
+  .modify_program_bookmarks_status .grid-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.05fr;
+      gap: 10px;
+  }
+
+  .grid-item {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      min-width: 0;
+  }
+
+  .grid-item > h6 {
+      margin: 0 auto;
+      align-self: flex-end;
+      width: 100%;
+      text-align: center;
+      margin-bottom: 5px;
+  }
+
+  .grid-item.offers-list {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+  .form-check {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-left: 2.8em;
+  }
+
+  .form-check-input {
+      flex-shrink: 0;
+  }
+
+  input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+  }
+
+  .btn {
+      width: 100%;
+      box-sizing: border-box;
+  }
+
+  .program-poster {
+    width: 100%;
+    float: center;
+    margin-right: 20px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border: 1px solid white;
+  }
+
+  .regular-text-cell {
+    display: block;
+    width: 100%;
+    word-break: break-word;
+    padding: 4px 8px;
+    color: #000000;
+    background: transparent;
+    font-size: 1em;
+    text-align: center;
+  }
+
+  .vertical-text {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-align: center;
+    white-space: nowrap;
+    height: 100px;
+    width: auto;
+    margin: 0 auto;
+  }
+
+  .dark-version .regular-text-cell {
+    color: #ccc;
+  }
+
+  .box-container {
+    border: 1px solid #ccc;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    width: 100%;
+  }
+
+  .manual-order-video-container {
+    display: flex;
+    width: 100%;
+  }
+
+  .listbox {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .buttons {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .centered-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .form-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 5px;
+    width: 100%;
+    margin-left: -72px;
+  }
+
+  {% if not html_slm_manage_programs_modify_program_scollbar_flag %}
+    /* Firefox */
+    #record-container-program-modify-details-selected-prior {
+      scrollbar-color: transparent transparent;
+    }
+
+    /* Chromium and Safari */
+    #record-container-program-modify-details-selected-prior::-webkit-scrollbar-thumb,
+    #record-container-program-modify-details-selected-prior::-webkit-scrollbar-track {
+      background-color: transparent;
+    }
+  {% endif %}
+
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+  <div class="row min-vh-80 h-100">
+    <div class="col-12">
+      <form method="POST" action="/manage_programs" id="process-form">
+        <!-- Message -->
+        {% if html_manage_programs_message %}
+          <hr>
+          <div id="html_manage_programs_message">
+            <b>{{ html_manage_programs_message|safe }}</b>
+          </div>
+          <hr>
+        {% endif %}
+        {% if not html_slm_process_active_flag %}
+          <!-- Main Section -->
+          {% if html_slm_manage_programs_main_flag %}
+            <h4>Manage Programs
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarking-and-Managing-Programs" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
+            <div class="row">
+              <div class="common-div column-div-1">
+                {% if html_sorted_bookmarks %}
+                  <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+                    <h5>Previously Bookmarked
+                      <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Modify-Programs" target="_blank">
+                        <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                      </a>
+                    </h5>
+                    <div class="search container-fluid">
+                      <div class="grid-container">
+                        <div class="grid-item" style="grid-column: span 3;">
+                          <select class="select2" name="select_previously_bookmarked" id="select_previously_bookmarked" style="width: 100%;">
+                            {% for item in html_sorted_bookmarks %}
+                              <option value="{{ item.entry_id }}" 
+                                {% if item.entry_id == html_modify_entry_id %}selected{% endif %}>
+                                {{ item.title }} ({{ item.release_year }}) | {% if item.object_type == 'MOVIE' %}Movie{% elif item.object_type == 'SHOW' %}TV Show{% elif item.object_type == 'VIDEO' %}Video Group{% endif %}
+                              </option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <div class="grid-item">
+                          <button type="submit" name="action" value="program_modify_edit" class="btn bg-gradient-primary h-15 my-2 mb-2">Edit</button>
+                        </div>
+                        <div class="grid-item">
+                          <button type="submit" name="action" value="program_modify_available" class="btn bg-gradient-primary h-15 my-2 mb-2">Examine</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% endif %}
+                <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+                  <h5>Search
+                    <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Searching-for-Movies,-TV-Shows,-Videos,-and-Channels" target="_blank">
+                      <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                    </a>
+                  </h5>
+                  <div class="search container-fluid">
+                    <div class="grid-container" style="text-align: center; margin-bottom: -8px;">
+                      <div class="grid-item"><h6>Selection</h6></div>
+                      <div class="grid-item" style="grid-column: span 2;"><h6>Query</h6></div>
+                      <div class="grid-item"><h6>Quantity</h6></div>
+                    </div>
+                    <div class="grid-container">
+                      <div class="grid-item">
+                        <select class="select2" name="select_search_selection" id="select_search_selection" style="width: 100%;">
+                          {% for html_search_selection in html_search_selections %}
+                            <option value="{{ html_search_selection.search_selection_id }}"
+                              {% if html_search_selection.search_selection_id == html_settings_search_selection %}selected{% endif %}>
+                              {{ html_search_selection.search_selection_name }}
+                          </option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="grid-item" style="grid-column: span 2;">
+                        <input type="text" id="field_program_add" name="field_program_add" placeholder="i.e., Golden Girls" value="{{ html_program_add_prior }}">
+                      </div>
+                      <div class="grid-item">
+                        <input type="number" min="1" id="settings_num_results" name="settings_num_results" value="{{ html_settings_num_results }}" placeholder="i.e., 9" title="{{ html_settings_num_results }}" style="width: 100%;">
+                      </div>
+                      <div class="grid-item">
+                        <button type="submit" name="action" value="program_add_search" class="btn bg-gradient-primary my-2 mb-2">Search</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+                  <h5>New & Updated
+                    <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Search-New-&-Updated" target="_blank">
+                      <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                    </a>
+                  </h5>
+                  <div class="search container-fluid">
+                    <div class="grid-container" style="text-align: center; margin-bottom: -8px;">
+                      <div class="grid-item"><h6>Provider(s)
+                        <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Provider-Groups" target="_blank">
+                          <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                        </a>
+                      </h6></div>
+                      <div class="grid-item"><h6>From Date</h6></div>
+                      <div class="grid-item"><h6>To Date</h6></div>
+                    </div>
+                    <div class="grid-container">
+                      <div class="grid-item">
+                        <select class="select2" name="select_provider_status" id="select_provider_status" style="width: 100%;">
+                          {% for provider_status_item in html_provider_statuses %}
+                            <option value="{{ provider_status_item }}" {% if provider_status_item == html_settings_provider_status %}selected{% endif %}>{{ provider_status_item }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="grid-item">
+                        <input type="date" id="field_date_new_default_start" name="field_date_new_default_start" value="{{ html_date_new_default_start_prior }}" style="width: 100%;">
+                      </div>
+                      <div class="grid-item">
+                        <input type="date" id="field_date_new_default_end" name="field_date_new_default_end" value="{{ html_date_new_default_end_prior }}" style="width: 100%;">
+                      </div>
+                      <div class="grid-item">
+                        <button type="submit" name="action" value="program_new_search" class="btn bg-gradient-primary my-2 mb-2">Date Range</button>
+                      </div>
+                      <div class="grid-item">
+                        <button type="submit" name="action" value="program_new_today" class="btn bg-gradient-primary my-2 mb-2">Today</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+                  <h5>Create Manual
+                    <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Adding-Manual-Movies,-Shows,-and-Videos" target="_blank">
+                      <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                    </a>
+                  </h5>
+                  <div class="search container-fluid">
+                    <div class="grid-container" style="text-align: center; margin-bottom: -8px;">
+                      <div class="grid-item"><h6>Program Type</h6></div>
+                      <div class="grid-item" style="grid-column: span 2;"><h6>Title</h6></div>
+                      <div class="grid-item"><h6>Release Year</h6></div>
+                    </div>
+                    <div class="grid-container">
+                      <div class="grid-item">
+                        <select class="select2" name="select_program_type_manual" id="select_program_type_manual" style="width: 100%;" onchange="checkManualProgramType()">
+                          {% for html_program_type_item in html_program_types %}
+                            <option value="{{ html_program_type_item.program_type_id }}" style="width: auto; min-width: 100%;">{{ html_program_type_item.program_type_name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="grid-item" style="grid-column: span 2;">
+                        <input type="text" id="field_program_add_manual" name="field_program_add_manual" placeholder="i.e., The Manual Show" value="{{ html_program_add_manual_prior }}" oninput="checkAllManualInputsFilled()">
+                      </div>
+                      <div class="grid-item">
+                        <input type="number" min="1888" id="field_release_year_manual" name="field_release_year_manual" placeholder="i.e., 2024" oninput="checkAllManualInputsFilled()" style="width: 100%;">
+                      </div>
+                      <div class="grid-item">
+                        <button type="submit" name="action" value="program_add_manual" id="program_add_manual" class="btn bg-gradient-primary my-2 mb-2" disabled>Add</button>
+                      </div>
+                    </div>
+                    <div id="manual_show">
+                      <div class="grid-container">
+                        <div class="grid-item">
+                          <label for="last_season_number"><b>Last Season Number:</b></label>
+                        </div>
+                        <div class="grid-item" style="grid-column: span 3;">
+                          <input type="number" id="last_season_number" name="last_season_number" placeholder="i.e., 1, 2, 3, etc..." oninput="generateEpisodeInputs()" min="1" style="width: 100%;">
+                        </div>
+                      </div>
+                      <div id="episode_inputs"></div> <!-- Populated by Javascript -->
+                    </div>
+                    <div id="manual_video">
+                      <div class="grid-container">
+                        <div class="grid-item">
+                          <label for="number_of_videos"><b>Number of Videos in Group:</b></label>
+                        </div>
+                        <div class="grid-item" style="grid-column: span 3;">
+                          <input type="number" id="number_of_videos" name="number_of_videos" placeholder="i.e., 1, 2, 3, etc..." oninput="checkAllManualInputsFilled()" min="1" style="width: 100%;">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+                  <h5>Video Playlist
+                    <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Adding-Manual-Movies,-Shows,-and-Videos#importing-playlists" target="_blank">
+                      <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                    </a>
+                  </h5>
+                  <div class="search container-fluid">
+                    <div class="grid-container" style="text-align: center; margin-bottom: -8px;">
+                      <div class="grid-item" style="grid-column: span 4;"><h6>Link</h6></div>
+                    </div>
+                    <div class="grid-container">
+                      <div class="grid-item" style="grid-column: span 4;">
+                        <input type="text" id="field_program_add_import_playlist" name="field_program_add_import_playlist" placeholder="i.e., https://www.youtube.com/playlist?list=PL14ROmPIeY8pwm_a8IZJtpIL60E1dLu6L" value="{{ html_program_add_import_playlist_prior }}">
+                      </div>
+                      <div class="grid-item">
+                        <button type="submit" name="action" value="program_add_import_playlist" class="btn bg-gradient-primary my-2 mb-2">Import</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="common-div column-div-2">
+                <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+                  <h5>Settings & Options
+                    <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Search-Defaults" target="_blank">
+                      <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                    </a>
+                  </h5>
+                  <div>
+                    <button type="submit" name="action" value="manage_programs_cancel" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;">Clear / Reset</button>
+                  </div>
+                  <hr>
+                  <h6>Previously Bookmarked</h6>
+                  <div style="margin-top: 8px;">
+                    <label for="show_hidden_programs"><b>Show Hidden Programs</b></label>
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" class="form-check-input" id="settings_show_hidden_programs" name="settings_show_hidden_programs" {% if html_settings_show_hidden_programs == "On" %}checked{% endif %}>
+                    </div>
+                  </div>
+                  <hr>
+                  <h6>Search | New & Updated</h6>
+                  <div style="margin-top: 8px;">
+                    <label for="hide_bookmarked"><b>Hide Bookmarked</b></label>
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" class="form-check-input" id="settings_hide_bookmarked" name="settings_hide_bookmarked" {% if html_settings_hide_bookmarked == "On" %}checked{% endif %}>
+                    </div>
+                  </div>
+                  <div style="margin-top: 8px;">
+                    <label for="country_code"><b>Country Code</b></label>
+                    <select class="select2" name="settings_country_code" id="settings_country_code" style="width: 98%;">
+                      {% for country_code_item in html_valid_country_codes %}
+                        <option value="{{ country_code_item }}" {% if country_code_item == html_settings_country_code %}selected{% endif %}>{{ country_code_item }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div style="margin-top: 8px;">
+                    <label for="language_code"><b>Language Code</b></label>
+                    <select class="select2" name="settings_language_code" id="settings_language_code" style="width: 98%;">
+                      {% for language_code_item in html_valid_language_codes %}
+                        <option value="{{ language_code_item }}" {% if language_code_item == html_settings_language_code %}selected{% endif %}>{{ language_code_item }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div style="margin-top: 8px;">
+                    <label for="minimum_video_length"><b>Minimum Video Length (Seconds)</b></label>
+                    <input type="number" min="0" id="settings_minimum_video_length" name="settings_minimum_video_length" value="{{ html_settings_minimum_video_length }}" style="width: 100%;">
+                  </div>
+                  <hr>
+                  <div>
+                    <button type="submit" name="action" value="search_defaults_save" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;">Save Default</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+          <!-- Search Results-->
+          {% if html_slm_manage_programs_search_results_flag %}
+            {% if html_slm_manage_programs_program_modify_available_flag %}
+              <h4>Examine Programs
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Examine-Programs" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </h4>
+            {% else %}
+              <h4>Search Results & Selections
+                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Selecting-from-Search-Results" target="_blank">
+                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                </a>
+              </h4>
+            {% endif %}
+            <div class="search_results container-fluid" style="width: 98%;">
+              <div class="grid-container dynamic-bg" style="text-align: center; margin-right: 17px; position: sticky; top: 0; z-index: 10;">
+                <div class="grid-item"><h6><!-- Poster --></h6></div>
+                <div class="grid-item"><h6>Type</h6></div>
+                <div class="grid-item"><h6>Name</h6></div>
+                <div class="grid-item"><h6>Core Info</h6></div>
+                <div class="grid-item"><h6>Description</h6></div>
+                <div class="grid-item"><h6>Other Info</h6></div>
+                {% if not html_slm_manage_programs_program_modify_available_flag %}
+                  <div class="grid-item"><h6>Status</h6></div>
+                  <div class="grid-item"><h6>Select Action</h6></div>
+                {% endif %}
+                <div class="grid-item" {% if html_slm_manage_programs_program_modify_available_flag %}style="grid-column: span 3;"{% endif %}><h6>Available On</h6></div>
+              </div>
+              {% if not html_slm_manage_programs_program_modify_available_flag %}
+                <div class="grid-container" style="margin-right: 17px;">
+                  <div class="grid-item">
+                    <h6>Filter:</h6>
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="filter-object-type" name="filter-object-type">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="filter-title" name="filter-title">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="filter-release-year" name="filter-release-year">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="filter-short-description" name="filter-short-description">
+                  </div>
+                  <div class="grid-item">
+                    <input type="text" id="filter-score" name="filter-score">
+                  </div>
+                  {% if not html_slm_manage_programs_program_modify_available_flag %}
+                    <div class="grid-item">
+                      <hr style="border: 3px solid; width: 100%;">
+                    </div>
+                    <div class="grid-item">
+                      <hr style="border: 3px solid; width: 100%;">
+                    </div>
+                  {% endif %}
+                  <div class="grid-item" {% if html_slm_manage_programs_program_modify_available_flag %}style="grid-column: span 3;"{% endif %}>
+                    <hr style="border: 3px solid; width: 100%;">
+                  </div>
+                </div>
+              {% endif %}
+              <hr>
+              <div id="record-container-program-search-results-prior" style="height: 100vh; overflow-y: scroll; contain: strict; overscroll-behavior: contain;"><!-- Records handled by 'Infinite Scroll' --></div>
+              <div id="loading-spinner-program-search-results-prior" style="display: none; text-align: center;">Loading...</div>
+              <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px; margin-left: 
+                {% if html_program_search_results_resort_alpha_flag %}10%
+                {% elif not html_slm_manage_programs_program_modify_available_flag %}25%
+                {% else %}40%
+                {% endif %}
+              ;">
+                {% if not html_slm_manage_programs_program_modify_available_flag %}
+                  <button type="submit" name="action" value="slm_manage_programs_search_results_save" class="btn bg-gradient-primary w-25 my-2 mb-2">Execute Visible</button>
+                {% endif %}
+                {% if html_program_search_results_resort_alpha_flag %}
+                  <button type="submit" name="action" value="slm_manage_programs_search_results_resort_alpha" class="btn bg-gradient-primary w-25 my-2 mb-2">Resort Alphabetically</button>
+                {% endif %}
+                <button type="submit" name="action" value="slm_manage_programs_search_results_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Clear Results</button>
+              </div>
+            </div>
+          {% endif %}
+          <!-- Modify Section -->
+          {% if html_slm_manage_programs_modify_program_flag %}
+            <div class="row">
+              <div class="common-div column-div-1">
+                {% if html_object_type_selected_prior != 'CHANNEL' %}
+                  <!-- Bookmark Section -->
+                  <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+                    <h5>Modify Program
+                      <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Basic-Selections" target="_blank">
+                        <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                      </a>
+                    </h5>
+                    <div class="modify_program_bookmark container-fluid">
+                      <div class="grid-container" style="text-align: center;">
+                        <div class="grid-item" {% if html_import_metadata_options_flag and html_object_type_selected_prior != 'MOVIE' %}style="grid-column: span 2;"{% else %}style="grid-column: span 4;"{% endif %}><h6>Title</h6></div>
+                        <div class="grid-item" {% if not html_import_metadata_options_flag or html_object_type_selected_prior == 'MOVIE' %}style="grid-column: span 2;"{% endif %}><h6>Release Year</h6></div>
+                        <div class="grid-item" {% if not html_import_metadata_options_flag %}style="grid-column: span 4;"{% elif html_object_type_selected_prior == 'MOVIE' %}style="grid-column: span 2;"{% endif %}><h6>Bookmark Action
+                          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Actions" target="_blank">
+                            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                          </a>
+                        </h6></div>
+                        {% if html_import_metadata_options_flag %}
+                          {% if html_object_type_selected_prior == 'MOVIE' or html_object_type_selected_prior == 'SHOW' %}
+                            <div class="grid-item" style="grid-column: span 2;"><h6>Title Override
+                              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Overrides" target="_blank">
+                                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                              </a>                      
+                            </h6></div>
+                          {% endif %}  
+                          {% if html_object_type_selected_prior == 'VIDEO' or html_object_type_selected_prior == 'SHOW' %}
+                            <div class="grid-item" style="grid-column: span 3;"><h6>Summary Override</h6></div>
+                            <div class="grid-item"><h6>Image Type Override</h6></div>
+                            <div class="grid-item"><h6>Image (Manual) Override</h6></div>
+                          {% endif %}   
+                          {% if html_object_type_selected_prior == 'VIDEO' %}
+                            <div class="grid-item" style="grid-column: span 2;"><h6>Sort and Sort Order Override
+                              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Overrides" target="_blank">
+                                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                              </a>                      
+                            </h6></div>
+                          {% endif %}
+                        {% endif %}
+                        <div class="grid-item" {% if not html_import_metadata_options_flag or html_object_type_selected_prior == 'MOVIE' %}style="grid-column: span 2;"{% endif %}><h6>Select Action</h6></div>
+                        <div class="grid-item"><h6></h6></div>
+                      </div>
+                      {% for item in html_program_modify_bookmark_selected_prior %}
+                        <div class="grid-container">
+                          <div class="grid-item" {% if html_import_metadata_options_flag and html_object_type_selected_prior != 'MOVIE' %}style="grid-column: span 2;"{% else %}style="grid-column: span 4;"{% endif %}>
+                            <input type="text" id="field_title_selected" name="field_title_selected" value="{{ item.title }}" placeholder="A 'Title' is required..." title="{{ item.title }}">
+                          </div>
+                          <div class="grid-item" {% if not html_import_metadata_options_flag or html_object_type_selected_prior == 'MOVIE' %}style="grid-column: span 2;"{% endif %}>
+                            <input type="number" min="1888" id="field_release_year_selected" name="field_release_year_selected" value="{{ item.release_year }}" placeholder="Enter year (i.e., 2024)" title="{{ item.release_year }}" style="width: 100%;">
+                          </div>
+                          <div class="grid-item" {% if not html_import_metadata_options_flag %}style="grid-column: span 4;"{% elif html_object_type_selected_prior == 'MOVIE' %}style="grid-column: span 2;"{% endif %}>
+                            <select class="select2" name="field_bookmark_action_selected" id="field_bookmark_action_selected" style="width: 100%;">
+                              {% for html_bookmark_action in html_bookmark_actions %}
+                                <option {% if item.bookmark_action == html_bookmark_action %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_bookmark_action }}</option>
+                              {% endfor %}
+                            </select>
+                          </div>
+                          {% if html_import_metadata_options_flag %}
+                            {% if html_object_type_selected_prior == 'MOVIE' or html_object_type_selected_prior == 'SHOW' %}
+                              <div class="grid-item" style="grid-column: span 2;">
+                                <input type="text" id="field_override_program_title_selected" name="field_override_program_title_selected" value="{{ item.override_program_title }}" title="{{ item.override_program_title }}">
+                              </div>
+                            {% endif %}  
+                            {% if html_object_type_selected_prior == 'VIDEO' or html_object_type_selected_prior == 'SHOW' %}
+                              <div class="grid-item" style="grid-column: span 3;">
+                                <input type="text" id="field_override_program_summary_selected" name="field_override_program_summary_selected" value="{{ item.override_program_summary }}" title="{{ item.override_program_summary }}">
+                              </div>
+                              <div class="grid-item">
+                                <select class="select2" name="field_override_program_image_type_selected" id="field_override_program_image_type_selected" style="width: 100%;">
+                                  {% for html_override_program_image_type in html_override_program_image_types %}
+                                    <option value="{{ html_override_program_image_type.override_id }}" {% if item.override_program_image_type == html_override_program_image_type.override_id %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_override_program_image_type.override_name }}</option>
+                                  {% endfor %}
+                                </select>
+                              </div>                    
+                              <div class="grid-item">
+                                <input type="text" id="field_override_program_image_manual_selected" name="field_override_program_image_manual_selected" value="{{ item.override_program_image_manual }}" title="{{ item.override_program_image_manual }}">
+                              </div>
+                            {% endif %}   
+                            {% if html_object_type_selected_prior == 'VIDEO' %}
+                              <div class="grid-item" style="grid-column: span 2;">
+                                <select class="select2" name="field_override_program_sort_selected" id="field_override_program_sort_selected" style="width: 100%;">
+                                  {% for html_override_program_sort in html_override_program_sorts %}
+                                    <option value="{{ html_override_program_sort.override_id }}" {% if item.override_program_sort == html_override_program_sort.override_id %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_override_program_sort.override_name }}</option>
+                                  {% endfor %}
+                                </select>
+                              </div>
+                            {% endif %} 
+                          {% endif %}
+                          <div class="grid-item" {% if not html_import_metadata_options_flag or html_object_type_selected_prior == 'MOVIE' %}style="grid-column: span 2;"{% endif %}>
+                            <select class="select2" name="field_bookmark_selected_action" id="field_bookmark_selected_action" style="width: 100%;">
+                              {% for bookmark_selected_action_item in html_bookmark_selected_actions %}
+                                <option value="{{ bookmark_selected_action_item.bookmark_selected_action_id }}" style="width: auto; min-width: 100%;">{{ bookmark_selected_action_item.bookmark_selected_action_name }}</option>
+                              {% endfor %}
+                            </select>
+                          </div>
+                          <div class="grid-item"></div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  <!-- Manual Order Videos Section -->
+                  {% if html_import_metadata_options_flag and html_object_type_selected_prior == 'VIDEO' and html_override_program_sort_prior == 'manual' %}
+                    <div class="file-input-wrapper w-100 my-2 mb-2">
+                      <h5>Manual Order Videos</h5>
+                      <div class="box-container">
+                        <div class="manual-order-video-container">
+                            <select id="manualOrderVideosList" class="listbox" multiple>
+                              <!-- Manual Order Videos populated by JavaScript -->
+                            </select>
+                          <div class="buttons">
+                            <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="manual_order_videos_moveUp()">
+                              <i class="material-icons opacity-10">keyboard_arrow_up</i>
+                            </button>
+                            <button type="button" class="btn bg-gradient-primary h-2 w-2 my-2 mb-2 centered-button" onclick="manual_order_videos_moveDown()">
+                              <i class="material-icons opacity-10">keyboard_arrow_down</i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <input type="hidden" id="manual_order_videos" name="manual_order_videos">
+                  {% endif %}
+                {% endif %}
+                <!-- Modify Program Details -->
+                {% if ( ( html_program_modify_details_selected_prior and html_object_type_selected_prior == 'MOVIE' ) or ( html_object_type_selected_prior != 'MOVIE' ) ) and ( html_bookmark_action_prior != 'Hide' ) %}
+                  <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+                    {% if html_object_type_selected_prior == 'CHANNEL' %}
+                      <h5>Video Channel Settings
+                        <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Videos-and-Channels#video-channels" target="_blank">
+                          <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                        </a>
+                      </h5>
+                    {% else %}
+                      <h5>Program Details</h5>
+                    {% endif %}
+                    <div class="modify_program_bookmarks_status container-fluid">
+                      <!-- Video Channel Section -->
+                      {% if html_object_type_selected_prior == 'CHANNEL' %}
+                        <h6><ul>
+                          <li>Mark Video Channel as 'inactive' by unchecking.</li>
+                          <li>Modify the display name, user (i.e., '@' address), description, or image.</li>
+                          <li>If desired, select a 'Group' assignment.</li>
+                        </ul></h6>
+                        <div class="modify_program_bookmarks_status container-fluid">
+                          <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10; margin-top: 5px;">
+                            <div class="grid-item"><h6>Active</h6></div>
+                            <div class="grid-item" style="grid-column: span 2;"><h6>Name</h6></div>
+                            <div class="grid-item" style="grid-column: span 2;"><h6>User</h6></div>
+                            <div class="grid-item" style="grid-column: span 3;"><h6>Description</h6></div>
+                            <div class="grid-item"><h6>Link</h6></div>
+                            <div class="grid-item"><h6>Image</h6></div>
+                            <div class="grid-item"><h6>Group
+                              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Provider-Groups" target="_blank">
+                                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                              </a>
+                            </h6></div>
+                            <div class="grid-item"><h6>Select Action</h6></div>
+                            <div class="grid-item"><h6></h6></div>
+                          </div>
+                          {% for item in html_program_modify_details_selected_prior %}
+                            <div class="grid-container">
+                              <div class="grid-item">
+                                <div class="form-check form-switch ps-0 is-filled">
+                                  <input type="checkbox" id="subscribed_video_channel_active_selected" name="subscribed_video_channel_active_selected" class="form-check-input" 
+                                    {% if item.channel_active|lower == 'on' %}checked{% endif %} 
+                                    onchange="this.value = this.checked ? 'On' : 'Off'" 
+                                    value="On" style="margin-left: -20px;">
+                                </div>
+                              </div>
+                              <div class="grid-item" style="grid-column: span 2;">
+                                <input type="text" id="subscribed_video_channel_name_selected" name="subscribed_video_channel_name_selected" value="{{ item.channel_name }}" title="{{ item.channel_name }}">
+                              </div>
+                              <div class="grid-item" style="grid-column: span 2;">
+                                <input type="text" id="subscribed_video_channel_user_selected" name="subscribed_video_channel_user_selected" value="{{ item.channel_user }}" title="{{ item.channel_user }}">
+                              </div>
+                              <div class="grid-item" style="grid-column: span 3;">
+                                <input type="text" id="subscribed_video_channel_description_selected" name="subscribed_video_channel_description_selected" value="{{ item.channel_description }}" title="{{ item.channel_description }}">
+                              </div>
+                              <div class="grid-item">
+                                <input type="text" id="subscribed_video_channel_url_selected" name="subscribed_video_channel_url_selected" value="{{ item.channel_url }}" title="{{ item.channel_url }}" readonly style="background-color: #d1cdcde5;">
+                              </div>
+                              <div class="grid-item">
+                                <input type="text" id="subscribed_video_channel_image_selected" name="subscribed_video_channel_image_selected" value="{{ item.channel_image }}" title="{{ item.channel_image }}">
+                              </div>
+                              <div class="grid-item">
+                                <select class="select2" name="subscribed_video_channel_streaming_service_group_selected" id="subscribed_video_channel_streaming_service_group_selected" style="width: 100%; max-width: 100%;">
+                                  {% for provider_group_item in html_provider_groups %}
+                                    <option value="{{ provider_group_item.provider_group_id }}" {% if provider_group_item.provider_group_id == item.channel_streaming_service_group %}selected{% endif %} style="width: auto; min-width: 100%;">{{ provider_group_item.provider_group_name }}</option>
+                                  {% endfor %}
+                                </select>
+                              </div>
+                              <div class="grid-item">
+                                <select class="select2" name="subscribed_video_channel_selected_action" id="subscribed_video_channel_selected_action" style="width: 100%;">
+                                  {% for program_modify_details_action_item in html_program_modify_details_actions %}
+                                    <option value="{{ program_modify_details_action_item.program_modify_details_action_id }}" {% if program_modify_details_action_item.program_modify_details_action_id == 'save' %}selected{% endif %} style="width: auto; min-width: 100%;">{{ program_modify_details_action_item.program_modify_details_action_name }}</option>
+                                  {% endfor %}
+                                </select>
+                              </div>
+                              <div class="grid-item"></div>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      <!-- Bookmarks Status Section -->
+                      {% else %}
+                        <!-- Filters -->
+                        {% if html_object_type_selected_prior != 'MOVIE' and html_program_modify_details_selected_prior %}
+                          <div class="grid-container">
+                            <div class="grid-item" {% if not html_import_metadata_options_flag and html_object_type_selected_prior == 'VIDEO' %}style="grid-column: span 2;"{% endif %}><h6>Filter:</h6></div>
+                            <div class="grid-item" {% if not html_import_metadata_options_flag or html_object_type_selected_prior == 'VIDEO' %}style="grid-column: span 2;"{% endif %}>
+                              <input type="text" id="filter_modify_program_season_episode" name="filter_modify_program_season_episode" value="{{ html_filter_modify_program_season_episode }}" style="background-color: #e6e6fa;">
+                            </div>
+                            {% if html_object_type_selected_prior == 'SHOW' %}
+                              <div class="grid-item"{% if not html_import_metadata_options_flag %}style="grid-column: span 2;"{% endif %}>
+                                <input type="text" id="filter_modify_program_stream_link" name="filter_modify_program_stream_link" value="{{ html_filter_modify_program_stream_link }}" style="background-color: #e6e6fa;">
+                              </div>
+                            {% endif %}
+                            <div class="grid-item"{% if not html_import_metadata_options_flag %}style="grid-column: span 2;"{% endif %}>
+                              <input type="text" id="filter_modify_program_stream_link_override" name="filter_modify_program_stream_link_override" value="{{ html_filter_modify_program_stream_link_override }}" style="background-color: #e6e6fa;">
+                            </div>
+                            <div class="grid-item" {% if not html_import_metadata_options_flag and html_object_type_selected_prior == 'VIDEO' %}style="grid-column: span 2;"{% endif %}>
+                              <input type="text" id="filter_modify_program_special_action" name="filter_modify_program_special_action" value="{{ html_filter_modify_program_special_action }}" style="background-color: #e6e6fa;">
+                            </div>
+                            {% if html_object_type_selected_prior == 'SHOW' %}
+                              <div class="grid-item">
+                                <input type="text" id="filter_modify_program_season_episode_prefix" name="filter_modify_program_season_episode_prefix" value="{{ html_filter_modify_program_season_episode_prefix }}" style="background-color: #e6e6fa;">
+                              </div>
+                            {% endif %}
+                            {% if html_import_metadata_options_flag %}
+                              <div class="grid-item" {% if html_object_type_selected_prior == 'VIDEO' %}style="grid-column: span 2;"{% endif %}>
+                                <input type="text" id="filter_modify_program_override_episode_title" name="filter_modify_program_override_episode_title" value="{{ html_filter_modify_program_override_episode_title }}" style="background-color: #e6e6fa;">
+                              </div>
+                              <div class="grid-item">
+                                <input type="text" id="filter_modify_program_override_summary" name="filter_modify_program_override_summary" value="{{ html_filter_modify_program_override_summary }}" style="background-color: #e6e6fa;">
+                              </div>
+                              <div class="grid-item">
+                                <input type="text" id="filter_modify_program_override_image" name="filter_modify_program_override_image" value="{{ html_filter_modify_program_override_image }}" style="background-color: #e6e6fa;">
+                              </div>
+                              <div class="grid-item">
+                                <input type="number" min="0" id="filter_modify_program_override_duration" name="filter_modify_program_override_duration" value="{{ html_filter_modify_program_override_duration }}" style="background-color: #e6e6fa; width: 100%;">
+                              </div>
+                            {% endif %}
+                            <div class="grid-item" {% if not html_import_metadata_options_flag and html_object_type_selected_prior == 'VIDEO' %}style="grid-column: span 2;"{% endif %}>
+                              <input type="text" id="filter_modify_program_original_release_date" name="filter_modify_program_original_release_date" value="{{ html_filter_modify_program_original_release_date }}" style="background-color: #e6e6fa;">
+                            </div>
+                            <div class="grid-item" {% if not html_import_metadata_options_flag %}style="grid-column: span 2;"{% endif %}>
+                              <hr style="border: 3px solid; width: 100%;">
+                            </div>
+                            <div class="grid-item"></div>
+                          </div>
+                        {% endif %}
+                        <!-- Headers -->
+                        <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10; margin-top: 5px;">
+                          <div class="grid-item" {% if not html_import_metadata_options_flag and html_object_type_selected_prior != 'SHOW' %}style="grid-column: span 2;"{% endif %}><h6>Status</h6></div>
+                          {% if html_object_type_selected_prior == 'SHOW' %}
+                            <div class="grid-item" {% if not html_import_metadata_options_flag %}style="grid-column: span 2;"{% endif %}><h6>Season Episode</h6></div>
+                          {% elif html_object_type_selected_prior == 'VIDEO' %}
+                            <div class="grid-item" style="grid-column: span 2;"><h6>Video Name</h6></div>
+                          {% endif %}
+                          {% if html_object_type_selected_prior != 'VIDEO' %}
+                            <div class="grid-item" {% if not html_import_metadata_options_flag or html_object_type_selected_prior == 'MOVIE' %}style="grid-column: span 2;"{% endif %}><h6>Current Stream Link/File</h6></div>
+                          {% endif %}
+                          {% if html_object_type_selected_prior != 'VIDEO' %}
+                            <div class="grid-item" {% if not html_import_metadata_options_flag or html_object_type_selected_prior == 'MOVIE' %}style="grid-column: span 2;"{% endif %}><h6>Stream Link/File Override</h6></div>
+                          {% else %}
+                            <div class="grid-item" {% if not html_import_metadata_options_flag %}style="grid-column: span 2;"{% endif %}><h6>Video Link</h6></div>
+                          {% endif %}
+                          <div class="grid-item" {% if not html_import_metadata_options_flag and html_object_type_selected_prior != 'SHOW' %}style="grid-column: span 2;"{% endif %}><h6>Special Action
+                            <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions" target="_blank">
+                              <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                            </a>
+                          </h6></div>
+                          {% if html_object_type_selected_prior == 'SHOW' %}
+                            <div class="grid-item"><h6>Episode Prefix</h6></div>
+                          {% endif %}
+                          {% if html_import_metadata_options_flag %}
+                            {% if html_object_type_selected_prior == 'SHOW' %}
+                              <div class="grid-item"><h6>Episode Title Override</h6></div>
+                            {% elif html_object_type_selected_prior == 'VIDEO' %}
+                              <div class="grid-item" style="grid-column: span 2;"><h6>Video Title Override</h6></div>
+                            {% endif %}
+                            <div class="grid-item" {% if html_object_type_selected_prior == 'MOVIE' %}style="grid-column: span 2;"{% endif %}><h6>Summary Override</h6></div>
+                            <div class="grid-item"><h6>Image Override</h6></div>
+                            <div class="grid-item"><h6>Duration Override
+                              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Advanced-Selections-and-Overrides" target="_blank">
+                                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                              </a>                    
+                            </h6></div>
+                          {% endif %}
+                          <div class="grid-item" {% if not html_import_metadata_options_flag and html_object_type_selected_prior != 'SHOW' %}style="grid-column: span 2;"{% endif %}><h6>Release Date</h6></div>
+                          <div class="grid-item" {% if not html_import_metadata_options_flag %}style="grid-column: span 2;"{% endif %}><h6>Select Action</h6></div>
+                          <div class="grid-item"></div>
+                        </div>
+                        <!-- New -->
+                        {% if html_object_type_selected_prior != 'MOVIE' %}
+                          <div class="grid-container">
+                            <div class="grid-item" {% if not html_import_metadata_options_flag and html_object_type_selected_prior == 'VIDEO' %}style="grid-column: span 2;"{% endif %}>
+                              {% if html_object_type_selected_prior == 'SHOW' %}
+                                <input type="number" min="0" id="program_modify_add_episode_season" name="program_modify_add_episode_season" placeholder="Season Number (i.e., 1, 2, 3...)" title="Season Number (i.e., 1, 2, 3...)" style="width: 100%;">
+                              {% elif html_object_type_selected_prior == 'VIDEO' %}
+                                <hr style="border: 3px solid; width: 100%;">
+                              {% endif %}
+                            </div>
+                            <div class="grid-item" {% if not html_import_metadata_options_flag or html_object_type_selected_prior == 'VIDEO' %}style="grid-column: span 2;"{% endif %}>
+                              <input {% if html_object_type_selected_prior == 'SHOW' %}type="number" min="0" style="width: 100%;"{% elif html_object_type_selected_prior == 'VIDEO' %}type="text"{% endif %} id="program_modify_add_episode_episode" name="program_modify_add_episode_episode" {% if html_object_type_selected_prior == 'SHOW' %}placeholder="Episode Number (i.e., 1, 2, 3...)" title="Episode Number (i.e., 1, 2, 3...)"{% elif html_object_type_selected_prior == 'VIDEO' %}placeholder="i.e., Unique Video Name 2" title="i.e., Unique Video Name 2"{% endif %}>
+                            </div>
+                            {% if html_object_type_selected_prior == 'SHOW' %}
+                              <div class="grid-item"{% if not html_import_metadata_options_flag %}style="grid-column: span 2;"{% endif %}>
+                                <hr style="border: 3px solid; width: 100%;">
+                              </div>
+                            {% endif %}
+                            <div class="grid-item"{% if not html_import_metadata_options_flag %}style="grid-column: span 2;"{% endif %}>
+                              <input type="text" id="program_modify_add_episode_stream_link_override" name="program_modify_add_episode_stream_link_override" {% if html_object_type_selected_prior == 'SHOW' %}placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="i.e., https://link_to_website.com/path_to_streamlink"{% elif html_object_type_selected_prior == 'VIDEO' %}placeholder="i.e., https://link_to_website.com/path_to_video" title="i.e., https://link_to_website.com/path_to_video"{% endif %}>
+                            </div>
+                            <div class="grid-item" {% if not html_import_metadata_options_flag and html_object_type_selected_prior == 'VIDEO' %}style="grid-column: span 2;"{% endif %}>
+                              <select class="select2" name="program_modify_add_episode_special_action" id="program_modify_add_episode_special_action" style="width: 100%;">
+                                {% for html_special_action in html_new_special_actions %}
+                                  <option {% if html_object_type_selected_prior == 'VIDEO' %}{% if html_special_action == "Make SLM Stream" %}selected{% endif %}{% endif %} style="width: auto; min-width: 100%;" title="{{ html_special_action }}">{{ html_special_action }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            {% if html_object_type_selected_prior == 'SHOW' %}
+                              <div class="grid-item">
+                                <input type="text" id="program_modify_add_episode_season_episode_prefix" name="program_modify_add_episode_season_episode_prefix" placeholder="i.e., (SUB), (DUB)" title="i.e., (SUB), (DUB)">
+                              </div>
+                            {% endif %}
+                            {% if html_import_metadata_options_flag %}
+                              <div class="grid-item" {% if html_object_type_selected_prior == 'VIDEO' %}style="grid-column: span 2;"{% endif %}>
+                                <input type="text" id="program_modify_add_episode_override_episode_title" name="program_modify_add_episode_override_episode_title" {% if html_object_type_selected_prior == 'SHOW' %}placeholder="i.e., This Episode Name" title="i.e., This Episode Name"{% elif html_object_type_selected_prior == 'VIDEO' %}placeholder="i.e., This Video Name" title="i.e., This Video Name"{% endif %}>
+                              </div>
+                              <div class="grid-item">
+                                <input type="text" id="program_modify_add_episode_override_summary" name="program_modify_add_episode_override_summary" placeholder="i.e., Here is a description of what happens." title="i.e., Here is a description of what happens.">
+                              </div>
+                              <div class="grid-item">
+                                <input type="text" id="program_modify_add_episode_override_image" name="program_modify_add_episode_override_image" placeholder="i.e., http://linktosomething.com/image.jpg" title="i.e., http://linktosomething.com/image.jpg">
+                              </div>
+                              <div class="grid-item">
+                                <input type="number" min="1" id="program_modify_add_episode_override_duration" name="program_modify_add_episode_override_duration" placeholder="i.e., 3600" title="i.e., 3600" style="width: 100%;">
+                              </div>
+                            {% endif %}
+                            <div class="grid-item" {% if not html_import_metadata_options_flag and html_object_type_selected_prior == 'VIDEO' %}style="grid-column: span 2;"{% endif %}>
+                              <hr style="border: 3px solid; width: 100%;">
+                            </div>
+                            <div class="grid-item" {% if not html_import_metadata_options_flag %}style="grid-column: span 2;"{% endif %}>
+                              <select class="select2" name="program_modify_add_episode_selected_action" id="program_modify_add_episode_selected_action" style="width: 100%;">
+                                {% for add_program_modify_details_actions_item in html_add_program_modify_details_actions %}
+                                  <option value="{{ add_program_modify_details_actions_item.add_program_modify_details_action_id }}" style="width: auto; min-width: 100%;" title="{{ add_program_modify_details_actions_item.add_program_modify_details_action_name }}">{{ add_program_modify_details_actions_item.add_program_modify_details_action_name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div class="grid-item"></div>
+                          </div>
+                        {% endif %}
+                        <!-- Records -->
+                        <div id="record-container-program-modify-details-selected-prior" style="height: auto; max-height: 100vh; overflow-y: scroll; overscroll-behavior: contain; margin-right: -17px;"><!-- Records handled by 'Infinite Scroll' --></div>
+                        <div id="loading-spinner-program-modify-details-selected-prior" style="display: none; text-align: center;">Loading...</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+              {% if html_object_type_selected_prior != 'CHANNEL' %}
+                <div class="common-div column-div-2">
+                  <!-- Global Episodes/Videos Controls -->
+                  {% if html_object_type_selected_prior != 'MOVIE' and html_bookmark_action_prior != 'Hide' and html_program_modify_details_selected_prior %}
+                    <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+                      <h5>Global {% if html_object_type_selected_prior == 'SHOW' %}Episodes{% elif html_object_type_selected_prior == 'VIDEO' %}Videos{% endif %} Controls</h5>
+                      <div class="modify_program_sidebar container-fluid">
+                        <div class="grid-container" style="margin-top: 10px; margin-bottom: 10px;">
+                          <div class="grid-item" style="grid-column: span 2;">
+                            <select class="select2" name="program_modify_global_change_selection" id="program_modify_global_change_selection" style="width: 100%;">
+                              {% for html_program_modify_global_selection in html_program_modify_global_selections %}
+                                <option value="{{ html_program_modify_global_selection.program_modify_global_selection_id }}" style="width: auto; min-width: 100%;" title="{{ html_program_modify_global_selection.program_modify_global_selection_name }}">{{ html_program_modify_global_selection.program_modify_global_selection_name }}</option>
+                              {% endfor %}
+                            </select>
+                          </div>
+                        </div>
+                        <div class="grid-container">
+                          <div class="grid-item">
+                            <div class="form-check form-switch ps-0 is-filled">
+                              <input type="checkbox" id="program_modify_global_selection_status" name="program_modify_global_selection_status" class="form-check-input" style="margin-top: -6px;" unchecked>
+                              <label for="program_modify_global_selection_status" title="Status" style="margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"><b>Status</b></label>
+                            </div>
+                          </div>
+                          <div class="grid-item">
+                            <div class="form-check form-switch ps-0 is-filled">
+                              <input type="checkbox" id="program_modify_global_change_status" name="program_modify_global_change_status" class="form-check-input" style="margin-top: -6px;" unchecked>
+                            </div>
+                          </div>
+                        </div>
+                        {% if html_object_type_selected_prior == 'SHOW' %}
+                          <div class="grid-container">
+                            <div class="grid-item" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;">
+                              <div class="form-check form-switch ps-0 is-filled">
+                                <input type="checkbox" id="program_modify_global_selection_stream_link_override" name="program_modify_global_selection_stream_link_override" class="form-check-input" style="margin-top: -6px;" unchecked>
+                                <label for="program_modify_global_selection_stream_link_override" title="Stream Link/File Override" style="margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"><b>Stream Link/File Override</b></label>
+                              </div>
+                            </div>
+                            <div class="grid-item">
+                              <input type="text" id="program_modify_global_change_stream_link_override" name="program_modify_global_change_stream_link_override" placeholder="i.e., https://link_to_website.com/path_to_streamlink" title="i.e., https://link_to_website.com/path_to_streamlink" style="margin-top: -10px;">
+                            </div>
+                          </div>
+                        {% endif %}
+                        <div class="grid-container">
+                          <div class="grid-item" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;">
+                            <div class="form-check form-switch ps-0 is-filled">
+                              <input type="checkbox" id="program_modify_global_selection_special_action" name="program_modify_global_selection_special_action" class="form-check-input" style="margin-top: -6px;" unchecked>
+                              <label for="program_modify_global_selection_special_action" title="Special Action" style="margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"><b>Special Action</b></label>
+                            </div>
+                          </div>
+                          <div class="grid-item">
+                            <select class="select2" name="program_modify_global_change_special_action" id="program_modify_global_change_special_action" style="width: 100%;">
+                              {% for html_special_action in html_special_actions %}
+                                <option {% if html_object_type_selected_prior == 'VIDEO' %}{% if html_special_action == "Make SLM Stream" %}selected{% endif %}{% endif %} style="width: auto; min-width: 100%;" title="{{ html_special_action }}">{{ html_special_action }}</option>
+                              {% endfor %}
+                            </select>
+                          </div>
+                        </div>
+                        {% if html_object_type_selected_prior == 'SHOW' %}
+                          <div class="grid-container">
+                            <div class="grid-item" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;">
+                              <div class="form-check form-switch ps-0 is-filled">
+                                <input type="checkbox" id="program_modify_global_selection_season_episode_prefix" name="program_modify_global_selection_season_episode_prefix" class="form-check-input" style="margin-top: -6px;" unchecked>
+                                <label for="program_modify_global_selection_season_episode_prefix" title="Episode Prefix" style="margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"><b>Episode Prefix</b></label>
+                              </div>
+                            </div>
+                            <div class="grid-item">
+                              <input type="text" id="program_modify_global_change_season_episode_prefix" name="program_modify_global_change_season_episode_prefix" placeholder="i.e., (SUB), (DUB)" title="i.e., (SUB), (DUB)" style="margin-top: -10px;">
+                            </div>
+                          </div>
+                        {% endif %}
+                        {% if html_import_metadata_options_flag %}
+                          <div class="grid-container">
+                            <div class="grid-item" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;">
+                              <div class="form-check form-switch ps-0 is-filled">
+                                <input type="checkbox" id="program_modify_global_selection_override_episode_title" name="program_modify_global_selection_override_episode_title" class="form-check-input" style="margin-top: -6px;" unchecked>
+                                <label for="program_modify_global_selection_override_episode_title" title="{% if html_object_type_selected_prior == 'SHOW' %}Episode Title Override{% elif html_object_type_selected_prior == 'VIDEO' %}Video Title Override{% endif %}" style="margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"><b>{% if html_object_type_selected_prior == 'SHOW' %}Episode Title Override{% elif html_object_type_selected_prior == 'VIDEO' %}Video Title Override{% endif %}</b></label>
+                              </div>
+                            </div>
+                            <div class="grid-item">
+                              <input type="text" id="program_modify_global_change_override_episode_title" name="program_modify_global_change_override_episode_title" {% if html_object_type_selected_prior == 'SHOW' %}placeholder="i.e., This Episode Name" title="i.e., This Episode Name"{% elif html_object_type_selected_prior == 'VIDEO' %}placeholder="i.e., This Video Name" title="i.e., This Video Name"{% endif %} style="margin-top: -10px;">
+                            </div>
+                          </div>
+                          <div class="grid-container">
+                            <div class="grid-item" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;">
+                              <div class="form-check form-switch ps-0 is-filled">
+                                <input type="checkbox" id="program_modify_global_selection_override_summary" name="program_modify_global_selection_override_summary" class="form-check-input" style="margin-top: -6px;" unchecked>
+                                <label for="program_modify_global_selection_override_summary" title="Summary Override" style="margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"><b>Summary Override</b></label>
+                              </div>
+                            </div>
+                            <div class="grid-item">
+                              <input type="text" id="program_modify_global_change_override_summary" name="program_modify_global_change_override_summary" placeholder="i.e., Here is a description of what happens." title="i.e., Here is a description of what happens." style="margin-top: -10px;">
+                            </div>
+                          </div>
+                          <div class="grid-container">
+                            <div class="grid-item" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;">
+                              <div class="form-check form-switch ps-0 is-filled">
+                                <input type="checkbox" id="program_modify_global_selection_override_image" name="program_modify_global_selection_override_image" class="form-check-input" style="margin-top: -6px;" unchecked>
+                                <label for="program_modify_global_selection_override_image" title="Image Override" style="margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"><b>Image Override</b></label>
+                              </div>
+                            </div>
+                            <div class="grid-item">
+                              <input type="text" id="program_modify_global_change_override_image" name="program_modify_global_change_override_image" placeholder="i.e., http://linktosomething.com/image.jpg" title="i.e., http://linktosomething.com/image.jpg" style="margin-top: -10px;">
+                            </div>
+                          </div>
+                          <div class="grid-container">
+                            <div class="grid-item" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;">
+                              <div class="form-check form-switch ps-0 is-filled">
+                                <input type="checkbox" id="program_modify_global_selection_override_duration" name="program_modify_global_selection_override_duration" class="form-check-input" style="margin-top: -6px;" unchecked>
+                                <label for="program_modify_global_selection_override_duration" title="Duration Override" style="margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"><b>Duration Override</b></label>
+                              </div>
+                            </div>
+                            <div class="grid-item">
+                              <input type="number" min="1" id="program_modify_global_change_override_duration" name="program_modify_global_change_override_duration" placeholder="i.e., 3600" title="i.e., 3600" style="margin-top: -10px; width: 100%;">
+                            </div>
+                          </div>
+                        {% endif %}
+                        <div class="grid-container" style="margin-top: 10px; margin-bottom: 10px;">
+                          <div class="grid-item" style="grid-column: span 2;">
+                            <select class="select2" name="program_modify_global_change_bookmarks_statuses_selected_action" id="program_modify_global_change_bookmarks_statuses_selected_action" style="width: 100%;">
+                              {% for html_program_modify_details_action in html_program_modify_details_actions %}
+                                <option value="{{ html_program_modify_details_action.program_modify_details_action_id }}" {% if html_program_modify_details_action.program_modify_details_action_id == "save" %}selected{% endif %} style="width: auto; min-width: 100%;" title="{{ html_program_modify_details_action.program_modify_details_action_name }}">{{ html_program_modify_details_action.program_modify_details_action_name }}</option>
+                              {% endfor %}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                  <!-- Other Actions Section -->
+                  <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+                    <h5>Other Actions</h5>
+                    <div class="modify_program_sidebar container-fluid">
+                      <div class="form-check form-switch ps-0 is-filled">
+                        <input type="checkbox" id="program_modify_other_actions_save_labels" name="program_modify_other_actions_save_labels" class="form-check-input" style="margin-top: -6px;" {% if html_program_modify_label_maps_selected_prior %}checked{% else %}disabled{% endif %}>
+                        <label for="program_modify_other_actions_save_labels" title="Save Labels" style="margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"><b>Save Labels</b></label>
+                      </div>
+                      {% if html_import_metadata_options_flag and html_object_type_selected_prior == 'VIDEO' and html_override_program_sort_prior == 'manual' %}
+                        <div class="form-check form-switch ps-0 is-filled">
+                          <input type="checkbox" id="program_modify_other_actions_save_manual_order" name="program_modify_other_actions_save_manual_order" class="form-check-input" style="margin-top: -6px;" checked>
+                          <label for="program_modify_other_actions_save_manual_order" title="Save Manual Order Videos" style="margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"><b>Save Manual Order Videos</b></label>
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <!-- Labels Section -->
+                  <div class="file-input-wrapper w-100 h-15 my-2 mb-2">
+                    <h5>Labels
+                      <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Labels" target="_blank">
+                        <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                      </a>
+                    </h5>
+                    <div class="modify_program_sidebar container-fluid">
+                      {% for item in html_program_modify_label_maps_selected_prior %}
+                        <input type="hidden" name="webpage_label_id_{{ loop.index }}" id="webpage_label_id_{{ loop.index }}" value="{{ item.webpage_label_id }}">
+                        <div class="form-check form-switch ps-0 is-filled">
+                          <input type="checkbox" id="webpage_label_active_{{ loop.index }}" name="webpage_label_active_{{ loop.index }}" class="form-check-input" style="margin-top: -6px;" {% if item.webpage_label_active == 'On' %}checked{% endif %}>
+                          <label for="webpage_label_active_{{ loop.index }}" title="{{ item.webpage_label_name }}" style="margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"><b>{{ item.webpage_label_name }}</b></label>
+                        </div>
+                      {% endfor %}
+                      <input type="text" id="program_modify_add_label" name="program_modify_add_label" placeholder="Enter a new Label name" title="Enter a new Label name">
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+            <!-- Modify Action Buttons -->
+            <hr>
+            <div id="floating-buttons" style="position: sticky; bottom: 0; padding: 10px; z-index: 99; margin-left: 10%;">
+              <button type="submit" name="action" value="program_modify_execute_yes_continue" class="btn bg-gradient-primary w-25 my-2 mb-2">Execute Actions and Continue</button>
+              <button type="submit" name="action" value="program_modify_execute_yes_finish" class="btn bg-gradient-primary w-25 my-2 mb-2">Execute Actions and Finish</button>
+              <button type="submit" name="action" value="program_modify_execute_no_finish" class="btn bg-gradient-primary w-25 my-2 mb-2">Finish without Executing Actions</button>
+            </div>
+          {% endif %}
+        {% endif %}
+      </form>
+    </div>
+  </div>
+  <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="loadingModalLabel">Processing</h5>
+        </div>
+        <div class="modal-body">
+          Please wait while the process completes...
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- {% include 'includes/footer.html' %} -->
+
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<!-- Processing Box -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('process-form').addEventListener('submit', function(event) {
+      console.log("Form submitted"); // Debugging
+
+      // Wait for a short delay to ensure the form submission is not blocked
+      setTimeout(() => {
+        // Ensure the modal element exists
+        const modalElement = document.getElementById('loadingModal');
+        if (!modalElement) {
+          console.error('Modal element not found!');
+          return;
+        }
+
+        // Show the modal
+        const loadingModal = new bootstrap.Modal(modalElement, {
+          backdrop: 'static',
+          keyboard: false
+        });
+        console.log("Showing modal"); // Debugging
+        loadingModal.show();
+
+        // Disable all navigation links
+        document.querySelectorAll('a').forEach(element => {
+          element.setAttribute('disabled', 'true');
+          element.addEventListener('click', function(event) {
+            event.preventDefault();
+          });
+        });
+      }, 500); // Adjust the delay as needed
+    });
+  });
+</script>
+<!-- Infinite Scroll: Program Search Results -->
+<script>
+  {% if html_slm_manage_programs_search_results_flag %}
+    document.addEventListener('DOMContentLoaded', function() {
+        const recordContainerSearchResults = document.getElementById('record-container-program-search-results-prior');
+        const loadingSpinnerSearchResults = document.getElementById('loading-spinner-program-search-results-prior');
+        const allRecordsSearchResults = {{ html_program_search_results_prior|tojson }};
+        const searchResultsActionsMovie = {{ html_search_results_actions_movie|tojson }};
+        const searchResultsActionsShow = {{ html_search_results_actions_show|tojson }};
+        const searchResultsActionsVideo = {{ html_search_results_actions_video|tojson }};
+        const searchResultsActionsChannel = {{ html_search_results_actions_channel|tojson }};
+        const limitSearchResults = 100;
+        let offsetSearchResults = 0;
+        let filteredRecordsSearchResults = allRecordsSearchResults;  // Store filtered records
+
+        // Filter input elements
+        const filterObjectType = document.getElementById('filter-object-type');
+        const filterTitle = document.getElementById('filter-title');
+        const filterReleaseYear = document.getElementById('filter-release-year');
+        const filterShortDescription = document.getElementById('filter-short-description');
+        const filterScore = document.getElementById('filter-score');
+
+        function applyFiltersSearchResults(records) {
+          return records.filter(item => {
+
+              return (
+                String(item.object_type).toLowerCase().includes(String(filterObjectType.value).toLowerCase()) &&
+                String(item.title).toLowerCase().includes(String(filterTitle.value).toLowerCase()) &&
+                String(item.release_year).toLowerCase().includes(String(filterReleaseYear.value).toLowerCase()) &&
+                String(item.short_description).toLowerCase().includes(String(filterShortDescription.value).toLowerCase()) &&
+                String(item.score).toLowerCase().includes(String(filterScore.value).toLowerCase())
+              );
+          });
+        }
+
+        function renderRecordsSearchResults(records, startIndex) {
+            records.forEach((item, index) => {
+                const adjustedIndex = startIndex + index + 1;
+    
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'grid-container';
+
+                const programSearchResultsPosterItem = document.createElement('div');
+                programSearchResultsPosterItem.className = 'grid-item';
+                const programSearchResultsPosterRead = document.createElement('img');
+                programSearchResultsPosterRead.src = item.poster;
+                programSearchResultsPosterRead.className = 'program-poster';
+                programSearchResultsPosterRead.alt = 'Poster';
+                programSearchResultsPosterItem.appendChild(programSearchResultsPosterRead);
+
+                const programSearchResultsObjectTypeItem = document.createElement('div');
+                programSearchResultsObjectTypeItem.className = 'grid-item';
+                const programSearchResultsObjectTypeRead = document.createElement('span');
+                programSearchResultsObjectTypeRead.className = 'regular-text-cell vertical-text';
+                if (item.object_type === 'MOVIE') {
+                  programSearchResultsObjectTypeRead.textContent = 'Movie'
+                }
+                else if (item.object_type === 'SHOW') {
+                  programSearchResultsObjectTypeRead.textContent = 'TV Show'
+                }
+                else if (item.object_type === 'VIDEO') {
+                  programSearchResultsObjectTypeRead.textContent = 'Video'
+                }
+                else if (item.object_type === 'CHANNEL') {
+                  programSearchResultsObjectTypeRead.textContent = 'Video Channel'
+                }
+                programSearchResultsObjectTypeItem.appendChild(programSearchResultsObjectTypeRead);
+
+                const programSearchResultsTitleItem = document.createElement('div');
+                programSearchResultsTitleItem.className = 'grid-item';
+                const programSearchResultsTitleRead = document.createElement('span');
+                programSearchResultsTitleRead.className = 'regular-text-cell';
+                programSearchResultsTitleRead.textContent = item.title;
+                programSearchResultsTitleItem.appendChild(programSearchResultsTitleRead);
+
+                const programSearchResultsReleaseYearItem = document.createElement('div');
+                programSearchResultsReleaseYearItem.className = 'grid-item';
+                const programSearchResultsReleaseYearRead = document.createElement('span');
+                programSearchResultsReleaseYearRead.className = 'regular-text-cell';
+                if (item.object_type === 'MOVIE' || item.object_type === 'SHOW') {
+                  programSearchResultsReleaseYearRead.textContent = 'Release Year: ' + item.release_year;
+                } else {
+                  programSearchResultsReleaseYearRead.textContent = item.release_year;
+                }
+                programSearchResultsReleaseYearItem.appendChild(programSearchResultsReleaseYearRead);
+
+                const programSearchResultsShortDescriptionItem = document.createElement('div');
+                programSearchResultsShortDescriptionItem.className = 'grid-item';
+                const programSearchResultsShortDescriptionRead = document.createElement('span');
+                programSearchResultsShortDescriptionRead.className = 'regular-text-cell';
+                programSearchResultsShortDescriptionRead.textContent = item.short_description;
+                programSearchResultsShortDescriptionItem.appendChild(programSearchResultsShortDescriptionRead);
+
+                const programSearchResultsScoreItem = document.createElement('div');
+                programSearchResultsScoreItem.className = 'grid-item';
+                const programSearchResultsScoreRead = document.createElement('span');
+                programSearchResultsScoreRead.className = 'regular-text-cell';
+                if (item.object_type === 'MOVIE' || item.object_type === 'SHOW') {
+                  programSearchResultsScoreRead.textContent = 'IMDB: ' + item.score + ' / 10.0';
+                } else {
+                  programSearchResultsScoreRead.textContent = item.score;
+                }
+                programSearchResultsScoreItem.appendChild(programSearchResultsScoreRead);
+
+                {% if not html_slm_manage_programs_program_modify_available_flag %}
+
+                  const programSearchResultsStatusItem = document.createElement('div');
+                  programSearchResultsStatusItem.className = 'grid-item';
+                  const programSearchResultsStatusForm = document.createElement('div');
+                  programSearchResultsStatusForm.className = 'form-check form-switch ps-0 is-filled';
+                  programSearchResultsStatusForm.style.marginLeft = '85%';
+                  const programSearchResultsStatusInput = document.createElement('input');
+                  programSearchResultsStatusInput.type = 'checkbox';
+                  programSearchResultsStatusInput.id = `program_search_results_status_${adjustedIndex}`;
+                  programSearchResultsStatusInput.name = `program_search_results_status_${adjustedIndex}`;
+                  programSearchResultsStatusInput.className = 'form-check-input';
+                  programSearchResultsStatusInput.checked = true;
+                  programSearchResultsStatusForm.appendChild(programSearchResultsStatusInput);
+                  programSearchResultsStatusItem.appendChild(programSearchResultsStatusForm);
+
+                  const programSearchResultsActionItem = document.createElement('div');
+                  programSearchResultsActionItem.className = 'grid-item';
+                  const programSearchResultsActionSelect = document.createElement('select');
+                  programSearchResultsActionSelect.className = 'select2';
+                  programSearchResultsActionSelect.name = `program_search_results_action_${adjustedIndex}`;
+                  programSearchResultsActionSelect.id = `program_search_results_action_${adjustedIndex}`;
+                  programSearchResultsActionSelect.style.width = '100%';
+                  programSearchResultsActionSelect.style.maxWidth = '100%';
+                  if (item.object_type === 'MOVIE') {
+                    searchResultsActionsMovie.forEach(action => {
+                        const option = document.createElement('option');
+                        option.value = action.search_results_action_id;
+                        option.text = action.search_results_action_name;
+                        programSearchResultsActionSelect.appendChild(option);
+                    }); 
+                  }
+                  else if (item.object_type === 'SHOW') {
+                    searchResultsActionsShow.forEach(action => {
+                        const option = document.createElement('option');
+                        option.value = action.search_results_action_id;
+                        option.text = action.search_results_action_name;
+                        programSearchResultsActionSelect.appendChild(option);
+                    }); 
+                  }
+                  else if (item.object_type === 'VIDEO') {
+                    searchResultsActionsVideo.forEach(action => {
+                        const option = document.createElement('option');
+                        option.value = action.search_results_action_id;
+                        option.text = action.search_results_action_name;
+                        programSearchResultsActionSelect.appendChild(option);
+                    }); 
+                  }
+                  else if (item.object_type === 'CHANNEL') {
+                    searchResultsActionsChannel.forEach(action => {
+                        const option = document.createElement('option');
+                        option.value = action.search_results_action_id;
+                        option.text = action.search_results_action_name;
+                        programSearchResultsActionSelect.appendChild(option);
+                    }); 
+                  }
+                  programSearchResultsActionItem.appendChild(programSearchResultsActionSelect);
+
+                {% endif %}
+
+                const programSearchResultsOffersListItem = document.createElement('div');
+                programSearchResultsOffersListItem.className = 'grid-item offers-list';
+                {% if html_slm_manage_programs_program_modify_available_flag %}
+                  programSearchResultsOffersListItem.style.gridColumn = 'span 3';
+                {% endif %}
+                if (Array.isArray(item.offers_list)) {
+                  item.offers_list.forEach(function(iconUrl) {
+                    const iconImg = document.createElement('img');
+                    iconImg.src = iconUrl;
+                    iconImg.style.width = '55px';
+                    iconImg.style.height = '55px';
+                    iconImg.style.marginRight = '5px';
+                    iconImg.style.marginTop = '5px';
+                    iconImg.style.objectFit = 'contain';
+                    programSearchResultsOffersListItem.appendChild(iconImg);
+                  });
+                }
+
+                const programSearchResultsEntryIdHidden = document.createElement('input');
+                programSearchResultsEntryIdHidden.type = 'hidden';
+                programSearchResultsEntryIdHidden.value = item.entry_id;
+                programSearchResultsEntryIdHidden.id = `program_search_results_entry_id_${adjustedIndex}`;
+                programSearchResultsEntryIdHidden.name = `program_search_results_entry_id_${adjustedIndex}`;
+
+                const programSearchResultsTitleHidden = document.createElement('input');
+                programSearchResultsTitleHidden.type = 'hidden';
+                programSearchResultsTitleHidden.value = item.title;
+                programSearchResultsTitleHidden.id = `program_search_results_title_${adjustedIndex}`;
+                programSearchResultsTitleHidden.name = `program_search_results_title_${adjustedIndex}`;
+
+                const programSearchResultsReleaseYearHidden = document.createElement('input');
+                programSearchResultsReleaseYearHidden.type = 'hidden';
+                programSearchResultsReleaseYearHidden.value = item.release_year;
+                programSearchResultsReleaseYearHidden.id = `program_search_results_release_year_${adjustedIndex}`;
+                programSearchResultsReleaseYearHidden.name = `program_search_results_release_year_${adjustedIndex}`;
+
+                const programSearchResultsObjectTypeHidden = document.createElement('input');
+                programSearchResultsObjectTypeHidden.type = 'hidden';
+                programSearchResultsObjectTypeHidden.value = item.object_type;
+                programSearchResultsObjectTypeHidden.id = `program_search_results_object_type_${adjustedIndex}`;
+                programSearchResultsObjectTypeHidden.name = `program_search_results_object_type_${adjustedIndex}`;
+
+                const programSearchResultsURLHidden = document.createElement('input');
+                programSearchResultsURLHidden.type = 'hidden';
+                programSearchResultsURLHidden.value = item.url;
+                programSearchResultsURLHidden.id = `program_search_results_url_${adjustedIndex}`;
+                programSearchResultsURLHidden.name = `program_search_results_url_${adjustedIndex}`;
+
+                const programSearchResultsShortDescriptionHidden = document.createElement('input');
+                programSearchResultsShortDescriptionHidden.type = 'hidden';
+                programSearchResultsShortDescriptionHidden.value = item.short_description;
+                programSearchResultsShortDescriptionHidden.id = `program_search_results_short_description_${adjustedIndex}`;
+                programSearchResultsShortDescriptionHidden.name = `program_search_results_short_description_${adjustedIndex}`;
+
+                const programSearchResultsPosterHidden = document.createElement('input');
+                programSearchResultsPosterHidden.type = 'hidden';
+                programSearchResultsPosterHidden.value = item.poster;
+                programSearchResultsPosterHidden.id = `program_search_results_poster_${adjustedIndex}`;
+                programSearchResultsPosterHidden.name = `program_search_results_poster_${adjustedIndex}`;
+
+                const programSearchResultsScoreHidden = document.createElement('input');
+                programSearchResultsScoreHidden.type = 'hidden';
+                programSearchResultsScoreHidden.value = item.score;
+                programSearchResultsScoreHidden.id = `program_search_results_score_${adjustedIndex}`;
+                programSearchResultsScoreHidden.name = `program_search_results_score_${adjustedIndex}`;
+
+                gridContainer.appendChild(programSearchResultsPosterItem);
+                gridContainer.appendChild(programSearchResultsObjectTypeItem);
+                gridContainer.appendChild(programSearchResultsTitleItem);
+                gridContainer.appendChild(programSearchResultsReleaseYearItem);
+                gridContainer.appendChild(programSearchResultsShortDescriptionItem);
+                gridContainer.appendChild(programSearchResultsScoreItem);
+                {% if not html_slm_manage_programs_program_modify_available_flag %}
+                  gridContainer.appendChild(programSearchResultsStatusItem);
+                  gridContainer.appendChild(programSearchResultsActionItem);
+                {% endif %}
+                gridContainer.appendChild(programSearchResultsOffersListItem);
+                gridContainer.appendChild(programSearchResultsEntryIdHidden);
+                gridContainer.appendChild(programSearchResultsTitleHidden);
+                gridContainer.appendChild(programSearchResultsReleaseYearHidden);
+                gridContainer.appendChild(programSearchResultsObjectTypeHidden);
+                gridContainer.appendChild(programSearchResultsURLHidden);
+                gridContainer.appendChild(programSearchResultsShortDescriptionHidden);
+                gridContainer.appendChild(programSearchResultsPosterHidden);
+                gridContainer.appendChild(programSearchResultsScoreHidden);
+    
+                recordContainerSearchResults.appendChild(gridContainer);
+
+                const hr = document.createElement('hr');
+                recordContainerSearchResults.appendChild(hr);
+
+              });
+
+            // Reinitialize select2 for new select elements
+            initializeSelect2();
+
+        }
+    
+        function loadMoreRecordsSearchResults() {
+          loadingSpinnerSearchResults.style.display = 'block';
+          const nextBatch = filteredRecordsSearchResults.slice(offsetSearchResults, offsetSearchResults + limitSearchResults);
+
+          renderRecordsSearchResults(nextBatch, offsetSearchResults);
+          offsetSearchResults += limitSearchResults;
+          loadingSpinnerSearchResults.style.display = 'none';
+
+          if (offsetSearchResults >= filteredRecordsSearchResults.length) {
+              recordContainerSearchResults.removeEventListener('scroll', onScrollSearchResults);
+          }
+              
+        }
+
+        function onScrollSearchResults() {
+          if (recordContainerSearchResults.scrollTop + recordContainerSearchResults.clientHeight >= recordContainerSearchResults.scrollHeight) {
+              if (offsetSearchResults < filteredRecordsSearchResults.length) {
+                  loadMoreRecordsSearchResults();
+              }
+          }
+        }
+
+        function resetAndLoadRecordsSearchResults() {
+          offsetSearchResults = 0;
+          recordContainerSearchResults.innerHTML = '';  // Clear existing records
+          {% if not html_slm_manage_programs_program_modify_available_flag %}
+            filteredRecordsSearchResults = applyFiltersSearchResults(allRecordsSearchResults);  // Re-apply filters to all records
+          {% endif %}
+          loadMoreRecordsSearchResults();  // Load filtered records
+          if (filteredRecordsSearchResults.length > limitSearchResults) {
+              recordContainerSearchResults.addEventListener('scroll', onScrollSearchResults);  // Re-attach scroll event listener
+          }
+        }
+
+        {% if not html_slm_manage_programs_program_modify_available_flag %}
+          // Add event listeners for filter inputs
+          filterObjectType.addEventListener('input', resetAndLoadRecordsSearchResults);
+          filterTitle.addEventListener('input', resetAndLoadRecordsSearchResults);
+          filterReleaseYear.addEventListener('input', resetAndLoadRecordsSearchResults);
+          filterShortDescription.addEventListener('input', resetAndLoadRecordsSearchResults);
+          filterScore.addEventListener('input', resetAndLoadRecordsSearchResults);
+        {% endif %}
+
+        recordContainerSearchResults.addEventListener('scroll', onScrollSearchResults);
+    
+        // Initial load
+        resetAndLoadRecordsSearchResults();
+    });
+  {% endif %}
+</script>
+<!-- Background Color of Header Labels -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const darkModeToggle = document.getElementById('dark-version');
+
+    // Function to update the background color of the specific grid-container
+    function updateGridContainerBackground() {
+      {% if html_slm_manage_programs_modify_program_flag %}
+        const fileInputWrapper = document.querySelector('.file-input-wrapper');
+        const wrapperStyle = getComputedStyle(fileInputWrapper);
+        const bodyBgColor = wrapperStyle.backgroundImage || wrapperStyle.backgroundColor;
+      {% else %}
+        const bodyStyle = getComputedStyle(document.body);
+        const bodyBgColor = bodyStyle.backgroundColor;
+      {% endif %}
+
+      document.querySelectorAll('.dynamic-bg').forEach(container => {
+        container.style.backgroundImage = bodyBgColor.startsWith('linear-gradient')
+          ? bodyBgColor
+          : 'none';
+        container.style.backgroundColor = bodyBgColor.startsWith('linear-gradient')
+          ? ''
+          : bodyBgColor;
+      });
+    }
+
+    // Initial update of the grid-container background color
+    updateGridContainerBackground();
+
+    // Listen for changes to the dark mode toggle
+    if (darkModeToggle) {
+      darkModeToggle.addEventListener('change', function () {
+        updateGridContainerBackground();
+      });
+    }
+  });
+</script>
+<!-- Manual Programs Controls -->
+<script>
+  {% if html_slm_manage_programs_main_flag %}
+    function checkManualProgramType() {
+      const selectProgramTypeManual = document.getElementById('select_program_type_manual').value;
+      var manualShow = document.getElementById('manual_show');
+      var manualVideo = document.getElementById('manual_video');
+
+      manualShow.style.display = 'none';
+      manualVideo.style.display = 'none';
+
+      if ( selectProgramTypeManual == 'SHOW' ) {
+        manualShow.style.display = 'block';
+      }
+      else if ( selectProgramTypeManual == 'VIDEO' ) {
+        manualVideo.style.display = 'block';
+      }
+
+      checkAllManualInputsFilled()
+    }
+
+    function generateEpisodeInputs() {
+      const lastSeasonNumber = document.getElementById('last_season_number').value;
+      const episodeInputsDiv = document.getElementById('episode_inputs');
+      episodeInputsDiv.innerHTML = ''; // Clear previous inputs
+
+      for (let i = 1; i <= lastSeasonNumber; i++) {
+        // Create grid container for each row
+        const gridContainer = document.createElement('div');
+        gridContainer.className = 'grid-container';
+
+        // Label grid-item
+        const labelGridItem = document.createElement('div');
+        labelGridItem.className = 'grid-item';
+        const label = document.createElement('label');
+        label.setAttribute('for', `season_episode_number_${i}`);
+        label.innerHTML = `<b>Number of Episodes for Season ${i}:</b>`;
+        labelGridItem.appendChild(label);
+
+        // Input grid-item
+        const inputGridItem = document.createElement('div');
+        inputGridItem.className = 'grid-item';
+        inputGridItem.style.gridColumn = 'span 3';
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.id = `season_episode_number_${i}`;
+        input.name = `season_episode_number_${i}`;
+        input.placeholder = 'i.e., 1, 2, 3, etc...';
+        input.min = '1';
+        input.style.width = '100%';
+        input.oninput = checkAllManualInputsFilled;
+        inputGridItem.appendChild(input);
+
+        // Append to grid container
+        gridContainer.appendChild(labelGridItem);
+        gridContainer.appendChild(inputGridItem);
+
+        // Append grid container to episodeInputsDiv
+        episodeInputsDiv.appendChild(gridContainer);
+      }
+
+      checkAllManualInputsFilled(); // Re-check all inputs after generating new ones
+    }
+
+    function checkAllManualInputsFilled() {
+      const selectProgramTypeManual = document.getElementById('select_program_type_manual').value;
+      const fieldProgramAddManual = document.getElementById('field_program_add_manual').value;
+      const fieldReleaseYearManual = document.getElementById('field_release_year_manual').value;
+      const lastSeasonNumber = document.getElementById('last_season_number').value;
+      const numberOfVideos = document.getElementById('number_of_videos').value;
+      let allManualFilled = true;
+
+      if ( !fieldProgramAddManual ) {
+        allManualFilled = false;
+      }
+
+      if ( !fieldReleaseYearManual || fieldReleaseYearManual < 1888 ) {
+        allManualFilled = false;
+      }
+
+      if (selectProgramTypeManual == 'SHOW') {
+        if (!lastSeasonNumber || lastSeasonNumber <= 0) {
+          allManualFilled = false;
+        } 
+        else {
+          for (let i = 1; i <= lastSeasonNumber; i++) {
+            const input = document.getElementById(`season_episode_number_${i}`);
+            if (!input || !input.value || input.value <= 0) {
+              allManualFilled = false;
+              break;
+            }
+          }
+        }
+      }
+      else if ( selectProgramTypeManual == 'VIDEO' ) {
+        if (!numberOfVideos || numberOfVideos <= 0) {
+          allManualFilled = false;
+        }
+      }
+
+      document.getElementById('program_add_manual').disabled = !allManualFilled;
+    }
+
+    checkManualProgramType()
+    checkAllManualInputsFilled()
+  {% endif %}
+</script>
+<!-- Manual Video Order -->
+<script>
+  {% if html_import_metadata_options_flag and html_object_type_selected_prior == 'VIDEO' and html_override_program_sort_prior == 'manual' %}
+    const manualOrderVideos = {{ html_program_modify_details_selected_prior | tojson }};
+    const manualOrderVideosList = document.getElementById('manualOrderVideosList');
+    const manualOrderVideosInput = document.getElementById('manual_order_videos');
+
+    function populateManualOrderVideosLists() {
+      manualOrderVideosList.innerHTML = '';
+      const unwatchedManualOrderVideos = manualOrderVideos.filter(manual_order => manual_order.status.toLowerCase() === 'unwatched');
+      unwatchedManualOrderVideos.sort((a, b) => (a.manual_order || 0) - (b.manual_order || 0));
+      unwatchedManualOrderVideos.forEach(manual_order => {
+          const option = document.createElement('option');
+          option.value = manual_order.season_episode;
+          option.text = manual_order.override_episode_title && manual_order.override_episode_title.trim() !== "" 
+              ? manual_order.override_episode_title 
+              : manual_order.season_episode;
+          manualOrderVideosList.appendChild(option);
+      });
+    }
+
+    function manual_order_videos_moveUp() {
+      const selectedManualOrderVideosOptions = Array.from(manualOrderVideosList.selectedOptions);
+      selectedManualOrderVideosOptions.forEach(option => {
+        const previousManualOrderVideosOption = option.previousElementSibling;
+        if (previousManualOrderVideosOption) {
+          manualOrderVideosList.insertBefore(option, previousManualOrderVideosOption);
+          manual_order_videos_updateManualOrderVideos();
+        }
+      });
+    }
+
+    function manual_order_videos_moveDown() {
+      const selectedManualOrderVideosOptions = Array.from(manualOrderVideosList.selectedOptions);
+      selectedManualOrderVideosOptions.reverse().forEach(option => {
+        const nextManualOrderVideosOption = option.nextElementSibling;
+        if (nextManualOrderVideosOption) {
+          manualOrderVideosList.insertBefore(nextManualOrderVideosOption, option);
+          manual_order_videos_updateManualOrderVideos();
+        }
+      });
+    }
+
+    function manual_order_videos_updateManualOrderVideos() {
+      const allManualOrderVideosOptions = Array.from(manualOrderVideosList.options);
+      const unwatchedManualOrderVideos = manualOrderVideos.filter(manual_order => manual_order.status.toLowerCase() === 'unwatched');
+      
+      // Ensure unique order for unwatched videos first
+      allManualOrderVideosOptions.forEach((option, index) => {
+        const manual_order = unwatchedManualOrderVideos.find(s => s.season_episode === option.value);
+        if (manual_order) {
+          manual_order.manual_order = index + 1;
+        }
+      });
+
+      // Reorder order to ensure uniqueness across all videos
+      manualOrderVideos.sort((a, b) => (a.manual_order || 0) - (b.manual_order || 0));
+      manualOrderVideos.forEach((manual_order, index) => {
+        manual_order.manual_order = index + 1;
+      });
+
+      manual_order_videos_updateHiddenInput();
+    }
+
+    function manual_order_videos_updateHiddenInput() {
+      manualOrderVideosInput.value = JSON.stringify(manualOrderVideos.map(manual_order => ({
+        season_episode: manual_order.season_episode,
+        manual_order: manual_order.manual_order
+      })));
+      console.log("Hidden input updated:", manualOrderVideosInput.value); // Debugging
+    }
+
+    populateManualOrderVideosLists();
+    manual_order_videos_updateHiddenInput();
+  {% endif %}
+</script>
+<!-- Infinite Scroll: Program Modify -->
+<script>
+  {% if html_slm_manage_programs_modify_program_flag %}
+    document.addEventListener('DOMContentLoaded', function() {
+        const recordContainerProgramModify = document.getElementById('record-container-program-modify-details-selected-prior');
+        const loadingSpinnerProgramModify = document.getElementById('loading-spinner-program-modify-details-selected-prior');
+        const allRecordsProgramModify = {{ html_program_modify_details_selected_prior|tojson }};
+        const specialActionsProgramModify = {{ html_special_actions|tojson }};
+        const selectActionsProgramModify = {{ html_program_modify_details_actions|tojson }};
+        const limitProgramModify = 100;
+        let offsetProgramModify = 0;
+        let filteredRecordsProgramModify = allRecordsProgramModify;  // Store filtered records
+
+        // Filter input elements
+        {% if html_object_type_selected_prior != 'MOVIE' %}
+          const filterProgramModifySeasonEpisode = document.getElementById('filter_modify_program_season_episode');
+          {% if html_object_type_selected_prior == 'SHOW' %}
+            const filterProgramModifyStreamLink = document.getElementById('filter_modify_program_stream_link');
+          {% endif %}
+          const filterProgramModifyStreamLinkOverride = document.getElementById('filter_modify_program_stream_link_override');
+          const filterProgramModifySpecialAction = document.getElementById('filter_modify_program_special_action');
+          {% if html_object_type_selected_prior == 'SHOW' %}
+            const filterProgramModifySeasonEpisodePrefix = document.getElementById('filter_modify_program_season_episode_prefix');
+          {% endif %}
+          {% if html_import_metadata_options_flag %}
+            const filterProgramModifyOverrideEpisodeTitle = document.getElementById('filter_modify_program_override_episode_title');
+            const filterProgramModifyOverrideSummary = document.getElementById('filter_modify_program_override_summary');
+            const filterProgramModifyOverrideImage = document.getElementById('filter_modify_program_override_image');
+            const filterProgramModifyOverrideDuration = document.getElementById('filter_modify_program_override_duration');
+          {% endif %}
+          const filterProgramModifyOriginalReleaseDate = document.getElementById('filter_modify_program_original_release_date');
+        {% endif %}
+
+        {% if html_object_type_selected_prior != 'MOVIE' %}
+          function applyFiltersProgramModify(records) {
+            return records.filter(item => {
+
+                return (
+                  
+                  String(item.season_episode).toLowerCase().includes(String(filterProgramModifySeasonEpisode.value).toLowerCase()) &&
+                  {% if html_object_type_selected_prior == 'SHOW' %}
+                    String(item.stream_link).toLowerCase().includes(String(filterProgramModifyStreamLink.value).toLowerCase()) &&
+                  {% endif %}
+                  String(item.stream_link_override).toLowerCase().includes(String(filterProgramModifyStreamLinkOverride.value).toLowerCase()) &&
+                  String(item.special_action).toLowerCase().includes(filterProgramModifySpecialAction.value.toLowerCase()) &&
+                  {% if html_object_type_selected_prior == 'SHOW' %}
+                    String(item.season_episode_prefix).toLowerCase().includes(String(filterProgramModifySeasonEpisodePrefix.value).toLowerCase()) &&
+                  {% endif %}
+                  {% if html_import_metadata_options_flag %}
+                    String(item.override_episode_title).toLowerCase().includes(String(filterProgramModifyOverrideEpisodeTitle.value).toLowerCase()) &&
+                    String(item.override_summary).toLowerCase().includes(String(filterProgramModifyOverrideSummary.value).toLowerCase()) &&
+                    String(item.override_image).toLowerCase().includes(String(filterProgramModifyOverrideImage.value).toLowerCase()) &&
+                    String(item.override_duration).toLowerCase().includes(String(filterProgramModifyOverrideDuration.value).toLowerCase()) &&
+                  {% endif %}
+                  item.original_release_date.toLowerCase().includes(String(filterProgramModifyOriginalReleaseDate.value).toLowerCase())
+                );
+            });
+          }
+        {% endif %}
+
+        function renderRecordsProgramModify(records, startIndex) {
+            console.log('Rendering', records.length, records);
+            records.forEach((item, index) => {
+                const adjustedIndex = startIndex + index + 1;
+    
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'grid-container';
+
+                const ProgramModifyStatusItem = document.createElement('div');
+                ProgramModifyStatusItem.className = 'grid-item';
+                {% if not html_import_metadata_options_flag and html_object_type_selected_prior != 'SHOW' %}
+                  ProgramModifyStatusItem.style = 'grid-column: span 2; margin-left: 35%;';
+                {% else %}
+                  ProgramModifyStatusItem.style = 'margin-left: 20%;';
+                {% endif %}
+                const formCheckDiv = document.createElement('div');
+                formCheckDiv.className = 'form-check form-switch ps-0 is-filled';
+                const ProgramModifyStatusInput = document.createElement('input');
+                ProgramModifyStatusInput.type = 'checkbox';
+                ProgramModifyStatusInput.id = `field_status_${adjustedIndex}`;
+                ProgramModifyStatusInput.name = `field_status_${adjustedIndex}`;
+                ProgramModifyStatusInput.className = 'form-check-input';
+                ProgramModifyStatusInput.checked = item.status.toLowerCase() === 'unwatched';
+                formCheckDiv.appendChild(ProgramModifyStatusInput);
+                ProgramModifyStatusItem.appendChild(formCheckDiv);
+
+                {% if html_object_type_selected_prior != 'MOVIE' %}
+                  const ProgramModifySeasonEpisodeItem = document.createElement('div');
+                  ProgramModifySeasonEpisodeItem.className = 'grid-item';
+                  {% if not html_import_metadata_options_flag or html_object_type_selected_prior == 'VIDEO' %}
+                    ProgramModifySeasonEpisodeItem.style = 'grid-column: span 2;'
+                  {% endif %}
+                  const ProgramModifySeasonEpisodeInput = document.createElement('input');
+                  ProgramModifySeasonEpisodeInput.type = 'text';
+                  ProgramModifySeasonEpisodeInput.id = `field_season_episode_${adjustedIndex}`;
+                  ProgramModifySeasonEpisodeInput.name = `field_season_episode_${adjustedIndex}`;
+                  ProgramModifySeasonEpisodeInput.value = item.season_episode;
+                  ProgramModifySeasonEpisodeInput.title = item.season_episode;
+                  {% if html_object_type_selected_prior == 'SHOW' %}
+                    ProgramModifySeasonEpisodeInput.readOnly = true;
+                    ProgramModifySeasonEpisodeInput.style.backgroundColor = '#d1cdcde5';
+                  {% endif %}
+                  ProgramModifySeasonEpisodeItem.appendChild(ProgramModifySeasonEpisodeInput);
+                {% endif %}
+    
+                {% if html_object_type_selected_prior != 'VIDEO' %}
+                  const ProgramModifyStreamLinkItem = document.createElement('div');
+                  ProgramModifyStreamLinkItem.className = 'grid-item';
+                  {% if not html_import_metadata_options_flag or html_object_type_selected_prior == 'MOVIE' %}
+                    ProgramModifyStreamLinkItem.style = 'grid-column: span 2;'
+                  {% endif %}
+                  const ProgramModifyStreamLinkInput = document.createElement('input');
+                  ProgramModifyStreamLinkInput.type = 'text';
+                  ProgramModifyStreamLinkInput.id = `field_stream_link_${adjustedIndex}`;
+                  ProgramModifyStreamLinkInput.name = `field_stream_link_${adjustedIndex}`;
+                  ProgramModifyStreamLinkInput.value = item.stream_link;
+                  ProgramModifyStreamLinkInput.title = item.stream_link;
+                  ProgramModifyStreamLinkInput.readOnly = true;
+                  ProgramModifyStreamLinkInput.style.backgroundColor = '#d1cdcde5';
+                  ProgramModifyStreamLinkItem.appendChild(ProgramModifyStreamLinkInput);
+                {% endif %}
+
+                const ProgramModifyStreamLinkOverrideItem = document.createElement('div');
+                ProgramModifyStreamLinkOverrideItem.className = 'grid-item';
+                {% if not html_import_metadata_options_flag or html_object_type_selected_prior == 'MOVIE' %}
+                  ProgramModifyStreamLinkOverrideItem.style = 'grid-column: span 2;'
+                {% endif %}
+                const ProgramModifyStreamLinkOverrideInput = document.createElement('input');
+                ProgramModifyStreamLinkOverrideInput.type = 'text';
+                ProgramModifyStreamLinkOverrideInput.id = `field_stream_link_override_${adjustedIndex}`;
+                ProgramModifyStreamLinkOverrideInput.name = `field_stream_link_override_${adjustedIndex}`;
+                ProgramModifyStreamLinkOverrideInput.value = item.stream_link_override;
+                ProgramModifyStreamLinkOverrideInput.title = item.stream_link_override;
+                ProgramModifyStreamLinkOverrideItem.appendChild(ProgramModifyStreamLinkOverrideInput);
+
+                const ProgramModifySpecialActionItem = document.createElement('div');
+                ProgramModifySpecialActionItem.className = 'grid-item';
+                {% if not html_import_metadata_options_flag and html_object_type_selected_prior != 'SHOW' %}
+                  ProgramModifySpecialActionItem.style = 'grid-column: span 2;'
+                {% endif %}
+                const ProgramModifyspecialActionsProgramModifySelect = document.createElement('select');
+                ProgramModifyspecialActionsProgramModifySelect.className = 'select2';
+                ProgramModifyspecialActionsProgramModifySelect.name = `field_special_action_${adjustedIndex}`;
+                ProgramModifyspecialActionsProgramModifySelect.id = `field_special_action_${adjustedIndex}`;
+                ProgramModifyspecialActionsProgramModifySelect.style.width = '100%';
+                ProgramModifyspecialActionsProgramModifySelect.style.maxWidth = '100%';
+                specialActionsProgramModify.forEach(specialaction => {
+                    const option = document.createElement('option');
+                    option.value = specialaction;
+                    option.text = specialaction;
+                    if (specialaction === item.special_action) {
+                        option.selected = true;
+                    }
+                    ProgramModifyspecialActionsProgramModifySelect.appendChild(option);
+                });
+                ProgramModifySpecialActionItem.appendChild(ProgramModifyspecialActionsProgramModifySelect);
+
+                {% if html_object_type_selected_prior == 'SHOW' %}
+                  const ProgramModifySeasonEpisodePrefixItem = document.createElement('div');
+                  ProgramModifySeasonEpisodePrefixItem.className = 'grid-item';
+                  const ProgramModifySeasonEpisodePrefixInput = document.createElement('input');
+                  ProgramModifySeasonEpisodePrefixInput.type = 'text';
+                  ProgramModifySeasonEpisodePrefixInput.id = `field_season_episode_prefix_${adjustedIndex}`;
+                  ProgramModifySeasonEpisodePrefixInput.name = `field_season_episode_prefix_${adjustedIndex}`;
+                  ProgramModifySeasonEpisodePrefixInput.value = item.season_episode_prefix;
+                  ProgramModifySeasonEpisodePrefixInput.title = item.season_episode_prefix;
+                  ProgramModifySeasonEpisodePrefixItem.appendChild(ProgramModifySeasonEpisodePrefixInput);
+                {% endif %}
+
+                {% if html_import_metadata_options_flag %}
+
+                  {% if html_object_type_selected_prior != 'MOVIE' %}
+                    const ProgramModifyOverrideEpisodeTitleItem = document.createElement('div');
+                    ProgramModifyOverrideEpisodeTitleItem.className = 'grid-item';
+                    {% if html_object_type_selected_prior == 'VIDEO' %}
+                      ProgramModifyOverrideEpisodeTitleItem.style = 'grid-column: span 2;'
+                    {% endif %}
+                    const ProgramModifyOverrideEpisodeTitleInput = document.createElement('input');
+                    ProgramModifyOverrideEpisodeTitleInput.type = 'text';
+                    ProgramModifyOverrideEpisodeTitleInput.id = `field_override_episode_title_${adjustedIndex}`;
+                    ProgramModifyOverrideEpisodeTitleInput.name = `field_override_episode_title_${adjustedIndex}`;
+                    ProgramModifyOverrideEpisodeTitleInput.value = item.override_episode_title;
+                    ProgramModifyOverrideEpisodeTitleInput.title = item.override_episode_title;
+                    ProgramModifyOverrideEpisodeTitleItem.appendChild(ProgramModifyOverrideEpisodeTitleInput);
+                  {% endif %}
+      
+                  const ProgramModifyOverrideSummaryItem = document.createElement('div');
+                  ProgramModifyOverrideSummaryItem.className = 'grid-item';
+                  {% if html_object_type_selected_prior == 'MOVIE' %}
+                    ProgramModifyOverrideSummaryItem.style = 'grid-column: span 2;'
+                  {% endif %}
+                  const ProgramModifyOverrideSummaryInput = document.createElement('input');
+                  ProgramModifyOverrideSummaryInput.type = 'text';
+                  ProgramModifyOverrideSummaryInput.id = `field_override_summary_${adjustedIndex}`;
+                  ProgramModifyOverrideSummaryInput.name = `field_override_summary_${adjustedIndex}`;
+                  ProgramModifyOverrideSummaryInput.value = item.override_summary;
+                  ProgramModifyOverrideSummaryInput.title = item.override_summary;
+                  ProgramModifyOverrideSummaryItem.appendChild(ProgramModifyOverrideSummaryInput);
+      
+                  const ProgramModifyOverrideImageItem = document.createElement('div');
+                  ProgramModifyOverrideImageItem.className = 'grid-item';
+                  const ProgramModifyOverrideImageInput = document.createElement('input');
+                  ProgramModifyOverrideImageInput.type = 'text';
+                  ProgramModifyOverrideImageInput.id = `field_override_image_${adjustedIndex}`;
+                  ProgramModifyOverrideImageInput.name = `field_override_image_${adjustedIndex}`;
+                  ProgramModifyOverrideImageInput.value = item.override_image;
+                  ProgramModifyOverrideImageInput.title = item.override_image;
+                  ProgramModifyOverrideImageItem.appendChild(ProgramModifyOverrideImageInput);
+      
+                  const ProgramModifyOverrideDurationItem = document.createElement('div');
+                  ProgramModifyOverrideDurationItem.className = 'grid-item';
+                  const ProgramModifyOverrideDurationInput = document.createElement('input');
+                  ProgramModifyOverrideDurationInput.type = 'number';
+                  ProgramModifyOverrideDurationInput.min = '1';
+                  ProgramModifyOverrideDurationInput.id = `field_override_duration_${adjustedIndex}`;
+                  ProgramModifyOverrideDurationInput.name = `field_override_duration_${adjustedIndex}`;
+                  ProgramModifyOverrideDurationInput.value = item.override_duration;
+                  ProgramModifyOverrideDurationInput.title = item.override_duration;
+                  ProgramModifyOverrideDurationInput.style.width = '100%';
+                  ProgramModifyOverrideDurationItem.appendChild(ProgramModifyOverrideDurationInput);
+
+                {% endif %}
+
+                const ProgramModifyOriginalReleaseDateItem = document.createElement('div');
+                ProgramModifyOriginalReleaseDateItem.className = 'grid-item';
+                {% if not html_import_metadata_options_flag and html_object_type_selected_prior != 'SHOW' %}
+                  ProgramModifyOriginalReleaseDateItem.style = 'grid-column: span 2;'
+                {% endif %}
+                const ProgramModifyOriginalReleaseDateInput = document.createElement('input');
+                ProgramModifyOriginalReleaseDateInput.type = 'text';
+                ProgramModifyOriginalReleaseDateInput.id = `field_original_release_date_${adjustedIndex}`;
+                ProgramModifyOriginalReleaseDateInput.name = `field_original_release_date_${adjustedIndex}`;
+                ProgramModifyOriginalReleaseDateInput.value = item.original_release_date;
+                ProgramModifyOriginalReleaseDateInput.title = item.original_release_date;
+                ProgramModifyOriginalReleaseDateInput.readOnly = true;
+                ProgramModifyOriginalReleaseDateInput.style.backgroundColor = '#d1cdcde5';
+                ProgramModifyOriginalReleaseDateItem.appendChild(ProgramModifyOriginalReleaseDateInput);
+
+                const ProgramModifyBookmarksStatusesSelectedActionItem = document.createElement('div');
+                ProgramModifyBookmarksStatusesSelectedActionItem.className = 'grid-item';
+                {% if not html_import_metadata_options_flag %}
+                  ProgramModifyBookmarksStatusesSelectedActionItem.style = 'grid-column: span 2;'
+                {% endif %}
+                const ProgramModifyBookmarksStatusesSelectedActionsProgramModifySelect = document.createElement('select');
+                ProgramModifyBookmarksStatusesSelectedActionsProgramModifySelect.className = 'select2';
+                ProgramModifyBookmarksStatusesSelectedActionsProgramModifySelect.name = `field_bookmarks_statuses_selected_action_${adjustedIndex}`;
+                ProgramModifyBookmarksStatusesSelectedActionsProgramModifySelect.id = `field_bookmarks_statuses_selected_action_${adjustedIndex}`;
+                ProgramModifyBookmarksStatusesSelectedActionsProgramModifySelect.style.width = '100%';
+                ProgramModifyBookmarksStatusesSelectedActionsProgramModifySelect.style.maxWidth = '100%';
+                selectActionsProgramModify.forEach(selectaction => {
+                    const option = document.createElement('option');
+                    option.value = selectaction.program_modify_details_action_id;
+                    option.text = selectaction.program_modify_details_action_name;
+                    ProgramModifyBookmarksStatusesSelectedActionsProgramModifySelect.appendChild(option);
+                });
+                ProgramModifyBookmarksStatusesSelectedActionItem.appendChild(ProgramModifyBookmarksStatusesSelectedActionsProgramModifySelect);
+
+                const ProgramModifySpacerColumnItem = document.createElement('div');
+                ProgramModifySpacerColumnItem.className = 'grid-item';
+
+                const hiddenSeasonEpisodeInput = document.createElement('input');
+                hiddenSeasonEpisodeInput.type = 'hidden';
+                hiddenSeasonEpisodeInput.name = `prior_season_episode_${adjustedIndex}`;
+                hiddenSeasonEpisodeInput.id = `prior_season_episode_${adjustedIndex}`;
+                hiddenSeasonEpisodeInput.value = item.season_episode;
+
+                gridContainer.appendChild(ProgramModifyStatusItem);
+                {% if html_object_type_selected_prior != 'MOVIE' %}
+                  gridContainer.appendChild(ProgramModifySeasonEpisodeItem);
+                {% endif %}
+                {% if html_object_type_selected_prior != 'VIDEO' %}
+                  gridContainer.appendChild(ProgramModifyStreamLinkItem);
+                {% endif %}
+                gridContainer.appendChild(ProgramModifyStreamLinkOverrideItem);
+                gridContainer.appendChild(ProgramModifySpecialActionItem);
+                {% if html_object_type_selected_prior == 'SHOW' %}
+                  gridContainer.appendChild(ProgramModifySeasonEpisodePrefixItem);
+                {% endif %}
+                {% if html_import_metadata_options_flag %}
+                  {% if html_object_type_selected_prior != 'MOVIE' %}
+                    gridContainer.appendChild(ProgramModifyOverrideEpisodeTitleItem);
+                  {% endif %}
+                  gridContainer.appendChild(ProgramModifyOverrideSummaryItem);
+                  gridContainer.appendChild(ProgramModifyOverrideImageItem);
+                  gridContainer.appendChild(ProgramModifyOverrideDurationItem);
+                {% endif %}
+                gridContainer.appendChild(ProgramModifyOriginalReleaseDateItem);
+                gridContainer.appendChild(ProgramModifyBookmarksStatusesSelectedActionItem);
+                gridContainer.appendChild(ProgramModifySpacerColumnItem);
+                gridContainer.appendChild(hiddenSeasonEpisodeInput);
+    
+                recordContainerProgramModify.appendChild(gridContainer);
+            });
+
+            // Reinitialize select2 for new select elements
+            initializeSelect2();
+
+        }
+    
+        function loadMoreRecordsProgramModify() {
+          loadingSpinnerProgramModify.style.display = 'block';
+          const nextBatch = filteredRecordsProgramModify.slice(offsetProgramModify, offsetProgramModify + limitProgramModify);
+
+          renderRecordsProgramModify(nextBatch, offsetProgramModify);
+          offsetProgramModify += limitProgramModify;
+          loadingSpinnerProgramModify.style.display = 'none';
+
+          if (offsetProgramModify >= filteredRecordsProgramModify.length) {
+              recordContainerProgramModify.removeEventListener('scroll', onScrollProgramModify);
+          }
+                
+        }
+
+        function onScrollProgramModify() {
+          if (recordContainerProgramModify.scrollTop + recordContainerProgramModify.clientHeight >= recordContainerProgramModify.scrollHeight) {
+              if (offsetProgramModify < filteredRecordsProgramModify.length) {
+                  loadMoreRecordsProgramModify();
+              }
+          }
+        }
+
+        function resetAndLoadRecordsProgramModify() {
+          offsetProgramModify = 0;
+          recordContainerProgramModify.innerHTML = '';  // Clear existing records
+          {% if html_object_type_selected_prior != 'MOVIE' %}
+            filteredRecordsProgramModify = applyFiltersProgramModify(allRecordsProgramModify);  // Re-apply filters to all records
+          {% else %}
+            filteredRecordsProgramModify = allRecordsProgramModify;
+          {% endif %}
+          loadMoreRecordsProgramModify();  // Load filtered records
+          if (filteredRecordsProgramModify.length > limitProgramModify) {
+              recordContainerProgramModify.addEventListener('scroll', onScrollProgramModify);  // Re-attach scroll event listener
+          }
+        }
+
+        // Add event listeners for filter inputs
+        {% if html_object_type_selected_prior != 'MOVIE' %}
+          filterProgramModifySeasonEpisode.addEventListener('input', resetAndLoadRecordsProgramModify);
+          {% if html_object_type_selected_prior == 'SHOW' %}
+            filterProgramModifyStreamLink.addEventListener('input', resetAndLoadRecordsProgramModify);
+          {% endif %}
+          filterProgramModifyStreamLinkOverride.addEventListener('input', resetAndLoadRecordsProgramModify);
+          filterProgramModifySpecialAction.addEventListener('input', resetAndLoadRecordsProgramModify);
+          {% if html_object_type_selected_prior == 'SHOW' %}
+            filterProgramModifySeasonEpisodePrefix.addEventListener('input', resetAndLoadRecordsProgramModify);
+          {% endif %}
+          {% if html_import_metadata_options_flag %}
+            filterProgramModifyOverrideEpisodeTitle.addEventListener('input', resetAndLoadRecordsProgramModify);
+            filterProgramModifyOverrideSummary.addEventListener('input', resetAndLoadRecordsProgramModify);
+            filterProgramModifyOverrideImage.addEventListener('input', resetAndLoadRecordsProgramModify);
+            filterProgramModifyOverrideDuration.addEventListener('input', resetAndLoadRecordsProgramModify);
+          {% endif %}
+          filterProgramModifyOriginalReleaseDate.addEventListener('input', resetAndLoadRecordsProgramModify);
+        {% endif %}
+
+        recordContainerProgramModify.addEventListener('scroll', onScrollProgramModify);
+    
+        // Initial load
+        resetAndLoadRecordsProgramModify();
+    });
+  {% endif %}
+</script>
+{% endblock javascripts %}

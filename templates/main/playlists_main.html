@@ -1,0 +1,248 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Linear - Final Playlists {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<style> 
+  .btn {
+      width: 100%;
+      box-sizing: border-box;
+  }
+
+  .chart-container {
+    width: 95%;
+    padding: 20px;
+    margin-left: 0; /* Align to the left */
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .bar-label {
+    width: 12%; /* Increased space for labels */
+    text-align: left; /* Left-align the labels */
+    padding-right: 10px;
+    white-space: nowrap; /* Ensure labels fit in a single line */
+  }
+
+  .bar-graph {
+    width: 70%; /* Adjusted to accommodate label space */
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 30px;
+    background-color: #4c2588; /* Bar color */
+    border-radius: 5px 0 0 5px;
+  }
+
+  .bar-value {
+    position: absolute;
+    right: 25px; /* Move outside the bar */
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding-left: 5px;
+    white-space: nowrap;
+  }
+
+  .dark-version .bar-value {
+    color: black; /* Text color for dark mode */
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row min-vh-80 h-100">
+    <div class="col-12">
+      <form method="POST" action="/playlists/plm_main" id="process-form">
+        <h4>Station Statistics and Settings
+          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Installation-and-Setup" target="_blank">
+            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+          </a>
+        </h4>
+        <!-- Stat Chart -->
+        <div class="chart-container">
+          <div class="bar">
+            <div class="bar-label">Unassigned</div>
+            <div class="bar-graph">
+              <div class="bar-fill" style="width: {{ html_all_child_to_parents_stats['unassigned_percentage'] }};"></div>
+              <div class="bar-value">
+                {{ '{:,.0f}'.format(html_all_child_to_parents_stats['unassigned_count']) }} ({{ html_all_child_to_parents_stats['unassigned_percentage'] }})
+              </div>
+            </div>
+          </div>
+          <div class="bar">
+            <div class="bar-label">Ignored</div>
+            <div class="bar-graph">
+              <div class="bar-fill" style="width: {{ html_all_child_to_parents_stats['ignore_percentage'] }};"></div>
+              <div class="bar-value">
+                {{ '{:,.0f}'.format(html_all_child_to_parents_stats['ignore_count']) }} ({{ html_all_child_to_parents_stats['ignore_percentage'] }})
+              </div>
+            </div>
+          </div>
+          <div class="bar">
+            <div class="bar-label">Assigned to Parent</div>
+            <div class="bar-graph">
+              <div class="bar-fill" style="width: {{ html_all_child_to_parents_stats['assigned_to_parent_percentage'] }};"></div>
+              <div class="bar-value">
+                {{ '{:,.0f}'.format(html_all_child_to_parents_stats['assigned_to_parent_count']) }} ({{ html_all_child_to_parents_stats['assigned_to_parent_percentage'] }})
+              </div>
+            </div>
+          </div>
+          <div class="bar">
+            <div class="bar-label">Redundant</div>
+            <div class="bar-graph">
+              <div class="bar-fill" style="width: {{ html_all_child_to_parents_stats['redundant_percentage'] }};"></div>
+              <div class="bar-value">
+                {{ '{:,.0f}'.format(html_all_child_to_parents_stats['redundant_count']) }} ({{ html_all_child_to_parents_stats['redundant_percentage'] }})
+              </div>
+            </div>
+          </div>
+          {% if html_plm_check_child_station_status == 'On' %}
+            <div class="bar">
+              <div class="bar-label">Disabled</div>
+              <div class="bar-graph">
+                <div class="bar-fill" style="width: {{ html_all_child_to_parents_stats['disabled_percentage'] }};"></div>
+                <div class="bar-value">
+                  {{ '{:,.0f}'.format(html_all_child_to_parents_stats['disabled_count']) }} ({{ html_all_child_to_parents_stats['disabled_percentage'] }})
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
+        <!-- Final Playlist Settings -->
+        {% if html_settings_message %}
+          <em>{{ html_settings_message}}</em>
+          <div class="row">
+            <div class="col-12 my-2"></div>
+          </div>
+        {% endif %}
+        <div class="settings-box form-check form-switch ps-0 is-filled" style="width: 98%; display: flex; justify-content: center; align-items: center; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+          <label for="station_start_number" style="margin-top: 8px; margin-right: 5px;"><b>Station Start Number:</b></label>
+          <input type="text" id="station_start_number" name="station_start_number" style="width: 4%; margin-right: 10px;" value="{{ html_station_start_number }}">
+          <label for="max_stations" style="margin-top: 8px; margin-right: 5px;"><b>Max Stations per m3u:</b></label>
+          <input type="text" id="max_stations" name="max_stations" style="width: 4%; margin-right: 10px;" value="{{ html_max_stations }}">
+          <label for="plm_url_tag_in_m3us" style="margin-top: 8px; margin-right: 5px;"><b>Add URL tag to m3u(s):</b></label>
+          <input type="checkbox" class="form-check-input ms-1" id="plm_url_tag_in_m3us" name="plm_url_tag_in_m3us" {% if html_plm_url_tag_in_m3us == 'On' %}checked{% endif %}>
+          <label for="plm_check_child_station_status" style="margin-top: 8px; margin-right: 5px; margin-left: 15px;"><b>Check Station Status:</b>
+            <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Processes-%E2%80%90-Check-Station-Status" target="_blank">
+              <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+            </a>    
+          </label>
+          <input type="checkbox" class="form-check-input ms-1" id="plm_check_child_station_status" name="plm_check_child_station_status" {% if html_plm_check_child_station_status == 'On' %}checked{% endif %}>
+          <button type="submit" name="action" value="playlist_manager_save_settings" class="btn bg-gradient-primary my-2 mb-2" style="margin-left: 25px; margin-right: 5px; width: 14%;">Save Settings</button>
+          <button type="submit" name="action" value="final_playlists_action_update_station_list" class="btn bg-gradient-primary my-2 mb-2" style="margin-right: 5px; width: 14%;">Update Station List</button>
+          <button type="submit" name="action" value="final_playlists_action_update_m3u_epg" class="btn bg-gradient-primary my-2 mb-2" style="width: 14%;">Update m3u(s) & XML EPG(s)</button>
+        </div>
+        <hr>
+        <!-- Spacer row -->
+        <div class="row">
+          <div class="col-12 my-2"></div>
+        </div>
+        <!-- Final Playlists -->
+        <h4 id="final_playlists_anchor">m3u(s) and XML EPG(s)
+          <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Regular-Activity-%E2%80%90-m3u(s)-and-XML-EPG(s)" target="_blank">
+            <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+          </a>
+        </h4>
+        <table style="margin-left: 25px; margin-top: 10px; margin-bottom: 10px;">
+          {% for html_playlist_file in html_playlist_files %}
+            <tr>
+              <td  style="padding-right: 15px;">
+                {% if '.xml' in html_playlist_file.playlist_filename %}
+                  <button type="submit" name="action" value="playlist_file_add_to_xml_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>XML for Playlist</button>
+                {% elif '.m3u' in html_playlist_file.playlist_filename %}
+                  {% if html_slm_channels_dvr_integration %}
+                    <button type="submit" name="action" value="playlist_file_add_to_channels_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2">Add to Channels DVR</button>
+                  {% else %}
+                    <button type="submit" name="action" value="playlist_file_add_to_m3u_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>m3u for Playlist</button>
+                  {% endif %}
+                {% endif %}
+              </td>
+              <td style="padding-right: 15px; text-align: right;"><b>{{ html_playlist_file.playlist_label }}</b></td>
+              <td><a href="{{ url_for('download_m3u_epg', filename=html_playlist_file.playlist_filename) }}">{{ request.url_root }}playlists/files/{{ html_playlist_file.playlist_filename }}</a></td>
+            </tr>
+          {% endfor %}
+        </table>
+      </form>
+    </div>
+  </div>
+  <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="loadingModalLabel">Processing</h5>
+        </div>
+        <div class="modal-body">
+          Please wait while the process completes...
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- {% include 'includes/footer.html' %} -->
+
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<!-- Anchor ID -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const anchorId = "{{ html_playlists_anchor_id }}";
+      if (anchorId) {
+          window.location.hash = anchorId;
+      }
+  });
+</script>
+<!-- Processing Box -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('process-form').addEventListener('submit', function(event) {
+      console.log("Form submitted"); // Debugging
+
+      // Wait for a short delay to ensure the form submission is not blocked
+      setTimeout(() => {
+        // Ensure the modal element exists
+        const modalElement = document.getElementById('loadingModal');
+        if (!modalElement) {
+          console.error('Modal element not found!');
+          return;
+        }
+
+        // Show the modal
+        const loadingModal = new bootstrap.Modal(modalElement, {
+          backdrop: 'static',
+          keyboard: false
+        });
+        console.log("Showing modal"); // Debugging
+        loadingModal.show();
+
+        // Disable all navigation links
+        document.querySelectorAll('a').forEach(element => {
+          element.setAttribute('disabled', 'true');
+          element.addEventListener('click', function(event) {
+            event.preventDefault();
+          });
+        });
+      }, 500); // Adjust the delay as needed
+    });
+  });
+</script>
+{% endblock javascripts %}
