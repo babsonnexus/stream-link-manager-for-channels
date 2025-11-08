@@ -51,38 +51,43 @@
 ### General
 * **Settings: All**
    * **[Introduction](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Introduction)**
+   * **[Editions](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Editions)**
    * **[Extensions and Add-Ons](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Extensions-and-Add%E2%80%90Ons)**
-* **Settings: Channels DVR**
-   * **[Channels URL](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Channels-URL)**
-   * **[Channels Directory](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Channels-Directory)**
+* **Settings: Media Players**
+   * **[Media Player / Channels DVR Directory](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Channels-Directory)**
+   * **[Channels DVR URL](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Channels-URL)**
 
 ### On-Demand: SLM
 * **[Installation & Setup](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Installation-and-Setup)**
-* **[Search Defaults](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Search-Defaults)**
 * **[Manage Providers](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Manage-Providers)**
    * **[Movies & TV Shows Streaming Services](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Streaming-Services)**
-   * **[Subscribed Video Channels](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Subscribed-Video-Channels)**
    * **[Subscribed Streaming Services Settings](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Subscribed-Streaming-Services-Settings)**
+   * **[Subscribed Video Channels](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Subscribed-Video-Channels)**
    * **[Provider Groups](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Provider-Groups)**
    * **[Stream Link Mappings](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Stream-Link-Mappings)**
    * **[Labels](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Labels)**
-* **[Searching for Movies, TV Shows, Videos, and Channels](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Searching-for-Movies,-TV-Shows,-Videos,-and-Channels)**
-   * **[Search New & Updated](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Search-New-&-Updated)**
-   * **[Selecting from Search Results](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Selecting-from-Search-Results)**
-   * **[Adding Manual Movies, Shows, and Videos](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Adding-Manual-Movies,-Shows,-and-Videos)**
-* **Selections for Bookmarked Programs & Channels**
-   * **[Basic Selections](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Basic-Selections)**
-   * **[Videos & Channels](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Videos-and-Channels)**
-   * **[Special Actions](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions)**
-      * **[Stream Files](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-Stream-Files)**
-      * **[SLM Streams](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-SLM-Streams)**
-   * **[Advanced Selections and Overrides](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Advanced-Selections-and-Overrides)**
-   * **Program Level Management**
-      * **[Bookmark Actions](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Actions)**
-      * **[Bookmark Overrides](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Overrides)**
-* **Editing Bookmarked Programs**
-   * **[Modify Programs](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Modify-Programs)**
-   * **[Manage Videos](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Manage-Videos)**
+* **[Bookmarking and Managing Programs](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarking-and-Managing-Programs)**
+   * **Adding Programs**
+      * **[Search Defaults](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Search-Defaults)**
+      * **[Search for Movies, TV Shows, Videos, and Channels](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Searching-for-Movies,-TV-Shows,-Videos,-and-Channels)**
+      * **[Search for New & Updated](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Search-New-&-Updated)**
+      * **[Feed and Auto-Mapping](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Feed-and-Auto%E2%80%90Mapping)**
+      * **[Select from Search Results](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Selecting-from-Search-Results)**
+      * **[Add Manual Movies, Shows, and Videos](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Adding-Manual-Movies,-Shows,-and-Videos)**
+   * **Selections for Bookmarked Programs & Channels**
+      * **[Basic Selections](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Basic-Selections)**
+      * **[Videos & Channels](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Videos-and-Channels)**
+      * **[Special Actions](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions)**
+         * **[Stream Files](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-Stream-Files)**
+         * **[SLM Streams](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-SLM-Streams)**
+      * **[Advanced Selections and Overrides](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Advanced-Selections-and-Overrides)**
+      * **Program Level Management**
+         * **[Bookmark Actions](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Actions)**
+         * **[Bookmark Overrides](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Bookmark-Overrides)**
+   * **Modifying Bookmarked Programs**
+      * **[Examine Programs](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Examine-Programs)**
+      * **[Edit Programs](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Modify-Programs)**
+      * **[Manage Videos](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Manage-Videos)**
 * **[Processes](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Processes)**
 
 ### Linear: PLM
@@ -107,10 +112,11 @@
 * **[Installation & Setup](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-Installation-and-Setup)**
 * **Functions**
    * **[Reports & Queries](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-Reports-&-Queries)**
-   * **[Gracenote Search](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-Gracenote-Search)**
-   * **[CSV Explorer](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-CSV-Explorer)**
-   * **[Channels DVR Clients](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-Channels-DVR-Clients)**
    * **[Automation](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-Automation)**
+   * **For Channels DVR Users**
+      * **[Gracenote Search](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-Gracenote-Search)**
+      * **[CSV Explorer](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-CSV-Explorer)**
+      * **[Clients Explorer](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-Channels-DVR-Clients)**
 
 ### [Controls & Other](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-Controls-%E2%80%90-Overview)
 * **[Files](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-Controls-%E2%80%90-Files)**
