@@ -92,9 +92,19 @@
           dropdownCssClass: 'no-wrap',
           dropdownAutoWidth: true,
           width: 'resolve'
+        }).on('select2:open', function(e) {
+          setTimeout(function() {
+            $('.select2-dropdown').each(function() {
+              var $dropdown = $(this);
+              var offset = $dropdown.offset();
+              var viewportWidth = $(window).width();
+              var availableWidth = viewportWidth - offset.left - 10; // 10px padding from edge
+              $dropdown.css('max-width', availableWidth + 'px');
+            });
+          }, 0);
         });
       }
-    
+
       $(document).ready(function() {
         setTimeout(function() {
           if ($.fn.select2) {
