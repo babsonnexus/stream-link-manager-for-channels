@@ -40,7 +40,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.11.10.1807"
+    slm_version = "v2025.11.10.1825"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -14073,8 +14073,9 @@ def get_movie_show_metadata_item(node_id, country_code, language_code, query_typ
     except aiohttp.ClientError as e:
         print(f"{current_time()} WARNING: {e}. Skipping '{node_id}', please try again.")
 
-    if query_type == 'runtime' and ( result == '0' or int(result) == 0 ):
-        result = ''
+    if query_type == 'runtime' and result:
+        if result == '0' or int(result) == 0:
+            result = ''
 
     return result
 
