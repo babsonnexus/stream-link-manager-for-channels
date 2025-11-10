@@ -40,7 +40,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.11.05.1826"
+    slm_version = "v2025.11.10.1807"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -162,6 +162,7 @@ def webpage_manage_programs():
     settings_language_code = None
     settings_minimum_video_length = None
     settings_show_hidden_programs = None
+    settings_use_feed_map = None
     sorted_bookmarks = []
     provider_statuses = []
     provider_groups = []
@@ -181,6 +182,7 @@ def webpage_manage_programs():
     search_results_actions_video = []
     search_results_actions_channel = []
     date_new_default_range = []
+    search_results_labels = []
 
     search_results_actions_default = [
         {'search_results_action_id': 'none', 'search_results_action_name': 'None'},
@@ -241,6 +243,7 @@ def webpage_manage_programs():
 
                         if manage_programs_action == 'search_defaults_save':
                             settings_show_hidden_programs_input = "On" if request.form.get('settings_show_hidden_programs') in ['on', 'On'] else "Off"
+                            settings_use_feed_map_input = "On" if request.form.get('settings_use_feed_map') in ['on', 'On'] else "Off"
 
                             if settings_num_results_test != "pass":
 
@@ -284,6 +287,7 @@ def webpage_manage_programs():
                             if settings_minimum_video_length_test == "pass":
                                 settings[65]["settings"] = settings_minimum_video_length_input    # [65] SLM: Minimum Video Length (in Seconds) for Search
                             settings[66]["settings"] = settings_show_hidden_programs_input        # [66] SLM: Show 'Hidden Programs' in Dropdown Selection (Default)
+                            settings[67]["settings"] = settings_use_feed_map_input                # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
                             write_data(csv_settings, settings)
 
                             if settings_country_code_input_prior != settings_country_code_prior:
@@ -528,14 +532,19 @@ def webpage_manage_programs():
                 subscribed_video_channels = read_data(csv_slm_subscribed_video_channels)
                 subscribed_video_channels_url_lookup = {subscribed_video_channel["channel_url"] for subscribed_video_channel in subscribed_video_channels}
                 write_subscribed_video_channels_flag = False
-                
+
+                label_maps = read_data(csv_slm_label_maps)
+                write_label_maps_flag = False
+
                 bookmarked_count = 0
                 hide_bookmarked_count = 0
                 previously_bookmarked_count = 0
+                generate_stream_links_count = 0
                 metadata_import_error_count = 0
                 new_video_group_count = 1
                 program_search_results_base_submissions = []
                 program_search_results_submissions = []
+                generate_stream_links_entry_ids = []
                 manual_entry_id = None
 
                 if manage_programs_action in [
@@ -574,6 +583,7 @@ def webpage_manage_programs():
                                 'program_search_results_short_description_input': '',
                                 'program_search_results_poster_input': '',
                                 'program_search_results_score_input': '',
+                                'program_search_results_labels_input': [],
                                 'program_search_results_status_input': 'unwatched',
                                 'program_search_results_action_input': 'manual'
                             })
@@ -606,6 +616,7 @@ def webpage_manage_programs():
                                             'program_search_results_short_description_input': program_search_results_video['short_description'],
                                             'program_search_results_poster_input': program_search_results_video['poster'],
                                             'program_search_results_score_input': program_search_results_video['score'],
+                                            'program_search_results_labels_input': [],
                                             'program_search_results_status_input': 'unwatched',
                                             'program_search_results_action_input': 'playlist'
                                         })
@@ -623,6 +634,7 @@ def webpage_manage_programs():
                     program_search_results_poster_inputs = {}
                     program_search_results_score_inputs = {}
                     program_search_results_status_inputs = {}
+                    program_search_results_labels_inputs = {}
                     program_search_results_action_inputs = {}
 
                     for key in request.form.keys():
@@ -659,6 +671,10 @@ def webpage_manage_programs():
                             index = key.split('_')[-1]
                             program_search_results_score_inputs[index] = request.form.get(key)
 
+                        if key.startswith('program_search_results_labels_'):
+                            index = key.split('_')[-1]
+                            program_search_results_labels_inputs[index] = request.form.getlist(key)
+
                         if key.startswith('program_search_results_status_'):
                             index = key.split('_')[-1]
                             program_search_results_status_inputs[index] = 'unwatched' if request.form.get(key) in ['on', 'On', 'ON'] else 'watched'
@@ -676,6 +692,7 @@ def webpage_manage_programs():
                         program_search_results_url_input = None
                         program_search_results_poster_input = None
                         program_search_results_score_input = None
+                        program_search_results_labels_input = []
                         program_search_results_status_input = None
                         program_search_results_action_input = None
 
@@ -687,6 +704,7 @@ def webpage_manage_programs():
                         program_search_results_url_input = program_search_results_url_inputs.get(row)
                         program_search_results_poster_input = program_search_results_poster_inputs.get(row)
                         program_search_results_score_input = program_search_results_score_inputs.get(row)
+                        program_search_results_labels_input = program_search_results_labels_inputs.get(row, [])
                         program_search_results_status_input = program_search_results_status_inputs.get(row, 'watched')
                         program_search_results_action_input = program_search_results_action_inputs.get(row)
 
@@ -699,6 +717,7 @@ def webpage_manage_programs():
                             'program_search_results_url_input': program_search_results_url_input,
                             'program_search_results_poster_input': program_search_results_poster_input,
                             'program_search_results_score_input': program_search_results_score_input,
+                            'program_search_results_labels_input': program_search_results_labels_input,
                             'program_search_results_status_input': program_search_results_status_input,
                             'program_search_results_action_input': program_search_results_action_input                            
                         })
@@ -736,6 +755,7 @@ def webpage_manage_programs():
                                 field_url = program_search_results_submission['program_search_results_url_input']
                                 field_poster = program_search_results_submission['program_search_results_poster_input']
                                 field_score = program_search_results_submission['program_search_results_score_input']
+                                field_labels = program_search_results_submission['program_search_results_labels_input']
                                 field_status = program_search_results_submission['program_search_results_status_input']
                                 field_action = program_search_results_submission['program_search_results_action_input']
 
@@ -753,8 +773,8 @@ def webpage_manage_programs():
                                     entry_id = None
                                     if field_action == 'manual' or field_object_type == 'VIDEO':
 
-                                        if field_action.startswith('add') or field_action.startswith('edit'):
-                                            entry_id = field_action.split('_')[1]
+                                        if field_action.startswith('add'):
+                                            entry_id = field_action.split('_')[-1]
 
                                         elif field_action in ['manual', 'playlist', 'new_unique', 'new_same']:
 
@@ -778,6 +798,9 @@ def webpage_manage_programs():
 
                                     elif field_object_type in ['MOVIE', 'SHOW']:
                                         entry_id = field_entry_id
+
+                                    if 'generate' in field_action:
+                                        generate_stream_links_entry_ids.append(entry_id)
 
                                     status = None
                                     if field_action == 'hide':
@@ -859,7 +882,7 @@ def webpage_manage_programs():
                                                 if field_object_type in ['MOVIE', 'SHOW']:
 
                                                     if field_object_type == 'MOVIE':
-                                                        original_release_date_raw =  get_original_release_date(entry_id, settings_country_code_input_prior, settings_language_code_input_prior, 'originalReleaseDate')
+                                                        original_release_date_raw =  get_movie_show_metadata_item(entry_id, settings_country_code_input_prior, settings_language_code_input_prior, 'originalReleaseDate')
                                                         if original_release_date_raw:
                                                             field_original_release_date = original_release_date_raw
 
@@ -871,7 +894,7 @@ def webpage_manage_programs():
                                                         if field_object_type == 'MOVIE':
                                                             field_override_summary = field_short_description
                                                             field_override_image = field_poster
-                                                            field_override_duration = get_original_release_date(entry_id, settings_country_code_input_prior, settings_language_code_input_prior, 'runtime')
+                                                            field_override_duration = get_movie_show_metadata_item(entry_id, settings_country_code_input_prior, settings_language_code_input_prior, 'runtime')
 
                                                         elif field_object_type == 'SHOW':
                                                             field_override_episode_title = season_episode['override_episode_title']
@@ -1044,6 +1067,16 @@ def webpage_manage_programs():
                                             'override_program_sort': override_program_sort
                                         })
 
+                                    if field_labels:
+
+                                        write_label_maps_flag = True
+
+                                        for field_label in field_labels:
+                                            label_maps.append({
+                                                'label_id': field_label,
+                                                'entry_id': entry_id
+                                            })
+
                                 elif field_object_type == "CHANNEL":
 
                                     write_subscribed_video_channels_flag = True
@@ -1122,12 +1155,24 @@ def webpage_manage_programs():
                 if write_bookmarks_statuses_flag:
                     write_data(csv_bookmarks_status, bookmarks_statuses)
                 
+                if write_label_maps_flag:
+                    write_data(csv_slm_label_maps, label_maps)
+
                 if write_subscribed_video_channels_flag:
                     if len(subscribed_video_channels) > 1:
                         subscribed_video_channels = sorted(subscribed_video_channels, key=lambda x: sort_key(x["channel_name"].casefold()))
                     write_data(csv_slm_subscribed_video_channels, subscribed_video_channels)
 
                 set_slm_process_active_flag('single_off')
+
+                if generate_stream_links_entry_ids:
+                    for generate_stream_links_entry_id in generate_stream_links_entry_ids:
+                        generate_stream_links_single(generate_stream_links_entry_id)
+                        generate_stream_links_count = int(generate_stream_links_count) + 1
+
+                    if int(generate_stream_links_count) > 0:
+                        manage_programs_message += f"\n"
+                        manage_programs_message += f"{current_time()} INFO: Also generated Stream Links for {generate_stream_links_count} programs."
 
         elif manage_programs_action in [
             'manage_programs_cancel',
@@ -1800,7 +1845,7 @@ def webpage_manage_programs():
                             if object_type_selected_prior == 'MOVIE':
                                 original_release_date_raw = None
                                 unhide_original_release_date = ''
-                                original_release_date_raw = get_original_release_date(entry_id_selected_prior, field_country_code_prior, field_language_code_prior, 'originalReleaseDate')
+                                original_release_date_raw = get_movie_show_metadata_item(entry_id_selected_prior, field_country_code_prior, field_language_code_prior, 'originalReleaseDate')
                                 if original_release_date_raw:
                                     unhide_original_release_date = original_release_date_raw
 
@@ -2083,12 +2128,12 @@ def webpage_manage_programs():
 
                                         if object_type_selected_prior == 'MOVIE':
                                             if not entry_id_selected_prior.startswith('slm'):
-                                                field_original_release_date = get_original_release_date(entry_id_selected_prior, field_country_code_prior, field_language_code_prior, 'originalReleaseDate')
+                                                field_original_release_date = get_movie_show_metadata_item(entry_id_selected_prior, field_country_code_prior, field_language_code_prior, 'originalReleaseDate')
                                                 if field_bookmark_selected_action_input == 'import':
                                                     field_override_summary = field_short_description
                                                     field_override_image = field_poster
                                                 if field_special_action != 'Make SLM Stream' or ( field_special_action == 'Make SLM Stream' and field_stream_link_override in [None, ''] ):
-                                                    field_override_duration = get_original_release_date(entry_id_selected_prior, field_country_code_prior, field_language_code_prior, 'runtime')
+                                                    field_override_duration = get_movie_show_metadata_item(entry_id_selected_prior, field_country_code_prior, field_language_code_prior, 'runtime')
                                             elif entry_id_selected_prior.startswith('slm'):
                                                 if field_bookmark_selected_action_input == 'import':
                                                     if field_special_action != 'Make SLM Stream' or ( field_special_action == 'Make SLM Stream' and field_stream_link_override in [None, ''] ):
@@ -2492,6 +2537,21 @@ def webpage_manage_programs():
 
     if slm_manage_programs_main_flag or slm_manage_programs_search_results_flag or slm_manage_programs_modify_program_flag:
 
+        if slm_manage_programs_main_flag or slm_manage_programs_search_results_flag:
+
+            # Labels
+            slm_labels = read_data(csv_slm_labels)
+            if len(slm_labels) > 0:
+                for slm_label in slm_labels:
+                    if slm_label['label_active'] == 'On':
+                        search_results_labels.append({
+                            'label_id': slm_label['label_id'],
+                            'label_name': slm_label['label_name']
+                        })
+
+                if len(search_results_labels) > 1:
+                    search_results_labels = sorted(search_results_labels, key=lambda x: sort_key(x["label_name"].casefold()))
+
         if slm_manage_programs_main_flag:
 
             # Search/Modify Settings
@@ -2503,6 +2563,7 @@ def webpage_manage_programs():
             settings_provider_status = settings[47]["settings"]                 # [47] SLM: Search Default for Provider Status
 
             ### Search Settings
+            settings_use_feed_map = settings[67]["settings"]                    # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
             settings_hide_bookmarked = settings[9]["settings"]                  # [9]  Search Defaults: Filter out already bookmarked
             settings_country_code = settings[2]["settings"]                     # [2]  Search Defaults: Country Code
             settings_language_code = settings[3]["settings"]                    # [3]  Search Defaults: Language Code
@@ -2600,6 +2661,14 @@ def webpage_manage_programs():
                 'search_results_action_name': 'Bookmark Movie plus Import Metadata'
                 },
                 {
+                'search_results_action_id': 'bookmark_generate',
+                'search_results_action_name': 'Bookmark Movie and Generate Stream Link'
+                },
+                {
+                'search_results_action_id': 'bookmark_import_generate',
+                'search_results_action_name': 'Bookmark Movie and Generate Stream Link plus Import Metadata'
+                },
+                {
                 'search_results_action_id': 'bookmark_edit',
                 'search_results_action_name': 'Bookmark and Edit Movie'
                 },
@@ -2630,6 +2699,22 @@ def webpage_manage_programs():
                 {
                 'search_results_action_id': 'bookmark_import_disable',
                 'search_results_action_name': 'Bookmark TV Show plus Import Metadata and Disable Get New Episodes'
+                },
+                {
+                'search_results_action_id': 'bookmark_generate',
+                'search_results_action_name': 'Bookmark TV Show and Generate Stream Links'
+                },
+                {
+                'search_results_action_id': 'bookmark_import_generate',
+                'search_results_action_name': 'Bookmark TV Show and Generate Stream Links plus Import Metadata'
+                },
+                {
+                'search_results_action_id': 'bookmark_disable_generate',
+                'search_results_action_name': 'Bookmark TV Show and Generate Stream Links plus Disable Get New Episodes'
+                },
+                {
+                'search_results_action_id': 'bookmark_import_disable_generate',
+                'search_results_action_name': 'Bookmark TV Show and Generate Stream Links plus Import Metadata and Disable Get New Episodes'
                 },
                 {
                 'search_results_action_id': 'bookmark_edit',
@@ -2670,16 +2755,23 @@ def webpage_manage_programs():
                 search_results_actions_video.append(item)
 
             for sorted_bookmark in sorted_bookmarks:
-                if sorted_bookmark['object_type'] == "VIDEO":
+                if sorted_bookmark['object_type'] == "VIDEO" and not sorted_bookmark['entry_id'].startswith('int'):
                     search_results_actions_video.append({
                         'search_results_action_id': f"add_{sorted_bookmark['entry_id']}",
                         'search_results_action_name': f"ADD TO: {sorted_bookmark['title']} ({sorted_bookmark['release_year']})"
                     })
 
             for sorted_bookmark in sorted_bookmarks:
-                if sorted_bookmark['object_type'] == "VIDEO":
+                if sorted_bookmark['object_type'] == "VIDEO" and not sorted_bookmark['entry_id'].startswith('int'):
                     search_results_actions_video.append({
-                        'search_results_action_id': f"edit_{sorted_bookmark['entry_id']}",
+                        'search_results_action_id': f"add_generate_{sorted_bookmark['entry_id']}",
+                        'search_results_action_name': f"ADD TO AND GENERATE STREAM LINKS FOR: {sorted_bookmark['title']} ({sorted_bookmark['release_year']})"
+                    })
+
+            for sorted_bookmark in sorted_bookmarks:
+                if sorted_bookmark['object_type'] == "VIDEO" and not sorted_bookmark['entry_id'].startswith('int'):
+                    search_results_actions_video.append({
+                        'search_results_action_id': f"add_edit_{sorted_bookmark['entry_id']}",
                         'search_results_action_name': f"ADD TO AND EDIT: {sorted_bookmark['title']} ({sorted_bookmark['release_year']})"
                     })
 
@@ -2885,6 +2977,7 @@ def webpage_manage_programs():
         html_settings_language_code = settings_language_code,
         html_settings_minimum_video_length = settings_minimum_video_length,
         html_settings_show_hidden_programs = settings_show_hidden_programs,
+        html_settings_use_feed_map = settings_use_feed_map,
         html_sorted_bookmarks = sorted_bookmarks,
         html_provider_statuses = provider_statuses,
         html_provider_groups = provider_groups,
@@ -2914,7 +3007,9 @@ def webpage_manage_programs():
         html_filter_modify_program_override_episode_title  = filter_modify_program_override_episode_title,
         html_filter_modify_program_override_summary  = filter_modify_program_override_summary,
         html_filter_modify_program_override_image  = filter_modify_program_override_image,
-        html_filter_modify_program_override_duration  = filter_modify_program_override_duration
+        html_filter_modify_program_override_duration  = filter_modify_program_override_duration,
+        html_all_compare_options = all_compare_options,
+        html_search_results_labels = search_results_labels
     )
 
 # Search for country code
@@ -4158,6 +4253,14 @@ def get_streaming_services_map():
 
     return provider_results_json_array_results
 
+# Runs the process to update the SLM Feed and do auto-mapping
+def run_slm_update_feed():
+    if slm_process_active_flag:
+        print(f"{current_time()} WARNING: The 'SLM Feed' cannot be updated at this time because another SLM process is currently underway. Please try again later.")
+
+    else:
+        placeholder = "TO ADD:"
+
 # Create a new entry_id for manual programs
 def get_manual_entry_id(bookmarks):
 
@@ -4311,10 +4414,10 @@ def get_video_metadata(url):
             if thumbnails:
                 override_image = max(thumbnails, key=lambda t: t.get('width', 0)).get('url', default_poster_url)
             override_duration = info_dict.get('duration', {}).get('secondsText', None)
-            if override_duration == '0':
+            if override_duration == '0' or int(override_duration) == 0:
                 override_duration = None
 
-    if override_duration == '0':
+    if override_duration == '0' or int(override_duration) == 0:
         override_duration = ''
 
     return original_release_date, override_episode_title, override_summary, override_image, override_duration
@@ -10768,6 +10871,8 @@ def get_new_episodes(entry_id_filter):
     show_bookmarks = []
     video_bookmarks = []
     episodes = []
+    bookmarks_country_code_lookup = {}
+    bookmarks_language_code_lookup = {}
     slm_streams_lookup = {}
 
     import_metadata_options_flag = None
@@ -10777,6 +10882,9 @@ def get_new_episodes(entry_id_filter):
     bookmarks = read_data(csv_bookmarks)
 
     if bookmarks:
+        bookmarks_country_code_lookup = {bookmark['entry_id']: bookmark['country_code'] for bookmark in bookmarks}
+        bookmarks_language_code_lookup = {bookmark['entry_id']: bookmark['language_code'] for bookmark in bookmarks}
+
         show_bookmarks = [
             bookmark for bookmark in bookmarks 
             if not bookmark['entry_id'].startswith('slm') 
@@ -10803,9 +10911,9 @@ def get_new_episodes(entry_id_filter):
 
     episodes = read_data(csv_bookmarks_status)
 
+    episodes_write_flag = None
     if episodes:
 
-        episodes_write_flag = None
         if video_bookmarks:
             video_bookmarks_entry_id_lookups = {}
             video_bookmarks_entry_id_lookups = {video_bookmark['entry_id'] for video_bookmark in video_bookmarks}
@@ -10828,9 +10936,38 @@ def get_new_episodes(entry_id_filter):
                         episode['override_duration'] = field_override_duration
                         episodes_write_flag = True
 
-            if episodes_write_flag:
-                write_data(csv_bookmarks_status, episodes)
-                episodes = read_data(csv_bookmarks_status)
+        if show_bookmarks and import_metadata_options_flag:
+            show_bookmarks_entry_id_lookups = {}
+            show_bookmarks_entry_id_lookups = {show_bookmark['entry_id'] for show_bookmark in show_bookmarks if show_bookmark['bookmark_action'] == 'Import New Episode Metadata'}
+
+            for episode in episodes:
+                if episode['entry_id'] in show_bookmarks_entry_id_lookups and not episode['season_episode_id'] in ['', None]:
+
+                    field_override_duration = episode['override_duration']
+                    field_original_release_date = episode['original_release_date']
+
+                    if episode['override_duration'] in ['0', '', None]:
+                        field_override_duration = get_movie_show_metadata_item(episode['season_episode_id'], bookmarks_country_code_lookup[episode['entry_id']], bookmarks_language_code_lookup[episode['entry_id']], 'runtime')                
+
+                    if episode['original_release_date'] in ['1900-01-01', '', None]:
+                        field_original_release_date = get_movie_show_metadata_item(episode['season_episode_id'], bookmarks_country_code_lookup[episode['entry_id']], bookmarks_language_code_lookup[episode['entry_id']], 'originalReleaseDate') 
+
+                    if (
+                        ( field_override_duration != episode['override_duration'] ) or 
+                        ( field_original_release_date != episode['original_release_date'] )
+                    ):
+
+                        if field_override_duration != episode['override_duration']:
+                            episode['override_duration'] = field_override_duration
+
+                        if field_original_release_date != episode['original_release_date']:
+                            episode['original_release_date'] = field_original_release_date
+
+                        episodes_write_flag = True
+
+        if episodes_write_flag:
+            write_data(csv_bookmarks_status, episodes)
+            episodes = read_data(csv_bookmarks_status)
 
         slm_streams_lookup = {episode['stream_link_override'] for episode in episodes if episode['special_action'] == 'Make SLM Stream'}
 
@@ -12536,9 +12673,11 @@ def get_episode_list(entry_id, url, country_code, language_code):
                     override_episode_title = season_episode_json_episodes_array.get("content", {}).get("title", "")
                     override_summary = season_episode_json_episodes_array.get("content", {}).get("shortDescription", "")
                     override_duration = int(season_episode_json_episodes_array.get("content", {}).get("runtime", 0)) * 60
-                    if override_duration == '0':
+                    if override_duration == '0' or int(override_duration) == 0:
                         override_duration = ''
                     original_release_date = season_episode_json_episodes_array.get("content", {}).get("originalReleaseDate", "")
+                    if original_release_date in ['', None]:
+                        original_release_date = '1900-01-01'
 
                     season_episodes_results.append({
                         "season_episode_id": season_episode_id,
@@ -12801,6 +12940,7 @@ def generate_stream_links_single(entry_id):
 
 # Get the valid Stream Links (if available) and write to the appropriate table
 def find_stream_links(auto_bookmarks, original_release_date_list):
+    
     bookmarks_statuses = read_data(csv_bookmarks_status)
 
     for auto_bookmark in auto_bookmarks:
@@ -13279,7 +13419,12 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
 
                 if bookmark_status['status'].lower() == "unwatched" and stream_link_url:
 
-                    if original_release_date_list is None or bookmark_status['entry_id'] in original_release_date_list or bookmark_status['season_episode_id'] in original_release_date_list:
+                    if ( 
+                        ( original_release_date_list is None ) or 
+                        ( bookmark['object_type'] == "MOVIE" and bookmark_status['entry_id'] in original_release_date_list ) or 
+                        ( bookmark['object_type'] == "SHOW" and bookmark_status['season_episode_id'] in original_release_date_list ) or
+                        ( bookmark['object_type'] == "VIDEO" and bookmark_status['season_episode'] in original_release_date_list )
+                    ):
 
                         if bookmark['object_type'] == "SHOW" or bookmark['object_type'] == "VIDEO":
                             if bookmark['object_type'] == "SHOW":
@@ -13290,7 +13435,11 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
                         file_path_return = normalize_path(file_path_return)
                         bookmark_status['stream_link_file'] = file_path_return
 
-                elif bookmark_status['status'].lower() == "watched" or bookmark_status['stream_link'] == "" or ( special_action in ["Make STRM", "Make SLM Stream"] and bookmark_status['stream_link_override'] == "" ):
+                elif ( 
+                    ( bookmark_status['status'].lower() == "watched" ) or 
+                    ( bookmark_status['stream_link'] == "" ) or 
+                    ( special_action in ["Make STRM", "Make SLM Stream"] and bookmark_status['stream_link_override'] == "" )
+                ):
 
                     for condition in special_actions_default:
                         file_delete(stream_link_path, stream_link_file_name, condition)
@@ -13800,15 +13949,12 @@ def get_original_release_date_list():
     print("|                                                        |")
     print("==========================================================\n")
 
-    set_slm_process_active_flag('single_on')
-
     print(f"{current_time()} Gathering original release dates...")
 
     bookmarks = read_data(csv_bookmarks)
     auto_bookmarks = [
         bookmark for bookmark in bookmarks 
-        if not bookmark['entry_id'].startswith('slm') 
-        and bookmark['bookmark_action'] not in ["Hide"]
+        if bookmark['bookmark_action'] not in ["Hide", "Disable Get New Episodes"]
     ]
     bookmarks_statuses = read_data(csv_bookmarks_status)
     settings = read_data(csv_settings)
@@ -13822,10 +13968,12 @@ def get_original_release_date_list():
             if auto_bookmark['entry_id'] == bookmarks_status['entry_id']:
                 if bookmarks_status['status'].lower() == "unwatched":
 
-                    if bookmarks_status['special_action'] in ["Make STRM", "Make SLM Stream"] or bookmarks_status['stream_link_override'] != "":
-                        continue
+                    if (
+                        ( auto_bookmark['object_type'] in ["MOVIE", "SHOW"] and not auto_bookmark['entry_id'].startswith('slm') ) or
+                        ( auto_bookmark['object_type'] == "VIDEO" and not auto_bookmark['entry_id'].startswith('int') )
+                    ):
 
-                    else:
+                        node_id = None
                         original_release_date_raw = None
                         original_release_date = None
 
@@ -13833,6 +13981,8 @@ def get_original_release_date_list():
                             node_id = bookmarks_status['entry_id']
                         elif auto_bookmark['object_type'] == "SHOW":
                             node_id = bookmarks_status['season_episode_id']
+                        elif auto_bookmark['object_type'] == "VIDEO":
+                            node_id = bookmarks_status['season_episode']
                         else:
                             print(f"{current_time()} ERROR: Invalid object_type")
                             continue
@@ -13842,31 +13992,35 @@ def get_original_release_date_list():
                             language_code = auto_bookmark['language_code']
 
                             if bookmarks_status['original_release_date'] is None or bookmarks_status['original_release_date'] == '':
-                                original_release_date_raw =  get_original_release_date(node_id, country_code, language_code, 'originalReleaseDate')
+
+                                if auto_bookmark['object_type'] in ["MOVIE", "SHOW"]:
+                                    original_release_date_raw =  get_movie_show_metadata_item(node_id, country_code, language_code, 'originalReleaseDate')
+
+                                elif auto_bookmark['object_type'] == "VIDEO" and bookmarks_status['special_action'] == 'Make SLM Stream' and not bookmarks_status['stream_link_override'] in [None, '']:
+                                    original_release_date_raw, throwaway_override_episode_title, throwaway_override_summary, throwaway_override_image, throwaway_override_duration = get_video_metadata(bookmarks_status['stream_link_override'])
+
                                 if original_release_date_raw:
                                     bookmarks_status['original_release_date'] = original_release_date_raw
                                     
                             else:
                                 original_release_date_raw = bookmarks_status['original_release_date']
                             
-                            if original_release_date_raw is not None and original_release_date_raw != '':
-                                original_release_date = datetime.datetime.strptime(original_release_date_raw, "%Y-%m-%d")
-                                time_difference = current_date - original_release_date
-                                hours_since_release = int(time_difference.total_seconds() // 3600)
+                        if original_release_date_raw is not None and original_release_date_raw != '':
+                            original_release_date = datetime.datetime.strptime(original_release_date_raw, "%Y-%m-%d")
+                            time_difference = current_date - original_release_date
+                            hours_since_release = int(time_difference.total_seconds() // 3600)
 
-                                if 0 <= int(hours_since_release) <= int(slm_new_recent_releases_when):
-                                    original_release_date_list.append(node_id)
+                            if 0 <= int(hours_since_release) <= int(slm_new_recent_releases_when):
+                                original_release_date_list.append(node_id)
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
     print(f"{current_time()} Finished gathering original release dates.")
 
-    set_slm_process_active_flag('single_off')
-
     return original_release_date_list
 
 # Gets the original release date or other info based on query type for individual movies/episodes
-def get_original_release_date(node_id, country_code, language_code, query_type):
+def get_movie_show_metadata_item(node_id, country_code, language_code, query_type):
     results = []
     results_json = []
     result = None
@@ -13919,7 +14073,7 @@ def get_original_release_date(node_id, country_code, language_code, query_type):
     except aiohttp.ClientError as e:
         print(f"{current_time()} WARNING: {e}. Skipping '{node_id}', please try again.")
 
-    if query_type == 'runtime' and result == '0':
+    if query_type == 'runtime' and ( result == '0' or int(result) == 0 ):
         result = ''
 
     return result
@@ -15497,78 +15651,82 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "movies_shows"}, 66, "SLM: 'Add Programs' Search Selection (Default)")
         check_and_append(csv_file, {"settings": 0}, 67, "SLM: Minimum Video Length (in Seconds) for Search")
         check_and_append(csv_file, {"settings": "Off"}, 68, "SLM: Show 'Hidden Programs' in Dropdown Selection (Default)")
+        check_and_append(csv_file, {"settings": "Off"}, 69, "SLM: Use the 'Feed & Auto-Mapping' functionality")
 
 # Data records for initialization files
 def initial_data(csv_file):
+    data = []
+
     if csv_file == csv_settings:
         data = [
-                    {"settings": f"http://dvr-{socket.gethostname().lower()}.local:8089"},     # [0]  Channels URL
-                    {"settings": script_dir},                                                  # [1]  Channels Folder
-                    {"settings": "US"},                                                        # [2]  Search Defaults: Country Code
-                    {"settings": "en"},                                                        # [3]  Search Defaults: Language Code
-                    {"settings": "9"},                                                         # [4]  Search Defaults: Number of Results
-                    {"settings": "Off"},                                                       # DEPRECATED: [5] Hulu to Disney+ Automatic Conversion
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [6]  SLM: End-to-End Process Schedule Time
-                    {"settings": "On"},                                                        # [7]  Channels Prune
-                    {"settings": "Off"},                                                       # [8]  SLM: End-to-End Process Schedule On/Off
-                    {"settings": "Off"},                                                       # [9]  Search Defaults: Filter out already bookmarked
-                    {"settings": "On"},                                                        # [10] Playlist Manager: On/Off
-                    {"settings": 1000},                                                        # [11] Playlist Manager: Starting station number
-                    {"settings": 750},                                                         # [12] Playlist Manager: Max number of stations per m3u
-                    {"settings": "Off"},                                                       # [13] Playlist Manager: Update Stations Process Schedule On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [14] Playlist Manager: Update Stations Process Schedule Time
-                    {"settings": "Off"},                                                       # [15] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [16] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time
-                    {"settings": "Every 24 hours"},                                            # [17] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency
-                    {"settings": "Every 24 hours"},                                            # [18] SLM: End-to-End Process Schedule Frequency
-                    {"settings": "On"},                                                        # [19] GEN: Backup Process On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [20] GEN: Backup Process Schedule Start Time
-                    {"settings": "Every 24 hours"},                                            # [21] GEN: Backup Process Schedule Frequency
-                    {"settings": 3},                                                           # [22] GEN: Backup Process Max number of backups to keep
-                    {"settings": "On"},                                                        # [23] Stream Link/Files Manager: On/Off
-                    {"settings": "On"},                                                        # [24] GEN: Channels DVR Integration On/Off
-                    {"settings": "On"},                                                        # [25] GEN: Check for Updates Process On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [26] GEN: Check for Updates Process Schedule Start Time
-                    {"settings": "Every 24 hours"},                                            # [27] GEN: Check for Updates Process Schedule Frequency
-                    {"settings": "On"},                                                        # [28] MTM: Media Tools Manager On/Off
-                    {"settings": "Off"},                                                       # [29] MTM: Automation - Reset Channels DVR Passes On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [30] MTM: Automation - Reset Channels DVR Passes Start Time
-                    {"settings": "Every 24 hours"},                                            # [31] MTM: Automation - Reset Channels DVR Passes Frequency
-                    {"settings": "Off"},                                                       # [32] MTM: Automation - SLM New & Recent Releases On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [33] MTM: Automation - SLM New & Recent Releases Start Time
-                    {"settings": "Every 24 hours"},                                            # [34] MTM: Automation - SLM New & Recent Releases Frequency
-                    {"settings": 72},                                                          # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
-                    {"settings": "Off"},                                                       # [36] MTM: Automation - Refresh Channels DVR m3u Playlists On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [37] MTM: Automation - Refresh Channels DVR m3u Playlists Start Time
-                    {"settings": "Every 24 hours"},                                            # [38] MTM: Automation - Refresh Channels DVR m3u Playlists Frequency
-                    {"settings": "On"},                                                        # [39] PLM: Streaming Stations On/Off
-                    {"settings": 2000},                                                        # [40] PLM: Streaming Stations Starting station number
-                    {"settings": 750},                                                         # [41] PLM: Streaming Stations Max number of stations per m3u
-                    {"settings": "Off"},                                                       # [42] PLM: URL Tag in m3u(s) On/Off
-                    {"settings": "http://localhost:5000"},                                     # [43] PLM: URL Tag in m3u(s) Preferred URL Root
-                    {"settings": "Every 24 hours"},                                            # [44] PLM: Update Stations Process Schedule Frequency
-                    {"settings": "Off"},                                                       # [45] PLM: One-time fix for YouTube Live to Live Streams On/Off
-                    {"settings": f"http://{get_external_ip()}:{slm_port}"},                    # [46] SLM: SLM Stream Address
-                    {"settings": "Active Providers"},                                          # [47] SLM: Search Default for Provider Status
-                    {"settings": "Off"},                                                       # [48] PLM: Internal PBS Stations On/Off
-                    {"settings": "http://localhost:[PORT]"},                                   # [49] PLM: VLC Bridge PBS Base URL
-                    {"settings": "Off"},                                                       # [50] SLM: Update Labels in Channels DVR On/Off
-                    {"settings": "Off"},                                                       # [51] MTM: Remove old Channels DVR Recording Logs On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [52] MTM: Remove old Channels DVR Recording Logs Start Time
-                    {"settings": "Every 24 hours"},                                            # [53] MTM: Remove old Channels DVR Recording Logs Frequency
-                    {"settings": 7},                                                           # [54] MTM: Remove old Channels DVR Recording Logs Days to Keep
-                    {"settings": "Off"},                                                       # [55] MTM: Remove old Channels DVR Backups On/Off
-                    {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [56] MTM: Remove old Channels DVR Backups Start Time
-                    {"settings": "Every 24 hours"},                                            # [57] MTM: Remove old Channels DVR Backups Frequency
-                    {"settings": 7},                                                           # [58] MTM: Remove old Channels DVR Backups Days to Keep
-                    {"settings": "Off"},                                                       # [59] PLM/MTM: Check Child Station Status On/Off
-                    {"settings": "Off"},                                                       # [60] MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off
-                    {"settings": 3},                                                           # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
-                    {"settings": 5},                                                           # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
-                    {"settings": 0},                                                           # [63] PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)
-                    {"settings": "movies_shows"},                                              # [64] SLM: 'Add Programs' Search Selection (Default)
-                    {"settings": 0},                                                           # [65] SLM: Minimum Video Length (in Seconds) for Search
-                    {"settings": "Off"}                                                        # [66] SLM: Show 'Hidden Programs' in Dropdown Selection (Default)
+            {"settings": f"http://dvr-{socket.gethostname().lower()}.local:8089"},     # [0]  Channels URL
+            {"settings": script_dir},                                                  # [1]  Channels Folder
+            {"settings": "US"},                                                        # [2]  Search Defaults: Country Code
+            {"settings": "en"},                                                        # [3]  Search Defaults: Language Code
+            {"settings": "9"},                                                         # [4]  Search Defaults: Number of Results
+            {"settings": "Off"},                                                       # DEPRECATED: [5] Hulu to Disney+ Automatic Conversion
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [6]  SLM: End-to-End Process Schedule Time
+            {"settings": "On"},                                                        # [7]  Channels Prune
+            {"settings": "Off"},                                                       # [8]  SLM: End-to-End Process Schedule On/Off
+            {"settings": "Off"},                                                       # [9]  Search Defaults: Filter out already bookmarked
+            {"settings": "On"},                                                        # [10] Playlist Manager: On/Off
+            {"settings": 1000},                                                        # [11] Playlist Manager: Starting station number
+            {"settings": 750},                                                         # [12] Playlist Manager: Max number of stations per m3u
+            {"settings": "Off"},                                                       # [13] Playlist Manager: Update Stations Process Schedule On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [14] Playlist Manager: Update Stations Process Schedule Time
+            {"settings": "Off"},                                                       # [15] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [16] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Start Time
+            {"settings": "Every 24 hours"},                                            # [17] Playlist Manager: Update m3u(s) and XML EPG(s) Process Schedule Frequency
+            {"settings": "Every 24 hours"},                                            # [18] SLM: End-to-End Process Schedule Frequency
+            {"settings": "On"},                                                        # [19] GEN: Backup Process On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [20] GEN: Backup Process Schedule Start Time
+            {"settings": "Every 24 hours"},                                            # [21] GEN: Backup Process Schedule Frequency
+            {"settings": 3},                                                           # [22] GEN: Backup Process Max number of backups to keep
+            {"settings": "On"},                                                        # [23] Stream Link/Files Manager: On/Off
+            {"settings": "On"},                                                        # [24] GEN: Channels DVR Integration On/Off
+            {"settings": "On"},                                                        # [25] GEN: Check for Updates Process On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [26] GEN: Check for Updates Process Schedule Start Time
+            {"settings": "Every 24 hours"},                                            # [27] GEN: Check for Updates Process Schedule Frequency
+            {"settings": "On"},                                                        # [28] MTM: Media Tools Manager On/Off
+            {"settings": "Off"},                                                       # [29] MTM: Automation - Reset Channels DVR Passes On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [30] MTM: Automation - Reset Channels DVR Passes Start Time
+            {"settings": "Every 24 hours"},                                            # [31] MTM: Automation - Reset Channels DVR Passes Frequency
+            {"settings": "Off"},                                                       # [32] MTM: Automation - SLM New & Recent Releases On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [33] MTM: Automation - SLM New & Recent Releases Start Time
+            {"settings": "Every 24 hours"},                                            # [34] MTM: Automation - SLM New & Recent Releases Frequency
+            {"settings": 72},                                                          # [35] MTM: Automation - SLM New & Recent Releases Hours Past to Consider
+            {"settings": "Off"},                                                       # [36] MTM: Automation - Refresh Channels DVR m3u Playlists On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [37] MTM: Automation - Refresh Channels DVR m3u Playlists Start Time
+            {"settings": "Every 24 hours"},                                            # [38] MTM: Automation - Refresh Channels DVR m3u Playlists Frequency
+            {"settings": "On"},                                                        # [39] PLM: Streaming Stations On/Off
+            {"settings": 2000},                                                        # [40] PLM: Streaming Stations Starting station number
+            {"settings": 750},                                                         # [41] PLM: Streaming Stations Max number of stations per m3u
+            {"settings": "Off"},                                                       # [42] PLM: URL Tag in m3u(s) On/Off
+            {"settings": "http://localhost:5000"},                                     # [43] PLM: URL Tag in m3u(s) Preferred URL Root
+            {"settings": "Every 24 hours"},                                            # [44] PLM: Update Stations Process Schedule Frequency
+            {"settings": "Off"},                                                       # [45] PLM: One-time fix for YouTube Live to Live Streams On/Off
+            {"settings": f"http://{get_external_ip()}:{slm_port}"},                    # [46] SLM: SLM Stream Address
+            {"settings": "Active Providers"},                                          # [47] SLM: Search Default for Provider Status
+            {"settings": "Off"},                                                       # [48] PLM: Internal PBS Stations On/Off
+            {"settings": "http://localhost:[PORT]"},                                   # [49] PLM: VLC Bridge PBS Base URL
+            {"settings": "Off"},                                                       # [50] SLM: Update Labels in Channels DVR On/Off
+            {"settings": "Off"},                                                       # [51] MTM: Remove old Channels DVR Recording Logs On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [52] MTM: Remove old Channels DVR Recording Logs Start Time
+            {"settings": "Every 24 hours"},                                            # [53] MTM: Remove old Channels DVR Recording Logs Frequency
+            {"settings": 7},                                                           # [54] MTM: Remove old Channels DVR Recording Logs Days to Keep
+            {"settings": "Off"},                                                       # [55] MTM: Remove old Channels DVR Backups On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [56] MTM: Remove old Channels DVR Backups Start Time
+            {"settings": "Every 24 hours"},                                            # [57] MTM: Remove old Channels DVR Backups Frequency
+            {"settings": 7},                                                           # [58] MTM: Remove old Channels DVR Backups Days to Keep
+            {"settings": "Off"},                                                       # [59] PLM/MTM: Check Child Station Status On/Off
+            {"settings": "Off"},                                                       # [60] MTM: Automation - Refresh Channels DVR m3u Playlists - Exclude 'Never Refresh URL' On/Off
+            {"settings": 3},                                                           # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
+            {"settings": 5},                                                           # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
+            {"settings": 0},                                                           # [63] PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)
+            {"settings": "movies_shows"},                                              # [64] SLM: 'Add Programs' Search Selection (Default)
+            {"settings": 0},                                                           # [65] SLM: Minimum Video Length (in Seconds) for Search
+            {"settings": "Off"},                                                       # [66] SLM: Show 'Hidden Programs' in Dropdown Selection (Default)
+            {"settings": "Off"}                                                        # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
         ]        
 
     # Stream Link/File Manager
@@ -15577,187 +15735,267 @@ def initial_data(csv_file):
 
     elif csv_file == csv_slm_subscribed_video_channels:
         data = [{
-                "channel_id": None,
-                "channel_active": None,
-                "channel_name": None,
-                "channel_user": None,
-                "channel_description": None,
-                "channel_url": None,
-                "channel_image": None,
-                "channel_streaming_service_group": None,
-                "channel_hidden": None
+            "channel_id": None,
+            "channel_active": None,
+            "channel_name": None,
+            "channel_user": None,
+            "channel_description": None,
+            "channel_url": None,
+            "channel_image": None,
+            "channel_streaming_service_group": None,
+            "channel_hidden": None
         }]
 
     elif csv_file == csv_bookmarks:
         data = [{
-                "entry_id": None,
-                "title": None,
-                "release_year": None,
-                "object_type": None,
-                "url": None,
-                "country_code": None,
-                "language_code": None,
-                "bookmark_action": None,
-                "channels_id": None,
-                "override_program_title": None,
-                "override_program_summary": None,
-                "override_program_image_type": None,
-                "override_program_image_manual": None,
-                "override_program_sort": None
-            }]
+            "entry_id": None,
+            "title": None,
+            "release_year": None,
+            "object_type": None,
+            "url": None,
+            "country_code": None,
+            "language_code": None,
+            "bookmark_action": None,
+            "channels_id": None,
+            "override_program_title": None,
+            "override_program_summary": None,
+            "override_program_image_type": None,
+            "override_program_image_manual": None,
+            "override_program_sort": None
+        }]
 
     elif csv_file == csv_bookmarks_status:
         data = [{
-                "entry_id": None,
-                "season_episode_id": None,
-                "season_episode_prefix": None,
-                "season_episode": None,
-                "status": None,
-                "stream_link": None,
-                "stream_link_override": None,
-                "stream_link_file": None,
-                "special_action": None,
-                "original_release_date": None,
-                "override_episode_title": None,
-                "override_summary": None,
-                "override_image": None,
-                "override_duration": None,
-                "channels_id": None,
-                "manual_order": None
-            }]
+            "entry_id": None,
+            "season_episode_id": None,
+            "season_episode_prefix": None,
+            "season_episode": None,
+            "status": None,
+            "stream_link": None,
+            "stream_link_override": None,
+            "stream_link_file": None,
+            "special_action": None,
+            "original_release_date": None,
+            "override_episode_title": None,
+            "override_summary": None,
+            "override_image": None,
+            "override_duration": None,
+            "channels_id": None,
+            "manual_order": None
+        }]
 
     elif csv_file == csv_slmappings:
         data = [
-            {"active": "Off", "contains_string": "hulu.com/watch", "object_type": "MOVIE or SHOW", "replace_type": "Replace string with...", "replace_string": "disneyplus.com/play"},
-            {"active": "Off", "contains_string": "hulu\.com/series/.+?-([a-f0-9\-]{36})$", "object_type": "SHOW", "replace_type": "Replace pattern (REGEX) with...", "replace_string": "disneyplus.com/browse/entity-\1"},
-            {"active": "On", "contains_string": "netflix.com/title", "object_type": "MOVIE", "replace_type": "Replace string with...", "replace_string": "netflix.com/watch"},
-            {"active": "On", "contains_string": "disneyplus.com/browse/entity-", "object_type": "MOVIE", "replace_type": "Replace string with...", "replace_string": "disneyplus.com/play/"},
-            {"active": "On", "contains_string": "watch.amazon.com/detail?gti=", "object_type": "MOVIE or SHOW", "replace_type": "Replace string with...", "replace_string": "www.amazon.com/gp/video/detail/"},
-            {"active": "Off", "contains_string": "vudu.com", "object_type": "MOVIE or SHOW", "replace_type": "Replace entire Stream Link with...", "replace_string": "fandangonow://"},
-            {"active": "On", "contains_string": "peacocktv.com/watch/asset/.+?/([a-zA-Z0-9\\\\-]+)$", "object_type": "MOVIE or SHOW", "replace_type": "Replace pattern (REGEX) with...", "replace_string": 'peacocktv.com/deeplink?deeplinkData={"pvid":"\\1","type":"PROGRAMME","action":"PLAY"}'}
+            {
+                "active": "Off",
+                "contains_string": "hulu.com/watch",
+                "object_type": "MOVIE or SHOW",
+                "replace_type": "Replace string with...",
+                "replace_string": "disneyplus.com/play"
+            },
+            {
+                "active": "Off",
+                "contains_string": "hulu\.com/series/.+?-([a-f0-9\-]{36})$",
+                "object_type": "SHOW",
+                "replace_type": "Replace pattern (REGEX) with...",
+                "replace_string": "disneyplus.com/browse/entity-\1"
+            },
+            {
+                "active": "On",
+                "contains_string": "netflix.com/title",
+                "object_type": "MOVIE",
+                "replace_type": "Replace string with...",
+                "replace_string": "netflix.com/watch"
+            },
+            {
+                "active": "On",
+                "contains_string": "disneyplus.com/browse/entity-",
+                "object_type": "MOVIE",
+                "replace_type": "Replace string with...",
+                "replace_string": "disneyplus.com/play/"
+            },
+            {
+                "active": "On",
+                "contains_string": "watch.amazon.com/detail?gti=",
+                "object_type": "MOVIE or SHOW",
+                "replace_type": "Replace string with...",
+                "replace_string": "www.amazon.com/gp/video/detail/"
+            },
+            {
+                "active": "Off",
+                "contains_string": "vudu.com",
+                "object_type": "MOVIE or SHOW",
+                "replace_type": "Replace entire Stream Link with...",
+                "replace_string": "fandangonow://"
+            },
+            {
+                "active": "On",
+                "contains_string": "peacocktv.com/watch/asset/.+?/([a-zA-Z0-9\\\\-]+)$",
+                "object_type": "MOVIE or SHOW",
+                "replace_type": "Replace pattern (REGEX) with...",
+                "replace_string": 'peacocktv.com/deeplink?deeplinkData={"pvid":"\\1","type":"PROGRAMME","action":"PLAY"}'
+            }
         ]
 
     elif csv_file == csv_provider_groups:
         data = [{
-                "provider_group_id": None,
-                "provider_group_active": None,
-                "provider_group_name": None,
-                "provider_group_description": None
-            }]
+            "provider_group_id": None,
+            "provider_group_active": None,
+            "provider_group_name": None,
+            "provider_group_description": None
+        }]
 
     elif csv_file == csv_slm_labels:
         data = [{
-                "label_id": None,
-                "label_active": None,
-                "label_name": None,
-                "label_description": None
-            }]
+            "label_id": None,
+            "label_active": None,
+            "label_name": None,
+            "label_description": None
+        }]
 
     elif csv_file == csv_slm_label_maps:
-        data = [{"label_id": None,
-                 "entry_id": None
-            }]
+        data = [{
+            "label_id": None,
+            "entry_id": None
+        }]
+
+    elif csv_file == csv_slm_feed_items:
+        data = [{
+            "entry_id": None,
+            "title": None,
+            "release_year": None,
+            "object_type": None,
+            "url": None,
+            "short_description": None,
+            "poster": None,
+            "score": None,
+            "offers_list": None
+        }]
+
+    elif csv_file == csv_slm_feed_rules:
+        data = [{
+            "feed_rule_id": None,
+            "feed_rule_active": None,
+            "feed_rule_name": None,
+            "provider": None,
+            "date_range": None,
+            "override_min_video_length": None
+        }]
+
+    elif csv_file == csv_slm_feed_maps:
+        data = [{
+            "feed_map_id": None,
+            "feed_map_active": None,
+            "feed_map_name": None,
+            "source_provider": None,
+            "source_field": None,
+            "source_field_compare_id": None,
+            "source_field_string": None,
+            "target_status": None,
+            "target_label_ids": None,
+            "target_action": None
+        }]
 
     # Playlist Manager
     elif csv_file == csv_playlistmanager_playlists:
         data = [{
-                "m3u_id": None,
-                "m3u_name": None,
-                "m3u_url": None,
-                "epg_xml": None,
-                "stream_format": None,
-                "m3u_priority": None,
-                "station_check": None
-            }]
+            "m3u_id": None,
+            "m3u_name": None,
+            "m3u_url": None,
+            "epg_xml": None,
+            "stream_format": None,
+            "m3u_priority": None,
+            "station_check": None
+        }]
 
     elif csv_file == csv_playlistmanager_parents:
         data = [{
-                "parent_channel_id": None,
-                "parent_title": None,
-                "parent_tvg_id_override": None,
-                "parent_tvg_logo_override": None,
-                "parent_channel_number_override": None,
-                "parent_tvc_guide_stationid_override": None,
-                "parent_tvc_guide_art_override": None,
-                "parent_tvc_guide_tags_override": None,
-                "parent_tvc_guide_genres_override": None,
-                "parent_tvc_guide_categories_override": None,
-                "parent_tvc_guide_placeholders_override": None,
-                "parent_tvc_stream_vcodec_override": None,
-                "parent_tvc_stream_acodec_override": None,
-                "parent_preferred_playlist": None,
-                "parent_active": None,
-                "parent_tvg_description_override": None,
-                "parent_group_title_override": None
-            }]
+            "parent_channel_id": None,
+            "parent_title": None,
+            "parent_tvg_id_override": None,
+            "parent_tvg_logo_override": None,
+            "parent_channel_number_override": None,
+            "parent_tvc_guide_stationid_override": None,
+            "parent_tvc_guide_art_override": None,
+            "parent_tvc_guide_tags_override": None,
+            "parent_tvc_guide_genres_override": None,
+            "parent_tvc_guide_categories_override": None,
+            "parent_tvc_guide_placeholders_override": None,
+            "parent_tvc_stream_vcodec_override": None,
+            "parent_tvc_stream_acodec_override": None,
+            "parent_preferred_playlist": None,
+            "parent_active": None,
+            "parent_tvg_description_override": None,
+            "parent_group_title_override": None
+        }]
 
     elif csv_file == csv_playlistmanager_child_to_parent:
         data = [{
-                "child_m3u_id_channel_id": None,
-                "parent_channel_id": None,
-                "stream_format_override": None,
-                "child_station_check": None,
-                "enable_child_station_check": None
-            }]    
+            "child_m3u_id_channel_id": None,
+            "parent_channel_id": None,
+            "stream_format_override": None,
+            "child_station_check": None,
+            "enable_child_station_check": None
+        }]    
 
     elif csv_file == csv_playlistmanager_combined_m3us:
         data = [{
-                "station_playlist": None,
-                "m3u_id": None,
-                "title": None,
-                "tvc_guide_title": None,
-                "channel_id": None,
-                "tvg_id": None,
-                "tvg_name": None,
-                "tvg_logo": None,
-                "tvg_chno": None,
-                "channel_number": None,
-                "tvg_description": None,
-                "tvc_guide_description": None,
-                "group_title": None,
-                "tvc_guide_stationid": None,
-                "tvc_guide_art": None,
-                "tvc_guide_tags": None,
-                "tvc_guide_genres": None,
-                "tvc_guide_categories": None,
-                "tvc_guide_placeholders": None,
-                "tvc_stream_vcodec": None,
-                "tvc_stream_acodec": None,
-                "url": None
-            }]
+            "station_playlist": None,
+            "m3u_id": None,
+            "title": None,
+            "tvc_guide_title": None,
+            "channel_id": None,
+            "tvg_id": None,
+            "tvg_name": None,
+            "tvg_logo": None,
+            "tvg_chno": None,
+            "channel_number": None,
+            "tvg_description": None,
+            "tvc_guide_description": None,
+            "group_title": None,
+            "tvc_guide_stationid": None,
+            "tvc_guide_art": None,
+            "tvc_guide_tags": None,
+            "tvc_guide_genres": None,
+            "tvc_guide_categories": None,
+            "tvc_guide_placeholders": None,
+            "tvc_stream_vcodec": None,
+            "tvc_stream_acodec": None,
+            "url": None
+        }]
 
     elif csv_file == csv_playlistmanager_streaming_stations:
         data = [{
-                "channel_id": None,
-                "source": None,
-                "url": None,
-                "title": None,
-                "tvg_logo": None,
-                "tvg_description": None,
-                "tvc_guide_tags": None,
-                "tvc_guide_genres": None,
-                "tvc_guide_categories": None,
-                "tvc_guide_placeholders": None,
-                "tvc_stream_vcodec": None,
-                "tvc_stream_acodec": None
-            }]
+            "channel_id": None,
+            "source": None,
+            "url": None,
+            "title": None,
+            "tvg_logo": None,
+            "tvg_description": None,
+            "tvc_guide_tags": None,
+            "tvc_guide_genres": None,
+            "tvc_guide_categories": None,
+            "tvc_guide_placeholders": None,
+            "tvc_stream_vcodec": None,
+            "tvc_stream_acodec": None
+        }]
 
     elif csv_file == csv_playlistmanager_station_mappings:
         data = [{
-                "station_mapping_id": None,
-                "station_mapping_name": None,
-                "station_mapping_active": None,
-                "station_mapping_priority": None,
-                "source_m3u_id": None,
-                "source_field": None,
-                "source_field_compare_id": None,
-                "source_field_string": None,
-                "target_field": None,
-                "target_field_compare_replace_id": None,
-                "target_field_string": None,
-                "target_parent_channel_id": None,
-                "target_stream_format_override": None
-            }]
+            "station_mapping_id": None,
+            "station_mapping_name": None,
+            "station_mapping_active": None,
+            "station_mapping_priority": None,
+            "source_m3u_id": None,
+            "source_field": None,
+            "source_field_compare_id": None,
+            "source_field_string": None,
+            "target_field": None,
+            "target_field_compare_replace_id": None,
+            "target_field_string": None,
+            "target_parent_channel_id": None,
+            "target_stream_format_override": None
+        }]
 
     return data
 
@@ -16499,6 +16737,9 @@ csv_slmappings = "StreamLinkManager_SLMappings.csv"
 csv_provider_groups = "StreamLinkManager_ProviderGroups.csv"
 csv_slm_labels = "StreamLinkManager_Labels.csv"
 csv_slm_label_maps = "StreamLinkManager_LabelMaps.csv"
+csv_slm_feed_items = "StreamLinkManager_FeedItems.csv"
+csv_slm_feed_rules = "StreamLinkManager_FeedRules.csv"
+csv_slm_feed_maps = "StreamLinkManager_FeedMaps.csv"
 csv_playlistmanager_playlists = "PlaylistManager_Playlists.csv"
 csv_playlistmanager_combined_m3us = "PlaylistManager_Combinedm3us.csv"
 csv_playlistmanager_parents = "PlaylistManager_Parents.csv"
@@ -16515,6 +16756,9 @@ csv_files = [
     csv_provider_groups,
     csv_slm_labels,
     csv_slm_label_maps,
+    csv_slm_feed_items,
+    csv_slm_feed_rules,
+    csv_slm_feed_maps,
     csv_playlistmanager_playlists,
     csv_playlistmanager_combined_m3us,
     csv_playlistmanager_parents,
@@ -16533,9 +16777,17 @@ timeout_occurred = None
 ### [GEN] Settings and Other
 channels_url_prior = None
 select_file_prior = None
-compare_options = [
+base_compare_options = [
     {'compare_id': 'equal', 'compare_name': 'Equals...'},
     {'compare_id': 'equal_not', 'compare_name': 'Does not equal...'},
+]
+numeric_compare_options = [
+    {'compare_id': 'greater', 'compare_name': 'Greater than...'},
+    {'compare_id': 'greater_equal', 'compare_name': 'Greater than or Equal to...'},
+    {'compare_id': 'less', 'compare_name': 'Less than...'},
+    {'compare_id': 'less_equal', 'compare_name': 'Less than or Equal to...'}
+]
+text_compare_options = [
     {'compare_id': 'contain', 'compare_name': 'Contains...'},
     {'compare_id': 'contain_not', 'compare_name': 'Does not contain...'},
     {'compare_id': 'begin', 'compare_name': 'Begins with...'},
@@ -16545,6 +16797,8 @@ compare_options = [
     {'compare_id': 'regex', 'compare_name': 'Matches REGEX...'},
     {'compare_id': 'regex_not', 'compare_name': 'Does not match REGEX...'}
 ]
+compare_options = base_compare_options + text_compare_options
+all_compare_options = base_compare_options + numeric_compare_options + text_compare_options
 compare_replace_options = [
     {'compare_replace_id': 'na', 'compare_replace_name': 'N/A (Doing nothing with...)'},
     {'compare_replace_id': 'replace_string', 'compare_replace_name': 'Replacing string/pattern with...'},
