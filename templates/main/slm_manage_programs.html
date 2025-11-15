@@ -337,7 +337,9 @@
                         </div>
                         <div class="grid-item" style="grid-column: span 2;">
                           <select class="select2" name="program_feed_rule_date_range_new" id="program_feed_rule_date_range_new" style="width: 100%;">
-
+                            {% for html_program_feed_rule_date_range in html_program_feed_rule_date_ranges %}
+                              <option value="{{ html_program_feed_rule_date_range.program_feed_rule_date_range_id }}" style="width: auto; min-width: 100%;">{{ html_program_feed_rule_date_range.program_feed_rule_date_range_name }}</option>
+                            {% endfor %}
                           </select>
                         </div>
                         <div class="grid-item">
@@ -345,7 +347,9 @@
                         </div>
                         <div class="grid-item">
                           <select class="select2" name="program_feed_rule_action_new" id="program_feed_rule_action_new" style="width: 100%;">
-
+                            {% for html_program_feed_rule_action in html_new_program_feed_rule_actions %}
+                              <option value="{{ html_program_feed_rule_action.program_feed_rule_action_id }}" style="width: auto; min-width: 100%;">{{ html_program_feed_rule_action.program_feed_rule_action_name }}</option>
+                            {% endfor %}
                           </select>
                         </div>
                       </div>
@@ -381,7 +385,9 @@
                         </div>
                         <div class="grid-item">
                           <select class="select2" name="program_feed_map_source_field_new" id="program_feed_map_source_field_new" style="width: 100%;">
-
+                            {% for html_program_feed_map_source_field in html_program_feed_map_source_fields %}
+                              <option value="{{ html_program_feed_map_source_field.program_feed_map_source_field_id }}" style="width: auto; min-width: 100%;">{{ html_program_feed_map_source_field.program_feed_map_source_field_name }}</option>
+                            {% endfor %}
                           </select>
                         </div>
                         <div class="grid-item">
@@ -408,12 +414,16 @@
                         </div>
                         <div class="grid-item">
                           <select class="select2" name="program_feed_map_target_action_new" id="program_feed_map_target_action_new" style="width: 100%;">
-
+                            {% for html_program_feed_map_target_action in html_program_feed_map_target_actions %}
+                              <option value="{{ html_program_feed_map_target_action.program_feed_map_target_action_id }}" style="width: auto; min-width: 100%;">{{ html_program_feed_map_target_action.program_feed_map_target_action_name }}</option>
+                            {% endfor %}
                           </select>
                         </div>
                         <div class="grid-item">
                           <select class="select2" name="program_feed_map_action_new" id="program_feed_map_action_new" style="width: 100%;">
-
+                            {% for html_program_feed_map_action in html_new_program_feed_map_actions %}
+                              <option value="{{ html_program_feed_map_action.program_feed_map_action_id }}" style="width: auto; min-width: 100%;">{{ html_program_feed_map_action.program_feed_map_action_name }}</option>
+                            {% endfor %}
                           </select>
                         </div>
                       </div>
@@ -1050,7 +1060,7 @@
                                 <input type="text" id="program_modify_add_episode_override_episode_title" name="program_modify_add_episode_override_episode_title" {% if html_object_type_selected_prior == 'SHOW' %}placeholder="i.e., This Episode Name" title="i.e., This Episode Name"{% elif html_object_type_selected_prior == 'VIDEO' %}placeholder="i.e., This Video Name" title="i.e., This Video Name"{% endif %}>
                               </div>
                               <div class="grid-item">
-                                <input type="text" id="program_modify_add_episode_override_summary" name="program_modify_add_episode_override_summary" placeholder="i.e., Here is a description of what happens." title="i.e., Here is a description of what happens.">
+                                <textarea rows="1" style="resize: none; overflow: hidden; width: 100%; box-sizing: border-box;" id="program_modify_add_episode_override_summary"name="program_modify_add_episode_override_summary" placeholder="i.e., Here is a description of what happens." title="i.e., Here is a description of what happens."></textarea>
                               </div>
                               <div class="grid-item">
                                 <input type="text" id="program_modify_add_episode_override_image" name="program_modify_add_episode_override_image" placeholder="i.e., http://linktosomething.com/image.jpg" title="i.e., http://linktosomething.com/image.jpg">
@@ -1170,7 +1180,7 @@
                               </div>
                             </div>
                             <div class="grid-item">
-                              <input type="text" id="program_modify_global_change_override_summary" name="program_modify_global_change_override_summary" placeholder="i.e., Here is a description of what happens." title="i.e., Here is a description of what happens." style="margin-top: -10px;">
+                              <textarea rows="1" style="resize: none; overflow: hidden; width: 100%; box-sizing: border-box; margin-top: -10px;" id="program_modify_global_change_override_summary"name="program_modify_global_change_override_summary" placeholder="i.e., Here is a description of what happens." title="i.e., Here is a description of what happens."></textarea>
                             </div>
                           </div>
                           <div class="grid-container">
@@ -2063,8 +2073,12 @@
                   {% if html_object_type_selected_prior == 'MOVIE' %}
                     ProgramModifyOverrideSummaryItem.style = 'grid-column: span 2;'
                   {% endif %}
-                  const ProgramModifyOverrideSummaryInput = document.createElement('input');
-                  ProgramModifyOverrideSummaryInput.type = 'text';
+                  const ProgramModifyOverrideSummaryInput = document.createElement('textarea');
+                  ProgramModifyOverrideSummaryInput.rows = 1;
+                  ProgramModifyOverrideSummaryInput.style.resize = 'none';
+                  ProgramModifyOverrideSummaryInput.style.overflow = 'hidden';
+                  ProgramModifyOverrideSummaryInput.style.width = '100%';
+                  ProgramModifyOverrideSummaryInput.style.boxSizing = 'border-box';
                   ProgramModifyOverrideSummaryInput.id = `field_override_summary_${adjustedIndex}`;
                   ProgramModifyOverrideSummaryInput.name = `field_override_summary_${adjustedIndex}`;
                   ProgramModifyOverrideSummaryInput.value = item.override_summary;
