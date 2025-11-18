@@ -299,7 +299,7 @@
                           <button type="submit" name="action" value="program_feed_execute" class="btn bg-gradient-primary my-2 mb-2">Execute Actions</button>
                         </div>
                         <div class="grid-item" style="grid-column: span 3;">
-                          <button type="submit" name="action" value="program_feed_update" class="btn bg-gradient-primary my-2 mb-2">Update Feed</button>
+                          <button type="submit" name="action" value="program_feed_update" class="btn bg-gradient-primary my-2 mb-2">Refresh Feed</button>
                         </div>
                         <div class="grid-item" style="grid-column: span 4;">
                           <button type="submit" name="action" value="program_feed_view" class="btn bg-gradient-primary my-2 mb-2">View Feed</button>
@@ -319,6 +319,50 @@
                         <div class="grid-item"><h6>Override Minimum Video Length (Seconds)</h6></div>
                         <div class="grid-item"><h6>Select Action</h6></div>
                       </div>
+                      {% if html_feed_rules %}
+                        {% for html_feed_rule in html_feed_rules %}
+                          <input type="hidden" name="program_feed_rule_id_{{ loop.index }}" id="program_feed_rule_id_{{ loop.index }}" value="{{ html_feed_rule.feed_rule_id }}">
+                          <div class="grid-container">
+                            <div class="grid-item">
+                              <div class="form-check form-switch ps-0 is-filled">
+                                <input type="checkbox" id="program_feed_rule_active_{{ loop.index }}" name="program_feed_rule_active_{{ loop.index }}" class="form-check-input" style="margin-left: -10px;"
+                                  {% if html_feed_rule.feed_rule_active|lower == 'on' %}checked{% endif %} 
+                                  onchange="this.value = this.checked ? 'On' : 'Off'" 
+                                  value="On">
+                              </div>
+                            </div>
+                            <div class="grid-item" style="grid-column: span 2;">
+                              <input type="text" id="program_feed_rule_name_{{ loop.index }}" name="program_feed_rule_name_{{ loop.index }}" value="{{ html_feed_rule.feed_rule_name }}"  title="{{ html_feed_rule.feed_rule_name }}">
+                            </div>
+                            <div class="grid-item" style="grid-column: span 3;">
+                              <select class="select2" name="program_feed_rule_provider_{{ loop.index }}" id="program_feed_rule_provider_{{ loop.index }}" style="width: 100%;">
+                                {% for provider_status_item in html_provider_statuses %}
+                                  <option value="{{ provider_status_item }}" style="width: auto; min-width: 100%;"
+                                  {% if provider_status_item == html_feed_rule.provider %}selected{% endif %}>{{ provider_status_item }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div class="grid-item" style="grid-column: span 2;">
+                              <select class="select2" name="program_feed_rule_date_range_{{ loop.index }}" id="program_feed_rule_date_range_{{ loop.index }}" style="width: 100%;">
+                                {% for html_program_feed_rule_date_range in html_program_feed_rule_date_ranges %}
+                                  <option value="{{ html_program_feed_rule_date_range.program_feed_rule_date_range_id }}" style="width: auto; min-width: 100%;"
+                                  {% if html_program_feed_rule_date_range.program_feed_rule_date_range_id == html_feed_rule.date_range %}selected{% endif %}>{{ html_program_feed_rule_date_range.program_feed_rule_date_range_name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div class="grid-item">
+                              <input type="number" min="0" id="program_feed_rule_override_min_video_length_{{ loop.index }}" name="program_feed_rule_override_min_video_length_{{ loop.index }}"  value="{{ html_feed_rule.override_min_video_length }}"  title="{{ html_feed_rule.override_min_video_length }}" style="width: 100%;">
+                            </div>
+                            <div class="grid-item">
+                              <select class="select2" name="program_feed_rule_action_{{ loop.index }}" id="program_feed_rule_action_{{ loop.index }}" style="width: 100%;">
+                                {% for html_program_feed_rule_action in html_program_feed_rule_actions %}
+                                  <option value="{{ html_program_feed_rule_action.program_feed_rule_action_id }}" style="width: auto; min-width: 100%;">{{ html_program_feed_rule_action.program_feed_rule_action_name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                          </div>
+                        {% endfor %}
+                      {% endif %}
                       <div class="grid-container">
                         <div class="grid-item">
                           <div class="form-check form-switch ps-0 is-filled">
@@ -331,7 +375,7 @@
                         <div class="grid-item" style="grid-column: span 3;">
                           <select class="select2" name="program_feed_rule_provider_new" id="program_feed_rule_provider_new" style="width: 100%;">
                             {% for provider_status_item in html_provider_statuses %}
-                              <option value="{{ provider_status_item }}">{{ provider_status_item }}</option>
+                              <option value="{{ provider_status_item }}" style="width: auto; min-width: 100%;">{{ provider_status_item }}</option>
                             {% endfor %}
                           </select>
                         </div>
@@ -367,6 +411,84 @@
                         <div class="grid-item"><h6>AND do this 'Bookmark Action'</h6></div>
                         <div class="grid-item"><h6>Select Action</h6></div>
                       </div>
+                      {% if html_feed_maps %}
+                        {% for html_feed_map in html_feed_maps %}
+                          <div class="grid-container">
+                            <input type="hidden" name="program_feed_map_id_{{ loop.index }}" id="program_feed_map_id_{{ loop.index }}" value="{{ html_feed_map.feed_map_id }}">
+                            <div class="grid-item">
+                              <div class="form-check form-switch ps-0 is-filled">
+                                <input type="checkbox" id="program_feed_map_active_{{ loop.index }}" name="program_feed_map_active_{{ loop.index }}" class="form-check-input" style="margin-left: -10px;"
+                                  {% if html_feed_map.feed_map_active|lower == 'on' %}checked{% endif %} 
+                                  onchange="this.value = this.checked ? 'On' : 'Off'" 
+                                  value="On">
+                              </div>
+                            </div>
+                            <div class="grid-item">
+                              <input type="text" id="program_feed_map_name_{{ loop.index }}" name="program_feed_map_name_{{ loop.index }}" value="{{ html_feed_map.feed_map_name }}"  title="{{ html_feed_map.feed_rule_map }}">
+                            </div>
+                            <div class="grid-item">
+                              <select class="select2" name="program_feed_map_source_provider_{{ loop.index }}" id="program_feed_map_source_provider_{{ loop.index }}" style="width: 100%;">
+                                {% for provider_status_item in html_provider_statuses %}
+                                  <option value="{{ provider_status_item }}" style="width: auto; min-width: 100%;"
+                                  {% if provider_status_item == html_feed_map.source_provider %}selected{% endif %}>{{ provider_status_item }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div class="grid-item">
+                              <select class="select2" name="program_feed_map_source_field_{{ loop.index }}" id="program_feed_map_source_field_{{ loop.index }}" style="width: 100%;">
+                                {% for html_program_feed_map_source_field in html_program_feed_map_source_fields %}
+                                  <option value="{{ html_program_feed_map_source_field.program_feed_map_source_field_id }}" style="width: auto; min-width: 100%;"
+                                  {% if html_program_feed_map_source_field.program_feed_map_source_field_id == html_feed_map.source_field %}selected{% endif %}>{{ html_program_feed_map_source_field.program_feed_map_source_field_name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div class="grid-item">
+                              <select class="select2" name="program_feed_map_source_field_compare_id_{{ loop.index }}" id="program_feed_map_source_field_compare_id_{{ loop.index }}" style="width: 100%;">
+                                {% for html_all_compare_option in html_all_compare_options %}
+                                  <option value="{{ html_all_compare_option.compare_id }}" style="width: auto; min-width: 100%;"
+                                  {% if html_all_compare_option.compare_id == html_feed_map.source_field_compare_id %}selected{% endif %}>{{ html_all_compare_option.compare_name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div class="grid-item">
+                              <input type="text" id="program_feed_map_source_field_string_{{ loop.index }}" name="program_feed_map_source_field_string_{{ loop.index }}" value="{{ html_feed_map.source_field_string }}"  title="{{ html_feed_map.source_field_string }}">
+                            </div>
+                            <div class="grid-item">
+                              <div class="form-check form-switch ps-0 is-filled">
+                                <input type="checkbox" id="program_feed_map_target_status_{{ loop.index }}" name="program_feed_map_target_status_{{ loop.index }}" class="form-check-input" style="margin-left: -10px;"
+                                  {% if html_feed_map.target_status|lower == 'unwatched' %}checked{% endif %} 
+                                  onchange="this.value = this.checked ? 'unwatched' : 'watched'" 
+                                  value="unwatched">
+                              </div>
+                            </div>
+                            <div class="grid-item">
+                              <select class="select2" multiple name="program_feed_map_target_label_ids_{{ loop.index }}" id="program_feed_map_target_label_ids_{{ loop.index }}" style="width: 100%;">
+                                {% for html_search_results_label in html_search_results_labels %}
+                                  <option value="{{ html_search_results_label.label_id }}" style="width: auto; min-width: 100%;"
+                                    {% if html_search_results_label.label_id in html_feed_map.target_label_ids %}
+                                      selected
+                                    {% endif %}>{{ html_search_results_label.label_name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div class="grid-item">
+                              <select class="select2" name="program_feed_map_target_action_{{ loop.index }}" id="program_feed_map_target_action_{{ loop.index }}" style="width: 100%;">
+                                {% for html_program_feed_map_target_action in html_program_feed_map_target_actions %}
+                                  <option value="{{ html_program_feed_map_target_action.program_feed_map_target_action_id }}" style="width: auto; min-width: 100%;"
+                                  {% if html_program_feed_map_target_action.program_feed_map_target_action_id == html_feed_map.target_action %}selected{% endif %}>{{ html_program_feed_map_target_action.program_feed_map_target_action_name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div class="grid-item">
+                              <select class="select2" name="program_feed_map_action_{{ loop.index }}" id="program_feed_map_action_{{ loop.index }}" style="width: 100%;">
+                                {% for html_program_feed_map_action in html_program_feed_map_actions %}
+                                  <option value="{{ html_program_feed_map_action.program_feed_map_action_id }}" style="width: auto; min-width: 100%;">{{ html_program_feed_map_action.program_feed_map_action_name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                          </div>
+                        {% endfor %}
+                      {% endif %}
                       <div class="grid-container">
                         <div class="grid-item">
                           <div class="form-check form-switch ps-0 is-filled">
