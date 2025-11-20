@@ -40,7 +40,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.11.18.1842"
+    slm_version = "v2025.11.19.1914"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -729,6 +729,13 @@ def webpage_manage_programs():
                 temp_record_feed_maps = initial_data(csv_slm_feed_maps)[0]
             run_empty_rows_feed_maps = False
 
+            feed_rules_add_count = 0
+            feed_rules_save_count = 0
+            feed_rules_delete_count = 0
+            feed_maps_add_count = 0
+            feed_maps_save_count = 0
+            feed_maps_delete_count = 0
+
             # Get new Feed Rule
             program_feed_rule_action_new_input = None
             program_feed_rule_action_new_input = request.form.get('program_feed_rule_action_new', 'error')
@@ -764,6 +771,7 @@ def webpage_manage_programs():
 
                 else:
                     write_feed_rules = True
+                    feed_rules_add_count = int(feed_rules_add_count) + 1
 
                     program_feed_rule_active_new_input = None
                     program_feed_rule_name_new_input = None
@@ -827,11 +835,12 @@ def webpage_manage_programs():
 
                 else:
                     write_feed_maps = True
+                    feed_maps_add_count = int(feed_maps_add_count) + 1
 
                     program_feed_map_active_new_input = None
                     program_feed_map_name_new_input = None
                     program_feed_map_source_provider_new_input = None
-                    program_feed_map_source_field_new_input = None
+                    program_feed_map_source_field_solo_new_input = None
                     program_feed_map_target_status_new_input = None
                     program_feed_map_target_label_ids_new_input = []
                     program_feed_map_target_action_new_input = None
@@ -839,7 +848,7 @@ def webpage_manage_programs():
                     program_feed_map_active_new_input = 'On' if request.form.get('program_feed_map_active_new', None) in ['on', 'On', 'ON'] else 'Off'
                     program_feed_map_name_new_input = request.form.get('program_feed_map_name_new', None)
                     program_feed_map_source_provider_new_input = request.form.get('program_feed_map_source_provider_new', None)
-                    program_feed_map_source_field_new_input = request.form.get('program_feed_map_source_field_new', None)
+                    program_feed_map_source_field_solo_new_input = request.form.get('program_feed_map_source_field_solo_new', None)
                     program_feed_map_target_status_new_input = 'unwatched' if request.form.get('program_feed_map_target_status_new', None) in ['on', 'On', 'ON', 'unwatched', 'Unwatched', 'UNWATCHED'] else 'watched'
                     program_feed_map_target_label_ids_new_input = request.form.getlist('program_feed_map_target_label_ids_new')
                     program_feed_map_target_action_new_input = request.form.get('program_feed_map_target_action_new', None)
@@ -849,7 +858,7 @@ def webpage_manage_programs():
                         'feed_map_active': program_feed_map_active_new_input,
                         'feed_map_name': program_feed_map_name_new_input,
                         'source_provider': program_feed_map_source_provider_new_input,
-                        'source_field': program_feed_map_source_field_new_input,
+                        'source_field': program_feed_map_source_field_solo_new_input,
                         'source_field_compare_id': program_feed_map_source_field_compare_id_new_input,
                         'source_field_string': program_feed_map_source_field_string_new_input,
                         'target_status': program_feed_map_target_status_new_input,
@@ -857,11 +866,298 @@ def webpage_manage_programs():
                         'target_action': program_feed_map_target_action_new_input
                     })
 
-            # TO ADD: The rest of this...
-
             # Get existing Feed Rules
+            program_feed_rule_id_inputs = {}
+            program_feed_rule_active_inputs = {}
+            program_feed_rule_name_inputs = {}
+            program_feed_rule_provider_inputs = {}
+            program_feed_rule_date_range_inputs = {}
+            program_feed_rule_override_min_video_length_inputs = {}
+            program_feed_rule_action_inputs = {}
+            feed_rules_inputs = []
+            delete_feed_rules_inputs = []
+            save_feed_rules_inputs = []
+
+            for key in request.form.keys():
+
+                if key.startswith('program_feed_rule_id_'):
+                    index = key.split('_')[-1]
+                    program_feed_rule_id_inputs[index] = request.form.get(key, 'error')
+
+                if key.startswith('program_feed_rule_active_'):
+                    index = key.split('_')[-1]
+                    program_feed_rule_active_inputs[index] = 'On' if request.form.get(key, None) in ['on', 'On', 'ON'] else 'Off'
+
+                if key.startswith('program_feed_rule_name_'):
+                    index = key.split('_')[-1]
+                    program_feed_rule_name_inputs[index] = request.form.get(key, None)
+
+                if key.startswith('program_feed_rule_provider_'):
+                    index = key.split('_')[-1]
+                    program_feed_rule_provider_inputs[index] = request.form.get(key, None)
+
+                if key.startswith('program_feed_rule_date_range_'):
+                    index = key.split('_')[-1]
+                    program_feed_rule_date_range_inputs[index] = request.form.get(key, None)
+
+                if key.startswith('program_feed_rule_override_min_video_length_'):
+                    index = key.split('_')[-1]
+                    program_feed_rule_override_min_video_length_inputs[index] = request.form.get(key, None)
+
+                if key.startswith('program_feed_rule_action_'):
+                    index = key.split('_')[-1]
+                    program_feed_rule_action_inputs[index] = request.form.get(key, 'none')
+
+            for row in program_feed_rule_id_inputs:
+                program_feed_rule_id_input = None
+                program_feed_rule_active_input = None
+                program_feed_rule_name_input = None
+                program_feed_rule_provider_input = None
+                program_feed_rule_date_range_input = None
+                program_feed_rule_override_min_video_length_input = None
+                program_feed_rule_action_input = None
+
+                program_feed_rule_id_input = program_feed_rule_id_inputs.get(row, None)
+                program_feed_rule_active_input = program_feed_rule_active_inputs.get(row, None)
+                program_feed_rule_name_input = program_feed_rule_name_inputs.get(row, None)
+                program_feed_rule_provider_input = program_feed_rule_provider_inputs.get(row, None)
+                program_feed_rule_date_range_input = program_feed_rule_date_range_inputs.get(row, None)
+                program_feed_rule_override_min_video_length_input = program_feed_rule_override_min_video_length_inputs.get(row, None)
+                program_feed_rule_action_input = program_feed_rule_action_inputs.get(row, None)
+
+                feed_rules_inputs.append({
+                    'feed_rule_id': program_feed_rule_id_input,
+                    'feed_rule_active': program_feed_rule_active_input,
+                    'feed_rule_name': program_feed_rule_name_input,
+                    'provider': program_feed_rule_provider_input,
+                    'date_range': program_feed_rule_date_range_input,
+                    'override_min_video_length': program_feed_rule_override_min_video_length_input,
+                    'action': program_feed_rule_action_input
+                })
+
+            for feed_rules_input in feed_rules_inputs:
+
+                if feed_rules_input['action'] == 'delete':
+                    delete_feed_rules_inputs.append(feed_rules_input['feed_rule_id'])
+
+                elif feed_rules_input['action'] == 'save':
+                    save_feed_rules_inputs.append(feed_rules_input)
+
+            if delete_feed_rules_inputs or save_feed_rules_inputs:
+                write_feed_rules = True
+
+                if delete_feed_rules_inputs:
+                    feed_rules_delete_count = len(delete_feed_rules_inputs)
+
+                if save_feed_rules_inputs:
+                    feed_rules_save_count = len(save_feed_rules_inputs)
+
+            for save_feed_rules_input in save_feed_rules_inputs:
+                for feed_rule in feed_rules:
+                    if save_feed_rules_input['feed_rule_id'] == feed_rule['feed_rule_id']:
+                        feed_rule['feed_rule_active'] = save_feed_rules_input['feed_rule_active']
+                        feed_rule['feed_rule_name'] = save_feed_rules_input['feed_rule_name']
+
+                        if feed_rule['feed_rule_name'] in ['', None]:
+                            feed_rule_name = f"Unnamed - ID {feed_rule['feed_rule_id']}"
+                        else:
+                            feed_rule_name = feed_rule['feed_rule_name']
+
+                        feed_rule['provider'] = save_feed_rules_input['provider']
+                        feed_rule['date_range'] = save_feed_rules_input['date_range']
+
+                        program_feed_rule_override_min_video_length_test = None
+                        if save_feed_rules_input['override_min_video_length'] in ['', None]:
+                            program_feed_rule_override_min_video_length_test = 'pass'
+                        else:
+                            program_feed_rule_override_min_video_length_test = positive_integer_test(save_feed_rules_input['override_min_video_length'], True)
+
+                        if program_feed_rule_override_min_video_length_test != 'pass':
+
+                            if manage_programs_message not in [None, '']:
+                                manage_programs_message += f"\n"
+
+                            if program_feed_rule_override_min_video_length_new_test == 'unknown':
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', an unknown issue happened in relation to 'Override Minimum Video Length (Seconds)'. As such, this field has reverted to its previous value."
+                            elif program_feed_rule_override_min_video_length_new_test == 'not_number':
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', a number is required for 'Override Minimum Video Length (Seconds)'. As such, this field has reverted to its previous value."
+                            elif program_feed_rule_override_min_video_length_new_test == 'not_positive':
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', a positive integer is required for 'Override Minimum Video Length (Seconds)'. As such, this field has reverted to its previous value."
+                            else:
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', 'Override Minimum Video Length (Seconds)' was unable to be evaluated. As such, this field has reverted to its previous value."
+
+                        else:
+                            feed_rule['override_min_video_length'] = save_feed_rules_input['override_min_video_length']
+
+            feed_rules = [feed_rule for feed_rule in feed_rules if feed_rule['feed_rule_id'] not in delete_feed_rules_inputs]
 
             # Get existing Feed Maps
+            program_feed_map_id_inputs = {}
+            program_feed_map_active_inputs = {}
+            program_feed_map_name_inputs = {}
+            program_feed_map_source_provider_inputs = {}
+            program_feed_map_source_field_solo_inputs = {}
+            program_feed_map_source_field_compare_id_inputs = {}
+            program_feed_map_source_field_string_inputs = {}
+            program_feed_map_target_status_inputs = {}
+            program_feed_map_target_label_ids_inputs = {}
+            program_feed_map_target_action_inputs = {}
+            program_feed_map_action_inputs = {}
+            feed_maps_inputs = []
+            delete_feed_maps_inputs = []
+            save_feed_maps_inputs = []
+
+            for key in request.form.keys():
+
+                if key.startswith('program_feed_map_id_'):
+                    index = key.split('_')[-1]
+                    program_feed_map_id_inputs[index] = request.form.get(key, 'error')
+
+                if key.startswith('program_feed_map_active_'):
+                    index = key.split('_')[-1]
+                    program_feed_map_active_inputs[index] = 'On' if request.form.get(key, None) in ['on', 'On', 'ON'] else 'Off'
+
+                if key.startswith('program_feed_map_name_'):
+                    index = key.split('_')[-1]
+                    program_feed_map_name_inputs[index] = request.form.get(key, None)
+
+                if key.startswith('program_feed_map_source_provider_'):
+                    index = key.split('_')[-1]
+                    program_feed_map_source_provider_inputs[index] = request.form.get(key, None)
+
+                if key.startswith('program_feed_map_source_field_solo_'):
+                    index = key.split('_')[-1]
+                    program_feed_map_source_field_solo_inputs[index] = request.form.get(key, None)
+
+                if key.startswith('program_feed_map_source_field_compare_id_'):
+                    index = key.split('_')[-1]
+                    program_feed_map_source_field_compare_id_inputs[index] = request.form.get(key, None)
+
+                if key.startswith('program_feed_map_source_field_string_'):
+                    index = key.split('_')[-1]
+                    program_feed_map_source_field_string_inputs[index] = request.form.get(key, None)
+
+                if key.startswith('program_feed_map_target_status_'):
+                    index = key.split('_')[-1]
+                    program_feed_map_target_status_inputs[index] = 'unwatched' if request.form.get(key, None) in ['on', 'On', 'ON', 'unwatched', 'Unwatched', 'UNWATCHED'] else 'watched'
+
+                if key.startswith('program_feed_map_target_label_ids_'):
+                    index = key.split('_')[-1]
+                    program_feed_map_target_label_ids_inputs[index] = request.form.getlist(key)
+
+                if key.startswith('program_feed_map_target_action_'):
+                    index = key.split('_')[-1]
+                    program_feed_map_target_action_inputs[index] = request.form.get(key, None)
+
+                if key.startswith('program_feed_map_action_'):
+                    index = key.split('_')[-1]
+                    program_feed_map_action_inputs[index] = request.form.get(key, None)
+
+            for row in program_feed_map_id_inputs:
+                program_feed_map_id_input = None
+                program_feed_map_active_input = None
+                program_feed_map_name_input = None
+                program_feed_map_source_provider_input = None
+                program_feed_map_source_field_solo_input = None
+                program_feed_map_source_field_compare_id_input = None
+                program_feed_map_source_field_string_input = None
+                program_feed_map_target_status_input = None
+                program_feed_map_target_label_ids_input = []
+                program_feed_map_target_action_input = None
+                program_feed_map_action_input = None
+
+                program_feed_map_id_input = program_feed_map_id_inputs.get(row, None)
+                program_feed_map_active_input = program_feed_map_active_inputs.get(row, None)
+                program_feed_map_name_input = program_feed_map_name_inputs.get(row, None)
+                program_feed_map_source_provider_input = program_feed_map_source_provider_inputs.get(row, None)
+                program_feed_map_source_field_solo_input = program_feed_map_source_field_solo_inputs.get(row, None)
+                program_feed_map_source_field_compare_id_input = program_feed_map_source_field_compare_id_inputs.get(row, None)
+                program_feed_map_source_field_string_input = program_feed_map_source_field_string_inputs.get(row, None)
+                program_feed_map_target_status_input = program_feed_map_target_status_inputs.get(row, None)
+                program_feed_map_target_label_ids_input = program_feed_map_target_label_ids_inputs.get(row, [])
+                program_feed_map_target_action_input = program_feed_map_target_action_inputs.get(row, None)
+                program_feed_map_action_input = program_feed_map_action_inputs.get(row, None)
+
+                feed_maps_inputs.append({
+                    'feed_map_id': program_feed_map_id_input,
+                    'feed_map_active': program_feed_map_active_input,
+                    'feed_map_name': program_feed_map_name_input,
+                    'source_provider': program_feed_map_source_provider_input,
+                    'source_field': program_feed_map_source_field_solo_input,
+                    'source_field_compare_id': program_feed_map_source_field_compare_id_input,
+                    'source_field_string': program_feed_map_source_field_string_input,
+                    'target_status': program_feed_map_target_status_input,
+                    'target_label_ids': program_feed_map_target_label_ids_input,
+                    'target_action': program_feed_map_target_action_input,
+                    'action': program_feed_map_action_input
+                })
+
+            for feed_maps_input in feed_maps_inputs:
+
+                if feed_maps_input['action'] == 'delete':
+                    delete_feed_maps_inputs.append(feed_maps_input['feed_map_id'])
+
+                elif feed_maps_input['action'] == 'save':
+                    save_feed_maps_inputs.append(feed_maps_input)
+
+            if delete_feed_maps_inputs or save_feed_maps_inputs:
+                write_feed_maps = True
+
+                if delete_feed_maps_inputs:
+                    feed_maps_delete_count = len(delete_feed_maps_inputs)
+
+                if save_feed_maps_inputs:
+                    feed_maps_save_count = len(save_feed_maps_inputs)
+
+            for save_feed_maps_input in save_feed_maps_inputs:
+                for feed_map in feed_maps:
+                    if save_feed_maps_input['feed_map_id'] == feed_map['feed_map_id']:
+                        feed_map['feed_map_active'] = save_feed_maps_input['feed_map_active']
+                        feed_map['feed_map_name'] = save_feed_maps_input['feed_map_name']
+
+                        if feed_map['feed_map_name'] in ['', None]:
+                            feed_map_name = f"Unnamed - ID {feed_map['feed_map_id']}"
+                        else:
+                            feed_map_name = feed_map['feed_map_name']
+
+                        feed_map['source_provider'] = save_feed_maps_input['source_provider']
+                        feed_map['source_field'] = save_feed_maps_input['source_field']
+                        feed_map['target_status'] = save_feed_maps_input['target_status']
+                        feed_map['target_label_ids'] = save_feed_maps_input['target_label_ids']
+                        feed_map['target_action'] = save_feed_maps_input['target_action']
+                        feed_map['action'] = save_feed_maps_input['action']
+
+                        program_feed_map_source_field_string_test = None
+
+                        if save_feed_maps_input['source_field_string'] in ['', None]:
+                            program_feed_map_source_field_string_test = 'blank'
+                        elif save_feed_maps_input['source_field_compare_id'] in ['greater', 'greater_equal', 'less', 'less_equal']:
+                            program_feed_map_source_field_string_test = positive_integer_test(save_feed_maps_input['source_field_string'], True)
+                        else:
+                            program_feed_map_source_field_string_test = 'pass'
+
+                        if program_feed_map_source_field_string_test != 'pass':
+
+                            if manage_programs_message not in [None, '']:
+                                manage_programs_message += f"\n"
+
+                            if program_feed_map_source_field_string_test == 'blank':
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Map '{feed_map_name}', 'THIS value' is required and cannot be left blank. As such, this field, along with 'THEN check IF field' have reverted to their previous values."
+                            elif program_feed_map_source_field_string_test == 'unknown':
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Map '{feed_map_name}', an unknown issue happened in relation to 'THIS value', along with 'THEN check IF field'. As such, these fields have reverted to their previous values."
+                            elif program_feed_map_source_field_string_test == 'not_number':
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Map '{feed_map_name}', when using a relational operator for 'THEN check IF field', a number is required for 'THIS value'. As such, these fields have reverted to their previous values."
+                            elif program_feed_map_source_field_string_test == 'not_positive':
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Map '{feed_map_name}', when using a relational operator for 'THEN check IF field', a positive integer is required for 'THIS value'. As such, these fields have reverted to their previous values."
+                            else:
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Map '{feed_map_name}', 'THIS value' was unable to be evaluated, along with 'THEN check IF field'. As such, these fields have reverted to their previous values."
+
+                        else:
+
+                            feed_map['source_field_compare_id'] = save_feed_maps_input['source_field_compare_id']
+                            feed_map['source_field_string'] = save_feed_maps_input['source_field_string']
+
+            feed_maps = [feed_map for feed_map in feed_maps if feed_map['feed_map_id'] not in delete_feed_maps_inputs]
 
             # Write data back to files
             if write_feed_rules:
@@ -883,6 +1179,48 @@ def webpage_manage_programs():
                 write_data(csv_slm_feed_maps, feed_maps)
                 if run_empty_rows_feed_maps:
                     remove_empty_row(csv_slm_feed_maps)
+
+            if manage_programs_message not in [None, '']:
+                manage_programs_message += f"\n"
+
+            if (
+                ( int(feed_rules_add_count) == 0 ) and
+                ( int(feed_rules_save_count) == 0 ) and
+                ( int(feed_rules_delete_count) == 0 ) and
+                ( int(feed_maps_add_count) == 0 ) and
+                ( int(feed_maps_save_count) == 0 ) and
+                ( int(feed_maps_delete_count) == 0 )
+            ):
+
+                manage_programs_message += f"{current_time()} WARNING: No actions and/or allowable actions selected for 'Feed Rules' and 'Feed Maps', therefore nothing has been executed."
+
+            else:
+
+                manage_programs_message += f"{current_time()} INFO: Summary of 'Feed Rules' and 'Feed Maps' actions that have been executed:"
+                if int(feed_rules_add_count) > 0:
+                    manage_programs_message += f"\n"
+                    manage_programs_message += f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                    manage_programs_message += f"Feed Rules Add(s): {feed_rules_add_count}"
+                if int(feed_rules_save_count) > 0:
+                    manage_programs_message += f"\n"
+                    manage_programs_message += f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                    manage_programs_message += f"Feed Rules Save(s): {feed_rules_save_count}"
+                if int(feed_rules_delete_count) > 0:
+                    manage_programs_message += f"\n"
+                    manage_programs_message += f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                    manage_programs_message += f"Feed Rules Delete(s): {feed_rules_delete_count}"
+                if int(feed_maps_add_count) > 0:
+                    manage_programs_message += f"\n"
+                    manage_programs_message += f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                    manage_programs_message += f"Feed Maps Add(s): {feed_maps_add_count}"
+                if int(feed_maps_save_count) > 0:
+                    manage_programs_message += f"\n"
+                    manage_programs_message += f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                    manage_programs_message += f"Feed Maps Save(s): {feed_maps_save_count}"
+                if int(feed_maps_delete_count) > 0:
+                    manage_programs_message += f"\n"
+                    manage_programs_message += f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                    manage_programs_message += f"Feed Maps Delete(s): {feed_maps_delete_count}"
 
         elif manage_programs_action in [
             'manage_programs_cancel',
@@ -11273,6 +11611,8 @@ def get_new_episodes(entry_id_filter):
     print("|                                                        |")
     print("==========================================================\n")
 
+    # TO ADD: This needs to be rewritten to be more efficient. This is not a good setup right now.
+
     print(f"{current_time()} Scanning for new episodes and videos...")
 
     set_slm_process_active_flag('single_on')
@@ -11348,10 +11688,12 @@ def get_new_episodes(entry_id_filter):
 
         if show_bookmarks:
             show_bookmarks_entry_id_lookups = {}
+            disabled_entry_id_lookups = {}
             show_bookmarks_entry_id_lookups = {show_bookmark['entry_id'] for show_bookmark in show_bookmarks if show_bookmark['bookmark_action'] == 'Import New Episode Metadata'}
+            disabled_entry_id_lookups = {show_bookmark['entry_id'] for show_bookmark in show_bookmarks if show_bookmark['bookmark_action'] == 'Disable Get New Episodes'}
 
             for episode in episodes:
-                if not episode['season_episode_id'] in ['', None]:
+                if not episode['season_episode_id'] in ['', None] and episode['status'] == 'unwatched' and episode['entry_id'] not in disabled_entry_id_lookups:
 
                     field_override_duration = episode['override_duration']
                     field_original_release_date = episode['original_release_date']
