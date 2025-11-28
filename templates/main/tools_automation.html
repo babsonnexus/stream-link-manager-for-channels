@@ -110,7 +110,7 @@
               </div>
               {% if html_slm_stream_link_file_manager %}
                 <hr>
-                <h5>Stream Link Manager
+                <h5>Stream Link/File Manager
                   <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Processes" target="_blank">
                     <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
                   </a>
@@ -199,6 +199,38 @@
                     <button type="submit" name="action" value="slm_new_recent_releases_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run</button>
                   </div>
                 </div>
+                {% if html_settings_use_feed_map == "On" %}
+                  <div id="anchor_slm_update_feed" class="settings-box" style="width: 99%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" class="form-check-input ms-auto" id="slm_update_feed" name="slm_update_feed" {% if html_slm_update_feed == "On" %}checked{% endif %}>
+                      <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="slm_update_feed"><b>Stream Links: Update Feeds and Run Auto-Mapping</b></label>
+                    </div>
+                    <div>
+                      <p><em>Based upon the input 'Feed Rules', updates the items available in the 'Stream Link Manager Feed'. Additionally, if there are any 'Auto-Mapping' items, undertakes those activities, as well.</em></p>
+                    </div>
+                    <div>
+                      <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="slm_update_feed_time">Start at:</label>
+                      <input type="time" id="slm_update_feed_time" name="slm_update_feed_time" value="{{ html_slm_update_feed_time }}" class="ms-3">
+                    </div>
+                    <div style="margin-top: 10px;">
+                      <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="slm_update_feed_frequency">And run:</label>
+                      <div style="margin-left: 15px;">
+                        <select class="select2" name="slm_update_feed_frequency" id="slm_update_feed_frequency">
+                          {% for html_automation_frequency in html_automation_frequencies %}
+                            <option value="{{ html_automation_frequency }}" {% if html_automation_frequency == html_slm_update_feed_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_automation_frequency }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                      <button type="submit" name="action" value="slm_update_feed_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+                      <button type="submit" name="action" value="slm_update_feed_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: -25px;">
+                      <button type="submit" name="action" value="slm_update_feed_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run</button>
+                    </div>
+                  </div>
+                {% endif %}
               {% endif %}
               {% if html_slm_playlist_manager %}
                 <hr>

@@ -407,7 +407,7 @@
                           <div class="grid-container" style="text-align: center;">
                             <div class="grid-item"><h6>Active</h6></div>
                             <div class="grid-item"><h6>Name / Description</h6></div>
-                            <div class="grid-item"><h6>IF 'Provider(s)' is/are</h6></div>
+                            <div class="grid-item"><h6>IF 'Source(s)' is/are</h6></div>
                             <div class="grid-item"><h6>AND field is</h6></div>
                             <div class="grid-item"><h6>THEN check IF field</h6></div>
                             <div class="grid-item"><h6>THIS value</h6></div>
@@ -433,9 +433,9 @@
                                 </div>
                                 <div class="grid-item">
                                   <select class="select2" name="program_feed_map_source_provider_{{ loop.index }}" id="program_feed_map_source_provider_{{ loop.index }}" style="width: 100%;">
-                                    {% for provider_status_item in html_provider_statuses %}
-                                      <option value="{{ provider_status_item }}" style="width: auto; min-width: 100%;"
-                                      {% if provider_status_item == html_feed_map.source_provider %}selected{% endif %}>{{ provider_status_item }}</option>
+                                    {% for html_feed_map_source_provider in html_feed_map_source_providers %}
+                                      <option value="{{ html_feed_map_source_provider.feed_map_source_provider_id }}" style="width: auto; min-width: 100%;"
+                                      {% if html_feed_map_source_provider.feed_map_source_provider_id == html_feed_map.source_provider %}selected{% endif %}>{{ html_feed_map_source_provider.feed_map_source_provider_name }}</option>
                                     {% endfor %}
                                   </select>
                                 </div>
@@ -505,8 +505,8 @@
                             </div>
                             <div class="grid-item">
                               <select class="select2" name="program_feed_map_source_provider_new" id="program_feed_map_source_provider_new" style="width: 100%;">
-                                {% for provider_status_item in html_provider_statuses %}
-                                  <option value="{{ provider_status_item }}">{{ provider_status_item }}</option>
+                                {% for html_feed_map_source_provider in html_feed_map_source_providers %}
+                                  <option value="{{ html_feed_map_source_provider.feed_map_source_provider_id }}" >{{ html_feed_map_source_provider.feed_map_source_provider_name }}</option>
                                 {% endfor %}
                               </select>
                             </div>
