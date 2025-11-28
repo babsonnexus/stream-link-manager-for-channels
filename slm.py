@@ -19,6 +19,7 @@ import stat
 import unicodedata
 import gzip
 import io
+import ast
 from flask import Flask, render_template, render_template_string, request, redirect, url_for, Response, send_file, Request, make_response, stream_with_context
 from jinja2 import TemplateNotFound
 import yt_dlp
@@ -40,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.11.19.1914"
+    slm_version = "v2025.11.28.1845"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -193,6 +194,7 @@ def webpage_manage_programs():
     feed_items = []
     feed_maps = []
     feed_rules = []
+    feed_map_source_providers = []
 
     search_results_actions_default = [
         {'search_results_action_id': 'none', 'search_results_action_name': 'None'},
@@ -234,167 +236,224 @@ def webpage_manage_programs():
                     'search_defaults_save',
                     'program_add_search',
                     'program_new_search',
-                    'program_new_today'
+                    'program_new_today',
+                    'program_feed_update',
+                    'program_feed_view'
                 ]:
                     
-                    settings_hide_bookmarked_input = "On" if request.form.get('settings_hide_bookmarked') in ['on', 'On'] else "Off"
                     settings_country_code_input_prior = request.form.get('settings_country_code')
                     settings_language_code_input_prior = request.form.get('settings_language_code')
-                    settings_minimum_video_length_input = request.form.get('settings_minimum_video_length')
-                    settings_minimum_video_length_test = None
-                    settings_minimum_video_length_test = positive_integer_test(settings_minimum_video_length_input, True)
-                    settings_provider_status_input = request.form.get('select_provider_status')
-
+                    
                     if manage_programs_action in [
                         'search_defaults_save',
-                        'program_add_search'
-                    ]:
-
-                        settings_search_selection_input = request.form.get('select_search_selection')
-                        settings_num_results_input = request.form.get('settings_num_results')
-                        settings_num_results_test = None
-                        settings_num_results_test = positive_integer_test(settings_num_results_input, False)
-
-                        if manage_programs_action == 'search_defaults_save':
-                            settings_show_hidden_programs_input = "On" if request.form.get('settings_show_hidden_programs') in ['on', 'On'] else "Off"
-                            settings_use_feed_map_input = "On" if request.form.get('settings_use_feed_map') in ['on', 'On'] else "Off"
-
-                            if settings_num_results_test != "pass":
-
-                                if settings_num_results_test == 'unknown':
-                                    manage_programs_message = f"{current_time()} ERROR: While other 'Settings & Options' saved, an unknown issue happened in relation to 'Quantity'. As such, it has reverted to the prior value."
-                                elif settings_num_results_test == 'missing':
-                                    manage_programs_message = f"{current_time()} ERROR: While other 'Settings & Options' saved, a 'Quantity' is required. As such, it has reverted to the prior value."
-                                elif settings_num_results_test == 'not_number':
-                                    manage_programs_message = f"{current_time()} ERROR: While other 'Settings & Options' saved, a number is required for 'Quantity'. As such, it has reverted to the prior value."
-                                elif settings_num_results_test == 'not_positive':
-                                    manage_programs_message = f"{current_time()} ERROR: While other 'Settings & Options' saved, a positive integer is required for 'Quantity'. As such, it has reverted to the prior value."
-                                else:
-                                    manage_programs_message = f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Quantity' was unable to be evaluated. As such, it has reverted to the prior value."
-
-                            if settings_minimum_video_length_test != "pass":
-
-                                if manage_programs_message not in [None, '']:
-                                    manage_programs_message += f"\n"
-
-                                if settings_minimum_video_length_test == 'unknown':
-                                    manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, an unknown issue happened in relation to 'Minimum Video Length (Seconds)'. As such, it has reverted to the prior value."
-                                elif settings_minimum_video_length_test == 'missing':
-                                    manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Minimum Video Length (Seconds)' is required. As such, it has reverted to the prior value."
-                                elif settings_minimum_video_length_test == 'not_number':
-                                    manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, a number is required for 'Minimum Video Length (Seconds)'. As such, it has reverted to the prior value."
-                                elif settings_minimum_video_length_test == 'not_positive':
-                                    manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, a positive integer is required for 'Minimum Video Length (Seconds)'. As such, it has reverted to the prior value."
-                                else:
-                                    manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Minimum Video Length (Seconds)' was unable to be evaluated. As such, it has reverted to the prior value."
-
-                            settings = read_data(csv_settings)
-                            settings_country_code_prior = settings[2]["settings"]               # [2]  Search Defaults: Country Code
-
-                            if settings_num_results_test == "pass":
-                                settings[4]["settings"] = settings_num_results_input              # [4]  Search Defaults: Number of Results
-                            settings[64]["settings"] = settings_search_selection_input            # [64] SLM: 'Add Programs' Search Selection (Default)
-                            settings[47]["settings"] = settings_provider_status_input             # [47] SLM: Search Default for Provider Status
-                            settings[9]["settings"] = settings_hide_bookmarked_input              # [9]  Search Defaults: Filter out already bookmarked
-                            settings[2]["settings"] = settings_country_code_input_prior           # [2]  Search Defaults: Country Code
-                            settings[3]["settings"] = settings_language_code_input_prior          # [3]  Search Defaults: Language Code
-                            if settings_minimum_video_length_test == "pass":
-                                settings[65]["settings"] = settings_minimum_video_length_input    # [65] SLM: Minimum Video Length (in Seconds) for Search
-                            settings[66]["settings"] = settings_show_hidden_programs_input        # [66] SLM: Show 'Hidden Programs' in Dropdown Selection (Default)
-                            settings[67]["settings"] = settings_use_feed_map_input                # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
-                            write_data(csv_settings, settings)
-
-                            if settings_country_code_input_prior != settings_country_code_prior:
-                                update_streaming_services()
-                        
-                        elif manage_programs_action == 'program_add_search':
-                            program_add_prior = request.form.get('field_program_add')
-
-                            if settings_num_results_test == "pass":
-
-                                if settings_minimum_video_length_test == "pass":
-                                    movies_shows_search_results = []
-                                    videos_search_results = []
-                                    channels_search_results = []
-
-                                    if settings_search_selection_input in ['all', 'movies_shows_videos', 'movies_shows']:
-                                        movies_shows_search_results = search_bookmark(settings_country_code_input_prior, settings_language_code_input_prior, settings_num_results_input, program_add_prior)
-                                    if settings_search_selection_input in ['all', 'movies_shows_videos', 'videos_channels', 'videos']:
-                                        videos_search_results, manage_programs_message = search_video_providers(video_providers, program_add_prior, 'videos', settings_num_results_input, settings_language_code_input_prior, settings_country_code_input_prior)
-                                    if settings_search_selection_input in ['all', 'videos_channels', 'channels']:
-                                        channels_search_results, manage_programs_message = search_video_providers(video_providers, program_add_prior, 'channels', settings_num_results_input, settings_language_code_input_prior, settings_country_code_input_prior)
-
-                                    if 'ERROR' not in manage_programs_message:
-                                        
-                                        if movies_shows_search_results:
-                                            program_search_results_prior = program_search_results_prior + movies_shows_search_results
-                                        if videos_search_results:
-                                            program_search_results_prior = program_search_results_prior + videos_search_results
-                                        if channels_search_results:
-                                            program_search_results_prior = program_search_results_prior + channels_search_results
-
-                                        if program_search_results_prior:
-                                            if program_add_prior is None or program_add_prior == '':
-                                                manage_programs_message = f"{current_time()} INFO: Displaying most popular programs."
-                                            else:
-                                                manage_programs_message = f"{current_time()} INFO: Displaying results for searched term '{program_add_prior}'."
-                                        
-                                        else:
-                                            manage_programs_message = f"{current_time()} INFO: No results for search."
-
-                                else:
-
-                                    if settings_minimum_video_length_test == 'unknown':
-                                        manage_programs_message = f"{current_time()} ERROR: For 'Search', an unknown issue happened in relation to 'Minimum Video Length (Seconds)'."
-                                    elif settings_minimum_video_length_test == 'missing':
-                                        manage_programs_message = f"{current_time()} ERROR: For 'Search', 'Minimum Video Length (Seconds)' is required."
-                                    elif settings_minimum_video_length_test == 'not_number':
-                                        manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a number for 'Minimum Video Length (Seconds)'."
-                                    elif settings_minimum_video_length_test == 'not_positive':
-                                        manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a positive integer for 'Minimum Video Length (Seconds)'."
-                                    else:
-                                        manage_programs_message = f"{current_time()} ERROR: For 'Search', unable to test the value for 'Minimum Video Length (Seconds)'."
-
-                            else:
-
-                                if settings_num_results_test == 'unknown':
-                                    manage_programs_message = f"{current_time()} ERROR: For 'Search', an unknown issue happened in relation to 'Quantity'."
-                                elif settings_num_results_test == 'missing':
-                                    manage_programs_message = f"{current_time()} ERROR: For 'Search', a 'Quantity' is required."
-                                elif settings_num_results_test == 'not_number':
-                                    manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a number for 'Quantity'."
-                                elif settings_num_results_test == 'not_positive':
-                                    manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a positive integer for 'Quantity'."
-                                else:
-                                    manage_programs_message = f"{current_time()} ERROR: For 'Search', unable to test the value for 'Quantity'."
-
-                    elif manage_programs_action in [
+                        'program_add_search',
                         'program_new_search',
                         'program_new_today'
                     ]:
+                        
+                        settings_hide_bookmarked_input = "On" if request.form.get('settings_hide_bookmarked') in ['on', 'On'] else "Off"
+                        settings_minimum_video_length_input = request.form.get('settings_minimum_video_length')
+                        settings_minimum_video_length_test = None
+                        settings_minimum_video_length_test = positive_integer_test(settings_minimum_video_length_input, True)
+                        settings_provider_status_input = request.form.get('select_provider_status')
 
-                        if manage_programs_action == 'program_new_search':
-                            date_new_default_start_prior = request.form.get('field_date_new_default_start')
-                            date_new_default_end_prior = request.form.get('field_date_new_default_end')
+                        if manage_programs_action in [
+                            'search_defaults_save',
+                            'program_add_search'
+                        ]:
 
-                        elif manage_programs_action == 'program_new_today':
-                            date_new_default_start_prior = datetime.datetime.now().strftime('%Y-%m-%d')
-                            date_new_default_end_prior = datetime.datetime.now().strftime('%Y-%m-%d')
+                            settings_search_selection_input = request.form.get('select_search_selection')
+                            settings_num_results_input = request.form.get('settings_num_results')
+                            settings_num_results_test = None
+                            settings_num_results_test = positive_integer_test(settings_num_results_input, False)
 
-                        date_new_default_range = [
-                            (datetime.datetime.strptime(date_new_default_start_prior, '%Y-%m-%d') + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
-                            for i in range((datetime.datetime.strptime(date_new_default_end_prior, '%Y-%m-%d') - datetime.datetime.strptime(date_new_default_start_prior, '%Y-%m-%d')).days + 1)
-                        ]
+                            if manage_programs_action == 'search_defaults_save':
+                                settings_show_hidden_programs_input = "On" if request.form.get('settings_show_hidden_programs') in ['on', 'On'] else "Off"
+                                settings_use_feed_map_input = "On" if request.form.get('settings_use_feed_map') in ['on', 'On'] else "Off"
 
-                        settings_num_results_input = 100 # Maximum number of new programs
+                                if settings_num_results_test != "pass":
 
-                        if date_new_default_range:
-                            program_search_results_prior = get_program_new(date_new_default_range, settings_country_code_input_prior, settings_language_code_input_prior, settings_num_results_input, settings_provider_status_input, video_providers)
+                                    if settings_num_results_test == 'unknown':
+                                        manage_programs_message = f"{current_time()} ERROR: While other 'Settings & Options' saved, an unknown issue happened in relation to 'Quantity'. As such, it has reverted to the prior value."
+                                    elif settings_num_results_test == 'missing':
+                                        manage_programs_message = f"{current_time()} ERROR: While other 'Settings & Options' saved, a 'Quantity' is required. As such, it has reverted to the prior value."
+                                    elif settings_num_results_test == 'not_number':
+                                        manage_programs_message = f"{current_time()} ERROR: While other 'Settings & Options' saved, a number is required for 'Quantity'. As such, it has reverted to the prior value."
+                                    elif settings_num_results_test == 'not_positive':
+                                        manage_programs_message = f"{current_time()} ERROR: While other 'Settings & Options' saved, a positive integer is required for 'Quantity'. As such, it has reverted to the prior value."
+                                    else:
+                                        manage_programs_message = f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Quantity' was unable to be evaluated. As such, it has reverted to the prior value."
+
+                                if settings_minimum_video_length_test != "pass":
+
+                                    if manage_programs_message not in [None, '']:
+                                        manage_programs_message += f"\n"
+
+                                    if settings_minimum_video_length_test == 'unknown':
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, an unknown issue happened in relation to 'Minimum Video Length (Seconds)'. As such, it has reverted to the prior value."
+                                    elif settings_minimum_video_length_test == 'missing':
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Minimum Video Length (Seconds)' is required. As such, it has reverted to the prior value."
+                                    elif settings_minimum_video_length_test == 'not_number':
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, a number is required for 'Minimum Video Length (Seconds)'. As such, it has reverted to the prior value."
+                                    elif settings_minimum_video_length_test == 'not_positive':
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, a positive integer is required for 'Minimum Video Length (Seconds)'. As such, it has reverted to the prior value."
+                                    else:
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Minimum Video Length (Seconds)' was unable to be evaluated. As such, it has reverted to the prior value."
+
+                                settings = read_data(csv_settings)
+                                settings_country_code_prior = settings[2]["settings"]               # [2]  Search Defaults: Country Code
+
+                                if settings_num_results_test == "pass":
+                                    settings[4]["settings"] = settings_num_results_input              # [4]  Search Defaults: Number of Results
+                                settings[64]["settings"] = settings_search_selection_input            # [64] SLM: 'Add Programs' Search Selection (Default)
+                                settings[47]["settings"] = settings_provider_status_input             # [47] SLM: Search Default for Provider Status
+                                settings[9]["settings"] = settings_hide_bookmarked_input              # [9]  Search Defaults: Filter out already bookmarked
+                                settings[2]["settings"] = settings_country_code_input_prior           # [2]  Search Defaults: Country Code
+                                settings[3]["settings"] = settings_language_code_input_prior          # [3]  Search Defaults: Language Code
+                                if settings_minimum_video_length_test == "pass":
+                                    settings[65]["settings"] = settings_minimum_video_length_input    # [65] SLM: Minimum Video Length (in Seconds) for Search
+                                settings[66]["settings"] = settings_show_hidden_programs_input        # [66] SLM: Show 'Hidden Programs' in Dropdown Selection (Default)
+                                settings[67]["settings"] = settings_use_feed_map_input                # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
+                                write_data(csv_settings, settings)
+
+                                if settings_country_code_input_prior != settings_country_code_prior:
+                                    update_streaming_services()
+                            
+                            elif manage_programs_action == 'program_add_search':
+                                program_add_prior = request.form.get('field_program_add')
+
+                                if settings_num_results_test == "pass":
+
+                                    if settings_minimum_video_length_test == "pass":
+                                        movies_shows_search_results = []
+                                        videos_search_results = []
+                                        channels_search_results = []
+
+                                        if settings_search_selection_input in ['all', 'movies_shows_videos', 'movies_shows']:
+                                            movies_shows_search_results = search_bookmark(settings_country_code_input_prior, settings_language_code_input_prior, settings_num_results_input, program_add_prior)
+                                        if settings_search_selection_input in ['all', 'movies_shows_videos', 'videos_channels', 'videos']:
+                                            videos_search_results, manage_programs_message = search_video_providers(video_providers, program_add_prior, 'videos', settings_num_results_input, settings_language_code_input_prior, settings_country_code_input_prior)
+                                        if settings_search_selection_input in ['all', 'videos_channels', 'channels']:
+                                            channels_search_results, manage_programs_message = search_video_providers(video_providers, program_add_prior, 'channels', settings_num_results_input, settings_language_code_input_prior, settings_country_code_input_prior)
+
+                                        if 'ERROR' not in manage_programs_message:
+                                            
+                                            if movies_shows_search_results:
+                                                program_search_results_prior = program_search_results_prior + movies_shows_search_results
+                                            if videos_search_results:
+                                                program_search_results_prior = program_search_results_prior + videos_search_results
+                                            if channels_search_results:
+                                                program_search_results_prior = program_search_results_prior + channels_search_results
+
+                                            if program_search_results_prior:
+                                                if program_add_prior is None or program_add_prior == '':
+                                                    manage_programs_message = f"{current_time()} INFO: Displaying most popular programs."
+                                                else:
+                                                    manage_programs_message = f"{current_time()} INFO: Displaying results for searched term '{program_add_prior}'."
+                                            
+                                            else:
+                                                manage_programs_message = f"{current_time()} INFO: No results for search."
+
+                                    else:
+
+                                        if settings_minimum_video_length_test == 'unknown':
+                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', an unknown issue happened in relation to 'Minimum Video Length (Seconds)'."
+                                        elif settings_minimum_video_length_test == 'missing':
+                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', 'Minimum Video Length (Seconds)' is required."
+                                        elif settings_minimum_video_length_test == 'not_number':
+                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a number for 'Minimum Video Length (Seconds)'."
+                                        elif settings_minimum_video_length_test == 'not_positive':
+                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a positive integer for 'Minimum Video Length (Seconds)'."
+                                        else:
+                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', unable to test the value for 'Minimum Video Length (Seconds)'."
+
+                                else:
+
+                                    if settings_num_results_test == 'unknown':
+                                        manage_programs_message = f"{current_time()} ERROR: For 'Search', an unknown issue happened in relation to 'Quantity'."
+                                    elif settings_num_results_test == 'missing':
+                                        manage_programs_message = f"{current_time()} ERROR: For 'Search', a 'Quantity' is required."
+                                    elif settings_num_results_test == 'not_number':
+                                        manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a number for 'Quantity'."
+                                    elif settings_num_results_test == 'not_positive':
+                                        manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a positive integer for 'Quantity'."
+                                    else:
+                                        manage_programs_message = f"{current_time()} ERROR: For 'Search', unable to test the value for 'Quantity'."
+
+                        elif manage_programs_action in [
+                            'program_new_search',
+                            'program_new_today'
+                        ]:
+
+                            if manage_programs_action == 'program_new_search':
+                                date_new_default_start_prior = request.form.get('field_date_new_default_start')
+                                date_new_default_end_prior = request.form.get('field_date_new_default_end')
+
+                            elif manage_programs_action == 'program_new_today':
+                                date_new_default_start_prior = datetime.datetime.now().strftime('%Y-%m-%d')
+                                date_new_default_end_prior = datetime.datetime.now().strftime('%Y-%m-%d')
+
+                            date_new_default_range = [
+                                (datetime.datetime.strptime(date_new_default_start_prior, '%Y-%m-%d') + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
+                                for i in range((datetime.datetime.strptime(date_new_default_end_prior, '%Y-%m-%d') - datetime.datetime.strptime(date_new_default_start_prior, '%Y-%m-%d')).days + 1)
+                            ]
+
+                            settings_num_results_input = 100 # Maximum number of new programs
+
+                            if date_new_default_range:
+                                program_search_results_prior = get_program_new(date_new_default_range, settings_country_code_input_prior, settings_language_code_input_prior, settings_num_results_input, settings_provider_status_input, video_providers)
+
+                            if program_search_results_prior:
+                                manage_programs_message = f"{current_time()} INFO: Displaying 'New & Updated' results on your selected provider(s)."
+                            else:
+                                manage_programs_message = f"{current_time()} INFO: No 'New & Updated' results on your selected provider(s)."
+
+                    elif manage_programs_action in [
+                        'program_feed_update',
+                        'program_feed_view'
+                    ]:
+
+                        if manage_programs_action == 'program_feed_update':
+                            run_slm_update_feed()
+
+                            if manage_programs_message not in [None, '']:
+                                manage_programs_message += f"\n"
+                            manage_programs_message += f"{current_time()} INFO: Feed has been manually refreshed!"
+
+                        feed_items = read_data(csv_slm_feed_items)
+
+                        for item in feed_items:
+                            offers_raw = item.get("offers_list")
+                            if isinstance(offers_raw, str):
+                                try:
+                                    item["offers_list"] = ast.literal_eval(offers_raw)
+                                except (ValueError, SyntaxError):
+                                    print(f"{current_time()} ERROR: For 'Feed Items', unable to convert 'Offers List' to a list.")
+
+                        if feed_items:
+                            program_search_results_prior = feed_items
+                            if manage_programs_message not in [None, '']:
+                                manage_programs_message += f"\n"
+                            manage_programs_message += f"{current_time()} INFO: Displaying feed results..."
+                        else:
+                            if manage_programs_message not in [None, '']:
+                                manage_programs_message += f"\n"
+                            manage_programs_message += f"{current_time()} INFO: Your feed is currently empty. Please check again later!"
+
+                    if program_search_results_prior:
+                        if 'feed' not in manage_programs_action:
+
+                            program_search_results_check = program_search_results_prior
+                            filter_clean_message = None
+                            program_search_results_prior, filter_clean_message = filter_clean_slm_search_results(program_search_results_check, settings_hide_bookmarked_input, settings_minimum_video_length_input, slm_manage_programs_program_modify_available_flag)
+
+                            if filter_clean_message not in [None, '']:
+                                if manage_programs_message not in [None, '']:
+                                    manage_programs_message += f"\n"
+                                manage_programs_message += filter_clean_message
 
                         if program_search_results_prior:
-                            manage_programs_message = f"{current_time()} INFO: Displaying 'New & Updated' results on your selected provider(s)."
-                        else:
-                            manage_programs_message = f"{current_time()} INFO: No 'New & Updated' results on your selected provider(s)."
+                            slm_manage_programs_search_results_flag = True
 
                 elif manage_programs_action in [
                     'program_modify_edit',
@@ -475,45 +534,6 @@ def webpage_manage_programs():
 
                         else:
                             manage_programs_message = f"{current_time()} ERROR: Manual programs, Video Groups, and internal lists cannot be checked for availability."
-
-                elif manage_programs_action in [
-                    'program_feed_update',
-                    'program_feed_view'
-                ]:
-
-                    if manage_programs_action == 'program_feed_update':
-                        run_slm_update_feed()
-
-                        if manage_programs_message not in [None, '']:
-                            manage_programs_message += f"\n"
-                        manage_programs_message += f"{current_time()} INFO: Feed has been manually refreshed!"
-
-                    feed_items = read_data(csv_slm_feed_items)
-
-                    if feed_items:
-                        program_search_results_prior = feed_items
-                        if manage_programs_message not in [None, '']:
-                            manage_programs_message += f"\n"
-                        manage_programs_message += f"{current_time()} INFO: Displaying feed results..."
-                    else:
-                        if manage_programs_message not in [None, '']:
-                            manage_programs_message += f"\n"
-                        manage_programs_message += f"{current_time()} INFO: Your feed is currently empty. Please check again later!"
-
-                if program_search_results_prior:
-                    if 'feed' not in manage_programs_action:
-
-                        program_search_results_check = program_search_results_prior
-                        filter_clean_message = None
-                        program_search_results_prior, filter_clean_message = filter_clean_slm_search_results(program_search_results_check, settings_hide_bookmarked_input, settings_minimum_video_length_input, slm_manage_programs_program_modify_available_flag)
-
-                        if filter_clean_message not in [None, '']:
-                            if manage_programs_message not in [None, '']:
-                                manage_programs_message += f"\n"
-                            manage_programs_message += filter_clean_message
-
-                    if program_search_results_prior:
-                        slm_manage_programs_search_results_flag = True
 
             elif manage_programs_action in [
                 'program_add_manual',
@@ -694,7 +714,7 @@ def webpage_manage_programs():
                             'program_search_results_score_input': program_search_results_score_input,
                             'program_search_results_labels_input': program_search_results_labels_input,
                             'program_search_results_status_input': program_search_results_status_input,
-                            'program_search_results_action_input': program_search_results_action_input                            
+                            'program_search_results_action_input': program_search_results_action_input
                         })
 
                 bookmarking_actions_message, clear_results_flag = run_slm_bookmarking_actions(program_search_results_base_submissions)
@@ -2717,6 +2737,20 @@ def webpage_manage_programs():
                 feed_maps = read_data(csv_slm_feed_maps)
                 feed_rules = read_data(csv_slm_feed_rules)
 
+                feed_map_source_providers = [
+                    {'feed_map_source_provider_id': 'movie_show_video', 'feed_map_source_provider_name': 'Movie, TV Show, or Video'},
+                    {'feed_map_source_provider_id': 'movie_show', 'feed_map_source_provider_name': 'Movie or TV Show'},
+                    {'feed_map_source_provider_id': 'movie', 'feed_map_source_provider_name': 'Movie'},
+                    {'feed_map_source_provider_id': 'show', 'feed_map_source_provider_name': 'TV Show'},
+                    {'feed_map_source_provider_id': 'video', 'feed_map_source_provider_name': 'Video'}
+                ]
+
+                for visible_subscribed_video_channel in visible_subscribed_video_channels:
+                    feed_map_source_providers.append({
+                        'feed_map_source_provider_id': visible_subscribed_video_channel['channel_id'],
+                        'feed_map_source_provider_name': f"VIDEO CHANNEL: {visible_subscribed_video_channel['channel_name']}"
+                    })
+
                 program_feed_rule_date_ranges = [
                     {'program_feed_rule_date_range_id': '0', 'program_feed_rule_date_range_name': 'Today'},
                     {'program_feed_rule_date_range_id': '1', 'program_feed_rule_date_range_name': 'Today and Yesterday'},
@@ -2741,9 +2775,9 @@ def webpage_manage_programs():
                 program_feed_map_source_fields = [
                     {'program_feed_map_source_field_id': 'all', 'program_feed_map_source_field_name': 'Any Field'},
                     {'program_feed_map_source_field_id': 'title', 'program_feed_map_source_field_name': 'Name'},
-                    {'program_feed_map_source_field_id': 'release_year', 'program_feed_map_source_field_name': "Core Info ( Movie / TV Show 'Release Year' | Video 'Channel' )"},
+                    {'program_feed_map_source_field_id': 'release_year', 'program_feed_map_source_field_name': "Core Info ( Movie / TV Show 'Release Year' [Only Number] | Video 'Channel' [Only Name] )"},
                     {'program_feed_map_source_field_id': 'short_description', 'program_feed_map_source_field_name': 'Description'},
-                    {'program_feed_map_source_field_id': 'score', 'program_feed_map_source_field_name': "Other Info ( Movie / TV Show 'IMDB Rating' | Video 'Duration' )"}
+                    {'program_feed_map_source_field_id': 'score', 'program_feed_map_source_field_name': "Other Info ( Movie / TV Show 'IMDB Rating' [Only Number] | Video 'Duration' [Seconds] )"}
                 ]
 
                 program_feed_map_target_actions = [
@@ -3150,7 +3184,8 @@ def webpage_manage_programs():
         html_program_feed_map_actions = program_feed_map_actions,
         html_new_program_feed_map_actions = new_program_feed_map_actions,
         html_feed_maps = feed_maps,
-        html_feed_rules = feed_rules
+        html_feed_rules = feed_rules,
+        html_feed_map_source_providers = feed_map_source_providers
     )
 
 # Search for country code
@@ -4435,11 +4470,252 @@ def run_slm_update_feed():
         print(f"{current_time()} WARNING: The 'SLM Feed' cannot be updated at this time because another SLM process is currently underway. Please try again later.")
 
     else:
-        # TO ADD: The rest of this...
+        settings = read_data(csv_settings)
+        settings_use_feed_map = settings[67]["settings"]                    # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
+        settings_hide_bookmarked = settings[9]["settings"]                  # [9]  Search Defaults: Filter out already bookmarked
+        settings_country_code = settings[2]["settings"]                     # [2]  Search Defaults: Country Code
+        settings_language_code = settings[3]["settings"]                    # [3]  Search Defaults: Language Code
+        settings_minimum_video_length = settings[65]["settings"]            # [65] SLM: Minimum Video Length (in Seconds) for Search
 
-        feed_rules = read_data(csv_slm_feed_rules)
-        feed_maps = read_data(csv_slm_feed_maps)
-        feed_items = read_data(csv_slm_feed_items)
+        if settings_use_feed_map == 'On':
+
+            feed_rules = read_data(csv_slm_feed_rules)
+            feed_maps = read_data(csv_slm_feed_maps)
+            feed_items = read_data(csv_slm_feed_items)
+            if feed_items:
+                original_feed_items = feed_items.copy()
+            else:
+                original_feed_items = []
+
+            entry_id_feed_items_lookup = {}
+            url_feed_items_lookup = {}
+            if feed_items:
+                entry_id_feed_items_lookup = {feed_item['entry_id'] for feed_item in feed_items if 'video' not in feed_item['entry_id']}
+                url_feed_items_lookup = {feed_item['url'] for feed_item in feed_items if 'video' in feed_item['entry_id']}
+
+            feed_search_results_combined = []
+            feed_search_results_post_map = []
+
+            for feed_rule in feed_rules:
+
+                if feed_rule['feed_rule_active'] == 'On':
+
+                    date_new_default_range = []
+                    feed_search_results_base = []
+                    feed_search_results_filtered = []
+
+                    date_new_default_range = [
+                        (datetime.date.today() - datetime.timedelta(days=int(feed_rule['date_range'])) + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
+                        for i in range(int(feed_rule['date_range']) + 1)
+                    ]  
+                    
+                    num_results = 100 # Maximum number of new programs
+
+                    if date_new_default_range:
+                        feed_search_results_base = get_program_new(date_new_default_range, settings_country_code, settings_language_code, num_results, feed_rule['provider'], video_providers)
+
+                    if feed_search_results_base:
+                        if feed_rule['override_min_video_length'] not in ['', None]:
+                            minimum_video_length = feed_rule['override_min_video_length']
+                        else:
+                            minimum_video_length = settings_minimum_video_length
+
+                        feed_search_results_filtered, filter_clean_message = filter_clean_slm_search_results(feed_search_results_base, settings_hide_bookmarked, minimum_video_length, None)
+
+                    if feed_search_results_filtered:
+                        feed_search_results_combined += feed_search_results_filtered
+
+            if feed_search_results_combined:
+
+                if feed_maps:
+
+                    for item in feed_maps:
+                        target_label_ids_raw = item.get("target_label_ids")
+                        if isinstance(target_label_ids_raw, str):
+                            try:
+                                item["target_label_ids"] = ast.literal_eval(target_label_ids_raw)
+                            except (ValueError, SyntaxError):
+                                print(f"{current_time()} ERROR: For 'Feed Maps', unable to convert 'Target Labels' to a list.")
+
+                    feed_search_results_post_map = run_slm_feed_maps(feed_maps, feed_search_results_combined)
+
+                else:
+                    feed_search_results_post_map = feed_search_results_combined.copy()
+
+            if feed_search_results_post_map:
+
+                for item in feed_search_results_post_map:
+
+                    if (
+                        ( 'video' not in item['entry_id'] and item['entry_id'] not in entry_id_feed_items_lookup ) or
+                        ( 'video' in item['entry_id'] and item['url'] not in url_feed_items_lookup )                            
+                    ):
+                        
+                        feed_items.append(item)
+
+            if feed_items != original_feed_items:
+                write_data(csv_slm_feed_items, feed_items)
+
+# Runs the sub-process for feed maps and returning a filtered list of non-mapped items
+def run_slm_feed_maps(feed_maps, search_results_base):
+    search_results = []
+    search_results_base_remove = []
+    search_results_base_submissions = []
+
+    subscribed_video_channels = read_data(csv_slm_subscribed_video_channels)
+    subscribed_video_channels_lookup = {}
+
+    if subscribed_video_channels:
+        subscribed_video_channels_lookup = {subscribed_video_channel['channel_id']: subscribed_video_channel['channel_name'] for subscribed_video_channel in subscribed_video_channels}
+
+    if feed_maps and search_results_base:
+
+        active_feed_maps = [feed_map for feed_map in feed_maps if feed_map['feed_map_active'] == 'On']
+
+        for item in search_results_base:
+
+            object_type = item['object_type']
+            run_action = False
+
+            for feed_map in active_feed_maps:
+
+                feed_map_name = None
+                source_provider = None
+                source_field = None
+                source_field_compare_id = None
+                source_field_string = None
+                target_status = None
+                target_label_ids = []
+                target_action = None
+
+                target_action = feed_map['target_action']
+                if (
+                    ( target_action == 'hide' ) or
+                    ( object_type in ['MOVIE', 'SHOW'] and 'bookmark' in target_action ) or
+                    ( object_type == 'VIDEO' and 'add' in target_action )
+                ):
+
+                    feed_map_name = feed_map['feed_map_name']
+                    if feed_map_name in [None, '']:
+                        feed_map_name = f"Unnamed - ID {feed_map['feed_map_id']}"
+
+                    source_provider = feed_map['source_provider']
+
+                    video_channel_name = None
+                    if object_type == 'VIDEO' and source_provider.startswith('slmchn_'):
+                        video_channel_name = f"Channel: {subscribed_video_channels_lookup[source_provider]}"
+
+                    if (
+                        ( object_type == 'MOVIE' and 'movie' in source_provider ) or
+                        ( object_type == 'SHOW' and 'show' in source_provider ) or
+                        ( object_type == 'VIDEO' and 'video' in source_provider ) or
+                        ( object_type == 'VIDEO' and item['release_year'] == video_channel_name )
+                    ):
+
+                        source_field = feed_map['source_field']
+
+                        check_fields = []
+                        if source_field in ['all', 'title']:
+                            check_fields.append('title')
+                        if source_field in ['all', 'release_year']:
+                            check_fields.append('release_year')
+                        if source_field in ['all', 'short_description']:
+                            check_fields.append('short_description')
+                        if source_field in ['all', 'score']:
+                            check_fields.append('score')
+
+                        source_field_compare_id = feed_map['source_field_compare_id']
+                        source_field_string = feed_map['source_field_string']
+                        target_status = feed_map['target_status']
+                        target_label_ids = feed_map['target_label_ids']
+
+                        for check_field in check_fields:
+
+                            source_field_value = None
+                            source_field_value = item[check_field]
+                            source_field_value_number = None
+
+                            try:
+                                if object_type in ['MOVIE', 'SHOW']:
+
+                                    if source_field_compare_id in ['greater', 'greater_equal', 'less', 'less_equal']:
+                                        
+                                        if check_field == 'release_year':
+                                            source_field_value_number = int(source_field_value)
+
+                                        if check_field == 'score':
+                                            source_field_value_number = int(float(source_field_value))
+
+                                elif object_type == 'VIDEO':
+
+                                    if check_field == 'score':
+                                        source_field_value_number = int(parse_duration_to_seconds(source_field_value))
+                                        source_field_value = f"{source_field_value_number}"
+
+                            except:
+                                print(f"{current_time()} ERROR: Could not convert '{check_field} == {source_field_value}' to an integer.")
+
+                            if ( 
+                                    ( source_field_compare_id == 'equal' and source_field_value == source_field_string ) or 
+                                    ( source_field_compare_id == 'equal_not' and source_field_value != source_field_string ) or
+                                    ( source_field_compare_id == 'contain' and source_field_string in source_field_value ) or
+                                    ( source_field_compare_id == 'contain_not' and source_field_string not in source_field_value ) or
+                                    ( source_field_compare_id == 'begin' and source_field_value.startswith(source_field_string) ) or
+                                    ( source_field_compare_id == 'begin_not' and not source_field_value.startswith(source_field_string) ) or
+                                    ( source_field_compare_id == 'end' and source_field_value.endswith(source_field_string) ) or
+                                    ( source_field_compare_id == 'end_not' and not source_field_value.endswith(source_field_string) ) or
+                                    ( source_field_compare_id == 'regex' and re.search(source_field_string, source_field_value) ) or
+                                    ( source_field_compare_id == 'regex_not' and not re.search(source_field_string, source_field_value) ) 
+                                ):
+
+                                    run_action = True
+
+                            elif source_field_value_number:
+
+                                if ( 
+                                        ( source_field_compare_id == 'greater' and int(source_field_value_number) > int(source_field_string) ) or 
+                                        ( source_field_compare_id == 'greater_equal' and int(source_field_value_number) >= int(source_field_string) ) or
+                                        ( source_field_compare_id == 'less' and int(source_field_value_number) < int(source_field_string) ) or 
+                                        ( source_field_compare_id == 'less_equal' and int(source_field_value_number) <= int(source_field_string) )
+                                    ):
+
+                                        run_action = True
+
+                            if run_action:
+                                
+                                search_results_base_remove.append(item)
+
+                                search_results_base_submissions.append({
+                                    'program_search_results_entry_id_input': item['entry_id'],
+                                    'program_search_results_title_input': item['title'],
+                                    'program_search_results_release_year_input': item['release_year'],
+                                    'program_search_results_object_type_input': item['object_type'],
+                                    'program_search_results_short_description_input': item['short_description'],
+                                    'program_search_results_url_input': item['url'],
+                                    'program_search_results_poster_input': item['poster'],
+                                    'program_search_results_score_input': item['score'],
+                                    'program_search_results_labels_input': target_label_ids,
+                                    'program_search_results_status_input': target_status,
+                                    'program_search_results_action_input': target_action
+                                })
+
+                                print(f"{current_time()} INFO: Bookmarked '{item['title']} ({item['release_year']}) | {item['object_type']}' using Feed Map '{feed_map_name}'.")
+
+                                break
+
+                    if run_action:
+                        break
+
+        if search_results_base_submissions:
+            bookmarking_actions_message, clear_results_flag = run_slm_bookmarking_actions(search_results_base_submissions)
+            print(bookmarking_actions_message)
+
+        search_results = [item for item in search_results_base if item not in search_results_base_remove]
+
+    else:
+        search_results = search_results_base.copy()
+
+    return search_results
 
 # Filters and cleans SLM Search Results
 def filter_clean_slm_search_results(program_search_results_check, hide_bookmarked, minimum_video_length, modify_flag):
@@ -4549,6 +4825,8 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
             if program_search_results_submissions:
 
                 video_group_entry_id_same = None
+                entry_id_feed_items_remove_lookup = []
+                url_feed_items_remove_lookup = []
                 
                 for program_search_results_submission in program_search_results_submissions:
 
@@ -4603,6 +4881,7 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
 
                         elif field_object_type in ['MOVIE', 'SHOW']:
                             entry_id = field_entry_id
+                            entry_id_feed_items_remove_lookup.append(entry_id)
 
                         if 'generate' in field_action:
                             generate_stream_links_entry_ids.append(entry_id)
@@ -4672,6 +4951,7 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
                                 field_stream_link_override = ''
                                 if field_object_type == 'VIDEO' and field_action != 'manual':
                                     field_stream_link_override = field_url
+                                    url_feed_items_remove_lookup.append(field_stream_link_override)
 
                                 field_special_action = 'None'
                                 if field_object_type == 'VIDEO':
@@ -4931,6 +5211,22 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
                                 'entry_id': edit_entry_id,
                                 'object_type': field_object_type
                             })
+
+                feed_items = read_data(csv_slm_feed_items)
+                if feed_items and ( len(entry_id_feed_items_remove_lookup) > 0 or len(url_feed_items_remove_lookup) > 0 ):
+
+                    temp_record = create_temp_record(feed_items[0].keys())
+                    run_empty_rows = False
+
+                    feed_items = [feed_item for feed_item in feed_items if not feed_item['entry_id'] in entry_id_feed_items_remove_lookup and not feed_item['url'] in url_feed_items_remove_lookup]
+
+                    if not feed_items:
+                        feed_items.append(temp_record)
+                        run_empty_rows = True
+
+                    write_data(csv_slm_feed_items, feed_items)
+                    if run_empty_rows:
+                        remove_empty_row(csv_slm_feed_items)
 
                 message = f"{current_time()} INFO: After selections/imports, {bookmarked_count} item(s) bookmarked, {hide_bookmarked_count} item(s) hidden, and {previously_bookmarked_count} item(s) skipped due to already being previously bookmarked."
 
@@ -10974,6 +11270,10 @@ def webpage_tools_automation():
     mtm_channels_remove_old_backups_time = settings[56]["settings"]                 # [56] MTM: Remove old Channels DVR Backups Start Time
     mtm_channels_remove_old_backups_frequency = settings[57]["settings"]            # [57] MTM: Remove old Channels DVR Backups Frequency
     mtm_channels_remove_old_backups_days = settings[58]["settings"]                 # [58] MTM: Remove old Channels DVR Backups Days to Keep
+    settings_use_feed_map = settings[67]["settings"]                                # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
+    slm_update_feed =  settings[68]["settings"]                                     # [68] MTM: Run SLM 'Feed & Auto-Mapping' Functionality On/Off
+    slm_update_feed_time = settings[69]["settings"]                                 # [69] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Start Time
+    slm_update_feed_frequency = settings[70]["settings"]                            # [70] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Frequency
 
     automation_message = ''
     action_friendly_name = ''
@@ -11104,6 +11404,10 @@ def webpage_tools_automation():
                 elif action.startswith('prune_scan_channels'):
                     action_friendly_name = 'Run Updates in Channels'
                     prune_scan_channels()
+
+                elif action.startswith('slm_update_feed'):
+                    action_friendly_name = 'Stream Links: Update Feeds and Run Auto-Mapping'
+                    run_slm_update_feed()
 
                 automation_message = f"{current_time()} INFO: '{action_friendly_name}' completed. See 'Logs' for more details."
                 print(f"{automation_message}")
@@ -11239,6 +11543,15 @@ def webpage_tools_automation():
                     except ValueError:
                         automation_message = f"{current_time()} ERROR: 'Days to Keep' must be a number."
 
+                elif action.startswith('slm_update_feed'):
+                    slm_update_feed_input = request.form.get('slm_update_feed')
+                    slm_update_feed_time_input = request.form.get('slm_update_feed_time')
+                    slm_update_feed_frequency_input = request.form.get('slm_update_feed_frequency')
+
+                    settings[68]["settings"] = "On" if slm_update_feed_input == 'on' else "Off"
+                    settings[69]["settings"] = slm_update_feed_time_input
+                    settings[70]["settings"] = slm_update_feed_frequency_input
+
                 csv_to_write = csv_settings
                 data_to_write = settings
                 write_data(csv_to_write, data_to_write)
@@ -11283,6 +11596,9 @@ def webpage_tools_automation():
             mtm_channels_remove_old_backups_time = settings[56]["settings"]                 # [56] MTM: Remove old Channels DVR Backups Start Time
             mtm_channels_remove_old_backups_frequency = settings[57]["settings"]            # [57] MTM: Remove old Channels DVR Backups Frequency
             mtm_channels_remove_old_backups_days = settings[58]["settings"]                 # [58] MTM: Remove old Channels DVR Backups Days to Keep
+            slm_update_feed =  settings[68]["settings"]                                     # [68] MTM: Run SLM 'Feed & Auto-Mapping' Functionality On/Off
+            slm_update_feed_time = settings[69]["settings"]                                 # [69] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Start Time
+            slm_update_feed_frequency = settings[70]["settings"]                            # [70] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Frequency
 
     return render_template(
         'main/tools_automation.html',
@@ -11336,7 +11652,11 @@ def webpage_tools_automation():
         html_mtm_channels_remove_old_backups = mtm_channels_remove_old_backups,
         html_mtm_channels_remove_old_backups_time = mtm_channels_remove_old_backups_time,
         html_mtm_channels_remove_old_backups_frequency = mtm_channels_remove_old_backups_frequency,
-        html_mtm_channels_remove_old_backups_days = mtm_channels_remove_old_backups_days
+        html_mtm_channels_remove_old_backups_days = mtm_channels_remove_old_backups_days,
+        html_settings_use_feed_map = settings_use_feed_map,
+        html_slm_update_feed = slm_update_feed,
+        html_slm_update_feed_time = slm_update_feed_time,
+        html_slm_update_feed_frequency = slm_update_feed_frequency
     )
 
 # Create a continous stream of the log file
@@ -11405,6 +11725,10 @@ def check_schedule():
         mtm_channels_remove_old_backups_time = settings[56]["settings"]                 # [56] MTM: Remove old Channels DVR Backups Start Time
         mtm_channels_remove_old_backups_frequency = settings[57]["settings"]            # [57] MTM: Remove old Channels DVR Backups Frequency
         mtm_channels_remove_old_backups_frequency_parsed = int(re.search(r'\d+', mtm_channels_remove_old_backups_frequency).group())
+        slm_update_feed =  settings[68]["settings"]                                     # [68] MTM: Run SLM 'Feed & Auto-Mapping' Functionality On/Off
+        slm_update_feed_time = settings[69]["settings"]                                 # [69] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Start Time
+        slm_update_feed_frequency = settings[70]["settings"]                            # [70] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Frequency
+        slm_update_feed_frequency_parsed = int(re.search(r'\d+', slm_update_feed_frequency).group())
 
         if gen_backup_schedule == 'On' and gen_backup_schedule_time:
             gen_backup_schedule_hour, gen_backup_schedule_minute = map(int, gen_backup_schedule_time.split(':'))
@@ -11474,6 +11798,13 @@ def check_schedule():
 
             if current_minute == mtm_channels_remove_old_backups_minute and (current_hour - mtm_channels_remove_old_backups_hour) % mtm_channels_remove_old_backups_frequency_parsed == 0:
                 threading.Thread(target=run_channels_remove_old_files_empty_directories, args=('channels_backups',)).start()
+                wait_trigger = True
+
+        if slm_update_feed == 'On' and slm_update_feed_time:
+            slm_update_feed_hour, slm_update_feed_minute = map(int, slm_update_feed_time.split(':'))
+
+            if current_minute == slm_update_feed_minute and (current_hour - slm_update_feed_hour) % slm_update_feed_frequency_parsed == 0:
+                threading.Thread(target=run_slm_update_feed).start()
                 wait_trigger = True
 
         if wait_trigger:
@@ -11611,8 +11942,6 @@ def get_new_episodes(entry_id_filter):
     print("|                                                        |")
     print("==========================================================\n")
 
-    # TO ADD: This needs to be rewritten to be more efficient. This is not a good setup right now.
-
     print(f"{current_time()} Scanning for new episodes and videos...")
 
     set_slm_process_active_flag('single_on')
@@ -11621,9 +11950,13 @@ def get_new_episodes(entry_id_filter):
     show_bookmarks = []
     video_bookmarks = []
     episodes = []
+    bookmarks_name_lookup = {}
     bookmarks_country_code_lookup = {}
     bookmarks_language_code_lookup = {}
     slm_streams_lookup = {}
+    show_bookmarks_entry_id_lookups = {}
+    video_bookmarks_entry_id_lookups = {}
+    episodes_write_flag = None
 
     import_metadata_options_flag = None
     if slm_channels_dvr_integration: # TO ADD: Need to update for Media Player integration
@@ -11632,6 +11965,7 @@ def get_new_episodes(entry_id_filter):
     bookmarks = read_data(csv_bookmarks)
 
     if bookmarks:
+        bookmarks_name_lookup = {bookmark['entry_id']: f"{bookmark['title']} ({bookmark['release_year']})" for bookmark in bookmarks}
         bookmarks_country_code_lookup = {bookmark['entry_id']: bookmark['country_code'] for bookmark in bookmarks}
         bookmarks_language_code_lookup = {bookmark['entry_id']: bookmark['language_code'] for bookmark in bookmarks}
 
@@ -11649,7 +11983,7 @@ def get_new_episodes(entry_id_filter):
             and bookmark['bookmark_action'] not in ["Hide"]
         ]
 
-        if entry_id_filter is not None and entry_id_filter != '':
+        if entry_id_filter not in [None, '']:
             show_bookmarks = [
                 show_bookmark for show_bookmark in show_bookmarks
                 if show_bookmark['entry_id'] == entry_id_filter
@@ -11659,108 +11993,45 @@ def get_new_episodes(entry_id_filter):
                 if video_bookmark['entry_id'] == entry_id_filter
             ]
 
-    episodes = read_data(csv_bookmarks_status)
-
-    episodes_write_flag = None
-    if episodes:
+        if show_bookmarks:
+            show_bookmarks_entry_id_lookups = {show_bookmark['entry_id'] for show_bookmark in show_bookmarks if show_bookmark['bookmark_action'] == 'Import New Episode Metadata'}
+            show_bookmarks = sorted(show_bookmarks, key=lambda x: sort_key(x["title"].casefold()))
 
         if video_bookmarks:
-            video_bookmarks_entry_id_lookups = {}
             video_bookmarks_entry_id_lookups = {video_bookmark['entry_id'] for video_bookmark in video_bookmarks}
 
-            for episode in episodes:
-                if (
-                    ( episode['entry_id'] in video_bookmarks_entry_id_lookups ) and
-                    ( episode['special_action'] == 'Make SLM Stream' ) and
-                    ( episode['stream_link_override'] not in [None, ''] ) and
-                    ( episode['original_release_date'] == '9999-12-31' )
-                ):
-
-                    field_original_release_date, field_override_episode_title, field_override_summary, field_override_image, field_override_duration = get_video_metadata(episode['stream_link_override'])
-
-                    if field_original_release_date != episode['original_release_date']:
-                        episode['original_release_date'] = field_original_release_date
-                        episode['override_episode_title'] = field_override_episode_title
-                        episode['override_summary'] = field_override_summary
-                        episode['override_image'] = field_override_image
-                        episode['override_duration'] = field_override_duration
-                        episodes_write_flag = True
-
-        if show_bookmarks:
-            show_bookmarks_entry_id_lookups = {}
-            disabled_entry_id_lookups = {}
-            show_bookmarks_entry_id_lookups = {show_bookmark['entry_id'] for show_bookmark in show_bookmarks if show_bookmark['bookmark_action'] == 'Import New Episode Metadata'}
-            disabled_entry_id_lookups = {show_bookmark['entry_id'] for show_bookmark in show_bookmarks if show_bookmark['bookmark_action'] == 'Disable Get New Episodes'}
-
-            for episode in episodes:
-                if not episode['season_episode_id'] in ['', None] and episode['status'] == 'unwatched' and episode['entry_id'] not in disabled_entry_id_lookups:
-
-                    field_override_duration = episode['override_duration']
-                    field_original_release_date = episode['original_release_date']
-                    field_override_episode_title = episode['override_episode_title']
-                    field_override_summary = episode['override_summary']
-
-                    if episode['original_release_date'] in ['1900-01-01', '', None]:
-                        field_original_release_date = get_movie_show_metadata_item(episode['season_episode_id'], bookmarks_country_code_lookup[episode['entry_id']], bookmarks_language_code_lookup[episode['entry_id']], 'originalReleaseDate') 
-
-                    if episode['entry_id'] in show_bookmarks_entry_id_lookups and import_metadata_options_flag:
-
-                        if episode['override_duration'] in [0, '0', '', None]:
-                            field_override_duration = get_movie_show_metadata_item(episode['season_episode_id'], bookmarks_country_code_lookup[episode['entry_id']], bookmarks_language_code_lookup[episode['entry_id']], 'runtime')                
-
-                        if episode['override_episode_title'] in ['', None] or episode['override_episode_title'].startswith('Episode '):
-                            field_override_episode_title = get_movie_show_metadata_item(episode['season_episode_id'], bookmarks_country_code_lookup[episode['entry_id']], bookmarks_language_code_lookup[episode['entry_id']], 'title')   
-
-                        if episode['override_summary'] in ['', None]:
-                            field_override_summary = get_movie_show_metadata_item(episode['season_episode_id'], bookmarks_country_code_lookup[episode['entry_id']], bookmarks_language_code_lookup[episode['entry_id']], 'shortDescription')   
-
-                    if (
-                        ( field_override_duration != episode['override_duration'] ) or 
-                        ( field_original_release_date != episode['original_release_date'] ) or
-                        ( field_override_episode_title != episode['override_episode_title'] ) or
-                        ( field_override_summary != episode['override_summary'] )
-                    ):
-
-                        if field_override_duration != episode['override_duration']:
-                            episode['override_duration'] = field_override_duration
-
-                        if field_original_release_date != episode['original_release_date']:
-                            episode['original_release_date'] = field_original_release_date
-
-                        if field_override_episode_title != episode['override_episode_title']:
-                            episode['override_episode_title'] = field_override_episode_title
-
-                        if field_override_summary != episode['override_summary']:
-                            episode['override_summary'] = field_override_summary
-
-                        episodes_write_flag = True
-
-        if episodes_write_flag:
-            write_data(csv_bookmarks_status, episodes)
-            episodes = read_data(csv_bookmarks_status)
-
+    episodes = read_data(csv_bookmarks_status)
+    if episodes:
         slm_streams_lookup = {episode['stream_link_override'] for episode in episodes if episode['special_action'] == 'Make SLM Stream'}
 
     if show_bookmarks:
+
         for show_bookmark in show_bookmarks:
+
+            print(f"{current_time()} INFO: Checking for new episodes and updated metadata in the TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}'...")
+
             existing_episodes = [episode for episode in episodes if show_bookmark['entry_id'] == episode['entry_id']]
             season_episodes = get_episode_list(show_bookmark['entry_id'], show_bookmark['url'], show_bookmark['country_code'], show_bookmark['language_code'])
 
             if season_episodes:
+
                 for season_episode in season_episodes:
+
+                    field_original_release_date = None
+                    field_override_episode_title = None
+                    field_override_summary = None
+                    field_override_image = None
+                    field_override_duration = None
+
+                    field_original_release_date = season_episode['original_release_date']
+                    if show_bookmark['bookmark_action'] == 'Import New Episode Metadata' and import_metadata_options_flag:
+                        field_override_episode_title = season_episode['override_episode_title']
+                        field_override_summary = season_episode['override_summary']
+                        field_override_duration = season_episode['override_duration']
+
                     if season_episode['season_episode'] not in [existing_episode['season_episode'] for existing_episode in existing_episodes]:
 
-                        field_override_episode_title = None
-                        field_override_summary = None
-                        field_override_image = None
-                        field_override_duration = None
-
-                        if show_bookmark['bookmark_action'] == 'Import New Episode Metadata' and import_metadata_options_flag:
-                            field_override_episode_title = season_episode['override_episode_title']
-                            field_override_summary = season_episode['override_summary']
-                            field_override_duration = season_episode['override_duration']
-
-                        new_row = {
+                        episodes.append({
                             "entry_id": show_bookmark['entry_id'],
                             "season_episode_id": season_episode['season_episode_id'],
                             "season_episode_prefix": None,
@@ -11770,22 +12041,85 @@ def get_new_episodes(entry_id_filter):
                             "stream_link_override": None,
                             "stream_link_file": None,
                             "special_action": "None",
-                            "original_release_date": season_episode['original_release_date'],
+                            "original_release_date": field_original_release_date,
                             "override_episode_title": field_override_episode_title,
                             "override_summary": field_override_summary,
                             "override_image": field_override_image,
                             "override_duration": field_override_duration,
                             "channels_id": None,
                             "manual_order": None
-                        }
-                        append_data(csv_bookmarks_status, new_row)
-                        notification_add(f"    For '{show_bookmark['title']} ({show_bookmark['release_year']})', added '{season_episode['season_episode']}'")
+                        })
+
+                        episodes_write_flag = True
+                        notification_add(f"    For TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}', added '{season_episode['season_episode']}'")
+
+                    if episodes:
+
+                        for episode in episodes:
+
+                            if (
+                                ( episode['entry_id'] == show_bookmark['entry_id'] ) and 
+                                ( episode['season_episode_id'] == season_episode['season_episode_id'] ) and 
+                                ( episode['status'] == 'unwatched' ) 
+                            ):
+
+                                episode_original_release_date = episode['original_release_date']
+                                episode_override_episode_title = episode['override_episode_title']
+                                episode_override_summary = episode['override_summary']
+                                episode_override_duration = episode['override_duration']
+
+                                if (
+                                    ( episode_original_release_date in ['1900-01-01', '', None] ) or
+                                    ( 
+                                        ( episode['entry_id'] in show_bookmarks_entry_id_lookups and import_metadata_options_flag ) and
+                                        (
+                                            ( episode_override_episode_title in ['', None] ) or
+                                            ( episode_override_episode_title.startswith('Episode ') ) or
+                                            ( episode_override_summary in ['', None] ) or
+                                            ( episode_override_duration in [0, '0', '', None] )
+                                        )
+                                    )
+                                
+                                ):
+
+                                    if field_original_release_date != episode_original_release_date:
+                                        if episode_original_release_date in ['1900-01-01', '', None]:
+                                            episode['original_release_date'] = field_original_release_date
+
+                                    if episode['entry_id'] in show_bookmarks_entry_id_lookups and import_metadata_options_flag:
+
+                                        if field_override_episode_title != episode_override_episode_title:
+                                            if episode_override_episode_title in ['', None] or episode_override_episode_title.startswith('Episode '):
+                                                episode['override_episode_title'] = field_override_episode_title
+
+                                        if field_override_summary != episode_override_summary:
+                                            if episode_override_summary in ['', None]:
+                                                episode['override_summary'] = field_override_summary
+
+                                        if field_override_duration != episode_override_duration:
+                                            if episode_override_duration in [0, '0', '', None]:
+                                                episode['override_duration'] = field_override_duration
+
+                                if (
+                                    ( episode['original_release_date'] != episode_original_release_date ) or
+                                    ( episode['override_episode_title']  != episode_override_episode_title ) or
+                                    ( episode['override_summary'] != episode_override_summary ) or
+                                    ( episode['override_duration'] != episode_override_duration )
+                                ):
+
+                                    notification_add(f"    Updated metadata for '{season_episode['season_episode']}' in TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}'.")
+                                    episodes_write_flag = True
+
             else:
-                notification_add(f"{current_time()} WARNING: No episodes found for '{show_bookmark['title']} ({show_bookmark['release_year']})' | {show_bookmark['object_type']}.")
+                notification_add(f"    WARNING: No episodes found for '{bookmarks_name_lookup[show_bookmark['entry_id']]}' | {show_bookmark['object_type']}.")
 
     if video_bookmarks:
+
         for video_bookmark in video_bookmarks:
+
             if video_bookmark['bookmark_action'] == 'Sync Online Playlist':
+
+                print(f"{current_time()} INFO: Checking for new videos in the Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}'...")
 
                 if not video_bookmark['url'] in [None, '']:
                     playlist_videos, message_throwaway = search_video_providers(video_providers, video_bookmark['url'], 'videos_from_playlist', 100, video_bookmark['language_code'], video_bookmark['country_code'])
@@ -11820,12 +12154,12 @@ def get_new_episodes(entry_id_filter):
                                         ( field_override_duration is None or field_override_duration == '' )
                                     ):
                                         
-                                        notification_add(f"{current_time()} ERROR: No metadata found for '{field_season_episode}' in '{video_bookmark['title']} ({video_bookmark['release_year']})' | {video_bookmark['object_type']}.")
+                                        notification_add(f"    ERROR: No metadata found for Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}'.")
 
                                 if video_bookmark['override_program_sort'] == 'manual':
                                     field_manual_order = max((int(episode['manual_order']) for episode in episodes if episode['entry_id'] == video_bookmark['entry_id'] and not episode['manual_order'] in [None, '']), default=0) + 1
 
-                                new_row = {
+                                episodes.append({
                                     "entry_id": video_bookmark['entry_id'],
                                     "season_episode_id": None,
                                     "season_episode_prefix": None,
@@ -11842,15 +12176,46 @@ def get_new_episodes(entry_id_filter):
                                     "override_duration": field_override_duration,
                                     "channels_id": None,
                                     "manual_order": field_manual_order
-                                }
-                                append_data(csv_bookmarks_status, new_row)
-                                notification_add(f"    For '{video_bookmark['title']} ({video_bookmark['release_year']})', added '{field_override_episode_title}'")
+                                })
+
+                                episodes_write_flag = True
+                                notification_add(f"    For Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}', added '{field_override_episode_title}'")
 
                     else:
-                        notification_add(f"{current_time()} ERROR: No videos found online for '{video_bookmark['title']} ({video_bookmark['release_year']})' | {video_bookmark['object_type']}.")
+                        notification_add(f"    ERROR: No videos found online for the Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}.")
 
                 else:
-                    notification_add(f"{current_time()} WARNING: URL needed for sync'ing is missing for '{video_bookmark['title']} ({video_bookmark['release_year']})' | {video_bookmark['object_type']}.")
+                    notification_add(f"    WARNING: URL needed for sync'ing is missing for the Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}.")
+
+        if episodes:
+
+            for episode in episodes:
+
+                if (
+                    ( episode['entry_id'] in video_bookmarks_entry_id_lookups ) and
+                    ( episode['special_action'] == 'Make SLM Stream' ) and
+                    ( episode['stream_link_override'] not in [None, ''] ) and
+                    ( episode['original_release_date'] == '9999-12-31' )
+                ):
+
+                    print(f"{current_time()} INFO: Attempting to update metadata for a video in '{bookmarks_name_lookup[episode['entry_id']]}'...")
+                    field_original_release_date, field_override_episode_title, field_override_summary, field_override_image, field_override_duration = get_video_metadata(episode['stream_link_override'])
+
+                    if field_original_release_date != episode['original_release_date']:
+                        episode['original_release_date'] = field_original_release_date
+                        episode['override_episode_title'] = field_override_episode_title
+                        episode['override_summary'] = field_override_summary
+                        episode['override_image'] = field_override_image
+                        episode['override_duration'] = field_override_duration
+                        
+                        episodes_write_flag = True
+                        notification_add(f"    Updated metadata for '{field_override_episode_title}' in Video Group '{bookmarks_name_lookup[episode['entry_id']]}'.")
+
+                    else:
+                        notification_add(f"    No metadata updated for '{field_override_episode_title}' in Video Group '{bookmarks_name_lookup[episode['entry_id']]}'.")
+
+    if episodes_write_flag:
+        write_data(csv_bookmarks_status, episodes)
 
     print(f"{current_time()} Finished scanning for new episodes and videos.")
 
@@ -14709,8 +15074,7 @@ def run_slm_new_recent_releases():
     hours, remainder = divmod(elapsed_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
 
-    notification_add(f"{current_time()} Total Elapsed Time: {int(hours)} hours | {int(minutes)} minutes | {int(seconds)} seconds")
-    notification_add(f"{current_time()} SLM New & Recent Releases process complete.")
+    notification_add(f"{current_time()} SLM New & Recent Releases process completed in {int(hours)} hours | {int(minutes)} minutes | {int(seconds)} seconds.")
 
     set_slm_process_active_flag('process_off')
 
@@ -16434,6 +16798,9 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": 0}, 67, "SLM: Minimum Video Length (in Seconds) for Search")
         check_and_append(csv_file, {"settings": "Off"}, 68, "SLM: Show 'Hidden Programs' in Dropdown Selection (Default)")
         check_and_append(csv_file, {"settings": "Off"}, 69, "SLM: Use the 'Feed & Auto-Mapping' functionality")
+        check_and_append(csv_file, {"settings": "Off"}, 70, "MTM: Run SLM 'Feed & Auto-Mapping' Functionality On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 71, "MTM: Run SLM 'Feed & Auto-Mapping' Functionality Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 72, "MTM: Run SLM 'Feed & Auto-Mapping' Functionality Frequency")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -16508,8 +16875,11 @@ def initial_data(csv_file):
             {"settings": "movies_shows"},                                              # [64] SLM: 'Add Programs' Search Selection (Default)
             {"settings": 0},                                                           # [65] SLM: Minimum Video Length (in Seconds) for Search
             {"settings": "Off"},                                                       # [66] SLM: Show 'Hidden Programs' in Dropdown Selection (Default)
-            {"settings": "Off"}                                                        # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
-        ]        
+            {"settings": "Off"},                                                       # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
+            {"settings": "Off"},                                                       # [68] MTM: Run SLM 'Feed & Auto-Mapping' Functionality On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [69] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Start Time
+            {"settings": "Every 24 hours"}                                             # [70] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Frequency
+        ]
 
     # Stream Link/File Manager
     elif csv_file == csv_streaming_services:
