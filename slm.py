@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.11.28.1845"
+    slm_version = "v2025.12.02.2130"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -440,21 +440,6 @@ def webpage_manage_programs():
                                 manage_programs_message += f"\n"
                             manage_programs_message += f"{current_time()} INFO: Your feed is currently empty. Please check again later!"
 
-                    if program_search_results_prior:
-                        if 'feed' not in manage_programs_action:
-
-                            program_search_results_check = program_search_results_prior
-                            filter_clean_message = None
-                            program_search_results_prior, filter_clean_message = filter_clean_slm_search_results(program_search_results_check, settings_hide_bookmarked_input, settings_minimum_video_length_input, slm_manage_programs_program_modify_available_flag)
-
-                            if filter_clean_message not in [None, '']:
-                                if manage_programs_message not in [None, '']:
-                                    manage_programs_message += f"\n"
-                                manage_programs_message += filter_clean_message
-
-                        if program_search_results_prior:
-                            slm_manage_programs_search_results_flag = True
-
                 elif manage_programs_action in [
                     'program_modify_edit',
                     'program_modify_available'
@@ -534,6 +519,21 @@ def webpage_manage_programs():
 
                         else:
                             manage_programs_message = f"{current_time()} ERROR: Manual programs, Video Groups, and internal lists cannot be checked for availability."
+
+                if program_search_results_prior:
+                    if 'feed' not in manage_programs_action and not slm_manage_programs_program_modify_available_flag:
+
+                        program_search_results_check = program_search_results_prior.copy()
+                        filter_clean_message = None
+                        program_search_results_prior, filter_clean_message = filter_clean_slm_search_results(program_search_results_check, settings_hide_bookmarked_input, settings_minimum_video_length_input, slm_manage_programs_program_modify_available_flag)
+
+                        if filter_clean_message not in [None, '']:
+                            if manage_programs_message not in [None, '']:
+                                manage_programs_message += f"\n"
+                            manage_programs_message += filter_clean_message
+
+                    if program_search_results_prior:
+                        slm_manage_programs_search_results_flag = True
 
             elif manage_programs_action in [
                 'program_add_manual',
@@ -11995,7 +11995,8 @@ def get_new_episodes(entry_id_filter):
 
         if show_bookmarks:
             show_bookmarks_entry_id_lookups = {show_bookmark['entry_id'] for show_bookmark in show_bookmarks if show_bookmark['bookmark_action'] == 'Import New Episode Metadata'}
-            show_bookmarks = sorted(show_bookmarks, key=lambda x: sort_key(x["title"].casefold()))
+            if len(show_bookmarks) > 1:
+                show_bookmarks = sorted(show_bookmarks, key=lambda x: sort_key(x["title"].casefold()))
 
         if video_bookmarks:
             video_bookmarks_entry_id_lookups = {video_bookmark['entry_id'] for video_bookmark in video_bookmarks}
@@ -14076,10 +14077,15 @@ def generate_stream_links_single(entry_id):
 
 # Get the valid Stream Links (if available) and write to the appropriate table
 def find_stream_links(auto_bookmarks, original_release_date_list):
-    
+
+    if len(auto_bookmarks) > 1:
+        auto_bookmarks = sorted(auto_bookmarks, key=lambda x: sort_key(x["title"].casefold()))
+
     bookmarks_statuses = read_data(csv_bookmarks_status)
 
     for auto_bookmark in auto_bookmarks:
+
+        print(f"{current_time()} INFO: Generating Stream Link(s) for {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {auto_bookmark['object_type']} ...")
 
         for bookmarks_status in bookmarks_statuses:
 
@@ -14156,24 +14162,32 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
 
                     bookmarks_status['stream_link'] = stream_link
 
-                    if auto_bookmark['object_type'] == "MOVIE":
+                    assignment_text = None
+                    if auto_bookmark['object_type'] in ['MOVIE', 'SHOW']:
+                        assignment_text = "    "
+
+                        if auto_bookmark['object_type'] == 'MOVIE':
+                            assignment_text += "Movie "
+
+                        elif auto_bookmark['object_type'] == 'SHOW':
+
+                            if bookmarks_status['season_episode_prefix'] not in [None, '']:
+                                assignment_text += f"{bookmarks_status['season_episode_prefix']} "
+
+                            assignment_text += f"{bookmarks_status['season_episode']} "
+
+                        assignment_text += "assigned Stream Link: "
+
                         if stream_link_reason:
-                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) assigned Stream Link: {stream_link_reason}")
+                            assignment_text += f"{stream_link_reason}"
                         else:
-                            print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) assigned Stream Link: {stream_link}")
-                    elif auto_bookmark['object_type'] == "SHOW":
-                        if stream_link_reason:
-                            if bookmarks_status['season_episode_prefix'] != "":
-                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode_prefix']} {bookmarks_status['season_episode']} assigned Stream Link: {stream_link_reason}")
-                            else:
-                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode']} assigned Stream Link: {stream_link_reason}")
-                        else:
-                            if bookmarks_status['season_episode_prefix'] != "":
-                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode_prefix']} {bookmarks_status['season_episode']} assigned Stream Link: {stream_link}")
-                            else:
-                                print(f"    {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {bookmarks_status['season_episode']} assigned Stream Link: {stream_link}")
+                            assignment_text += f"{stream_link}"
+
                     else:
-                        print(f"{current_time()} ERROR: Invalid object_type")
+                        assignment_test = "    ERROR: Invalid 'Object Type'. Only Movies and TV Shows can generate Stream Links."
+
+                    if assignment_text:
+                        print(assignment_text)
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
@@ -14507,6 +14521,9 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
         if base_bookmark['bookmark_action'] not in ["Hide"]
         and not base_bookmark['entry_id'].startswith('int') 
     ]
+
+    if len(bookmarks) > 1:
+        bookmarks = sorted(bookmarks, key=lambda x: sort_key(x["title"].casefold()))
 
     bookmarks_statuses = read_data(csv_bookmarks_status)
 
@@ -14946,7 +14963,7 @@ async def gather_channels_dvr_overrides():
             json_data = {"Airing": {}}
             run_put = False
 
-            if channels_id is not None and channels_id != "":
+            if not channels_id in [None, '']:
                 route = f"{base_files_route}{channels_id}"
 
                 if bookmark_status['override_duration']:
@@ -14980,50 +14997,54 @@ async def gather_channels_dvr_overrides():
             file_sort = None
             file_sort_order = None
 
-            if bookmark['object_type'] == 'MOVIE':
-                route = f"{base_files_route}{channels_id}"
-                json_data = {"Airing": {}}
-                airing_data = {}
-                if bookmark['override_program_title']:
-                    airing_data["Title"] = bookmark['override_program_title']
-                if airing_data:
-                    json_data["Airing"] = airing_data
-                    run_put = True
-            else:
-                route = f"{base_groups_route}{channels_id}"
-                json_data = {}
-                if bookmark['override_program_title']:
-                    json_data["Name"] = bookmark['override_program_title']
-                    run_put = True
-                if bookmark['override_program_summary']:
-                    json_data["Summary"] = bookmark['override_program_summary']
-                    run_put = True
-                if bookmark['override_program_sort'] != "na":
-                    file_sort, file_sort_order = get_file_sort_and_order(bookmarks, bookmark['entry_id'])
-                    if file_sort in ["alpha", "remove"]:
-                        json_data["FileSort"] = file_sort
-                    elif file_sort == "manual":
-                        json_data["FileSort"] = "season"
-                    elif file_sort == "dateoriginal":
-                        json_data["FileSort"] = "originalAirDate"
-                    elif file_sort == "dateadded":
-                        json_data["FileSort"] = "createdAt"
-                    json_data["FileSortOrder"] = file_sort_order
-                    run_put = True
-                if bookmark['override_program_image_type'] != "na":
-                    if bookmark['override_program_image_type'] == "manual" and bookmark['override_program_image_manual']:
-                        json_data["Image"] = bookmark['override_program_image_manual']
-                    elif bookmark['override_program_image_type'] == "first":
-                        sorted_episodes_videos = get_sorted_episodes_videos(bookmark['entry_id'], file_sort, file_sort_order)
-                        if sorted_episodes_videos:
-                            json_data["Image"] = sorted_episodes_videos[0]['override_image']
+            if not channels_id in [None, '']:
+
+                if bookmark['object_type'] == 'MOVIE':
+                    route = f"{base_files_route}{channels_id}"
+                    json_data = {"Airing": {}}
+                    airing_data = {}
+                    if bookmark['override_program_title']:
+                        airing_data["Title"] = bookmark['override_program_title']
+                    if airing_data:
+                        json_data["Airing"] = airing_data
+                        run_put = True
+
+                else:
+                    route = f"{base_groups_route}{channels_id}"
+                    json_data = {}
+                    if bookmark['override_program_title']:
+                        json_data["Name"] = bookmark['override_program_title']
+                        run_put = True
+                    if bookmark['override_program_summary']:
+                        json_data["Summary"] = bookmark['override_program_summary']
+                        run_put = True
+                    if bookmark['override_program_sort'] != "na":
+                        file_sort, file_sort_order = get_file_sort_and_order(bookmarks, bookmark['entry_id'])
+                        if file_sort in ["alpha", "remove"]:
+                            json_data["FileSort"] = file_sort
+                        elif file_sort == "manual":
+                            json_data["FileSort"] = "season"
+                        elif file_sort == "dateoriginal":
+                            json_data["FileSort"] = "originalAirDate"
+                        elif file_sort == "dateadded":
+                            json_data["FileSort"] = "createdAt"
+                        json_data["FileSortOrder"] = file_sort_order
+                        run_put = True
+                    if bookmark['override_program_image_type'] != "na":
+                        if bookmark['override_program_image_type'] == "manual" and bookmark['override_program_image_manual']:
+                            json_data["Image"] = bookmark['override_program_image_manual']
+                        elif bookmark['override_program_image_type'] == "first":
+                            sorted_episodes_videos = get_sorted_episodes_videos(bookmark['entry_id'], file_sort, file_sort_order)
+                            if sorted_episodes_videos:
+                                json_data["Image"] = sorted_episodes_videos[0]['override_image']
+                            else:
+                                json_data["Image"] = ""
                         else:
                             json_data["Image"] = ""
-                    else:
-                        json_data["Image"] = ""
-                    run_put = True
-            if run_put:
-                tasks.append(put_channels_dvr_json_async(session, route, json_data))
+                        run_put = True
+
+                if run_put:
+                    tasks.append(put_channels_dvr_json_async(session, route, json_data))
 
         await asyncio.gather(*tasks)
 
