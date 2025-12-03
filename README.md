@@ -1,4 +1,4 @@
-![slm_logo_v2](https://github.com/user-attachments/assets/caf56400-1523-4efa-b9be-7306942f9f06)
+![image](https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/refs/heads/main/static/assets/img/slm_logo_v2_for_media_players.png)
 
 ---
 ## Streaming Library Manager
