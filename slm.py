@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.02.2130"
+    slm_version = "v2025.12.06.1741"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -77,6 +77,7 @@ def webpage_home():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -105,7 +106,7 @@ def webpage_manage_programs():
         slm_manage_programs_main_flag = True
 
     import_metadata_options_flag = None
-    if slm_channels_dvr_integration: # TO ADD: Need to update for Media Player integration
+    if slm_channels_dvr_integration or slm_media_players_integration:
         import_metadata_options_flag = True
 
     # Global Previously Bookmarked Selections
@@ -3108,6 +3109,7 @@ def webpage_manage_programs():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -5468,7 +5470,8 @@ def webpage_manage_providers():
         'slm_stream_address': 'slm_stream_address_anchor',
         'slm_label': 'slm_label_anchor',
         'subscribed_video_channel':'subscribed_video_channels_anchor',
-        'show_hidden_subscribed_video_channel':'subscribed_video_channels_anchor'
+        'show_hidden_subscribed_video_channel':'subscribed_video_channels_anchor',
+        'file_name_options': 'file_name_options_anchor'
     }
 
     # Streaming Services
@@ -5520,6 +5523,10 @@ def webpage_manage_providers():
         slm_stream_address_prior = slm_stream_address
     slm_stream_address_message = ""    
 
+    # File Name Management
+    settings_slm_add_show_title = settings[73]['settings']                      # [73] SLM: Add TV Show Title to File Name On/Off
+    settings_slm_add_episode_title = settings[74]['settings']                   # [74] SLM: Add Episode Title to TV Show File Name On/Off
+
     if request.method == 'POST':
         settings_action = request.form['action']
         slm_stream_address_input = request.form.get('slm_stream_address')
@@ -5530,7 +5537,7 @@ def webpage_manage_providers():
                 settings_anchor_id = anchor_id
                 break
 
-        checks = ['slmapping_', 'slm_stream_address_', 'streaming_services_', 'ssss_', 'provider_group_', 'slm_label_', 'subscribed_video_channel_']
+        checks = ['slmapping_', 'slm_stream_address_', 'streaming_services_', 'ssss_', 'provider_group_', 'slm_label_', 'subscribed_video_channel_', 'file_name_options_']
         if any(settings_action.startswith(check) for check in checks):
 
             interior_checks = ['slmapping_', 'provider_group_', 'slm_label_', 'subscribed_video_channel_']
@@ -5538,12 +5545,17 @@ def webpage_manage_providers():
 
                 write_csv = True
 
-                if settings_action in ['slm_stream_address_save'
+                if settings_action in ['slm_stream_address_save',
+                                       'file_name_options_save'
                                       ]:
 
                     if settings_action == 'slm_stream_address_save':
                         settings[46]["settings"] = slm_stream_address_input
                         slm_stream_address_prior = slm_stream_address_input
+
+                    if settings_action == 'file_name_options_save':
+                        settings[73]['settings'] = 'On' if request.form.get('settings_slm_add_show_title') in ['on', 'On', 'ON'] else 'Off'
+                        settings[74]['settings'] = 'On' if request.form.get('settings_slm_add_episode_title') in ['on', 'On', 'ON'] else 'Off'
 
                     csv_to_write = csv_settings
                     data_to_write = settings
@@ -6104,6 +6116,8 @@ def webpage_manage_providers():
         slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
         if slm_stream_address_prior is None or slm_stream_address_prior == '':
             slm_stream_address_prior = slm_stream_address
+        settings_slm_add_show_title = settings[73]['settings']                      # [73] SLM: Add TV Show Title to File Name On/Off
+        settings_slm_add_episode_title = settings[74]['settings']                   # [74] SLM: Add Episode Title to TV Show File Name On/Off
 
         streaming_services = read_data(csv_streaming_services)
         streaming_services_subscribed_raw = [streaming_service for streaming_service in streaming_services if streaming_service['streaming_service_subscribe'] == 'True']
@@ -6138,6 +6152,7 @@ def webpage_manage_providers():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -6154,7 +6169,9 @@ def webpage_manage_providers():
         html_provider_groups_raw = provider_groups_raw,
         html_slm_labels = slm_labels,
         html_subscribed_video_channels = visible_subscribed_video_channels,
-        html_subscribed_video_channels_message = subscribed_video_channels_message
+        html_subscribed_video_channels_message = subscribed_video_channels_message,
+        html_settings_slm_add_show_title = settings_slm_add_show_title,
+        html_settings_slm_add_episode_title = settings_slm_add_episode_title
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -7425,6 +7442,7 @@ def webpage_playlists(sub_page):
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -9006,6 +9024,7 @@ def webpage_playlists_parent_stations_more():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -9325,6 +9344,7 @@ def webpage_playlists_streams():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -9432,6 +9452,7 @@ def webpage_playlists_station_status():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -10003,6 +10024,7 @@ def webpage_reports_queries():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -11002,6 +11024,7 @@ def webpage_tools_gracenotesearch():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -11051,6 +11074,7 @@ def webpage_tools_csvexplorer():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -11214,6 +11238,7 @@ def webpage_tools_channelsclients():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -11394,7 +11419,11 @@ def webpage_tools_automation():
                     get_new_episodes(None)
 
                 elif action.startswith('import_program_updates'):
-                    action_friendly_name = 'Import Updates from Channels'
+                    action_friendly_name = 'Import Updates from '
+                    if slm_channels_dvr_integration:
+                        action_friendly_name += 'Channels DVR'
+                    elif slm_media_players_integration:
+                        action_friendly_name += 'Media Player'
                     import_program_updates()
 
                 elif action.startswith('generate_stream_links'):
@@ -11608,6 +11637,7 @@ def webpage_tools_automation():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -11897,7 +11927,7 @@ def end_to_end():
     time.sleep(2)
     get_new_episodes(None)
     time.sleep(2)
-    if slm_channels_dvr_integration:
+    if slm_channels_dvr_integration or slm_media_players_integration:
         import_program_updates()
         time.sleep(2)
     generate_stream_links(None)
@@ -11959,7 +11989,7 @@ def get_new_episodes(entry_id_filter):
     episodes_write_flag = None
 
     import_metadata_options_flag = None
-    if slm_channels_dvr_integration: # TO ADD: Need to update for Media Player integration
+    if slm_channels_dvr_integration or slm_media_players_integration:
         import_metadata_options_flag = True
 
     bookmarks = read_data(csv_bookmarks)
@@ -13943,7 +13973,10 @@ def get_season_list(entry_id, url, country_code, language_code, _GRAPHQL_GetUrlT
 def import_program_updates():
     print("\n==========================================================")
     print("|                                                        |")
-    print("|         Import Program Updates from Channels           |")
+    if slm_channels_dvr_integration:
+        print("|       Import Program Updates from Channels DVR         |")
+    elif slm_media_players_integration:
+        print("|         Import Program Updates from Media Player       |")
     print("|                                                        |")
     print("==========================================================\n")
 
@@ -13956,12 +13989,12 @@ def import_program_updates():
     run_import = None
 
     if not os.path.exists(channels_directory):
-        notification_add(f"{current_time()} WARNING: {channels_directory} does not exist, skipping import. Please change the Channels directory in the Settings menu.")
+        notification_add(f"{current_time()} WARNING: {channels_directory} does not exist, skipping import. Please change the 'Stream Links/Files and Media Base Directory' in the Settings menu.")
     else:
         run_import = True
         
     if run_import:
-        print(f"{current_time()} Checking for removed Stream Links...")
+        print(f"{current_time()} Checking for removed Stream Links/Files...")
 
         for bookmark_status in bookmarks_statuses:
             stream_link_file_raw = normalize_path(bookmark_status['stream_link_file'])
@@ -13986,7 +14019,7 @@ def import_program_updates():
 
         write_data(csv_bookmarks_status, bookmarks_statuses)
 
-        print(f"{current_time()} Finished checking for removed Stream Links.")
+        print(f"{current_time()} Finished checking for removed Stream Links/Files.")
 
     set_slm_process_active_flag('off')
 
@@ -14012,8 +14045,8 @@ def generate_stream_links(original_release_date_list):
 
     run_generation = None
 
-    if slm_channels_dvr_integration and not os.path.exists(channels_directory):
-        notification_add(f"{current_time()} WARNING: {channels_directory} does not exist, skipping generation. Please change the Channels directory in the Settings menu.")
+    if ( slm_channels_dvr_integration or slm_media_players_integration ) and not os.path.exists(channels_directory):
+        notification_add(f"{current_time()} WARNING: {channels_directory} does not exist, skipping generation. Please change the 'Stream Links/Files and Media Base Directory' in the Settings menu.")
     else:
         run_generation = True
         
@@ -14024,15 +14057,16 @@ def generate_stream_links(original_release_date_list):
         find_stream_links(auto_bookmarks, original_release_date_list)
         print(f"{current_time()} Finished getting Stream Links.")
 
-        if slm_channels_dvr_integration:
-            if original_release_date_list is None:
-                print(f"{current_time()} Checking for changes from last run...")
-                get_stream_link_ids()
-                print(f"{current_time()} Finished checking for changes from last run.")
+        if slm_channels_dvr_integration or slm_media_players_integration:
 
-            print(f"{current_time()} Creating and removing Stream Link files and directories...")
+            if slm_channels_dvr_integration and original_release_date_list is None:
+                print(f"{current_time()} Checking Channels DVR for changes from last run...")
+                get_stream_link_ids()
+                print(f"{current_time()} Finished checking Channels DVR for changes from last run.")
+
+            print(f"{current_time()} Creating and removing Stream Link/File files and directories...")
             create_stream_link_files(bookmarks, True, original_release_date_list)
-            print(f"{current_time()} Finished creating and removing Stream Link files and directories.")
+            print(f"{current_time()} Finished creating and removing Stream Link/File files and directories.")
 
         print(f"{current_time()} END: Finished Generating Stream Links.")
 
@@ -14052,8 +14086,8 @@ def generate_stream_links_single(entry_id):
     generate_stream_links_single_message = None
     run_generation = None
 
-    if slm_channels_dvr_integration and not os.path.exists(channels_directory):
-        generate_stream_links_single_message = f"{current_time()} WARNING: {channels_directory} does not exist, skipping generation. Please change the Channels directory in the Settings menu."
+    if ( slm_channels_dvr_integration or slm_media_players_integration ) and not os.path.exists(channels_directory):
+        generate_stream_links_single_message = f"{current_time()} WARNING: '{channels_directory}' does not exist, skipping generation. Please change the 'Stream Link/Files Base Directory' in the Settings menu."
     else:
         run_generation = True
         
@@ -14064,9 +14098,14 @@ def generate_stream_links_single(entry_id):
         if entry_id.startswith('int'):
             generate_stream_links_single_message = f"{current_time()} INFO: 'SLM INTERNAL' selections cannot generate Stream Links/Files."
 
-        elif slm_channels_dvr_integration:
+        elif slm_channels_dvr_integration or slm_media_players_integration:
             create_stream_link_files(modify_bookmarks, None, None)
-            generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links/Files! Please execute process 'Run Updates in Channels' in order to see this program."
+
+            if slm_channels_dvr_integration:
+                generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links/Files! Please execute process 'Run Updates in Channels' in order to see this program."
+            
+            elif slm_media_players_integration:
+                generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links/Files! Please execute the refresh process in your media player in order to see this program."
 
         else:
             generate_stream_links_single_message = f"{current_time()} INFO: Finished generating Stream Links/Files! Please use 'Modify Programs' to see values."
@@ -14103,7 +14142,7 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
                 stream_link_dirty = None
                 stream_link_reason = None
 
-                if slm_channels_dvr_integration:
+                if slm_channels_dvr_integration or slm_media_players_integration:
                     pass
                 else:
                     bookmarks_status['stream_link_file'] = ''
@@ -14516,6 +14555,9 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
     slm_stream_address = settings[46]["settings"]
     slm_stream_address_full = f"{slm_stream_address}/playlists/streams/stream?url="
 
+    settings_slm_add_show_title = settings[73]['settings']                      # [73] SLM: Add TV Show Title to File Name On/Off
+    settings_slm_add_episode_title = settings[74]['settings']                   # [74] SLM: Add Episode Title to TV Show File Name On/Off
+
     bookmarks = [
         base_bookmark for base_bookmark in base_bookmarks 
         if base_bookmark['bookmark_action'] not in ["Hide"]
@@ -14547,15 +14589,26 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
                 if bookmark['object_type'] == "MOVIE":
                     stream_link_path = movie_path
                     stream_link_file_name = title_full
+
                 elif bookmark['object_type'] == "SHOW":
+                    stream_link_file_name = ''
+
                     if bookmark_status['season_episode_prefix'] != "":
-                        stream_link_file_name = f"{sanitize_name(bookmark_status['season_episode_prefix'])} {bookmark_status['season_episode']}"
-                    else:
-                        stream_link_file_name = bookmark_status['season_episode']
+                        stream_link_file_name += f"{sanitize_name(bookmark_status['season_episode_prefix'])} "
+
+                    if settings_slm_add_show_title == 'On':
+                        stream_link_file_name += f"{title_full} - "
+
+                    if settings_slm_add_episode_title == 'On' and bookmark_status['override_episode_title'] not in [None, '']:
+                        stream_link_file_name += f"{sanitize_name(bookmark_status['override_episode_title'])} - "
+
+                    stream_link_file_name += f"{bookmark_status['season_episode']}"
+
                     season_number, episode_number = re.match(r"S(\d+)E(\d+)", bookmark_status['season_episode']).groups()
                     season_folder_name = f"Season {season_number}"
                     stream_link_path = os.path.join(tv_path, title_full, season_folder_name)
-                if bookmark['object_type'] == "VIDEO":
+
+                elif bookmark['object_type'] == "VIDEO":
                     stream_link_path = os.path.join(video_path, title_full)
                     stream_link_file_name = sanitize_name(bookmark_status['season_episode'])
 
@@ -15413,7 +15466,7 @@ def run_refresh_channels_m3u_playlists():
 # Automation - In Channels DVR, remove files older than a certain number of day and empty directories
 def run_channels_remove_old_files_empty_directories(action_type):
     settings = read_data(csv_settings)
-    channels_directory = settings[1]["settings"]                            # [1] Channels DVR Directory
+    channels_directory = settings[1]["settings"]                            # [1] Stream Link/Files Base Directory
     mtm_channels_remove_old_logs_recording_days = settings[54]["settings"]  # [54] MTM: Remove old Channels DVR Recording Logs Days to Keep
     mtm_channels_remove_old_backups_days = settings[58]["settings"]         # [58] MTM: Remove old Channels DVR Backups Days to Keep
     message = ''
@@ -15513,6 +15566,7 @@ def webpage_files():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -15647,6 +15701,7 @@ def webpage_logs():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -15665,6 +15720,7 @@ def webpage_settings():
     global slm_playlist_manager
     global slm_stream_link_file_manager
     global slm_channels_dvr_integration
+    global slm_media_players_integration
     global slm_media_tools_manager
     settings_anchor_id = None
     run_empty_row = None
@@ -15676,6 +15732,15 @@ def webpage_settings():
     channels_directory = settings[1]["settings"]
     channels_prune = settings[7]["settings"]
     channels_labels = settings[50]["settings"]                      # [50] SLM: Update Labels in Channels DVR On/Off
+
+    settings_articles = []
+    settings_articles_raw = settings[71]["settings"]
+    if settings_articles_raw:
+        if isinstance(settings_articles_raw, str):
+            try:
+                settings_articles = ast.literal_eval(settings_articles_raw)
+            except (ValueError, SyntaxError):
+                print(f"{current_time()} ERROR: For 'Articles', unable to convert to a list.")
 
     channels_url_message = ""
     channels_directory_message = ""
@@ -15689,7 +15754,8 @@ def webpage_settings():
         'playlist_manager': 'advanced_experimental_anchor',
         'stream_link_file_manager': 'advanced_experimental_anchor',
         'channels_dvr_integration': 'advanced_experimental_anchor',
-        'media_tools_manager': 'advanced_experimental_anchor'
+        'media_tools_manager': 'advanced_experimental_anchor',
+        'settings_articles': 'settings_articles_anchor'
     }
 
     if not os.path.exists(channels_directory):
@@ -15709,34 +15775,40 @@ def webpage_settings():
         playlist_manager_input = request.form.get('playlist_manager')
         stream_link_file_manager_input = request.form.get('stream_link_file_manager')
         channels_dvr_integration_input = request.form.get('channels_dvr_integration')
+        media_players_integration_input = request.form.get('media_players_integration')
         media_tools_manager_input = request.form.get('media_tools_manager')
+        settings_articles_input = [tag['value'].casefold() for tag in json.loads(request.form.get('settings_articles', '[]')) if 'value' in tag]
 
         for prefix, anchor_id in action_to_anchor.items():
             if settings_action.startswith(prefix):
                 settings_anchor_id = anchor_id
                 break
 
-        if settings_action in ['channels_url_cancel',
-                               'channels_directory_cancel',
-                               'channels_dvr_integration_cancel',
-                               'channels_url_save',
-                               'channels_directory_save',
-                               'channels_dvr_integration_save',
-                               'channels_url_test',
-                               'channels_url_scan'
-                              ]:
+        if settings_action in [
+            'channels_url_cancel',
+            'channels_url_save',
+            'channels_directory_save',
+            'channels_dvr_integration_save',
+            'settings_articles_save',
+            'channels_url_test',
+            'channels_url_scan'
+        ]:
 
-            if settings_action in ['channels_url_save',
-                                   'channels_directory_save',
-                                   'channels_dvr_integration_save',
-                                   'channels_url_scan'
-                                  ]:
+            if settings_action in [
+                'channels_url_save',
+                'channels_directory_save',
+                'channels_dvr_integration_save',
+                'settings_articles_save',
+                'channels_url_scan'
+            ]:
 
-                if settings_action in ['channels_url_save',
-                                       'channels_directory_save',
-                                       'channels_dvr_integration_save',
-                                       'channels_url_scan'
-                                    ]:
+                if settings_action in [
+                    'channels_url_save',
+                    'channels_directory_save',
+                    'channels_dvr_integration_save',
+                    'settings_articles_save',
+                    'channels_url_scan'
+                ]:
 
                     if settings_action == 'channels_url_save':
                         settings[0]["settings"] = channels_url_input
@@ -15757,6 +15829,17 @@ def webpage_settings():
                             slm_channels_dvr_integration = True
                         else:
                             slm_channels_dvr_integration = None
+
+                        if media_players_integration_input == 'on':
+                            if settings[24]["settings"] == "On":
+                                advanced_experimental_message = f"{current_time()} ERROR: 'Media Players Integration' cannot be initiated when 'Channels DVR Integration' is active. Please disable 'Channels DVR Integration' if you want to use 'Media Players Integration'."
+                                media_players_integration_input = ''
+
+                        settings[72]["settings"] = "On" if media_players_integration_input == 'on' else "Off"
+                        if media_players_integration_input == 'on':
+                            slm_media_players_integration = True
+                        else:
+                            slm_media_players_integration = None
 
                         # Channels DVR Prune
                         settings[7]["settings"] = "On" if channels_prune_input == 'on' else "Off"
@@ -15794,6 +15877,9 @@ def webpage_settings():
                             slm_media_tools_manager = True
                         else:
                             slm_media_tools_manager = None
+
+                    elif settings_action == 'settings_articles_save':
+                        settings[71]["settings"] = settings_articles_input
 
                     csv_to_write = csv_settings
                     data_to_write = settings
@@ -15841,6 +15927,28 @@ def webpage_settings():
         channels_directory = settings[1]["settings"]
         channels_prune = settings[7]["settings"]
         channels_labels = settings[50]["settings"]                      # [50] SLM: Update Labels in Channels DVR On/Off
+        settings_articles = []
+        settings_articles_raw = settings[71]["settings"]
+        if settings_articles_raw:
+            if isinstance(settings_articles_raw, str):
+                try:
+                    settings_articles = ast.literal_eval(settings_articles_raw)
+                except (ValueError, SyntaxError):
+                    print(f"{current_time()} ERROR: For 'Articles', unable to convert to a list.")
+
+    if channels_directory_message in [None, '']:
+
+        if slm_channels_dvr_integration:
+            channels_directory_message = f"{current_time()} INFO: For Channels DVR users, the 'Stream Links/Files and Media Base Directory' should be set to the main Channels folder that contains the 'Imports' directory, among others like 'Database', 'Logs', 'Movies', etc...."
+
+        elif slm_media_players_integration:
+            channels_directory_message = f"{current_time()} INFO: For Media Players users, the 'Stream Links/Files and Media Base Directory' should be set to a location that is accesible for your media consumption program that can launch Stream Links/Files."
+
+        if ( slm_channels_dvr_integration or slm_media_players_integration ):
+            channels_directory_message += f" SLM will create structure under this location that goes '/Imports/[Movies | TV | Videos]/slm', and then further under those for TV Shows and Video Groups as needed for each program."
+
+        if slm_channels_dvr_integration:
+            channels_directory_message += f" Setting this incorrectly will mean Channels cannot see the Stream Link/File files, and therefore the programs will not appear in the interface. Additionally, this selection is used for some other functions like MTM Automation for managing Channels DVR logs and backups. Thus, even if you are not using SLM, this must be set correctly for this program to function normally."
 
     response = make_response(render_template(
         'main/general_settings.html',
@@ -15850,6 +15958,7 @@ def webpage_settings():
         html_slm_playlist_manager = slm_playlist_manager,
         html_slm_stream_link_file_manager = slm_stream_link_file_manager,
         html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+        html_slm_media_players_integration = slm_media_players_integration,
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
@@ -15863,7 +15972,9 @@ def webpage_settings():
         html_current_directory = current_directory,
         html_subdirectories = get_subdirectories(current_directory),
         html_channels_directory_message = channels_directory_message,
-        html_advanced_experimental_message = advanced_experimental_message
+        html_advanced_experimental_message = advanced_experimental_message,
+        html_settings_articles = settings_articles,
+        html_base_articles = base_articles
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -15901,7 +16012,6 @@ def find_channels_dvr_path():
     search_directory = "Imports"
 
     print(f"{current_time()} Searching for Channels DVR folder...")
-    print(f"{current_time()} Please wait or press 'Ctrl+C' to stop and continue the initialization process.")
 
     # Search times out after 60 seconds
     timer = threading.Timer(60, timeout_handler)
@@ -15930,9 +16040,9 @@ def find_channels_dvr_path():
             print(f"{current_time()} INFO: Channels DVR folder not found, setting to Docker default...")
             channels_dvr_path = docker_channels_dir
         else:
-            print(f"{current_time()} INFO: Channels DVR folder not found, defaulting to current directory. Please set your Channels DVR folder in 'Settings'.")
+            print(f"{current_time()} INFO: Channels DVR folder not found, defaulting to current directory. Please set your 'Stream Links/Files and Media Base Directory' in 'Settings'.")
 
-    print(f"{current_time()} INFO: Channels DVR folder set to '{channels_dvr_path}'")
+    print(f"{current_time()} INFO: 'Stream Links/Files and Media Base Directory' set to '{channels_dvr_path}'. Please update in 'Settings' if this is incorrect or another location is desired.")
 
     return channels_dvr_path
 
@@ -15961,6 +16071,7 @@ def webpage_route_template(template):
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
             html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+            html_slm_media_players_integration = slm_media_players_integration,
             html_slm_media_tools_manager = slm_media_tools_manager,
             html_plm_streaming_stations = plm_streaming_stations
         )
@@ -15973,6 +16084,7 @@ def webpage_route_template(template):
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
             html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+            html_slm_media_players_integration = slm_media_players_integration,
             html_slm_media_tools_manager = slm_media_tools_manager,
             html_plm_streaming_stations = plm_streaming_stations
         ), 404
@@ -15985,6 +16097,7 @@ def webpage_route_template(template):
             html_slm_playlist_manager = slm_playlist_manager,
             html_slm_stream_link_file_manager = slm_stream_link_file_manager,
             html_slm_channels_dvr_integration = slm_channels_dvr_integration,
+            html_slm_media_players_integration = slm_media_players_integration,
             html_slm_media_tools_manager = slm_media_tools_manager,
             html_plm_streaming_stations = plm_streaming_stations
         ), 500
@@ -16042,39 +16155,30 @@ def sanitize_name(name):
     sanitized = re.sub(r'[\\/:*?"<>|]', '', name)
     return sanitized
 
-# Alphabetic sort ignoring common articles in various Latin script languages
+# Alphabetic sort ignoring user controlled articles and non-alphanumeric characters
 def sort_key(title):
-    articles = {
-        "english": ["the", "a", "an"],
-        "spanish": ["el", "la", "los", "las", "un", "una", "unos", "unas"],
-        "portuguese": ["o", "a", "os", "as", "um", "uma", "uns", "umas"],
-        "french": ["le", "la", "les", "un", "une", "des"],
-        "german": ["der", "die", "das", "ein", "eine", "einen"],
-        "italian": ["il", "lo", "la", "i", "gli", "le", "un", "una", "uno"],
-        "bosnian": ["taj", "ta", "to", "jedan", "jedna", "jedno"],
-        "catalan": ["el", "la", "els", "les", "un", "una", "uns", "unes"],
-        "czech": ["ten", "ta", "to", "jeden", "jedna", "jedno"],
-        "finnish": ["se", "yksi"],
-        "croatian": ["taj", "ta", "to", "jedan", "jedna", "jedno"],
-        "hungarian": ["a", "az", "egy"],
-        "icelandic": ["það", "þessi", "einn", "ein", "eitt"],
-        "maltese": ["il", "l-", "xi", "wieħed", "waħda"],
-        "polish": ["ten", "ta", "to", "jeden", "jedna", "jedno"],
-        "romanian": ["cel", "cea", "cei", "cele", "un", "o", "niște"],
-        "slovak": ["ten", "tá", "to", "jeden", "jedna", "jedno"],
-        "slovenian": ["ta", "ta", "to", "en", "ena", "eno"],
-        "albanian": ["një", "një", "një"],
-        "swahili": ["huyu", "hii", "hiki", "moja"],
-        "turkish": ["bir"]
-    }
+    cleaned_title = ''
+    articles = []
+
+    settings = read_data(csv_settings)
+    articles_raw = settings[71]["settings"]
+
+    if articles_raw:
+        if isinstance(articles_raw, str):
+            try:
+                articles = ast.literal_eval(articles_raw)
+            except (ValueError, SyntaxError):
+                print(f"{current_time()} ERROR: For 'Articles', unable to convert to a list.")
     
     # Remove non-alphanumeric characters
     cleaned_title = re.sub(r'[^a-zA-Z0-9\s]', '', title)
-    words = cleaned_title.casefold().split()
-    
-    for lang, art_list in articles.items():
-        if words and words[0] in art_list:
-            return " ".join(words[1:])
+
+    # Remove articles
+    if articles:
+        words = cleaned_title.casefold().split()
+        if words and words[0] in articles:
+            cleaned_title = " ".join(words[1:])
+
     return cleaned_title.casefold()
 
 # Normalize the file path for systems that can't handle certain characters like 'é'
@@ -16170,9 +16274,9 @@ def directory_delete(base_directory):
                 try:
                     os.chmod(dir_path, stat.S_IWRITE)  # Mark the folder as writable
                     os.rmdir(dir_path)
-                    notification_add(f"    On second attempt, removed empty directory: {dir_path}")
+                    notification_add(f"    Using read-only handle, removed empty directory: {dir_path}")
                 except OSError as e:
-                    notification_add(f"    Second error removing directory {dir_path}: {e}")
+                    notification_add(f"    Final error removing directory {dir_path}: {e}")
 
 # Create a file
 def create_file(path, name, url, special_action):
@@ -16822,6 +16926,22 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Off"}, 70, "MTM: Run SLM 'Feed & Auto-Mapping' Functionality On/Off")
         check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 71, "MTM: Run SLM 'Feed & Auto-Mapping' Functionality Start Time")
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 72, "MTM: Run SLM 'Feed & Auto-Mapping' Functionality Frequency")
+        check_and_append(csv_file, {"settings": [
+                "the",
+                "a",
+                "an",
+                "el",
+                "la",
+                "los",
+                "las",
+                "un",
+                "una",
+                "unos",
+                "unas"
+            ]}, 73, "GEN: Default list of 'Articles for Sorting'")
+        check_and_append(csv_file, {"settings": "Off"}, 74, "GEN: Media Players Integration On/Off")
+        check_and_append(csv_file, {"settings": "Off"}, 75, "SLM: Add TV Show Title to File Name On/Off")
+        check_and_append(csv_file, {"settings": "Off"}, 76, "SLM: Add Episode Title to TV Show File Name On/Off")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -16830,7 +16950,7 @@ def initial_data(csv_file):
     if csv_file == csv_settings:
         data = [
             {"settings": f"http://dvr-{socket.gethostname().lower()}.local:8089"},     # [0]  Channels URL
-            {"settings": script_dir},                                                  # [1]  Channels Folder
+            {"settings": script_dir},                                                  # [1]  Stream Links/Files Folder
             {"settings": "US"},                                                        # [2]  Search Defaults: Country Code
             {"settings": "en"},                                                        # [3]  Search Defaults: Language Code
             {"settings": "9"},                                                         # [4]  Search Defaults: Number of Results
@@ -16899,7 +17019,23 @@ def initial_data(csv_file):
             {"settings": "Off"},                                                       # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
             {"settings": "Off"},                                                       # [68] MTM: Run SLM 'Feed & Auto-Mapping' Functionality On/Off
             {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [69] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Start Time
-            {"settings": "Every 24 hours"}                                             # [70] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Frequency
+            {"settings": "Every 24 hours"},                                            # [70] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Frequency
+            {"settings": [
+                "the",
+                "a",
+                "an",
+                "el",
+                "la",
+                "los",
+                "las",
+                "un",
+                "una",
+                "unos",
+                "unas"
+            ]},                                                                        # [71] GEN: List of 'Articles for Sorting'
+            {"settings": "Off"},                                                       # [72] GEN: Media Players Integration On/Off
+            {"settings": "Off"},                                                       # [73] SLM: Add TV Show Title to File Name On/Off
+            {"settings": "Off"}                                                        # [74] SLM: Add Episode Title to TV Show File Name On/Off
         ]
 
     # Stream Link/File Manager
@@ -17994,6 +18130,33 @@ compare_replace_options = [
     {'compare_replace_id': 'prepend_string', 'compare_replace_name': 'Prepending string/pattern with...'},
     {'compare_replace_id': 'prepend_all', 'compare_replace_name': 'Prepending entire contents with...'}
 ]
+raw_articles = {
+    "english": ["the", "a", "an"],
+    "spanish": ["el", "la", "los", "las", "un", "una", "unos", "unas"],
+    "portuguese": ["o", "a", "os", "as", "um", "uma", "uns", "umas"],
+    "french": ["le", "la", "les", "un", "une", "des"],
+    "german": ["der", "die", "das", "ein", "eine", "einen"],
+    "italian": ["il", "lo", "la", "i", "gli", "le", "un", "una", "uno"],
+    "bosnian": ["taj", "ta", "to", "jedan", "jedna", "jedno"],
+    "catalan": ["el", "la", "els", "les", "un", "una", "uns", "unes"],
+    "czech": ["ten", "ta", "to", "jeden", "jedna", "jedno"],
+    "finnish": ["se", "yksi"],
+    "croatian": ["taj", "ta", "to", "jedan", "jedna", "jedno"],
+    "hungarian": ["a", "az", "egy"],
+    "icelandic": ["það", "þessi", "einn", "ein", "eitt"],
+    "maltese": ["il", "l-", "xi", "wieħed", "waħda"],
+    "polish": ["ten", "ta", "to", "jeden", "jedna", "jedno"],
+    "romanian": ["cel", "cea", "cei", "cele", "un", "o", "niște"],
+    "slovak": ["ten", "tá", "to", "jeden", "jedna", "jedno"],
+    "slovenian": ["ta", "ta", "to", "en", "ena", "eno"],
+    "albanian": ["një", "një", "një"],
+    "swahili": ["huyu", "hii", "hiki", "moja"],
+    "turkish": ["bir"]
+}
+base_articles = []
+for art_list in raw_articles.values():
+    base_articles.extend(art_list)
+base_articles = sorted(set(base_articles))
 
 ### [SLM] General
 engine_url = "https://www.justwatch.com"
@@ -18417,6 +18580,10 @@ slm_channels_dvr_integration = None
 if global_settings[24]['settings'] == "On":
     slm_channels_dvr_integration = True
 
+slm_media_players_integration = None
+if global_settings[72]['settings'] == "On":
+    slm_media_players_integration = True
+
 slm_media_tools_manager = None
 if global_settings[28]['settings'] == "On":
     slm_media_tools_manager = True
@@ -18453,7 +18620,9 @@ thread.daemon = True
 thread.start()
 
 if slm_channels_dvr_integration:
-    notification_add(f"{current_time()} Initialization Complete. Starting Streaming Library Manager for Channels...")
+    notification_add(f"{current_time()} Initialization Complete. Starting Streaming Library Manager for Channels DVR...")
+elif slm_media_players_integration:
+    notification_add(f"{current_time()} Initialization Complete. Starting Streaming Library Manager for Media Players...")
 else:
     notification_add(f"{current_time()} Initialization Complete. Starting Streaming Library Manager...")
 
