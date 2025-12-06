@@ -151,9 +151,9 @@
                   <div style="display: flex; justify-content: space-between; margin-top: -25px;">
                     <button type="submit" name="action" value="get_new_episodes_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Get New Episodes</button>
                   </div>
-                  {% if html_slm_channels_dvr_integration %}
+                  {% if html_slm_channels_dvr_integration or html_slm_media_players_integration %}
                     <div style="display: flex; justify-content: space-between; margin-top: -25px;">
-                      <button type="submit" name="action" value="import_program_updates_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Import Updates from Channels</button>
+                      <button type="submit" name="action" value="import_program_updates_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Import Updates from {% if html_slm_channels_dvr_integration %}Channels DVR{% elif html_slm_media_players_integration %}Media Player{% endif %}</button>
                     </div>
                   {% endif %}
                   <div style="display: flex; justify-content: space-between; margin-top: -25px;">
@@ -161,7 +161,7 @@
                   </div>
                   {% if html_slm_channels_dvr_integration %}
                     <div style="display: flex; justify-content: space-between; margin-top: -25px;">
-                      <button type="submit" name="action" value="prune_scan_channels_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run Updates in Channels</button>
+                      <button type="submit" name="action" value="prune_scan_channels_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run Updates in Channels DVR</button>
                     </div>
                   {% endif %}
                 </div>

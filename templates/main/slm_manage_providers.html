@@ -529,7 +529,7 @@
             <button type="submit" name="action" value="slm_label_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Reset</button>
           </div>
           <hr>
-          {% if html_slm_channels_dvr_integration %}
+          {% if html_slm_channels_dvr_integration or html_slm_media_players_integration %}
             <!-- SLM Stream Address -->
             <h4 id="slm_stream_address_anchor">SLM Stream Address
               <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarked-Programs-%E2%80%90-Special-Actions-%E2%80%90-SLM-Streams" target="_blank">
@@ -541,8 +541,30 @@
             <button type="submit" name="action" value="slm_stream_address_test" class="btn bg-gradient-primary w-10 my-2 mb-2">Test</button>
             <button type="submit" name="action" value="slm_stream_address_save" class="btn bg-gradient-primary w-10 my-2 mb-2">Save</button>
             <button type="submit" name="action" value="slm_stream_address_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
-            <p><em>WARNING: Do not use 'https' as it may cause Stream Files on Channels DVR clients to fail.</em></p>
+            <p><em>WARNING: It is recommended to not use 'https' as it may cause Stream Files on media player clients to fail.</em></p>
             <p><div id="html_slm_stream_address_message"><b>{{ html_slm_stream_address_message }}</b></div></p>
+            <hr>
+            <!-- File Name Options -->
+            <h4 id="file_name_options_anchor">File Name Options for Stream Links/Files
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-File-Name-Options-for-Stream-Links-and-Files" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </h4>
+            <h5>TV Show Episodes</h5>
+            <div class="form-check form-switch ps-0 is-filled">
+              <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+                <input type="checkbox" class="form-check-input ms-auto" id="settings_slm_add_show_title" name="settings_slm_add_show_title" {% if html_settings_slm_add_show_title == "On" %}checked{% endif %}>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="settings_slm_add_show_title"><b>Add TV Show Title</b></label>
+                <p><em>Adds the TV Show's title to the Stream Link/File file name. For instance, instead of 'S01E01.strmlnk', it would be 'The Name of the Show (2026) - S01E01.strmlnk'.</em></p>
+              </div>
+              <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+                <input type="checkbox" class="form-check-input ms-auto" id="settings_slm_add_episode_title" name="settings_slm_add_episode_title" {% if html_settings_slm_add_episode_title == "On" %}checked{% endif %}>
+                <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="settings_slm_add_episode_title"><b>Add Episode Title</b></label>
+                <p><em>Adds the Episode's title to the Stream Link/File file name. For instance, instead of 'S01E01.strmlnk', it would be 'Name of the Episode - S01E01.strmlnk'. This can be used in conjuction with the title to end up with something like 'The Name of the Show (2026) - Name of the Episode - S01E01.strmlnk'. In order to use this, the 'Episode Title Override' must be filled in either by importing metadata or filling it out manually.</em></p>
+              </div>
+            </div>
+            <button type="submit" name="action" value="file_name_options_save" class="btn bg-gradient-primary w-25 my-2 mb-2">Save</button>
+            <button type="submit" name="action" value="file_name_options_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel</button>            
             <hr>
           {% endif %}
         </form>
