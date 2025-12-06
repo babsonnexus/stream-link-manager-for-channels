@@ -67,6 +67,7 @@
    * **[Provider Groups](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Provider-Groups)**
    * **[Stream Link Mappings](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Stream-Link-Mappings)**
    * **[Labels](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Labels)**
+   * **[File Name Options](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-File-Name-Options-for-Stream-Links-and-Files)**
 * **[Bookmarking and Managing Programs](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Bookmarking-and-Managing-Programs)**
    * **Adding Programs**
       * **[Search Defaults](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Search-Defaults)**
