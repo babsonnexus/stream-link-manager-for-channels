@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.07.1535"
+    slm_version = "v2025.12.07.1548"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -17110,52 +17110,52 @@ def initial_data(csv_file):
         data = [
             {
                 "active": "Off",
-                "contains_string": "hulu.com/watch",
+                "contains_string": r"hulu.com/watch",
                 "object_type": "MOVIE or SHOW",
                 "replace_type": "Replace string with...",
-                "replace_string": "disneyplus.com/play"
+                "replace_string": r"disneyplus.com/play"
             },
             {
                 "active": "Off",
                 "contains_string": r"hulu\.com/series/.+?-([a-f0-9\-]{36})$",
                 "object_type": "SHOW",
                 "replace_type": "Replace pattern (REGEX) with...",
-                "replace_string": "disneyplus.com/browse/entity-\1"
+                "replace_string": r"disneyplus.com/browse/entity-\1"
             },
             {
                 "active": "On",
-                "contains_string": "netflix.com/title",
+                "contains_string": r"netflix.com/title",
                 "object_type": "MOVIE",
                 "replace_type": "Replace string with...",
-                "replace_string": "netflix.com/watch"
+                "replace_string": r"netflix.com/watch"
             },
             {
                 "active": "On",
-                "contains_string": "disneyplus.com/browse/entity-",
+                "contains_string": r"disneyplus.com/browse/entity-",
                 "object_type": "MOVIE",
                 "replace_type": "Replace string with...",
-                "replace_string": "disneyplus.com/play/"
+                "replace_string": r"disneyplus.com/play/"
             },
             {
                 "active": "On",
-                "contains_string": "watch.amazon.com/detail?gti=",
+                "contains_string": r"watch.amazon.com/detail?gti=",
                 "object_type": "MOVIE or SHOW",
                 "replace_type": "Replace string with...",
-                "replace_string": "www.amazon.com/gp/video/detail/"
+                "replace_string": r"www.amazon.com/gp/video/detail/"
             },
             {
                 "active": "Off",
-                "contains_string": "vudu.com",
+                "contains_string": r"vudu.com",
                 "object_type": "MOVIE or SHOW",
                 "replace_type": "Replace entire Stream Link with...",
-                "replace_string": "fandangonow://"
+                "replace_string": r"fandangonow://"
             },
             {
                 "active": "On",
-                "contains_string": "peacocktv.com/watch/asset/.+?/([a-zA-Z0-9\\\\-]+)$",
+                "contains_string": r"peacocktv.com/watch/asset/.+?/([a-zA-Z0-9\\\\-]+)$",
                 "object_type": "MOVIE or SHOW",
                 "replace_type": "Replace pattern (REGEX) with...",
-                "replace_string": 'peacocktv.com/deeplink?deeplinkData={"pvid":"\\1","type":"PROGRAMME","action":"PLAY"}'
+                "replace_string": r'peacocktv.com/deeplink?deeplinkData={"pvid":"\\1","type":"PROGRAMME","action":"PLAY"}'
             }
         ]
 
