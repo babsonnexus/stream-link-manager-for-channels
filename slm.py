@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.07.0951"
+    slm_version = "v2025.12.07.1535"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -17117,7 +17117,7 @@ def initial_data(csv_file):
             },
             {
                 "active": "Off",
-                "contains_string": "hulu\.com/series/.+?-([a-f0-9\-]{36})$",
+                "contains_string": r"hulu\.com/series/.+?-([a-f0-9\-]{36})$",
                 "object_type": "SHOW",
                 "replace_type": "Replace pattern (REGEX) with...",
                 "replace_string": "disneyplus.com/browse/entity-\1"
@@ -17563,12 +17563,6 @@ def inspect_mpeg_ts_stream(ts_bytes, max_packets=1000):
         "drm_detected": drm_detected,
         "drm_type": drm_type
     }
-
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 # Used to loop through a URL that might error
 def fetch_url(url, retries, delay):
