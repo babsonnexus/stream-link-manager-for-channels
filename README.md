@@ -55,7 +55,7 @@
    * **[Extensions and Add-Ons](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Extensions-and-Add%E2%80%90Ons)**
    * **[Articles for Sorting](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Articles-for-Sorting)**
 * **Settings: Media Players**
-   * **[Media Player / Channels DVR Directory](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Channels-Directory)**
+   * **[Stream Links/Files and Media Base Directory](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Channels-Directory)**
    * **[Channels DVR URL](https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Channels-URL)**
 
 ### On-Demand: SLM
