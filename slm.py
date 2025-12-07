@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.06.1741"
+    slm_version = "v2025.12.07.0951"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -12042,7 +12042,20 @@ def get_new_episodes(entry_id_filter):
             print(f"{current_time()} INFO: Checking for new episodes and updated metadata in the TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}'...")
 
             existing_episodes = [episode for episode in episodes if show_bookmark['entry_id'] == episode['entry_id']]
-            season_episodes = get_episode_list(show_bookmark['entry_id'], show_bookmark['url'], show_bookmark['country_code'], show_bookmark['language_code'])
+
+            # Function times out after 10 minutes
+            timer = threading.Timer(600, timeout_handler)
+            timer.start()
+
+            season_episode = []
+            try:
+                season_episodes = get_episode_list(show_bookmark['entry_id'], show_bookmark['url'], show_bookmark['country_code'], show_bookmark['language_code'])
+            except TimeoutError:
+                print(f"    ERROR: Searching for episodes timed out after 10 minutes. Moving to next show...")
+            except Exception as e:
+                print(f"    ERROR: Unable to get episode list: {e}. Continuing to next show...")
+            finally:
+                timer.cancel()  # Disable the timer
 
             if season_episodes:
 
