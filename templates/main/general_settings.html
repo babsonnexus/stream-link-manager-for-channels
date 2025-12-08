@@ -71,14 +71,14 @@
             </div>
           </div>
           <!-- Manage Add-Ons -->
-          {% if html_slm_channels_dvr_integration %}
+          {% if html_slm_channels_dvr_integration and html_slm_stream_link_file_manager %}
             <h5 style="margin-top: 10px;">Add-Ons
               <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-General-%E2%80%90-Settings:-Extensions-and-Add%E2%80%90Ons" target="_blank">
                 <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
               </a>
             </h5>
             <div class="form-check form-switch ps-0 is-filled">
-              {% if html_slm_channels_dvr_integration %}
+              {% if html_slm_channels_dvr_integration and html_slm_stream_link_file_manager %}
                 <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
                   <input type="checkbox" class="form-check-input ms-auto" id="channels_prune" name="channels_prune" {% if html_channels_prune == "On" %}checked{% endif %}>
                   <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="channels_prune"><b>'Prune' function in Channels DVR</b></label>
