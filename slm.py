@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.07.1548"
+    slm_version = "v2025.12.08.1554"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -14138,6 +14138,7 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
     for auto_bookmark in auto_bookmarks:
 
         print(f"{current_time()} INFO: Generating Stream Link(s) for {auto_bookmark['title']} ({auto_bookmark['release_year']}) | {auto_bookmark['object_type']} ...")
+        assignment_text = []
 
         for bookmarks_status in bookmarks_statuses:
 
@@ -14214,32 +14215,35 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
 
                     bookmarks_status['stream_link'] = stream_link
 
-                    assignment_text = None
+                    assignment_text_line = None
                     if auto_bookmark['object_type'] in ['MOVIE', 'SHOW']:
-                        assignment_text = "    "
+                        assignment_text_line = "    "
 
                         if auto_bookmark['object_type'] == 'MOVIE':
-                            assignment_text += "Movie "
+                            assignment_text_line += "Movie "
 
                         elif auto_bookmark['object_type'] == 'SHOW':
 
                             if bookmarks_status['season_episode_prefix'] not in [None, '']:
-                                assignment_text += f"{bookmarks_status['season_episode_prefix']} "
+                                assignment_text_line += f"{bookmarks_status['season_episode_prefix']} "
 
-                            assignment_text += f"{bookmarks_status['season_episode']} "
+                            assignment_text_line += f"{bookmarks_status['season_episode']} "
 
-                        assignment_text += "assigned Stream Link: "
+                        assignment_text_line += "assigned Stream Link: "
 
                         if stream_link_reason:
-                            assignment_text += f"{stream_link_reason}"
+                            assignment_text_line += f"{stream_link_reason}"
                         else:
-                            assignment_text += f"{stream_link}"
+                            assignment_text_line += f"{stream_link}"
 
                     else:
-                        assignment_test = "    ERROR: Invalid 'Object Type'. Only Movies and TV Shows can generate Stream Links."
+                        assignment_text_line = "    ERROR: Invalid 'Object Type'. Only Movies and TV Shows can generate Stream Links."
 
-                    if assignment_text:
-                        print(assignment_text)
+                    if assignment_text_line:
+                        assignment_text.append(assignment_text_line)
+
+        if assignment_text:
+            print('\n'.join(assignment_text))
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
@@ -15735,6 +15739,7 @@ def webpage_settings():
     global slm_channels_dvr_integration
     global slm_media_players_integration
     global slm_media_tools_manager
+    global global_articles
     settings_anchor_id = None
     run_empty_row = None
 
@@ -15745,15 +15750,6 @@ def webpage_settings():
     channels_directory = settings[1]["settings"]
     channels_prune = settings[7]["settings"]
     channels_labels = settings[50]["settings"]                      # [50] SLM: Update Labels in Channels DVR On/Off
-
-    settings_articles = []
-    settings_articles_raw = settings[71]["settings"]
-    if settings_articles_raw:
-        if isinstance(settings_articles_raw, str):
-            try:
-                settings_articles = ast.literal_eval(settings_articles_raw)
-            except (ValueError, SyntaxError):
-                print(f"{current_time()} ERROR: For 'Articles', unable to convert to a list.")
 
     channels_url_message = ""
     channels_directory_message = ""
@@ -15848,6 +15844,7 @@ def webpage_settings():
                                 advanced_experimental_message = f"{current_time()} ERROR: 'Media Players Integration' cannot be initiated when 'Channels DVR Integration' is active. Please disable 'Channels DVR Integration' if you want to use 'Media Players Integration'."
                                 media_players_integration_input = ''
 
+                        # Media Players Integration
                         settings[72]["settings"] = "On" if media_players_integration_input == 'on' else "Off"
                         if media_players_integration_input == 'on':
                             slm_media_players_integration = True
@@ -15891,8 +15888,10 @@ def webpage_settings():
                         else:
                             slm_media_tools_manager = None
 
+                    # Articles
                     elif settings_action == 'settings_articles_save':
                         settings[71]["settings"] = settings_articles_input
+                        global_articles = settings_articles_input
 
                     csv_to_write = csv_settings
                     data_to_write = settings
@@ -15940,14 +15939,6 @@ def webpage_settings():
         channels_directory = settings[1]["settings"]
         channels_prune = settings[7]["settings"]
         channels_labels = settings[50]["settings"]                      # [50] SLM: Update Labels in Channels DVR On/Off
-        settings_articles = []
-        settings_articles_raw = settings[71]["settings"]
-        if settings_articles_raw:
-            if isinstance(settings_articles_raw, str):
-                try:
-                    settings_articles = ast.literal_eval(settings_articles_raw)
-                except (ValueError, SyntaxError):
-                    print(f"{current_time()} ERROR: For 'Articles', unable to convert to a list.")
 
     if channels_directory_message in [None, '']:
 
@@ -15986,7 +15977,7 @@ def webpage_settings():
         html_subdirectories = get_subdirectories(current_directory),
         html_channels_directory_message = channels_directory_message,
         html_advanced_experimental_message = advanced_experimental_message,
-        html_settings_articles = settings_articles,
+        html_settings_articles = global_articles,
         html_base_articles = base_articles
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
@@ -16171,28 +16162,29 @@ def sanitize_name(name):
 # Alphabetic sort ignoring user controlled articles and non-alphanumeric characters
 def sort_key(title):
     cleaned_title = ''
-    articles = []
-
-    settings = read_data(csv_settings)
-    articles_raw = settings[71]["settings"]
-
-    if articles_raw:
-        if isinstance(articles_raw, str):
-            try:
-                articles = ast.literal_eval(articles_raw)
-            except (ValueError, SyntaxError):
-                print(f"{current_time()} ERROR: For 'Articles', unable to convert to a list.")
+    leading_number_match = None
+    leading_number = float('inf')
     
-    # Remove non-alphanumeric characters
-    cleaned_title = re.sub(r'[^a-zA-Z0-9\s]', '', title)
+    # Casefold the Title
+    cleaned_title = title.casefold()
+
+    # Remove non-alphanumeric characters, except "."
+    cleaned_title = re.sub(r'[^a-zA-Z0-9.\s]', '', cleaned_title)
 
     # Remove articles
-    if articles:
-        words = cleaned_title.casefold().split()
-        if words and words[0] in articles:
+    if global_articles:
+        words = cleaned_title.split()
+        if words and words[0] in global_articles:
             cleaned_title = " ".join(words[1:])
 
-    return cleaned_title.casefold()
+    # Extract leading number (integer or decimal)
+    leading_number_match = re.match(r'^(\d+(?:\.\d+)?)(.*)', cleaned_title.strip())
+    if leading_number_match:
+        leading_number = float(leading_number_match.group(1))
+        cleaned_title = leading_number_match.group(2).strip()
+
+    # Return final value
+    return (leading_number, cleaned_title)
 
 # Normalize the file path for systems that can't handle certain characters like 'é'
 def normalize_path(path):
@@ -18615,6 +18607,16 @@ if global_settings[39]['settings'] == "On":
 plm_check_child_station_status_global = None
 if global_settings[59]['settings'] == "On":
     plm_check_child_station_status_global = True
+
+global_articles_raw = []
+global_articles = []
+global_articles_raw = global_settings[71]["settings"]
+if global_articles_raw:
+    if isinstance(global_articles_raw, str):
+        try:
+            global_articles = ast.literal_eval(global_articles_raw)
+        except (ValueError, SyntaxError):
+            print(f"{current_time()} ERROR: For global 'Articles', unable to convert to a list.")
 
 if slm_channels_dvr_integration:
     check_channels_url(None)
