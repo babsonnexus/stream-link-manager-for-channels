@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.09.1009"
+    slm_version = "v2025.12.09.1338"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -4815,9 +4815,12 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
 
                 # Reject existing bookmarks
                 if (
-                    ( program_search_results_base_submission['program_search_results_object_type_input'] in ["MOVIE", "SHOW"] and program_search_results_base_submission['program_search_results_entry_id_input'] in bookmarks_entry_id_lookup )
-                    or ( program_search_results_base_submission['program_search_results_object_type_input'] == "VIDEO" and program_search_results_base_submission['program_search_results_url_input'] in bookmarks_statuses_slm_stream_urls )
-                    or ( program_search_results_base_submission['program_search_results_object_type_input'] == "CHANNEL" and program_search_results_base_submission['program_search_results_url_input'] in subscribed_video_channels_url_lookup ) 
+                    ( program_search_results_base_submission['program_search_results_entry_id_input'] != 'manual' ) and
+                    (
+                        ( program_search_results_base_submission['program_search_results_object_type_input'] in ["MOVIE", "SHOW"] and program_search_results_base_submission['program_search_results_entry_id_input'] in bookmarks_entry_id_lookup ) or
+                        ( program_search_results_base_submission['program_search_results_object_type_input'] == "VIDEO" and program_search_results_base_submission['program_search_results_url_input'] in bookmarks_statuses_slm_stream_urls ) or
+                        ( program_search_results_base_submission['program_search_results_object_type_input'] == "CHANNEL" and program_search_results_base_submission['program_search_results_url_input'] in subscribed_video_channels_url_lookup )
+                    )
                 ):
                     previously_bookmarked_count = int(previously_bookmarked_count) + 1
 
