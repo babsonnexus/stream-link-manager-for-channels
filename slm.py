@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.08.1554"
+    slm_version = "v2025.12.09.1009"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -2425,6 +2425,8 @@ def webpage_manage_programs():
                             override_program_sort_prior = None
 
                         if field_bookmark_selected_action_input == 'generate':
+                            if slm_channels_dvr_integration or slm_media_players_integration:
+                                import_program_updates()
                             if manage_programs_message not in [None, '']:
                                 manage_programs_message += f"\n"
                             manage_programs_message += generate_stream_links_single(entry_id_selected_prior)
@@ -5268,6 +5270,9 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
     set_slm_process_active_flag('single_off')
 
     if generate_stream_links_entry_ids:
+        if slm_channels_dvr_integration or slm_media_players_integration:
+            import_program_updates()
+
         unique_generate_stream_links_entry_ids = []
 
         for generate_stream_links_entry_id in generate_stream_links_entry_ids:
@@ -14593,6 +14598,9 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
     create_directory(video_path)
 
     for bookmark in bookmarks:
+
+        print(f"{current_time()} INFO: Creating Stream Link/File file(s) for {bookmark['title']} ({bookmark['release_year']}) | {bookmark['object_type']} ...")
+
         for bookmark_status in bookmarks_statuses:
             if bookmark['entry_id'] == bookmark_status['entry_id']:
 
