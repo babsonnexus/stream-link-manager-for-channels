@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.09.1338"
+    slm_version = "v2025.12.10.1735"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -2022,6 +2022,30 @@ def webpage_manage_programs():
                                         if move_entry_id == hidden_videos_entry_id:
                                             bookmarks_status['status'] = 'watched'
                                             bookmarks_statuses_hide_count = int(bookmarks_statuses_hide_count) + 1
+
+                                            check_bookmarks = read_data(csv_bookmarks)
+                                            check_bookmarks_entry_id_lookup = {check_bookmark["entry_id"] for check_bookmark in check_bookmarks}
+                                            if hidden_videos_entry_id not in check_bookmarks_entry_id_lookup:
+
+                                                new_row = {
+                                                    'entry_id': hidden_videos_entry_id,
+                                                    'title': 'SLM INTERNAL ONLY: Hidden Videos',
+                                                    'release_year': '1888',
+                                                    'object_type': 'VIDEO',
+                                                    'url': '',
+                                                    'country_code': '',
+                                                    'language_code': '',
+                                                    'bookmark_action': 'None',
+                                                    'channels_id': '',
+                                                    'override_program_title': '',
+                                                    'override_program_summary': '',
+                                                    'override_program_image_type': 'na',
+                                                    'override_program_image_manual': '',
+                                                    'override_program_sort': 'na'
+                                                }
+
+                                                append_data(csv_bookmarks, new_row)
+
                                         else:
                                             bookmarks_statuses_move_count = int(bookmarks_statuses_move_count) + 1
 
@@ -2044,220 +2068,234 @@ def webpage_manage_programs():
                                 elif(
                                     ( bookmarks_statuses_selected_action ==  'save' ) or
                                     ( global_match_season_episode and program_modify_global_change_bookmarks_statuses_selected_action_input == 'save' and any(list_program_modify_global_selection == 'on' for list_program_modify_global_selection in list_program_modify_global_selections) ) or
-                                    ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior == 'manual' and program_modify_other_actions_save_manual_order_input == 'on' ) or
-                                    ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior != 'manual' ) or
-                                    ( field_override_program_sort_input != 'manual' and field_override_program_sort_prior == 'manual' ) or
                                     ( field_bookmark_selected_action_input == 'import' and object_type_selected_prior == 'MOVIE' ) or
                                     ( bookmarks_statuses_selected_action ==  'import' ) or
                                     ( global_match_season_episode and program_modify_global_change_bookmarks_statuses_selected_action_input == 'import' ) or
-                                    ( program_modify_add_episode_selected_action_import_metadata_flag and check_season_episode == program_modify_add_episode_season_episode_input )
+                                    ( program_modify_add_episode_selected_action_import_metadata_flag and check_season_episode == program_modify_add_episode_season_episode_input ) or
+                                    ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior == 'manual' and program_modify_other_actions_save_manual_order_input == 'on' ) or
+                                    ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior != 'manual' ) or
+                                    ( field_override_program_sort_input != 'manual' and field_override_program_sort_prior == 'manual' )
                                 ):
 
-                                    field_stream_link_override = None
-                                    field_special_action = 'None'
-                                    field_original_release_date = None
-                                    field_override_episode_title = None
-                                    field_override_summary = None
-                                    field_override_image = None
-                                    field_override_duration = None
-
-                                    field_stream_link_override = bookmarks_status['stream_link_override']
-                                    field_special_action = bookmarks_status['special_action']
-                                    field_original_release_date = bookmarks_status['original_release_date']
-                                    if import_metadata_options_flag:
-                                        if object_type_selected_prior in ['SHOW', 'VIDEO']:
-                                            field_override_episode_title = bookmarks_status['override_episode_title']
-                                        field_override_summary = bookmarks_status['override_summary']
-                                        field_override_image = bookmarks_status['override_image']
-                                        field_override_duration = bookmarks_status['override_duration']
-
-                                    ###### Save
                                     if(
                                         ( bookmarks_statuses_selected_action ==  'save' ) or
                                         ( global_match_season_episode and program_modify_global_change_bookmarks_statuses_selected_action_input == 'save' and any(list_program_modify_global_selection == 'on' for list_program_modify_global_selection in list_program_modify_global_selections) ) or
-                                        ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior == 'manual' and program_modify_other_actions_save_manual_order_input == 'on' ) or
-                                        ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior != 'manual' ) or
-                                        ( field_override_program_sort_input != 'manual' and field_override_program_sort_prior == 'manual' )
-                                    ):
-
-                                        field_status = 'unwatched'
-                                        field_season_episode_prefix = None
-                                        field_season_episode = check_season_episode
-
-                                        field_status = bookmarks_status['status']
-
-                                        if bookmarks_statuses_selected_action ==  'save':
-                                            field_status = field_status_lookup.get(check_season_episode, field_status)
-                                            field_stream_link_override = field_stream_link_override_lookup.get(check_season_episode, field_stream_link_override)
-                                            field_special_action = field_special_action_lookup.get(check_season_episode, field_special_action)
-                                            if import_metadata_options_flag:
-                                                field_override_summary = field_override_summary_lookup.get(check_season_episode, field_override_summary)
-                                                field_override_image = field_override_image_lookup.get(check_season_episode, field_override_image)
-                                                field_override_duration = field_override_duration_lookup.get(check_season_episode, field_override_duration)
-
-                                        if object_type_selected_prior in ['SHOW', 'VIDEO']:
-
-                                            if object_type_selected_prior == 'SHOW':
-                                                field_season_episode_prefix = bookmarks_status['season_episode_prefix']
-
-                                            if object_type_selected_prior == 'VIDEO':
-                                                field_season_episode = bookmarks_status['season_episode']
-
-                                            if bookmarks_statuses_selected_action ==  'save':
-                                                if import_metadata_options_flag:
-                                                    field_override_episode_title = field_override_episode_title_lookup.get(check_season_episode, field_override_episode_title)
-
-                                                if object_type_selected_prior == 'SHOW':
-                                                    field_season_episode_prefix = field_season_episode_prefix_lookup.get(check_season_episode, field_season_episode_prefix)
-
-                                                if object_type_selected_prior == 'VIDEO':
-                                                    temp_field_season_episode = field_season_episode_lookup.get(check_season_episode, field_season_episode)
-                                                    if check_season_episode == temp_field_season_episode:
-                                                        field_season_episode = temp_field_season_episode
-                                                    else:
-                                                        field_season_episode = check_video_name_unique(bookmarks_statuses, bookmarks_status['entry_id'], temp_field_season_episode)
-
-                                                    if field_season_episode != temp_field_season_episode:
-                                                        if manage_programs_message not in [None, '']:
-                                                            manage_programs_message += f"\n"
-                                                        manage_programs_message += f"{current_time()} WARNING: '{temp_field_season_episode}' already exists in this Video Group and has been renamed to '{field_season_episode}'. Please modify to a unique name, if desired."
-
-                                            if global_match_season_episode and program_modify_global_change_bookmarks_statuses_selected_action_input == 'save' and any(list_program_modify_global_selection == 'on' for list_program_modify_global_selection in list_program_modify_global_selections):
-
-                                                if program_modify_global_selection_status_input == 'on':
-                                                    field_status = program_modify_global_change_status_input
-                                                if program_modify_global_selection_special_action_input == 'on':
-                                                    field_special_action = program_modify_global_change_special_action_input
-                                                if import_metadata_options_flag:
-                                                    if program_modify_global_selection_override_episode_title_input == 'on':
-                                                        field_override_episode_title = program_modify_global_change_override_episode_title_input
-                                                    if program_modify_global_selection_override_summary_input == 'on':
-                                                        field_override_summary = program_modify_global_change_override_summary_input
-                                                    if program_modify_global_selection_override_image_input == 'on':
-                                                        field_override_image = program_modify_global_change_override_image_input
-                                                    if program_modify_global_selection_override_duration_input == 'on':
-                                                        field_override_duration = program_modify_global_change_override_duration_input
-                                                if object_type_selected_prior == 'SHOW':
-                                                    if program_modify_global_selection_stream_link_override_input == 'on':
-                                                        field_stream_link_override = program_modify_global_change_stream_link_override_input
-                                                    if program_modify_global_selection_season_episode_prefix_input == 'on':
-                                                        field_season_episode_prefix = program_modify_global_change_season_episode_prefix_input
-
-                                            if object_type_selected_prior == 'VIDEO':
-
-                                                if(
-                                                    ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior == 'manual' and program_modify_other_actions_save_manual_order_input == 'on' ) or
-                                                    ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior != 'manual' )
-                                                ):
-
-                                                    if field_override_program_sort_input == 'manual' and field_override_program_sort_prior == 'manual' and program_modify_other_actions_save_manual_order_input == 'on':
-                                                        bookmarks_status['manual_order'] = field_manual_order_lookup.get(check_season_episode, new_manual_order)
-
-                                                    elif field_override_program_sort_input == 'manual' and field_override_program_sort_prior != 'manual':
-                                                        bookmarks_status['manual_order'] = new_manual_order
-                                                    
-                                                    if bookmarks_status['manual_order'] == new_manual_order:
-                                                        new_manual_order = int(new_manual_order) + 1
-
-                                                elif field_override_program_sort_input != 'manual' and field_override_program_sort_prior == 'manual':
-                                                    bookmarks_status['manual_order'] = None                                        
-
-                                        bookmarks_status['status'] = field_status
-                                        bookmarks_status['stream_link_override'] = field_stream_link_override
-                                        bookmarks_status['special_action'] = field_special_action
-                                        if object_type_selected_prior in ['SHOW', 'VIDEO']:
-                                            if object_type_selected_prior == 'SHOW':
-                                                bookmarks_status['season_episode_prefix'] = field_season_episode_prefix
-                                            if object_type_selected_prior == 'VIDEO':
-                                                bookmarks_status['season_episode'] = field_season_episode
-
-                                        if(
-                                            ( bookmarks_statuses_selected_action ==  'save' ) or
-                                            ( global_match_season_episode and program_modify_global_change_bookmarks_statuses_selected_action_input == 'save' and any(list_program_modify_global_selection == 'on' for list_program_modify_global_selection in list_program_modify_global_selections) )
-
-                                        ):
-                                            bookmarks_statuses_save_count = int(bookmarks_statuses_save_count) + 1
-                                    
-                                    ###### Import Metadata
-                                    elif(
                                         ( field_bookmark_selected_action_input == 'import' and object_type_selected_prior == 'MOVIE' ) or
                                         ( bookmarks_statuses_selected_action ==  'import' ) or
                                         ( global_match_season_episode and program_modify_global_change_bookmarks_statuses_selected_action_input == 'import' ) or
                                         ( program_modify_add_episode_selected_action_import_metadata_flag and check_season_episode == program_modify_add_episode_season_episode_input )
                                     ):
 
-                                        if field_special_action == 'Make SLM Stream' and not field_stream_link_override in [None, '']:
-                                            field_original_release_date, field_override_episode_title, field_override_summary, field_override_image, field_override_duration = get_video_metadata(field_stream_link_override)
+                                        field_stream_link_override = None
+                                        field_special_action = 'None'
+                                        field_original_release_date = None
+                                        field_override_episode_title = None
+                                        field_override_summary = None
+                                        field_override_image = None
+                                        field_override_duration = None
 
-                                        if object_type_selected_prior == 'SHOW':
-                                            if not entry_id_selected_prior.startswith('slm') and not check_season_episode_id in [None, '']:
-                                                field_original_release_date = season_episodes_original_release_date_lookup.get(check_season_episode_id, None)
-                                                if field_special_action != 'Make SLM Stream' or ( field_special_action == 'Make SLM Stream' and field_stream_link_override in [None, ''] ):
-                                                    field_override_episode_title = season_episodes_override_episode_title_lookup.get(check_season_episode_id, None)
-                                                    field_override_summary = season_episodes_override_summary_lookup.get(check_season_episode_id, None)
-                                                    field_override_duration = season_episodes_override_duration_lookup.get(check_season_episode_id, None)
-                                            elif entry_id_selected_prior.startswith('slm') or check_season_episode_id in [None, '']:
-                                                if field_special_action != 'Make SLM Stream' or ( field_special_action == 'Make SLM Stream' and field_stream_link_override in [None, ''] ):
-                                                    field_original_release_date = None
-                                                    field_override_episode_title = None
-                                                    field_override_summary = None
-                                                    field_override_image = None
-                                                    field_override_duration = None
+                                        field_stream_link_override = bookmarks_status['stream_link_override']
+                                        field_special_action = bookmarks_status['special_action']
+                                        field_original_release_date = bookmarks_status['original_release_date']
+                                        if import_metadata_options_flag:
+                                            if object_type_selected_prior in ['SHOW', 'VIDEO']:
+                                                field_override_episode_title = bookmarks_status['override_episode_title']
+                                            field_override_summary = bookmarks_status['override_summary']
+                                            field_override_image = bookmarks_status['override_image']
+                                            field_override_duration = bookmarks_status['override_duration']
 
-                                        if object_type_selected_prior == 'MOVIE':
-                                            if not entry_id_selected_prior.startswith('slm'):
-                                                field_original_release_date = get_movie_show_metadata_item(entry_id_selected_prior, field_country_code_prior, field_language_code_prior, 'originalReleaseDate')
-                                                if field_bookmark_selected_action_input == 'import':
-                                                    field_override_summary = field_short_description
-                                                    field_override_image = field_poster
-                                                if field_special_action != 'Make SLM Stream' or ( field_special_action == 'Make SLM Stream' and field_stream_link_override in [None, ''] ):
-                                                    field_override_duration = get_movie_show_metadata_item(entry_id_selected_prior, field_country_code_prior, field_language_code_prior, 'runtime')
-                                            elif entry_id_selected_prior.startswith('slm'):
-                                                if field_bookmark_selected_action_input == 'import':
+                                        ###### Save
+                                        if(
+                                            ( bookmarks_statuses_selected_action ==  'save' ) or
+                                            ( global_match_season_episode and program_modify_global_change_bookmarks_statuses_selected_action_input == 'save' and any(list_program_modify_global_selection == 'on' for list_program_modify_global_selection in list_program_modify_global_selections) )
+                                        ):
+
+                                            field_status = 'unwatched'
+                                            field_season_episode_prefix = None
+                                            field_season_episode = check_season_episode
+
+                                            field_status = bookmarks_status['status']
+
+                                            if bookmarks_statuses_selected_action ==  'save':
+                                                field_status = field_status_lookup.get(check_season_episode, field_status)
+                                                field_stream_link_override = field_stream_link_override_lookup.get(check_season_episode, field_stream_link_override)
+                                                field_special_action = field_special_action_lookup.get(check_season_episode, field_special_action)
+                                                if import_metadata_options_flag:
+                                                    field_override_summary = field_override_summary_lookup.get(check_season_episode, field_override_summary)
+                                                    field_override_image = field_override_image_lookup.get(check_season_episode, field_override_image)
+                                                    field_override_duration = field_override_duration_lookup.get(check_season_episode, field_override_duration)
+
+                                            if object_type_selected_prior in ['SHOW', 'VIDEO']:
+
+                                                if object_type_selected_prior == 'SHOW':
+                                                    field_season_episode_prefix = bookmarks_status['season_episode_prefix']
+
+                                                if object_type_selected_prior == 'VIDEO':
+                                                    field_season_episode = bookmarks_status['season_episode']
+
+                                                if bookmarks_statuses_selected_action ==  'save':
+                                                    if import_metadata_options_flag:
+                                                        field_override_episode_title = field_override_episode_title_lookup.get(check_season_episode, field_override_episode_title)
+
+                                                    if object_type_selected_prior == 'SHOW':
+                                                        field_season_episode_prefix = field_season_episode_prefix_lookup.get(check_season_episode, field_season_episode_prefix)
+
+                                                    if object_type_selected_prior == 'VIDEO':
+                                                        temp_field_season_episode = field_season_episode_lookup.get(check_season_episode, field_season_episode)
+                                                        if check_season_episode == temp_field_season_episode:
+                                                            field_season_episode = temp_field_season_episode
+                                                        else:
+                                                            field_season_episode = check_video_name_unique(bookmarks_statuses, bookmarks_status['entry_id'], temp_field_season_episode)
+
+                                                        if field_season_episode != temp_field_season_episode:
+                                                            if manage_programs_message not in [None, '']:
+                                                                manage_programs_message += f"\n"
+                                                            manage_programs_message += f"{current_time()} WARNING: '{temp_field_season_episode}' already exists in this Video Group and has been renamed to '{field_season_episode}'. Please modify to a unique name, if desired."
+
+                                                if global_match_season_episode and program_modify_global_change_bookmarks_statuses_selected_action_input == 'save' and any(list_program_modify_global_selection == 'on' for list_program_modify_global_selection in list_program_modify_global_selections):
+
+                                                    if program_modify_global_selection_status_input == 'on':
+                                                        field_status = program_modify_global_change_status_input
+                                                    if program_modify_global_selection_special_action_input == 'on':
+                                                        field_special_action = program_modify_global_change_special_action_input
+                                                    if import_metadata_options_flag:
+                                                        if program_modify_global_selection_override_episode_title_input == 'on':
+                                                            field_override_episode_title = program_modify_global_change_override_episode_title_input
+                                                        if program_modify_global_selection_override_summary_input == 'on':
+                                                            field_override_summary = program_modify_global_change_override_summary_input
+                                                        if program_modify_global_selection_override_image_input == 'on':
+                                                            field_override_image = program_modify_global_change_override_image_input
+                                                        if program_modify_global_selection_override_duration_input == 'on':
+                                                            field_override_duration = program_modify_global_change_override_duration_input
+                                                    if object_type_selected_prior == 'SHOW':
+                                                        if program_modify_global_selection_stream_link_override_input == 'on':
+                                                            field_stream_link_override = program_modify_global_change_stream_link_override_input
+                                                        if program_modify_global_selection_season_episode_prefix_input == 'on':
+                                                            field_season_episode_prefix = program_modify_global_change_season_episode_prefix_input                                    
+
+                                            bookmarks_status['status'] = field_status
+                                            bookmarks_status['stream_link_override'] = field_stream_link_override
+                                            bookmarks_status['special_action'] = field_special_action
+                                            if object_type_selected_prior in ['SHOW', 'VIDEO']:
+                                                if object_type_selected_prior == 'SHOW':
+                                                    bookmarks_status['season_episode_prefix'] = field_season_episode_prefix
+                                                if object_type_selected_prior == 'VIDEO':
+                                                    bookmarks_status['season_episode'] = field_season_episode
+
+                                            if(
+                                                ( bookmarks_statuses_selected_action ==  'save' ) or
+                                                ( global_match_season_episode and program_modify_global_change_bookmarks_statuses_selected_action_input == 'save' and any(list_program_modify_global_selection == 'on' for list_program_modify_global_selection in list_program_modify_global_selections) )
+
+                                            ):
+                                                bookmarks_statuses_save_count = int(bookmarks_statuses_save_count) + 1
+                                        
+                                        ###### Import Metadata
+                                        elif(
+                                            ( field_bookmark_selected_action_input == 'import' and object_type_selected_prior == 'MOVIE' ) or
+                                            ( bookmarks_statuses_selected_action ==  'import' ) or
+                                            ( global_match_season_episode and program_modify_global_change_bookmarks_statuses_selected_action_input == 'import' ) or
+                                            ( program_modify_add_episode_selected_action_import_metadata_flag and check_season_episode == program_modify_add_episode_season_episode_input )
+                                        ):
+
+                                            if field_special_action == 'Make SLM Stream' and not field_stream_link_override in [None, '']:
+                                                field_original_release_date, field_override_episode_title, field_override_summary, field_override_image, field_override_duration = get_video_metadata(field_stream_link_override)
+
+                                            if object_type_selected_prior == 'SHOW':
+                                                if not entry_id_selected_prior.startswith('slm') and not check_season_episode_id in [None, '']:
+                                                    field_original_release_date = season_episodes_original_release_date_lookup.get(check_season_episode_id, None)
+                                                    if field_special_action != 'Make SLM Stream' or ( field_special_action == 'Make SLM Stream' and field_stream_link_override in [None, ''] ):
+                                                        field_override_episode_title = season_episodes_override_episode_title_lookup.get(check_season_episode_id, None)
+                                                        field_override_summary = season_episodes_override_summary_lookup.get(check_season_episode_id, None)
+                                                        field_override_duration = season_episodes_override_duration_lookup.get(check_season_episode_id, None)
+                                                elif entry_id_selected_prior.startswith('slm') or check_season_episode_id in [None, '']:
                                                     if field_special_action != 'Make SLM Stream' or ( field_special_action == 'Make SLM Stream' and field_stream_link_override in [None, ''] ):
                                                         field_original_release_date = None
+                                                        field_override_episode_title = None
                                                         field_override_summary = None
                                                         field_override_image = None
                                                         field_override_duration = None
-                                            field_override_episode_title = None
 
-                                        if ( 
-                                            ( field_original_release_date is None or field_original_release_date == '' ) and
-                                            ( field_override_episode_title is None or field_override_episode_title == '' ) and
-                                            ( field_override_summary is None or field_override_summary == '' ) and
-                                            ( field_override_image is None or field_override_image == '' ) and
-                                            ( field_override_duration is None or field_override_duration == '' )
+                                            if object_type_selected_prior == 'MOVIE':
+                                                if not entry_id_selected_prior.startswith('slm'):
+                                                    field_original_release_date = get_movie_show_metadata_item(entry_id_selected_prior, field_country_code_prior, field_language_code_prior, 'originalReleaseDate')
+                                                    if field_bookmark_selected_action_input == 'import':
+                                                        field_override_summary = field_short_description
+                                                        field_override_image = field_poster
+                                                    if field_special_action != 'Make SLM Stream' or ( field_special_action == 'Make SLM Stream' and field_stream_link_override in [None, ''] ):
+                                                        field_override_duration = get_movie_show_metadata_item(entry_id_selected_prior, field_country_code_prior, field_language_code_prior, 'runtime')
+                                                elif entry_id_selected_prior.startswith('slm'):
+                                                    if field_bookmark_selected_action_input == 'import':
+                                                        if field_special_action != 'Make SLM Stream' or ( field_special_action == 'Make SLM Stream' and field_stream_link_override in [None, ''] ):
+                                                            field_original_release_date = None
+                                                            field_override_summary = None
+                                                            field_override_image = None
+                                                            field_override_duration = None
+                                                field_override_episode_title = None
+
+                                            if ( 
+                                                ( field_original_release_date is None or field_original_release_date == '' ) and
+                                                ( field_override_episode_title is None or field_override_episode_title == '' ) and
+                                                ( field_override_summary is None or field_override_summary == '' ) and
+                                                ( field_override_image is None or field_override_image == '' ) and
+                                                ( field_override_duration is None or field_override_duration == '' )
+                                            ):
+
+                                                bookmarks_statuses_import_fail_count = int(bookmarks_statuses_import_fail_count) + 1
+
+                                                if manage_programs_message not in [None, '']:
+                                                    manage_programs_message += f"\n"
+
+                                                manage_programs_message += f"{current_time()} WARNING: Unable to import metadata for "
+                                                if object_type_selected_prior == 'MOVIE':
+                                                    manage_programs_message += f"this movie."
+                                                elif object_type_selected_prior in ['SHOW', 'VIDEO']:
+                                                    manage_programs_message += f"'{bookmarks_status['season_episode']}'."
+
+                                                if field_special_action != 'Make SLM Stream':
+                                                    if ( 
+                                                        ( entry_id_selected_prior.startswith('slm') ) or
+                                                        ( object_type_selected_prior == 'SHOW' and bookmarks_status['season_episode_id'] in [None, ''] )
+                                                    ):
+                                                        manage_programs_message += f" Manual and video entries must have a special action of 'Make SLM Stream'!"
+
+                                            else:
+
+                                                bookmarks_statuses_import_count = int(bookmarks_statuses_import_count) + 1
+
+                                        bookmarks_status['original_release_date'] = field_original_release_date
+                                        if import_metadata_options_flag:
+                                            if object_type_selected_prior in ['SHOW', 'VIDEO']:
+                                                bookmarks_status['override_episode_title'] = field_override_episode_title
+                                            bookmarks_status['override_summary'] = field_override_summary
+                                            bookmarks_status['override_image'] = field_override_image
+                                            bookmarks_status['override_duration'] = field_override_duration
+
+                                    ###### Save Manual Order
+                                    if(
+                                        ( object_type_selected_prior == 'VIDEO' ) and
+                                        (
+                                            ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior == 'manual' and program_modify_other_actions_save_manual_order_input == 'on' ) or
+                                            ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior != 'manual' ) or
+                                            ( field_override_program_sort_input != 'manual' and field_override_program_sort_prior == 'manual' )
+                                        )
+                                    ):
+
+                                        if(
+                                            ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior == 'manual' and program_modify_other_actions_save_manual_order_input == 'on' ) or
+                                            ( field_override_program_sort_input == 'manual' and field_override_program_sort_prior != 'manual' )
                                         ):
 
-                                            bookmarks_statuses_import_fail_count = int(bookmarks_statuses_import_fail_count) + 1
+                                            if field_override_program_sort_input == 'manual' and field_override_program_sort_prior == 'manual' and program_modify_other_actions_save_manual_order_input == 'on':
+                                                bookmarks_status['manual_order'] = field_manual_order_lookup.get(check_season_episode, new_manual_order)
 
-                                            if manage_programs_message not in [None, '']:
-                                                manage_programs_message += f"\n"
+                                            elif field_override_program_sort_input == 'manual' and field_override_program_sort_prior != 'manual':
+                                                bookmarks_status['manual_order'] = new_manual_order
+                                            
+                                            if bookmarks_status['manual_order'] == new_manual_order:
+                                                new_manual_order = int(new_manual_order) + 1
 
-                                            manage_programs_message += f"{current_time()} WARNING: Unable to import metadata for "
-                                            if object_type_selected_prior == 'MOVIE':
-                                                manage_programs_message += f"this movie."
-                                            elif object_type_selected_prior in ['SHOW', 'VIDEO']:
-                                                manage_programs_message += f"'{bookmarks_status['season_episode']}'."
-
-                                            if field_special_action != 'Make SLM Stream':
-                                                if ( 
-                                                    ( entry_id_selected_prior.startswith('slm') ) or
-                                                    ( object_type_selected_prior == 'SHOW' and bookmarks_status['season_episode_id'] in [None, ''] )
-                                                ):
-                                                    manage_programs_message += f" Manual and video entries must have a special action of 'Make SLM Stream'!"
-
-                                        else:
-
-                                            bookmarks_statuses_import_count = int(bookmarks_statuses_import_count) + 1
-
-                                    bookmarks_status['original_release_date'] = field_original_release_date
-                                    if import_metadata_options_flag:
-                                        if object_type_selected_prior in ['SHOW', 'VIDEO']:
-                                            bookmarks_status['override_episode_title'] = field_override_episode_title
-                                        bookmarks_status['override_summary'] = field_override_summary
-                                        bookmarks_status['override_image'] = field_override_image
-                                        bookmarks_status['override_duration'] = field_override_duration
+                                        elif field_override_program_sort_input != 'manual' and field_override_program_sort_prior == 'manual':
+                                            bookmarks_status['manual_order'] = None
 
                         if bookmarks_statuses_delete_count > 0:
                             bookmarks_statuses = [bookmarks_status for bookmarks_status in bookmarks_statuses if bookmarks_status not in bookmarks_statuses_delete_list]
