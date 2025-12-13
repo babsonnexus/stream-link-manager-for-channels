@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.10.1735"
+    slm_version = "v2025.12.13.1008"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -16205,8 +16205,10 @@ def timeout_handler():
 
 # Remove invalid characters (e.g., colons, slashes, etc.)
 def sanitize_name(name):
-    sanitized = re.sub(r'[\\/:*?"<>|]', '', name)
+    # sanitized = re.sub(r'[\\/:*?"<>|]', '', name)                                         # Blacklist Method
+    sanitized = re.sub(r'[^\w\s.,!@#$%^&\-+=()\[\]{}\'~`]', '', name, flags=re.UNICODE)     # Whitelist Method
     return sanitized
+
 
 # Alphabetic sort ignoring user controlled articles and non-alphanumeric characters
 def sort_key(title):
