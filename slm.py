@@ -32,16 +32,16 @@ from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtu
 from youtubesearchpython import Video as get_youtube_video_info
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.08.27.1520"
+slm_version = "v2025.12.15.1330"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.13.1008"
+    slm_version = "v2025.12.15.1330"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -14538,7 +14538,7 @@ def clean_stream_link(stream_link_dirty, object_type):
 
     return stream_link
 
-# Gets a list of of the IDs of all Stream Link entries created by Stream Link Manager that are now different
+# Gets a list of of the IDs of all Stream Link/File entries created by Stream Link/File Manager that are now different
 def get_stream_link_ids():
     global stream_link_ids_changed
 
