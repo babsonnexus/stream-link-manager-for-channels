@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.30.1631"
+    slm_version = "v2025.12.30.1854"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -1274,6 +1274,8 @@ def webpage_manage_programs():
             label_maps = read_data(csv_slm_label_maps)
             subscribed_video_channels = read_data(csv_slm_subscribed_video_channels)
 
+            manual_entry_id = None
+
             # Write (or skip) item updates
             if manage_programs_action.startswith('program_modify_execute_'):
 
@@ -1386,8 +1388,6 @@ def webpage_manage_programs():
                                     bookmarks.remove(bookmark)
 
                                 elif field_bookmark_selected_action_input == 'make_manual':
-
-                                    manual_entry_id = None
 
                                     if manage_programs_message not in [None, '']:
                                         manage_programs_message += f"\n"
@@ -3061,7 +3061,7 @@ def webpage_manage_programs():
                 ])
 
                 if object_type_selected_prior != 'VIDEO':
-                    if import_metadata_options_flag:
+                    if import_metadata_options_flag and not entry_id_selected_prior.startswith('slm'):
                         bookmark_selected_actions.extend([
                             {'bookmark_selected_action_id': 'import', 'bookmark_selected_action_name': 'Import Program Metadata'}
                         ])
