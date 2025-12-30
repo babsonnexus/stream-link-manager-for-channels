@@ -32,7 +32,7 @@ from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtu
 from youtubesearchpython import Video as get_youtube_video_info
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.15.1330"
+    slm_version = "v2025.12.30.1631"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -1385,6 +1385,21 @@ def webpage_manage_programs():
 
                                     bookmarks.remove(bookmark)
 
+                                elif field_bookmark_selected_action_input == 'make_manual':
+
+                                    manual_entry_id = None
+
+                                    if manage_programs_message not in [None, '']:
+                                        manage_programs_message += f"\n"
+
+                                    if bookmark['entry_id'].startswith('slm'):
+                                        manage_programs_message += f"{current_time()} ERROR: Cannot convert as the program is already manual!"
+                                    
+                                    else:
+                                        manual_entry_id = get_manual_entry_id(bookmarks)
+                                        bookmark['entry_id'] = manual_entry_id
+                                        manage_programs_message += f"{current_time()} INFO: Program has been converted to manual."
+
                                 elif field_bookmark_selected_action_input == 'save':
 
                                     field_title_selected_input = request.form.get('field_title_selected')
@@ -1903,7 +1918,7 @@ def webpage_manage_programs():
                                 ( field_bookmark_action_selected_input != 'Hide' and field_bookmark_action_selected_prior == 'Hide' )
                             ):
 
-                                season_episodes = get_episode_list(entry_id_selected_prior, field_url_prior, field_country_code_prior, field_language_code_prior)
+                                season_episodes = get_episode_list(entry_id_selected_prior, field_country_code_prior, field_language_code_prior)
                                 season_episodes_original_release_date_lookup = {season_episode['season_episode_id']: season_episode['original_release_date'] for season_episode in season_episodes}
                                 season_episodes_override_episode_title_lookup = {season_episode['season_episode_id']: season_episode['override_episode_title'] for season_episode in season_episodes}
                                 season_episodes_override_summary_lookup = {season_episode['season_episode_id']: season_episode['override_summary'] for season_episode in season_episodes}
@@ -1998,6 +2013,14 @@ def webpage_manage_programs():
 
                                     bookmarks_statuses_delete_list.append(bookmarks_status)
                                     bookmarks_statuses_delete_count = int(bookmarks_statuses_delete_count) + 1
+
+                                ###### Make a program manual
+                                elif (
+                                    ( field_bookmark_selected_action_input == 'make_manual' ) and
+                                    ( manual_entry_id not in [None, ''] )
+                                ):
+                                    
+                                    bookmarks_status['entry_id'] = manual_entry_id
 
                                 ###### Move or Hide Item
                                 elif(
@@ -2474,6 +2497,9 @@ def webpage_manage_programs():
                             movie_path, tv_path, video_path = get_movie_tv_path()
                             print(f"{current_time()} INFO: Removed files/directories:")
                             remove_rogue_empty(movie_path, tv_path, video_path, bookmarks_statuses)
+
+                        if manual_entry_id not in [None, '']:
+                            entry_id_selected_prior = manual_entry_id
 
                 if manage_programs_action.endswith('finish'):
                     entry_id_selected_prior = None
@@ -3039,6 +3065,11 @@ def webpage_manage_programs():
                         bookmark_selected_actions.extend([
                             {'bookmark_selected_action_id': 'import', 'bookmark_selected_action_name': 'Import Program Metadata'}
                         ])
+
+                if not entry_id_selected_prior.startswith('slm'):
+                    bookmark_selected_actions.extend([
+                        {'bookmark_selected_action_id': 'make_manual', 'bookmark_selected_action_name': 'Convert Program to Manual'}
+                    ])
 
                 bookmark_selected_actions.extend([
                     {'bookmark_selected_action_id': 'delete', 'bookmark_selected_action_name': 'Delete'},
@@ -4817,6 +4848,8 @@ def filter_clean_slm_search_results(program_search_results_check, hide_bookmarke
 def run_slm_bookmarking_actions(program_search_results_base_submissions):
     set_slm_process_active_flag('single_on')
 
+    global all_season_episodes_offers_lookup
+
     bookmarks = read_data(csv_bookmarks)
     bookmarks_entry_id_lookup = {bookmark["entry_id"] for bookmark in bookmarks}
     write_bookmarks_flag = False
@@ -4872,6 +4905,7 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
                 video_group_entry_id_same = None
                 entry_id_feed_items_remove_lookup = []
                 url_feed_items_remove_lookup = []
+                all_season_episodes = []
                 
                 for program_search_results_submission in program_search_results_submissions:
 
@@ -4965,11 +4999,16 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
                                             "override_episode_title": '',
                                             "override_summary": '',
                                             "override_duration": '',
-                                            'original_release_date': ''
+                                            'original_release_date': '',
+                                            "offers": {}
                                         })
 
                             elif field_object_type == 'SHOW':
-                                season_episodes = get_episode_list(field_entry_id, field_url, settings_country_code_input_prior, settings_language_code_input_prior)
+                                season_episodes = []
+                                season_episodes = get_episode_list(field_entry_id, settings_country_code_input_prior, settings_language_code_input_prior)
+
+                                if season_episodes:
+                                    all_season_episodes.extend(season_episodes)
                             
                             else:
                                 season_episodes.append({
@@ -4978,7 +5017,9 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
                                     "status": '',
                                     "override_episode_title": '',
                                     "override_summary": '',
-                                    "override_duration": ''
+                                    "override_duration": '',
+                                    'original_release_date': '',
+                                    "offers": {}
                                 })
 
                             for season_episode in season_episodes:
@@ -5257,6 +5298,9 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
                                 'object_type': field_object_type
                             })
 
+                if all_season_episodes:
+                    all_season_episodes_offers_lookup = {all_season_episode['season_episode_id']: all_season_episode['offers'] for all_season_episode in all_season_episodes}
+
                 feed_items = read_data(csv_slm_feed_items)
                 if feed_items and ( len(entry_id_feed_items_remove_lookup) > 0 or len(url_feed_items_remove_lookup) > 0 ):
 
@@ -5399,7 +5443,8 @@ def get_episode_list_manual(end_season, season_episodes_manual):
             "override_episode_title": '',
             "override_summary": '',
             "override_duration": '',
-            'original_release_date': ''
+            'original_release_date': '',
+            "offers": {}
         })
 
     season_episodes_sorted = sorted(season_episodes_results, key=lambda d: d['season_episode'])
@@ -10022,6 +10067,7 @@ def webpage_reports_queries():
         reports_queries_lists.append({'name': 'On-Demand: Summary', 'value': 'query_slm_summary'})
         reports_queries_lists.append({'name': 'On-Demand: Currently Unavailable', 'value': 'query_currently_unavailable'})
         reports_queries_lists.append({'name': 'On-Demand: Previously Watched', 'value': 'query_previously_watched'})
+        reports_queries_lists.append({'name': "On-Demand: Movies / Shows - Last 7 Days Original Release Date with Availablity*", 'value': 'query_slm_recent_releases_7_days'})
         reports_queries_lists.append({'name': "On-Demand: Movies / Shows - Last 30 Days Original Release Date with Availablity*", 'value': 'query_slm_recent_releases_30_days'})
         reports_queries_lists.append({'name': "On-Demand: Movies / Shows - Last 90 Days Original Release Date with Availablity*", 'value': 'query_slm_recent_releases_90_days'})
         reports_queries_lists.append({'name': "On-Demand: Movies / Shows - Not on JustWatch*", 'value': 'query_not_on_justwatch'})
@@ -10123,6 +10169,7 @@ def run_query(query_name):
                         'query_slm_summary',
                         'query_currently_unavailable',
                         'query_previously_watched',
+                        'query_slm_recent_releases_7_days',
                         'query_slm_recent_releases_30_days',
                         'query_slm_recent_releases_90_days',
                         'query_not_on_justwatch'
@@ -10260,9 +10307,11 @@ def run_query(query_name):
                         bookmarks.title || " (" || bookmarks.release_year || ")"
                     """
 
-            elif query_name in ['query_slm_recent_releases_30_days', 'query_slm_recent_releases_90_days']:
+            elif query_name in ['query_slm_recent_releases_7_days', 'query_slm_recent_releases_30_days', 'query_slm_recent_releases_90_days']:
                 # Step 1: Filter bookmarks_status_data for entries within the last xxx days
-                if query_name == 'query_slm_recent_releases_30_days':
+                if query_name == 'query_slm_recent_releases_7_days':
+                    query_days = 7
+                elif query_name == 'query_slm_recent_releases_30_days':
                     query_days = 30
                 elif query_name == 'query_slm_recent_releases_90_days':
                     query_days = 90
@@ -11462,7 +11511,7 @@ def webpage_tools_automation():
 
                 elif action.startswith('get_new_episodes'):
                     action_friendly_name = 'Get New Episodes'
-                    get_new_episodes(None)
+                    get_new_episodes(None, False)
 
                 elif action.startswith('import_program_updates'):
                     action_friendly_name = 'Import Updates from '
@@ -11971,7 +12020,7 @@ def end_to_end():
 
     update_streaming_services()
     time.sleep(2)
-    get_new_episodes(None)
+    get_new_episodes(None, True)
     time.sleep(2)
     if slm_channels_dvr_integration or slm_media_players_integration:
         import_program_updates()
@@ -12011,7 +12060,7 @@ def set_slm_process_active_flag(flag_type):
             slm_process_active_flag_turn_off = None
 
 # Check for new episodes
-def get_new_episodes(entry_id_filter):
+def get_new_episodes(entry_id_filter, generate_offers_flag):
     print("\n==========================================================")
     print("|                                                        |")
     print("|             Check for New Episodes & Videos            |")
@@ -12022,10 +12071,13 @@ def get_new_episodes(entry_id_filter):
 
     set_slm_process_active_flag('single_on')
 
+    global all_season_episodes_offers_lookup
+
     bookmarks = []
     show_bookmarks = []
+    disabled_show_bookmarks = []
     video_bookmarks = []
-    episodes = []
+    bookmarks_statuses = []
     bookmarks_name_lookup = {}
     bookmarks_country_code_lookup = {}
     bookmarks_language_code_lookup = {}
@@ -12038,8 +12090,16 @@ def get_new_episodes(entry_id_filter):
     if slm_channels_dvr_integration or slm_media_players_integration:
         import_metadata_options_flag = True
 
-    bookmarks = read_data(csv_bookmarks)
+    bookmarks_statuses = read_data(csv_bookmarks_status)
+    unwatched_entry_ids = set()
+    if bookmarks_statuses:
+        slm_streams_lookup = {bookmarks_status['stream_link_override'] for bookmarks_status in bookmarks_statuses if bookmarks_status['special_action'] == 'Make SLM Stream'}
+    
+        for bookmarks_status in bookmarks_statuses:
+            if bookmarks_status['status'] == 'unwatched':
+                unwatched_entry_ids.add(bookmarks_status['entry_id'])
 
+    bookmarks = read_data(csv_bookmarks)
     if bookmarks:
         bookmarks_name_lookup = {bookmark['entry_id']: f"{bookmark['title']} ({bookmark['release_year']})" for bookmark in bookmarks}
         bookmarks_country_code_lookup = {bookmark['entry_id']: bookmark['country_code'] for bookmark in bookmarks}
@@ -12051,6 +12111,18 @@ def get_new_episodes(entry_id_filter):
             and bookmark['object_type'] == "SHOW"
             and bookmark['bookmark_action'] not in ["Hide", "Disable Get New Episodes"]
         ]
+
+        if generate_offers_flag:
+
+            disabled_show_bookmarks = [
+                bookmark for bookmark in bookmarks 
+                if not bookmark['entry_id'].startswith('slm') 
+                and bookmark['bookmark_action'] == "Disable Get New Episodes"
+                and bookmark['entry_id'] in unwatched_entry_ids
+            ]
+
+            if disabled_show_bookmarks:
+                show_bookmarks.extend(disabled_show_bookmarks)
 
         video_bookmarks = [
             bookmark for bookmark in bookmarks 
@@ -12077,25 +12149,27 @@ def get_new_episodes(entry_id_filter):
         if video_bookmarks:
             video_bookmarks_entry_id_lookups = {video_bookmark['entry_id'] for video_bookmark in video_bookmarks}
 
-    episodes = read_data(csv_bookmarks_status)
-    if episodes:
-        slm_streams_lookup = {episode['stream_link_override'] for episode in episodes if episode['special_action'] == 'Make SLM Stream'}
-
     if show_bookmarks:
+
+        all_season_episodes = []
 
         for show_bookmark in show_bookmarks:
 
-            print(f"{current_time()} INFO: Checking for new episodes and updated metadata in the TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}'...")
-
-            existing_episodes = [episode for episode in episodes if show_bookmark['entry_id'] == episode['entry_id']]
+            if show_bookmark['bookmark_action'] != "Disable Get New Episodes":
+                print(f"{current_time()} INFO: Checking for new episodes, updating metadata, and preparing offers in the TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}'...")
+                existing_episodes = [bookmarks_status for bookmarks_status in bookmarks_statuses if show_bookmark['entry_id'] == bookmarks_status['entry_id']]
+                existing_episodes_season_episode_lookup = {existing_episode['season_episode'] for existing_episode in existing_episodes}
+                existing_episodes_season_episode_id_lookup = {existing_episode['season_episode_id'] for existing_episode in existing_episodes}
+            else:
+                print(f"{current_time()} INFO: Preparing offers in TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}'...")
 
             # Function times out after 10 minutes
             timer = threading.Timer(600, timeout_handler)
             timer.start()
 
-            season_episode = []
+            season_episodes = []
             try:
-                season_episodes = get_episode_list(show_bookmark['entry_id'], show_bookmark['url'], show_bookmark['country_code'], show_bookmark['language_code'])
+                season_episodes = get_episode_list(show_bookmark['entry_id'], show_bookmark['country_code'], show_bookmark['language_code'])
             except TimeoutError:
                 print(f"    ERROR: Searching for episodes timed out after 10 minutes. Moving to next show...")
             except Exception as e:
@@ -12104,104 +12178,126 @@ def get_new_episodes(entry_id_filter):
                 timer.cancel()  # Disable the timer
 
             if season_episodes:
+                season_episodes_season_episode_id_lookup = {season_episode['season_episode_id'] for season_episode in season_episodes}
 
-                for season_episode in season_episodes:
+                if generate_offers_flag:
+                    all_season_episodes.extend(season_episodes)
 
-                    field_original_release_date = None
-                    field_override_episode_title = None
-                    field_override_summary = None
-                    field_override_image = None
-                    field_override_duration = None
+                if show_bookmark['bookmark_action'] != "Disable Get New Episodes":
 
-                    field_original_release_date = season_episode['original_release_date']
-                    if show_bookmark['bookmark_action'] == 'Import New Episode Metadata' and import_metadata_options_flag:
-                        field_override_episode_title = season_episode['override_episode_title']
-                        field_override_summary = season_episode['override_summary']
-                        field_override_duration = season_episode['override_duration']
+                    for season_episode in season_episodes:
 
-                    if season_episode['season_episode'] not in [existing_episode['season_episode'] for existing_episode in existing_episodes]:
+                        field_original_release_date = None
+                        field_override_episode_title = None
+                        field_override_summary = None
+                        field_override_image = None
+                        field_override_duration = None
 
-                        episodes.append({
-                            "entry_id": show_bookmark['entry_id'],
-                            "season_episode_id": season_episode['season_episode_id'],
-                            "season_episode_prefix": None,
-                            "season_episode": season_episode['season_episode'],
-                            "status": "unwatched",
-                            "stream_link": None,
-                            "stream_link_override": None,
-                            "stream_link_file": None,
-                            "special_action": "None",
-                            "original_release_date": field_original_release_date,
-                            "override_episode_title": field_override_episode_title,
-                            "override_summary": field_override_summary,
-                            "override_image": field_override_image,
-                            "override_duration": field_override_duration,
-                            "channels_id": None,
-                            "manual_order": None
-                        })
+                        field_original_release_date = season_episode['original_release_date']
+                        if show_bookmark['bookmark_action'] == 'Import New Episode Metadata' and import_metadata_options_flag:
+                            field_override_episode_title = season_episode['override_episode_title']
+                            field_override_summary = season_episode['override_summary']
+                            field_override_duration = season_episode['override_duration']
 
-                        episodes_write_flag = True
-                        notification_add(f"    For TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}', added '{season_episode['season_episode']}'")
+                        if ( 
+                            ( season_episode['season_episode'] not in existing_episodes_season_episode_lookup ) and 
+                            ( season_episode['season_episode_id'] not in existing_episodes_season_episode_id_lookup )
+                        ):
 
-                    if episodes:
+                            bookmarks_statuses.append({
+                                "entry_id": show_bookmark['entry_id'],
+                                "season_episode_id": season_episode['season_episode_id'],
+                                "season_episode_prefix": None,
+                                "season_episode": season_episode['season_episode'],
+                                "status": "unwatched",
+                                "stream_link": None,
+                                "stream_link_override": None,
+                                "stream_link_file": None,
+                                "special_action": "None",
+                                "original_release_date": field_original_release_date,
+                                "override_episode_title": field_override_episode_title,
+                                "override_summary": field_override_summary,
+                                "override_image": field_override_image,
+                                "override_duration": field_override_duration,
+                                "channels_id": None,
+                                "manual_order": None
+                            })
 
-                        for episode in episodes:
+                            episodes_write_flag = True
+                            notification_add(f"    In TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}', added '{season_episode['season_episode']}'")
 
-                            if (
-                                ( episode['entry_id'] == show_bookmark['entry_id'] ) and 
-                                ( episode['season_episode_id'] == season_episode['season_episode_id'] ) and 
-                                ( episode['status'] == 'unwatched' ) 
-                            ):
+                        if bookmarks_statuses:
 
-                                episode_original_release_date = episode['original_release_date']
-                                episode_override_episode_title = episode['override_episode_title']
-                                episode_override_summary = episode['override_summary']
-                                episode_override_duration = episode['override_duration']
+                            for bookmarks_status in bookmarks_statuses:
 
-                                if (
-                                    ( episode_original_release_date in ['1900-01-01', '', None] ) or
-                                    ( 
-                                        ( episode['entry_id'] in show_bookmarks_entry_id_lookups and import_metadata_options_flag ) and
-                                        (
-                                            ( episode_override_episode_title in ['', None] ) or
-                                            ( episode_override_episode_title.startswith('Episode ') ) or
-                                            ( episode_override_summary in ['', None] ) or
-                                            ( episode_override_duration in [0, '0', '', None] )
-                                        )
-                                    )
-                                
-                                ):
+                                if bookmarks_status['entry_id'] == show_bookmark['entry_id'] and bookmarks_status['season_episode_id'] not in [None, '', 'delete']:
 
-                                    if field_original_release_date != episode_original_release_date:
-                                        if episode_original_release_date in ['1900-01-01', '', None]:
-                                            episode['original_release_date'] = field_original_release_date
+                                    if bookmarks_status['season_episode_id'] not in season_episodes_season_episode_id_lookup:
+                                        bookmarks_status['season_episode_id'] = "delete"
+                                        notification_add(f"    In TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}', deleted '{bookmarks_status['season_episode']}'.")
+                                        episodes_write_flag = True 
 
-                                    if episode['entry_id'] in show_bookmarks_entry_id_lookups and import_metadata_options_flag:
+                                    if bookmarks_status['season_episode_id'] == season_episode['season_episode_id']:
 
-                                        if field_override_episode_title != episode_override_episode_title:
-                                            if episode_override_episode_title in ['', None] or episode_override_episode_title.startswith('Episode '):
-                                                episode['override_episode_title'] = field_override_episode_title
+                                        if bookmarks_status['season_episode'] != season_episode['season_episode']:
+                                            notification_add(f"    In TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}', updated Season/Episode Number(s) for '{bookmarks_status['season_episode']}' to '{season_episode['season_episode']}'.")
+                                            bookmarks_status['season_episode'] = season_episode['season_episode']
+                                            episodes_write_flag = True                                        
 
-                                        if field_override_summary != episode_override_summary:
-                                            if episode_override_summary in ['', None]:
-                                                episode['override_summary'] = field_override_summary
+                                        if bookmarks_status['status'] == 'unwatched':
 
-                                        if field_override_duration != episode_override_duration:
-                                            if episode_override_duration in [0, '0', '', None]:
-                                                episode['override_duration'] = field_override_duration
+                                            episode_original_release_date = bookmarks_status['original_release_date']
+                                            episode_override_episode_title = bookmarks_status['override_episode_title']
+                                            episode_override_summary = bookmarks_status['override_summary']
+                                            episode_override_duration = bookmarks_status['override_duration']
 
-                                if (
-                                    ( episode['original_release_date'] != episode_original_release_date ) or
-                                    ( episode['override_episode_title']  != episode_override_episode_title ) or
-                                    ( episode['override_summary'] != episode_override_summary ) or
-                                    ( episode['override_duration'] != episode_override_duration )
-                                ):
+                                            if (
+                                                ( episode_original_release_date in ['1900-01-01', '', None] ) or
+                                                ( 
+                                                    ( bookmarks_status['entry_id'] in show_bookmarks_entry_id_lookups and import_metadata_options_flag ) and
+                                                    (
+                                                        ( episode_override_episode_title in ['', None] ) or
+                                                        ( episode_override_episode_title.startswith('Episode ') ) or
+                                                        ( episode_override_summary in ['', None] ) or
+                                                        ( episode_override_duration in [0, '0', '', None] )
+                                                    )
+                                                )
+                                            
+                                            ):
 
-                                    notification_add(f"    Updated metadata for '{season_episode['season_episode']}' in TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}'.")
-                                    episodes_write_flag = True
+                                                if field_original_release_date != episode_original_release_date:
+                                                    if episode_original_release_date in ['1900-01-01', '', None]:
+                                                        bookmarks_status['original_release_date'] = field_original_release_date
+
+                                                if bookmarks_status['entry_id'] in show_bookmarks_entry_id_lookups and import_metadata_options_flag:
+
+                                                    if field_override_episode_title != episode_override_episode_title:
+                                                        if episode_override_episode_title in ['', None] or episode_override_episode_title.startswith('Episode '):
+                                                            bookmarks_status['override_episode_title'] = field_override_episode_title
+
+                                                    if field_override_summary != episode_override_summary:
+                                                        if episode_override_summary in ['', None]:
+                                                            bookmarks_status['override_summary'] = field_override_summary
+
+                                                    if field_override_duration != episode_override_duration:
+                                                        if episode_override_duration in [0, '0', '', None]:
+                                                            bookmarks_status['override_duration'] = field_override_duration
+
+                                            if (
+                                                ( bookmarks_status['original_release_date'] != episode_original_release_date ) or
+                                                ( bookmarks_status['override_episode_title']  != episode_override_episode_title ) or
+                                                ( bookmarks_status['override_summary'] != episode_override_summary ) or
+                                                ( bookmarks_status['override_duration'] != episode_override_duration )
+                                            ):
+
+                                                notification_add(f"    In TV Show '{bookmarks_name_lookup[show_bookmark['entry_id']]}', updated metadata for '{season_episode['season_episode']}'.")
+                                                episodes_write_flag = True
 
             else:
                 notification_add(f"    WARNING: No episodes found for '{bookmarks_name_lookup[show_bookmark['entry_id']]}' | {show_bookmark['object_type']}.")
+
+        if all_season_episodes and generate_offers_flag:
+            all_season_episodes_offers_lookup = {all_season_episode['season_episode_id']: all_season_episode['offers'] for all_season_episode in all_season_episodes}
 
     if video_bookmarks:
 
@@ -12247,9 +12343,9 @@ def get_new_episodes(entry_id_filter):
                                         notification_add(f"    ERROR: No metadata found for Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}'.")
 
                                 if video_bookmark['override_program_sort'] == 'manual':
-                                    field_manual_order = max((int(episode['manual_order']) for episode in episodes if episode['entry_id'] == video_bookmark['entry_id'] and not episode['manual_order'] in [None, '']), default=0) + 1
+                                    field_manual_order = max((int(bookmarks_status['manual_order']) for bookmarks_status in bookmarks_statuses if bookmarks_status['entry_id'] == video_bookmark['entry_id'] and not bookmarks_status['manual_order'] in [None, '']), default=0) + 1
 
-                                episodes.append({
+                                bookmarks_statuses.append({
                                     "entry_id": video_bookmark['entry_id'],
                                     "season_episode_id": None,
                                     "season_episode_prefix": None,
@@ -12277,1756 +12373,315 @@ def get_new_episodes(entry_id_filter):
                 else:
                     notification_add(f"    WARNING: URL needed for sync'ing is missing for the Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}.")
 
-        if episodes:
+        if bookmarks_statuses:
 
-            for episode in episodes:
+            for bookmarks_status in bookmarks_statuses:
 
                 if (
-                    ( episode['entry_id'] in video_bookmarks_entry_id_lookups ) and
-                    ( episode['special_action'] == 'Make SLM Stream' ) and
-                    ( episode['stream_link_override'] not in [None, ''] ) and
-                    ( episode['original_release_date'] == '9999-12-31' )
+                    ( bookmarks_status['entry_id'] in video_bookmarks_entry_id_lookups ) and
+                    ( bookmarks_status['special_action'] == 'Make SLM Stream' ) and
+                    ( bookmarks_status['stream_link_override'] not in [None, ''] ) and
+                    ( bookmarks_status['original_release_date'] == '9999-12-31' )
                 ):
 
-                    print(f"{current_time()} INFO: Attempting to update metadata for a video in '{bookmarks_name_lookup[episode['entry_id']]}'...")
-                    field_original_release_date, field_override_episode_title, field_override_summary, field_override_image, field_override_duration = get_video_metadata(episode['stream_link_override'])
+                    print(f"{current_time()} INFO: Attempting to update metadata for a video in '{bookmarks_name_lookup[bookmarks_status['entry_id']]}'...")
+                    field_original_release_date, field_override_episode_title, field_override_summary, field_override_image, field_override_duration = get_video_metadata(bookmarks_status['stream_link_override'])
 
-                    if field_original_release_date != episode['original_release_date']:
-                        episode['original_release_date'] = field_original_release_date
-                        episode['override_episode_title'] = field_override_episode_title
-                        episode['override_summary'] = field_override_summary
-                        episode['override_image'] = field_override_image
-                        episode['override_duration'] = field_override_duration
+                    if field_original_release_date != bookmarks_status['original_release_date']:
+                        bookmarks_status['original_release_date'] = field_original_release_date
+                        bookmarks_status['override_episode_title'] = field_override_episode_title
+                        bookmarks_status['override_summary'] = field_override_summary
+                        bookmarks_status['override_image'] = field_override_image
+                        bookmarks_status['override_duration'] = field_override_duration
                         
                         episodes_write_flag = True
-                        notification_add(f"    Updated metadata for '{field_override_episode_title}' in Video Group '{bookmarks_name_lookup[episode['entry_id']]}'.")
+                        notification_add(f"    Updated metadata for '{field_override_episode_title}' in Video Group '{bookmarks_name_lookup[bookmarks_status['entry_id']]}'.")
 
                     else:
-                        notification_add(f"    No metadata updated for '{field_override_episode_title}' in Video Group '{bookmarks_name_lookup[episode['entry_id']]}'.")
+                        notification_add(f"    No metadata updated for '{field_override_episode_title}' in Video Group '{bookmarks_name_lookup[bookmarks_status['entry_id']]}'.")
 
     if episodes_write_flag:
-        write_data(csv_bookmarks_status, episodes)
+        if bookmarks_statuses:
+            temp_record = create_temp_record(bookmarks_statuses[0].keys())
+        else:
+            temp_record = initial_data(csv_bookmarks_status)[0]
+        run_empty_rows = False
+
+        bookmarks_statuses = [bookmarks_status for bookmarks_status in bookmarks_statuses if bookmarks_status['season_episode_id'] != 'delete']
+
+        if not bookmarks_statuses:
+            bookmarks_statuses.append(temp_record)
+            run_empty_rows = True
+
+        write_data(csv_bookmarks_status, bookmarks_statuses)
+        if run_empty_rows:
+            remove_empty_row(csv_bookmarks_status)
 
     print(f"{current_time()} Finished scanning for new episodes and videos.")
 
     set_slm_process_active_flag('single_off')
 
 # Searches JustWatch website to get the list of season/episode values
-def get_episode_list(entry_id, url, country_code, language_code):
+def get_episode_list(entry_id, country_code, language_code):
     season_episodes_results = []
     season_episodes_sorted = []
 
-    _GRAPHQL_GetUrlTitleDetails = """
-    query GetUrlTitleDetails(
-        $fullPath: String!, 
-        $country: Country!, 
-        $language: Language!, 
-        $episodeMaxLimit: Int, 
-        $platform: Platform! = WEB, 
-        $allowSponsoredRecommendations: SponsoredRecommendationsInput, 
-        $format: ImageFormat, 
-        $backdropProfile: BackdropProfile, 
-        $streamingChartsFilter: StreamingChartsFilter
-    ) {
-    urlV2(fullPath: $fullPath) {
-        id
-        metaDescription
-        metaKeywords
-        metaRobots
-        metaTitle
-        heading1
-        heading2
-        htmlContent
-        node {
-        ...TitleDetails
-        __typename
-        }
-        __typename
-    }
-    }
+    try:
+        season_episodes_json_episodes_array = get_all_season_episodes(entry_id, country_code, language_code)
 
-    fragment TitleDetails on Node {
-    id
-    __typename
-    ... on MovieOrShowOrSeason {
-        plexPlayerOffers: offers(
-        country: $country
-        platform: $platform
-        filter: {packages: ["pxp"]}
-        ) {
-        id
-        standardWebURL
-        package {
-            id
-            packageId
-            clearName
-            technicalName
-            shortName
-            icon
-            __typename
-        }
-        __typename
-        }
-        maxOfferUpdatedAt(country: $country, platform: WEB)
-        appleOffers: offers(
-        country: $country
-        platform: $platform
-        filter: {packages: ["atp", "itu"]}
-        ) {
-        ...TitleOffer
-        __typename
-        }
-        disneyOffersCount: offerCount(
-        country: $country
-        platform: $platform
-        filter: {packages: ["dnp"]}
-        )
-        starOffersCount: offerCount(
-        country: $country
-        platform: $platform
-        filter: {packages: ["srp"]}
-        )
-        objectType
-        objectId
-        offerCount(country: $country, platform: $platform)
-        offers(country: $country, platform: $platform) {
-        monetizationType
-        elementCount
-        package {
-            id
-            packageId
-            clearName
-            icon
-            __typename
-        }
-        __typename
-        }
-        watchNowOffer(country: $country, platform: $platform) {
-        id
-        standardWebURL
-        __typename
-        }
-        promotedBundles(country: $country, platform: $platform) {
-        promotionUrl
-        __typename
-        }
-        availableTo(country: $country, platform: $platform) {
-        availableCountDown(country: $country)
-        availableToDate
-        package {
-            id
-            shortName
-            clearName
-            icon
-            __typename
-        }
-        __typename
-        }
-        fallBackClips: content(country: "US", language: "en") {
-        videobusterClips: clips(providers: [VIDEOBUSTER]) {
-            ...TrailerClips
-            __typename
-        }
-        dailymotionClips: clips(providers: [DAILYMOTION]) {
-            ...TrailerClips
-            __typename
-        }
-        __typename
-        }
-        content(country: $country, language: $language) {
-        backdrops {
-            backdropUrl
-            __typename
-        }
-        fullBackdrops: backdrops(profile: S1920, format: JPG) {
-            backdropUrl
-            __typename
-        }
-        clips {
-            ...TrailerClips
-            __typename
-        }
-        videobusterClips: clips(providers: [VIDEOBUSTER]) {
-            ...TrailerClips
-            __typename
-        }
-        dailymotionClips: clips(providers: [DAILYMOTION]) {
-            ...TrailerClips
-            __typename
-        }
-        externalIds {
-            imdbId
-            __typename
-        }
-        fullPath
-        genres {
-            shortName
-            __typename
-        }
-        posterUrl
-        fullPosterUrl: posterUrl(profile: S718, format: JPG)
-        runtime
-        isReleased
-        originalReleaseDate
-        scoring {
-            imdbScore
-            imdbVotes
-            tmdbPopularity
-            tmdbScore
-            jwRating
-            __typename
-        }
-        shortDescription
-        title
-        originalReleaseYear
-        originalReleaseDate
-        upcomingReleases(releaseTypes: DIGITAL) {
-            releaseCountDown(country: $country)
-            releaseDate
-            label
-            package {
-            id
-            packageId
-            shortName
-            clearName
-            icon
-            __typename
-            }
-            __typename
-        }
-        ... on MovieOrShowContent {
-            originalTitle
-            ageCertification
-            credits {
-            role
-            name
-            characterName
-            personId
-            __typename
-            }
-            interactions {
-            dislikelistAdditions
-            likelistAdditions
-            votesNumber
-            __typename
-            }
-            productionCountries
-            __typename
-        }
-        ... on SeasonContent {
-            seasonNumber
-            interactions {
-            dislikelistAdditions
-            likelistAdditions
-            votesNumber
-            __typename
-            }
-            __typename
-        }
-        __typename
-        }
-        popularityRank(country: $country) {
-        rank
-        trend
-        trendDifference
-        __typename
-        }
-        streamingCharts(country: $country, filter: $streamingChartsFilter) {
-        edges {
-            streamingChartInfo {
-            rank
-            trend
-            trendDifference
-            updatedAt
-            daysInTop10
-            daysInTop100
-            daysInTop1000
-            daysInTop3
-            topRank
-            __typename
-            }
-            __typename
-        }
-        __typename
-        }
-        __typename
-    }
-    ... on MovieOrShow {
-        watchlistEntryV2 {
-        createdAt
-        __typename
-        }
-        likelistEntry {
-        createdAt
-        __typename
-        }
-        dislikelistEntry {
-        createdAt
-        __typename
-        }
-        customlistEntries {
-        createdAt
-        genericTitleList {
-            id
-            __typename
-        }
-        __typename
-        }
-        similarTitlesV2(
-        country: $country
-        allowSponsoredRecommendations: $allowSponsoredRecommendations
-        ) {
-        sponsoredAd {
-            ...SponsoredAd
-            __typename
-        }
-        __typename
-        }
-        __typename
-    }
-    ... on Movie {
-        permanentAudiences
-        seenlistEntry {
-        createdAt
-        __typename
-        }
-        __typename
-    }
-    ... on Show {
-        permanentAudiences
-        totalSeasonCount
-        seenState(country: $country) {
-        progress
-        seenEpisodeCount
-        __typename
-        }
-        tvShowTrackingEntry {
-        createdAt
-        __typename
-        }
-        seasons(sortDirection: DESC) {
-        id
-        objectId
-        objectType
-        totalEpisodeCount
-        availableTo(country: $country, platform: $platform) {
-            availableToDate
-            availableCountDown(country: $country)
-            package {
-            id
-            shortName
-            clearName
-            icon
-            __typename
-            }
-            __typename
-        }
-        content(country: $country, language: $language) {
-            posterUrl
-            seasonNumber
-            fullPath
-            title
-            upcomingReleases(releaseTypes: DIGITAL) {
-            releaseDate
-            releaseCountDown(country: $country)
-            package {
-                id
-                shortName
-                clearName
-                icon
-                __typename
-            }
-            __typename
-            }
-            isReleased
-            runtime
-            originalReleaseYear
-            originalReleaseDate
-            __typename
-        }
-        show {
-            id
-            objectId
-            objectType
-            watchlistEntryV2 {
-            createdAt
-            __typename
-            }
-            content(country: $country, language: $language) {
-            title
-            __typename
-            }
-            __typename
-        }
-        __typename
-        }
-        recentEpisodes: episodes(
-        sortDirection: DESC
-        limit: 3
-        releasedInCountry: $country
-        ) {
-        ...Episode
-        __typename
-        }
-        __typename
-    }
-    ... on Season {
-        totalEpisodeCount
-        episodes(limit: $episodeMaxLimit) {
-        ...Episode
-        __typename
-        }
-        show {
-        id
-        objectId
-        objectType
-        totalSeasonCount
-        customlistEntries {
-            createdAt
-            genericTitleList {
-            id
-            __typename
-            }
-            __typename
-        }
-        tvShowTrackingEntry {
-            createdAt
-            __typename
-        }
-        fallBackClips: content(country: "US", language: "en") {
-            videobusterClips: clips(providers: [VIDEOBUSTER]) {
-            ...TrailerClips
-            __typename
-            }
-            dailymotionClips: clips(providers: [DAILYMOTION]) {
-            ...TrailerClips
-            __typename
-            }
-            __typename
-        }
-        content(country: $country, language: $language) {
-            title
-            ageCertification
-            fullPath
-            genres {
-            shortName
-            __typename
-            }
-            credits {
-            role
-            name
-            characterName
-            personId
-            __typename
-            }
-            productionCountries
-            externalIds {
-            imdbId
-            __typename
-            }
-            upcomingReleases(releaseTypes: DIGITAL) {
-            releaseDate
-            __typename
-            }
-            backdrops {
-            backdropUrl
-            __typename
-            }
-            posterUrl
-            isReleased
-            originalReleaseDate
-            runtime
-            videobusterClips: clips(providers: [VIDEOBUSTER]) {
-            ...TrailerClips
-            __typename
-            }
-            dailymotionClips: clips(providers: [DAILYMOTION]) {
-            ...TrailerClips
-            __typename
-            }
-            __typename
-        }
-        seenState(country: $country) {
-            progress
-            __typename
-        }
-        watchlistEntryV2 {
-            createdAt
-            __typename
-        }
-        dislikelistEntry {
-            createdAt
-            __typename
-        }
-        likelistEntry {
-            createdAt
-            __typename
-        }
-        similarTitlesV2(
-            country: $country
-            allowSponsoredRecommendations: $allowSponsoredRecommendations
-        ) {
-            sponsoredAd {
-            ...SponsoredAd
-            __typename
-            }
-            __typename
-        }
-        __typename
-        }
-        seenState(country: $country) {
-        progress
-        __typename
-        }
-        __typename
-    }
-    }
+        # Get maxium digits for Season/Episode number length
+        max_digits_season = 0
+        max_digits_episode = 0
 
-    fragment TitleOffer on Offer {
-    id
-    presentationType
-    monetizationType
-    retailPrice(language: $language)
-    retailPriceValue
-    currency
-    lastChangeRetailPriceValue
-    type
-    package {
-        id
-        packageId
-        clearName
-        technicalName
-        icon(profile: S100)
-        __typename
-    }
-    standardWebURL
-    elementCount
-    availableTo
-    deeplinkRoku: deeplinkURL(platform: ROKU_OS)
-    subtitleLanguages
-    videoTechnology
-    audioTechnology
-    audioLanguages
-    __typename
-    }
+        for season_episode_json_episodes_array in season_episodes_json_episodes_array:
+            season_number_digit = int(season_episode_json_episodes_array["content"]["seasonNumber"])
+            episode_number_digit = int(season_episode_json_episodes_array["content"]["episodeNumber"])
 
-    fragment TrailerClips on Clip {
-    sourceUrl
-    externalId
-    provider
-    name
-    __typename
-    }
+            digits_season = len(str(season_number_digit))
+            digits_episode = len(str(episode_number_digit))
 
-    fragment SponsoredAd on SponsoredRecommendationAd {
-    bidId
-    holdoutGroup
-    campaign {
-        name
-        externalTrackers {
-        type
-        data
-        __typename
-        }
-        hideRatings
-        hideDetailPageButton
-        promotionalImageUrl
-        promotionalVideo {
-        url
-        __typename
-        }
-        promotionalTitle
-        promotionalText
-        promotionalProviderLogo
-        watchNowLabel
-        watchNowOffer {
-        standardWebURL
-        presentationType
-        monetizationType
-        package {
-            id
-            packageId
-            shortName
-            clearName
-            icon
-            __typename
-        }
-        __typename
-        }
-        nodeOverrides {
-        nodeId
-        promotionalImageUrl
-        watchNowOffer {
-            standardWebURL
-            __typename
-        }
-        __typename
-        }
-        node {
-        nodeId: id
-        __typename
-        ... on MovieOrShowOrSeason {
-            content(country: $country, language: $language) {
-            fullPath
-            posterUrl
-            title
-            originalReleaseYear
-            originalReleaseDate
-            scoring {
-                imdbScore
-                __typename
-            }
-            externalIds {
-                imdbId
-                __typename
-            }
-            backdrops(format: $format, profile: $backdropProfile) {
-                backdropUrl
-                __typename
-            }
-            isReleased
-            originalReleaseDate
-            runtime
-            __typename
-            }
-            objectId
-            objectType
-            offers(country: $country, platform: $platform) {
-            monetizationType
-            presentationType
-            package {
-                id
-                packageId
-                icon
-                clearName
-                __typename
-            }
-            id
-            __typename
-            }
-            __typename
-        }
-        ... on MovieOrShow {
-            watchlistEntryV2 {
-            createdAt
-            __typename
-            }
-            __typename
-        }
-        ... on Show {
-            seenState(country: $country) {
-            seenEpisodeCount
-            __typename
-            }
-            __typename
-        }
-        ... on Season {
-            content(country: $country, language: $language) {
-            seasonNumber
-            __typename
-            }
-            show {
-            __typename
-            id
-            content(country: $country, language: $language) {
-                originalTitle
-                __typename
-            }
-            watchlistEntryV2 {
-                createdAt
-                __typename
-            }
-            }
-            __typename
-        }
-        ... on GenericTitleList {
-            followedlistEntry {
-            createdAt
-            name
-            __typename
-            }
-            id
-            type
-            content(country: $country, language: $language) {
-            name
-            visibility
-            __typename
-            }
-            titles(country: $country, first: 40) {
-            totalCount
-            edges {
-                cursor
-                node: nodeV2 {
-                content(country: $country, language: $language) {
-                    fullPath
-                    posterUrl
-                    title
-                    originalReleaseYear
-                    originalReleaseDate
-                    scoring {
-                    imdbScore
-                    __typename
-                    }
-                    isReleased
-                    runtime
-                    __typename
-                }
-                id
-                objectId
-                objectType
-                __typename
-                }
-                __typename
-            }
-            __typename
-            }
-            __typename
-        }
-        }
-        __typename
-    }
-    __typename
-    }
+            max_digits_season = max(max_digits_season, digits_season)
+            max_digits_episode = max(max_digits_episode, digits_episode)
 
-    fragment Episode on Episode {
-    id
-    objectId
-    seenlistEntry {
-        createdAt
-        __typename
-    }
-    content(country: $country, language: $language) {
-        title
-        shortDescription
-        episodeNumber
-        seasonNumber
-        isReleased
-        originalReleaseDate
-        runtime
-        upcomingReleases {
-        releaseDate
-        label
-        package {
-            id
-            packageId
-            icon
-            clearName
-            __typename
-        }
-        __typename
-        }
-        __typename
-    }
-    __typename
-    }
-    """
+        max_digits_season = max(max_digits_season, 2)
+        max_digits_episode = max(max_digits_episode, 2)
 
-    _GRAPHQL_GetNodeTitleDetails = """
-    query GetNodeTitleDetails($entityId: ID!, $country: Country!, $language: Language!, $episodeMaxLimit: Int, $platform: Platform! = WEB, $allowSponsoredRecommendations: SponsoredRecommendationsInput, $format: ImageFormat, $backdropProfile: BackdropProfile, $streamingChartsFilter: StreamingChartsFilter) {
-    node(id: $entityId) {
-        ... on Url {
-        metaDescription
-        metaKeywords
-        metaRobots
-        metaTitle
-        heading1
-        heading2
-        htmlContent
-        __typename
-        }
-        ...TitleDetails
-        __typename
-    }
-    }
+        for season_episode_json_episodes_array in season_episodes_json_episodes_array:
+            season_episode_id = season_episode_json_episodes_array["id"]
 
-    fragment TitleDetails on Node {
-    id
-    __typename
-    ... on MovieOrShowOrSeason {
-        plexPlayerOffers: offers(
-        country: $country
-        platform: $platform
-        filter: {packages: ["pxp"]}
-        ) {
-        id
-        standardWebURL
-        package {
-            id
-            packageId
-            clearName
-            technicalName
-            shortName
-            icon
-            __typename
-        }
-        __typename
-        }
-        maxOfferUpdatedAt(country: $country, platform: WEB)
-        appleOffers: offers(
-        country: $country
-        platform: $platform
-        filter: {packages: ["atp", "itu"]}
-        ) {
-        ...TitleOffer
-        __typename
-        }
-        disneyOffersCount: offerCount(
-        country: $country
-        platform: $platform
-        filter: {packages: ["dnp"]}
-        )
-        starOffersCount: offerCount(
-        country: $country
-        platform: $platform
-        filter: {packages: ["srp"]}
-        )
-        objectType
-        objectId
-        offerCount(country: $country, platform: $platform)
-        uniqueOfferCount: offerCount(
-        country: $country
-        platform: $platform
-        filter: {bestOnly: true}
-        )
-        offers(country: $country, platform: $platform) {
-        monetizationType
-        elementCount
-        package {
-            id
-            packageId
-            clearName
-            icon
-            __typename
-        }
-        __typename
-        }
-        watchNowOffer(country: $country, platform: $platform) {
-        id
-        standardWebURL
-        __typename
-        }
-        promotedBundles(country: $country, platform: $platform) {
-        promotionUrl
-        __typename
-        }
-        availableTo(country: $country, platform: $platform) {
-        availableCountDown(country: $country)
-        availableToDate
-        package {
-            id
-            shortName
-            clearName
-            icon
-            __typename
-        }
-        __typename
-        }
-        fallBackClips: content(country: "US", language: "en") {
-        videobusterClips: clips(providers: [VIDEOBUSTER]) {
-            ...TrailerClips
-            __typename
-        }
-        dailymotionClips: clips(providers: [DAILYMOTION]) {
-            ...TrailerClips
-            __typename
-        }
-        __typename
-        }
-        content(country: $country, language: $language) {
-        backdrops {
-            backdropUrl
-            __typename
-        }
-        fullBackdrops: backdrops(profile: S1920, format: JPG) {
-            backdropUrl
-            __typename
-        }
-        clips {
-            ...TrailerClips
-            __typename
-        }
-        videobusterClips: clips(providers: [VIDEOBUSTER]) {
-            ...TrailerClips
-            __typename
-        }
-        dailymotionClips: clips(providers: [DAILYMOTION]) {
-            ...TrailerClips
-            __typename
-        }
-        externalIds {
-            imdbId
-            __typename
-        }
-        fullPath
-        posterUrl
-        fullPosterUrl: posterUrl(profile: S718, format: JPG)
-        runtime
-        isReleased
-        scoring {
-            imdbScore
-            imdbVotes
-            tmdbPopularity
-            tmdbScore
-            jwRating
-            __typename
-        }
-        shortDescription
-        title
-        originalReleaseYear
-        originalReleaseDate
-        upcomingReleases(releaseTypes: DIGITAL) {
-            releaseCountDown(country: $country)
-            releaseDate
-            label
-            package {
-            id
-            packageId
-            shortName
-            clearName
-            icon(profile: S100)
-            hasRectangularIcon(country: $country, platform: WEB)
-            __typename
-            }
-            __typename
-        }
-        genres {
-            shortName
-            translation(language: $language)
-            __typename
-        }
-        subgenres {
-            content(country: $country, language: $language) {
-            shortName
-            name
-            __typename
-            }
-            __typename
-        }
-        ... on MovieContent {
-            subgenres {
-            content(country: $country, language: $language) {
-                url: moviesUrl {
-                fullPath
-                __typename
-                }
-                __typename
-            }
-            __typename
-            }
-            __typename
-        }
-        ... on ShowContent {
-            subgenres {
-            content(country: $country, language: $language) {
-                url: showsUrl {
-                fullPath
-                __typename
-                }
-                __typename
-            }
-            __typename
-            }
-            __typename
-        }
-        ... on SeasonContent {
-            subgenres {
-            content(country: $country, language: $language) {
-                url: showsUrl {
-                fullPath
-                __typename
-                }
-                __typename
-            }
-            __typename
-            }
-            __typename
-        }
-        ... on MovieOrShowContent {
-            originalTitle
-            ageCertification
-            credits {
-            role
-            name
-            characterName
-            personId
-            __typename
-            }
-            interactions {
-            dislikelistAdditions
-            likelistAdditions
-            votesNumber
-            __typename
-            }
-            productionCountries
-            __typename
-        }
-        ... on SeasonContent {
-            seasonNumber
-            interactions {
-            dislikelistAdditions
-            likelistAdditions
-            votesNumber
-            __typename
-            }
-            __typename
-        }
-        __typename
-        }
-        popularityRank(country: $country) {
-        rank
-        trend
-        trendDifference
-        __typename
-        }
-        streamingCharts(country: $country, filter: $streamingChartsFilter) {
-        edges {
-            streamingChartInfo {
-            rank
-            trend
-            trendDifference
-            updatedAt
-            daysInTop10
-            daysInTop100
-            daysInTop1000
-            daysInTop3
-            topRank
-            __typename
-            }
-            __typename
-        }
-        __typename
-        }
-        __typename
-    }
-    ... on MovieOrShow {
-        watchlistEntryV2 {
-        createdAt
-        __typename
-        }
-        likelistEntry {
-        createdAt
-        __typename
-        }
-        dislikelistEntry {
-        createdAt
-        __typename
-        }
-        customlistEntries {
-        createdAt
-        genericTitleList {
-            id
-            __typename
-        }
-        __typename
-        }
-        similarTitlesV2(
-        country: $country
-        allowSponsoredRecommendations: $allowSponsoredRecommendations
-        ) {
-        sponsoredAd {
-            ...SponsoredAd
-            __typename
-        }
-        __typename
-        }
-        __typename
-    }
-    ... on Movie {
-        permanentAudiences
-        seenlistEntry {
-        createdAt
-        __typename
-        }
-        __typename
-    }
-    ... on Show {
-        permanentAudiences
-        totalSeasonCount
-        seenState(country: $country) {
-        progress
-        seenEpisodeCount
-        __typename
-        }
-        tvShowTrackingEntry {
-        createdAt
-        __typename
-        }
-        seasons(sortDirection: DESC) {
-        id
-        objectId
-        objectType
-        totalEpisodeCount
-        availableTo(country: $country, platform: $platform) {
-            availableToDate
-            availableCountDown(country: $country)
-            package {
-            id
-            shortName
-            clearName
-            icon
-            __typename
-            }
-            __typename
-        }
-        content(country: $country, language: $language) {
-            posterUrl
-            seasonNumber
-            fullPath
-            title
-            upcomingReleases(releaseTypes: DIGITAL) {
-            releaseDate
-            releaseCountDown(country: $country)
-            package {
-                id
-                shortName
-                clearName
-                icon
-                __typename
-            }
-            __typename
-            }
-            isReleased
-            runtime
-            originalReleaseYear
-            originalReleaseDate
-            __typename
-        }
-        show {
-            id
-            objectId
-            objectType
-            watchlistEntryV2 {
-            createdAt
-            __typename
-            }
-            content(country: $country, language: $language) {
-            title
-            __typename
-            }
-            __typename
-        }
-        fallBackClips: content(country: "US", language: "en") {
-            videobusterClips: clips(providers: [VIDEOBUSTER]) {
-            ...TrailerClips
-            __typename
-            }
-            dailymotionClips: clips(providers: [DAILYMOTION]) {
-            ...TrailerClips
-            __typename
-            }
-            __typename
-        }
-        __typename
-        }
-        recentEpisodes: episodes(
-        sortDirection: DESC
-        limit: 3
-        releasedInCountry: $country
-        ) {
-        ...Episode
-        __typename
-        }
-        __typename
-    }
-    ... on Season {
-        totalEpisodeCount
-        episodes(limit: $episodeMaxLimit) {
-        ...Episode
-        __typename
-        }
-        show {
-        id
-        objectId
-        objectType
-        totalSeasonCount
-        customlistEntries {
-            createdAt
-            genericTitleList {
-            id
-            __typename
-            }
-            __typename
-        }
-        tvShowTrackingEntry {
-            createdAt
-            __typename
-        }
-        fallBackClips: content(country: "US", language: "en") {
-            videobusterClips: clips(providers: [VIDEOBUSTER]) {
-            ...TrailerClips
-            __typename
-            }
-            dailymotionClips: clips(providers: [DAILYMOTION]) {
-            ...TrailerClips
-            __typename
-            }
-            __typename
-        }
-        content(country: $country, language: $language) {
-            title
-            ageCertification
-            fullPath
-            genres {
-            shortName
-            __typename
-            }
-            credits {
-            role
-            name
-            characterName
-            personId
-            __typename
-            }
-            productionCountries
-            externalIds {
-            imdbId
-            __typename
-            }
-            upcomingReleases(releaseTypes: DIGITAL) {
-            releaseDate
-            __typename
-            }
-            backdrops {
-            backdropUrl
-            __typename
-            }
-            posterUrl
-            isReleased
-            originalReleaseDate
-            runtime
-            videobusterClips: clips(providers: [VIDEOBUSTER]) {
-            ...TrailerClips
-            __typename
-            }
-            dailymotionClips: clips(providers: [DAILYMOTION]) {
-            ...TrailerClips
-            __typename
-            }
-            __typename
-        }
-        seenState(country: $country) {
-            progress
-            __typename
-        }
-        watchlistEntryV2 {
-            createdAt
-            __typename
-        }
-        dislikelistEntry {
-            createdAt
-            __typename
-        }
-        likelistEntry {
-            createdAt
-            __typename
-        }
-        similarTitlesV2(
-            country: $country
-            allowSponsoredRecommendations: $allowSponsoredRecommendations
-        ) {
-            sponsoredAd {
-            ...SponsoredAd
-            __typename
-            }
-            __typename
-        }
-        __typename
-        }
-        seenState(country: $country) {
-        progress
-        __typename
-        }
-        __typename
-    }
-    }
+            season_number = int(season_episode_json_episodes_array.get("content", {}).get("seasonNumber", 0))
+            episode_number = int(season_episode_json_episodes_array.get("content", {}).get("episodeNumber", 0))
+            formatted_season = f"{season_number:0{max_digits_season}d}"
+            formatted_episode = f"{episode_number:0{max_digits_episode}d}"
+            season_episode = f"S{formatted_season}E{formatted_episode}"
 
-    fragment TitleOffer on Offer {
-    id
-    presentationType
-    monetizationType
-    retailPrice(language: $language)
-    retailPriceValue
-    currency
-    lastChangeRetailPriceValue
-    type
-    package {
-        id
-        packageId
-        clearName
-        technicalName
-        icon(profile: S100)
-        planOffers(country: $country, platform: WEB) {
-        title
-        retailPrice(language: $language)
-        isTrial
-        durationDays
-        __typename
-        }
-        hasRectangularIcon(country: $country, platform: WEB)
-        __typename
-    }
-    standardWebURL
-    elementCount
-    availableTo
-    deeplinkRoku: deeplinkURL(platform: ROKU_OS)
-    subtitleLanguages
-    videoTechnology
-    audioTechnology
-    audioLanguages(language: $language)
-    __typename
-    }
+            override_episode_title = season_episode_json_episodes_array.get("content", {}).get("title", "")
+            override_summary = season_episode_json_episodes_array.get("content", {}).get("shortDescription", "")
+            override_duration = int(season_episode_json_episodes_array.get("content", {}).get("runtime", 0)) * 60
+            if override_duration == '0' or int(override_duration) == 0:
+                override_duration = ''
+            original_release_date = season_episode_json_episodes_array.get("content", {}).get("originalReleaseDate", "")
+            if original_release_date in ['', None]:
+                original_release_date = '1900-01-01'
+            offers = season_episode_json_episodes_array.get("offers", {})
 
-    fragment TrailerClips on Clip {
-    sourceUrl
-    externalId
-    provider
-    name
-    __typename
-    }
+            season_episodes_results.append({
+                "season_episode_id": season_episode_id,
+                "season_episode": season_episode,
+                "status": "unwatched",
+                "override_episode_title": override_episode_title,
+                "override_summary": override_summary,
+                "override_duration": override_duration,
+                "original_release_date": original_release_date,
+                "offers": offers
+            })
 
-    fragment SponsoredAd on SponsoredRecommendationAd {
-    bidId
-    holdoutGroup
-    campaign {
-        name
-        externalTrackers {
-        type
-        data
-        __typename
-        }
-        hideRatings
-        hideDetailPageButton
-        promotionalImageUrl
-        promotionalVideo {
-        url
-        __typename
-        }
-        promotionalTitle
-        promotionalText
-        promotionalProviderLogo
-        watchNowLabel
-        watchNowOffer {
-        standardWebURL
-        presentationType
-        monetizationType
-        package {
-            id
-            packageId
-            shortName
-            clearName
-            icon
-            __typename
-        }
-        __typename
-        }
-        nodeOverrides {
-        nodeId
-        promotionalImageUrl
-        watchNowOffer {
-            standardWebURL
-            __typename
-        }
-        __typename
-        }
-        node {
-        nodeId: id
-        __typename
-        ... on MovieOrShowOrSeason {
-            content(country: $country, language: $language) {
-            fullPath
-            posterUrl
-            title
-            originalReleaseYear
-            originalReleaseDate
-            scoring {
-                imdbScore
-                __typename
-            }
-            externalIds {
-                imdbId
-                __typename
-            }
-            backdrops(format: $format, profile: $backdropProfile) {
-                backdropUrl
-                __typename
-            }
-            isReleased
-            originalReleaseDate
-            runtime
-            __typename
-            }
-            objectId
-            objectType
-            offers(country: $country, platform: $platform) {
-            monetizationType
-            presentationType
-            package {
-                id
-                packageId
-                icon
-                clearName
-                __typename
-            }
-            id
-            __typename
-            }
-            __typename
-        }
-        ... on MovieOrShow {
-            watchlistEntryV2 {
-            createdAt
-            __typename
-            }
-            __typename
-        }
-        ... on Show {
-            seenState(country: $country) {
-            seenEpisodeCount
-            __typename
-            }
-            __typename
-        }
-        ... on Season {
-            content(country: $country, language: $language) {
-            seasonNumber
-            __typename
-            }
-            show {
-            __typename
-            id
-            content(country: $country, language: $language) {
-                originalTitle
-                __typename
-            }
-            watchlistEntryV2 {
-                createdAt
-                __typename
-            }
-            }
-            __typename
-        }
-        ... on GenericTitleList {
-            followedlistEntry {
-            createdAt
-            name
-            __typename
-            }
-            id
-            type
-            content(country: $country, language: $language) {
-            name
-            visibility
-            __typename
-            }
-            titles(country: $country, first: 40) {
-            totalCount
-            edges {
-                cursor
-                node: nodeV2 {
-                content(country: $country, language: $language) {
-                    fullPath
-                    posterUrl
-                    title
-                    originalReleaseYear
-                    originalReleaseDate
-                    scoring {
-                    imdbScore
-                    __typename
-                    }
-                    isReleased
-                    runtime
-                    __typename
-                }
-                id
-                objectId
-                objectType
-                __typename
-                }
-                __typename
-            }
-            __typename
-            }
-            __typename
-        }
-        }
-        __typename
-    }
-    __typename
-    }
+        season_episodes_sorted = sorted(season_episodes_results, key=lambda d: d['season_episode'])
 
-    fragment Episode on Episode {
-    id
-    objectId
-    seenlistEntry {
-        createdAt
-        __typename
-    }
-    content(country: $country, language: $language) {
-        title
-        shortDescription
-        episodeNumber
-        seasonNumber
-        isReleased
-        originalReleaseDate
-        runtime
-        upcomingReleases {
-        releaseDate
-        label
-        package {
-            id
-            packageId
-            icon
-            clearName
-            __typename
-        }
-        __typename
-        }
-        __typename
-    }
-    __typename
-    }
-    """
-
-    seasons = get_season_list(entry_id, url, country_code, language_code, _GRAPHQL_GetUrlTitleDetails, _GRAPHQL_GetNodeTitleDetails)
-
-    if seasons:
-        for season in seasons:
-            if url is not None and url != '' and season.startswith('http'):
-                full_href = season
-
-                json_data = {
-                    'query': _GRAPHQL_GetUrlTitleDetails,
-                    'variables': {
-                        "platform": "WEB",
-                        "fullPath": full_href,
-                        "language": language_code,
-                        "country": country_code,
-                        "episodeMaxLimit": 999,
-                        "allowSponsoredRecommendations": {
-                            "pageType": "VIEW_TITLE_DETAIL",
-                            "placement": "DETAIL_PAGE",
-                            "country": country_code,
-                            "language": language_code,
-                            "appId": "3.8.2-webapp#de387c7",
-                            "platform": "WEB",
-                            "supportedFormats": [
-                            "IMAGE",
-                            "VIDEO"
-                            ],
-                            "supportedObjectTypes": [
-                            "MOVIE",
-                            "SHOW",
-                            "GENERIC_TITLE_LIST",
-                            "SHOW_SEASON"
-                            ],
-                            "testingMode": False,
-                            "testingModeCampaignName": None
-                        }
-                    },
-                    'operationName': 'GetUrlTitleDetails',
-                }
-
-            else:
-                season_id = season
-
-                json_data = {
-                    'query': _GRAPHQL_GetNodeTitleDetails,
-                    'variables': {
-                        "platform": "WEB",
-                        "fullPath": "/",
-                        "entityId": season_id,
-                        "language": language_code,
-                        "country": country_code,
-                        "episodeMaxLimit": 999,
-                        "allowSponsoredRecommendations": {
-                            "pageType": "VIEW_TITLE_DETAIL",
-                            "placement": "DETAIL_PAGE",
-                            "language": language_code,
-                            "country": country_code,
-                            "appId": "3.8.2-webapp#b19435c",
-                            "platform": "WEB",
-                            "supportedFormats": [
-                                "IMAGE",
-                                "VIDEO"
-                            ],
-                            "supportedObjectTypes": [
-                                "MOVIE",
-                                "SHOW",
-                                "GENERIC_TITLE_LIST",
-                                "SHOW_SEASON"
-                            ],
-                            "testingMode": False,
-                            "testingModeCampaignName": None
-                        }
-                    },
-                    'operationName': 'GetNodeTitleDetails',
-                }
-
-            try:
-                season_episodes_base = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
-                season_episodes_json = season_episodes_base.json()
-                if url is not None and url != '' and season.startswith('http'):
-                    season_episodes_json_episodes_array = season_episodes_json["data"]["urlV2"]["node"]["episodes"]
-                else:
-                    season_episodes_json_episodes_array = season_episodes_json["data"]["node"]["episodes"]
-
-                # Get maxium digits for Season/Episode number length
-                max_digits_season = 0
-                max_digits_episode = 0
-
-                for season_episode_json_episodes_array in season_episodes_json_episodes_array:
-                    season_number_digit = int(season_episode_json_episodes_array["content"]["seasonNumber"])
-                    episode_number_digit = int(season_episode_json_episodes_array["content"]["episodeNumber"])
-
-                    digits_season = len(str(season_number_digit))
-                    digits_episode = len(str(episode_number_digit))
-
-                    max_digits_season = max(max_digits_season, digits_season)
-                    max_digits_episode = max(max_digits_episode, digits_episode)
-
-                max_digits_season = max(max_digits_season, 2)
-                max_digits_episode = max(max_digits_episode, 2)
-
-                for season_episode_json_episodes_array in season_episodes_json_episodes_array:
-                    season_episode_id = season_episode_json_episodes_array["id"]
-
-                    season_number = int(season_episode_json_episodes_array.get("content", {}).get("seasonNumber", 0))
-                    episode_number = int(season_episode_json_episodes_array.get("content", {}).get("episodeNumber", 0))
-                    formatted_season = f"{season_number:0{max_digits_season}d}"
-                    formatted_episode = f"{episode_number:0{max_digits_episode}d}"
-                    season_episode = f"S{formatted_season}E{formatted_episode}"
-
-                    override_episode_title = season_episode_json_episodes_array.get("content", {}).get("title", "")
-                    override_summary = season_episode_json_episodes_array.get("content", {}).get("shortDescription", "")
-                    override_duration = int(season_episode_json_episodes_array.get("content", {}).get("runtime", 0)) * 60
-                    if override_duration == '0' or int(override_duration) == 0:
-                        override_duration = ''
-                    original_release_date = season_episode_json_episodes_array.get("content", {}).get("originalReleaseDate", "")
-                    if original_release_date in ['', None]:
-                        original_release_date = '1900-01-01'
-
-                    season_episodes_results.append({
-                        "season_episode_id": season_episode_id,
-                        "season_episode": season_episode,
-                        "status": "unwatched",
-                        "override_episode_title": override_episode_title,
-                        "override_summary": override_summary,
-                        "override_duration": override_duration,
-                        "original_release_date": original_release_date
-                    })
-
-                season_episodes_sorted = sorted(season_episodes_results, key=lambda d: d['season_episode'])
-
-            except requests.RequestException as e:
-                print(f"{current_time()} WARNING: {e}. Skipping, please try again. (entry_id: {entry_id})")
-            except KeyError as e:
-                print(f"{current_time()} WARNING: Missing key {e}. Skipping, please try again. (entry_id: {entry_id})")
-            except Exception as e:
-                print(f"{current_time()} WARNING: An unexpected error occurred: {e}. Skipping, please try again. (entry_id: {entry_id})")
+    except requests.RequestException as e:
+        print(f"{current_time()} WARNING: {e}. Skipping, please try again. (entry_id: {entry_id})")
+    except KeyError as e:
+        print(f"{current_time()} WARNING: Missing key {e}. Skipping, please try again. (entry_id: {entry_id})")
+    except Exception as e:
+        print(f"{current_time()} WARNING: An unexpected error occurred: {e}. Skipping, please try again. (entry_id: {entry_id})")
 
     return season_episodes_sorted
 
-# Get a list of seasons for TV Shows   
-def get_season_list(entry_id, url, country_code, language_code, _GRAPHQL_GetUrlTitleDetails, _GRAPHQL_GetNodeTitleDetails):
-    season_list = []
-    season_list_json = []
-    season_list_json_array = []
-    season_list_json_array_results = []
+# Fetch details for all season/episodes of a Show using pagination
+def get_all_season_episodes(entry_id, country_code, language_code):
+    all_season_episodes = []
+    offset = 0
+    chunk_size = 50
 
-    if url is not None and url != '':
-        json_data = {
-            'query': _GRAPHQL_GetUrlTitleDetails,
-            'variables': {
-                "platform": "WEB",
-                "fullPath": url,
-                "language": language_code,
-                "country": country_code,
-                "episodeMaxLimit": 999,
-                "allowSponsoredRecommendations": {
-                    "pageType": "VIEW_TITLE_DETAIL",
-                    "placement": "DETAIL_PAGE",
-                    "country": country_code,
-                    "language": language_code,
-                    "appId": "3.8.2-webapp#de387c7",
-                    "platform": "WEB",
-                    "supportedFormats": [
-                    "IMAGE",
-                    "VIDEO"
-                    ],
-                    "supportedObjectTypes": [
-                    "MOVIE",
-                    "SHOW",
-                    "GENERIC_TITLE_LIST",
-                    "SHOW_SEASON"
-                    ],
-                    "testingMode": False,
-                    "testingModeCampaignName": None
-                }
-            },
-            'operationName': 'GetUrlTitleDetails',
+    offer_fields = [
+        "flatrate",
+        "buy",
+        "rent",
+        "free",
+        "fast"
+    ]
+
+    while True:
+        batch = []
+        batch = get_season_episodes(entry_id, country_code, language_code, chunk_size, offset)
+
+        if batch:
+            all_season_episodes.extend(batch)
+            offset += chunk_size
+
+        if not batch or len(batch) < chunk_size:
+            break
+
+    if all_season_episodes:
+        for season_episode in all_season_episodes:
+
+            season_episode["offers"] = {
+                offer_field: season_episode.get(offer_field, [])
+                for offer_field in offer_fields
+            }
+
+            for offer_field in offer_fields:
+                season_episode.pop(offer_field, None)
+
+    return all_season_episodes
+
+# Fetch a single page of of details for season/episodes in a Show
+def get_season_episodes(entry_id, country_code, language_code, limit, offset):
+    season_episdes_response = {}
+    season_episdes_response_json = {}
+    season_episdes_array = {}
+
+    _GRAPHQL_GetSeasonEpisodes = """
+        query GetSeasonEpisodes(
+            $nodeId: ID!,
+            $country: Country!,
+            $language: Language!,
+            $platform: Platform! = WEB,
+            $limit: Int,
+            $offset: Int
+        ) {
+        node(id: $nodeId) {
+            id
+            __typename
+            ... on Show {
+            episodes(limit: $limit, offset: $offset) {
+                ...Episode
+                __typename
+            }
+            __typename
+            }
+        }
         }
 
-    else:
-        json_data = {
-            'query': _GRAPHQL_GetNodeTitleDetails,
-            'variables': {
-                "platform": "WEB",
-                "fullPath": "/",
-                "entityId": entry_id,
-                "language": language_code,
-                "country": country_code,
-                "episodeMaxLimit": 999,
-                "allowSponsoredRecommendations": {
-                    "pageType": "VIEW_TITLE_DETAIL",
-                    "placement": "DETAIL_PAGE",
-                    "language": language_code,
-                    "country": country_code,
-                    "appId": "3.8.2-webapp#b19435c",
-                    "platform": "WEB",
-                    "supportedFormats": [
-                        "IMAGE",
-                        "VIDEO"
-                    ],
-                    "supportedObjectTypes": [
-                        "MOVIE",
-                        "SHOW",
-                        "GENERIC_TITLE_LIST",
-                        "SHOW_SEASON"
-                    ],
-                    "testingMode": False,
-                    "testingModeCampaignName": None
+        fragment Episode on Episode {
+            id
+            objectId
+            objectType
+            seenlistEntry { createdAt __typename }
+            flatrate: offers(
+                country: $country
+                platform: $platform
+                filter: {monetizationTypes: [FLATRATE_AND_BUY, FLATRATE, ADS, CINEMA, FREE], bestOnly: true, preAffiliate: true}
+            ) {
+                id
+                package {
+                    id
+                    packageId
+                    clearName
+                    technicalName
+                    icon(profile: S100)
+                    __typename
                 }
-            },
-            'operationName': 'GetNodeTitleDetails',
+                standardWebURL
+                __typename
+            }
+            buy: offers(
+                country: $country
+                platform: $platform
+                filter: {monetizationTypes: [BUY], bestOnly: true, preAffiliate: true}
+            ) {
+                id
+                package {
+                    id
+                    packageId
+                    clearName
+                    technicalName
+                    icon(profile: S100)
+                    __typename
+                }
+                standardWebURL
+                __typename
+            }
+            rent: offers(
+                country: $country
+                platform: $platform
+                filter: {monetizationTypes: [RENT], bestOnly: true, preAffiliate: true}
+            ) {
+                id
+                package {
+                    id
+                    packageId
+                    clearName
+                    technicalName
+                    icon(profile: S100)
+                    __typename
+                }
+                standardWebURL
+                __typename
+            }
+            free: offers(
+                country: $country
+                platform: $platform
+                filter: {monetizationTypes: [ADS, FREE], bestOnly: true, preAffiliate: true}
+            ) {
+                id
+                package {
+                    id
+                    packageId
+                    clearName
+                    technicalName
+                    icon(profile: S100)
+                    __typename
+                }
+                standardWebURL
+                __typename
+            }
+            fast: offers(
+                country: $country
+                platform: $platform
+                filter: {monetizationTypes: [FAST], bestOnly: true, preAffiliate: true}
+            ) {
+                id
+                package {
+                    id
+                    packageId
+                    clearName
+                    technicalName
+                    icon(profile: S100)
+                    __typename
+                }
+                standardWebURL
+                __typename
+            }
+            content(country: $country, language: $language) {
+                __typename
+                title
+                shortDescription
+                episodeNumber
+                seasonNumber
+                runtime
+                originalReleaseDate
+            }
+            __typename
         }
+    """
+
+    json_data = {
+        'query': _GRAPHQL_GetSeasonEpisodes,
+        'variables': {
+            "platform": "WEB",
+            "country": country_code,
+            "language": language_code,
+            "nodeId": entry_id,
+            "limit": limit,
+            "offset": offset
+        },
+        'operationName': 'GetSeasonEpisodes',
+    }
 
     try:
-        season_list = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
-    except requests.RequestException as e:
-        print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
+        season_episdes_response = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
 
-    if season_list:
-        season_list_json = season_list.json()
+        if season_episdes_response:
+            season_episdes_response_json = season_episdes_response.json()
 
-        if url is not None and url != '':
-            season_list_json_array = season_list_json["data"]["urlV2"]["node"]["seasons"]
-        else:
-            season_list_json_array = season_list_json["data"]["node"]["seasons"]
+        if season_episdes_response_json:
+            season_episdes_array =  season_episdes_response_json["data"]["node"]["episodes"]
 
-        for season in season_list_json_array:
-            if url is not None and url != '':
-                if season["content"]["fullPath"] is not None and season["content"]["fullPath"] !='':
-                    href = season["content"]["fullPath"]
-                    full_href = f"{engine_url}{href}"
-                    season_list_json_array_results.append(full_href)
-                else:
-                    season_id = season["id"]
-                    season_list_json_array_results.append(season_id)                    
-            else:
-                season_id = season["id"]
-                season_list_json_array_results.append(season_id)
-
-    return season_list_json_array_results
+    except Exception as e:
+        print(f"{current_time()} ERROR: While getting single page of season/episodes, received {e}")
+    
+    return season_episdes_array
 
 # Import program updates from Channels
 def import_program_updates():
@@ -14174,12 +12829,68 @@ def generate_stream_links_single(entry_id):
     return generate_stream_links_single_message
 
 # Get the valid Stream Links (if available) and write to the appropriate table
-def find_stream_links(auto_bookmarks, original_release_date_list):
+def find_stream_links(base_bookmarks, original_release_date_list):
+
+    global all_season_episodes_offers_lookup
+
+    bookmarks_statuses = read_data(csv_bookmarks_status)
+
+    unwatched_entry_ids = set()
+    for bookmarks_status in bookmarks_statuses:
+        if bookmarks_status['status'] == 'unwatched':
+            unwatched_entry_ids.add(bookmarks_status['entry_id'])
+
+    auto_bookmarks = [
+        base_bookmark for base_bookmark in base_bookmarks 
+        if base_bookmark['bookmark_action'] not in ["Hide"]
+        and not base_bookmark['entry_id'].startswith('int')
+        and base_bookmark['entry_id'] in unwatched_entry_ids
+    ]
 
     if len(auto_bookmarks) > 1:
         auto_bookmarks = sorted(auto_bookmarks, key=lambda x: sort_key(x["title"].casefold()))
 
-    bookmarks_statuses = read_data(csv_bookmarks_status)
+    show_bookmarks = []
+    show_bookmarks = [auto_bookmark for auto_bookmark in auto_bookmarks if auto_bookmark['object_type'] == "SHOW"]
+
+    watched_bookmarks = [
+        base_bookmark for base_bookmark in base_bookmarks 
+        if base_bookmark['bookmark_action'] not in ["Hide"]
+        and not base_bookmark['entry_id'].startswith('int')
+        and base_bookmark['entry_id'] not in unwatched_entry_ids
+    ]
+
+    if show_bookmarks and all_season_episodes_offers_lookup in [None, {}, [], '']:
+        print(f"{current_time()} INFO: Starting retrieving season/episode offers data...")
+
+        all_season_episodes = []
+        for show_bookmark in show_bookmarks:
+            timer = threading.Timer(600, timeout_handler)
+            timer.start()
+
+            season_episodes = []
+            try:
+                season_episodes = get_episode_list(show_bookmark['entry_id'], show_bookmark['country_code'], show_bookmark['language_code'])
+            except TimeoutError:
+                print(f"    ERROR: {show_bookmark['title']} ({show_bookmark['release_year']}) - Searching for episodes in timed out after 10 minutes. Moving to next show...")
+            except Exception as e:
+                print(f"    ERROR: {show_bookmark['title']} ({show_bookmark['release_year']}) - Unable to get episode list due to {e}. Continuing to next show...")
+            finally:
+                print(f"    COMPLETE: {show_bookmark['title']} ({show_bookmark['release_year']})")
+                timer.cancel()  # Disable the timer
+
+            if season_episodes:
+                all_season_episodes.extend(season_episodes)
+
+        if all_season_episodes:
+            all_season_episodes_offers_lookup = {all_season_episode['season_episode_id']: all_season_episode['offers'] for all_season_episode in all_season_episodes}
+
+        print(f"{current_time()} INFO: Finished retrieving season/episode offers data.")
+
+    for watched_bookmark in watched_bookmarks:
+        for bookmarks_status in bookmarks_statuses:
+            if watched_bookmark['entry_id'] == bookmarks_status['entry_id']:
+                bookmarks_status['stream_link'] = ''
 
     for auto_bookmark in auto_bookmarks:
 
@@ -14223,29 +12934,36 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
 
                     else:
 
-                        for attempt in range(3):  # Limit retries to 3 attempts
+                        final_error = None
+
+                        for attempt in range(3):
+
                             try:
                                 
                                 if original_release_date_list is None or node_id in original_release_date_list:
-                                    stream_link_details = get_offers(node_id, auto_bookmark['country_code'], auto_bookmark['language_code'])
+
+                                    if auto_bookmark['object_type'] == "MOVIE":
+                                        stream_link_details = get_offers(node_id, auto_bookmark['country_code'], auto_bookmark['language_code'])
+                                    elif auto_bookmark['object_type'] == "SHOW":
+                                        stream_link_details = all_season_episodes_offers_lookup.get(node_id, {})
+
                                     stream_link_offers = extract_offer_info(stream_link_details)
                                     stream_link_dirty = get_stream_link(stream_link_offers, special_action)
 
                                     if stream_link_dirty is None or stream_link_dirty == '':
                                         stream_link_reason = "None due to not found on your selected streaming services"
 
-                                break  # Break out of the retry loop if successful
+                                break
                             
                             except Exception as e:
-                                print(f"{current_time()} ERROR: {e}. Retrying...")
+                                final_error = {e}
 
                         else:
-                            print(f"{current_time()} ERROR: Could not find Stream Link after 3 attempts.")
                             if bookmarks_status['stream_link'] != "":
-                                print(f"{current_time()} INFO: Assigning prior Stream Link.")
+                                stream_link_reason = f"Prior Stream Link due to could not find Stream Link after 3 attempts (ERROR: {final_error})"
                                 stream_link_dirty = bookmarks_status['stream_link']
                             else:
-                                print(f"{current_time()} INFO: No prior Stream Link to assign. Try again later.")
+                                stream_link_reason = f"None due to could not find Stream Link after 3 attempts and no prior Stream Link available to assign (ERROR: {final_error})"
                             pass
 
                 else:
@@ -14290,6 +13008,8 @@ def find_stream_links(auto_bookmarks, original_release_date_list):
 
         if assignment_text:
             print('\n'.join(assignment_text))
+
+    all_season_episodes_offers_lookup = {}
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
@@ -14621,22 +13341,40 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
     settings_slm_add_show_title = settings[73]['settings']                      # [73] SLM: Add TV Show Title to File Name On/Off
     settings_slm_add_episode_title = settings[74]['settings']                   # [74] SLM: Add Episode Title to TV Show File Name On/Off
 
+    bookmarks_statuses = read_data(csv_bookmarks_status)
+
+    unwatched_entry_ids = set()
+    for bookmarks_status in bookmarks_statuses:
+        if bookmarks_status['status'] == 'unwatched':
+            unwatched_entry_ids.add(bookmarks_status['entry_id'])
+
     bookmarks = [
         base_bookmark for base_bookmark in base_bookmarks 
         if base_bookmark['bookmark_action'] not in ["Hide"]
-        and not base_bookmark['entry_id'].startswith('int') 
+        and not base_bookmark['entry_id'].startswith('int')
+        and base_bookmark['entry_id'] in unwatched_entry_ids
     ]
 
     if len(bookmarks) > 1:
         bookmarks = sorted(bookmarks, key=lambda x: sort_key(x["title"].casefold()))
 
-    bookmarks_statuses = read_data(csv_bookmarks_status)
+    watched_bookmarks = [
+        base_bookmark for base_bookmark in base_bookmarks 
+        if base_bookmark['bookmark_action'] not in ["Hide"]
+        and not base_bookmark['entry_id'].startswith('int')
+        and base_bookmark['entry_id'] not in unwatched_entry_ids
+    ]
 
     movie_path, tv_path, video_path = get_movie_tv_path()
 
     create_directory(movie_path)
     create_directory(tv_path)
     create_directory(video_path)
+
+    for watched_bookmark in watched_bookmarks:
+        for bookmarks_status in bookmarks_statuses:
+            if watched_bookmark['entry_id'] == bookmarks_status['entry_id']:
+                bookmarks_status['stream_link_file'] = ''
 
     for bookmark in bookmarks:
 
@@ -15182,7 +13920,7 @@ def run_slm_new_recent_releases():
     start_time = time.time()
 
     # Get new episodes
-    get_new_episodes(None)
+    get_new_episodes(None, True)
     time.sleep(2)
     
     # Generate Stream Links for New & Recent Releases
@@ -15568,30 +14306,33 @@ def webpage_files():
     replace_message = None
 
     file_lists = [
-        {'file_name': 'Settings', 'file': csv_settings }
+        {'file_name': 'GEN - Settings', 'file': csv_settings }
     ]
 
     stream_link_file_manager_file_lists = [
-        {'file_name': 'Streaming Services', 'file': csv_streaming_services },
-        {'file_name': 'Subscribed Video Channels', 'file': csv_slm_subscribed_video_channels },
-        {'file_name': 'Provider Groups', 'file': csv_provider_groups },
-        {'file_name': 'Stream Link Mappings', 'file': csv_slmappings },
-        {'file_name': 'Bookmarks', 'file': csv_bookmarks },
-        {'file_name': 'Bookmarks Statuses', 'file': csv_bookmarks_status },
-        {'file_name': 'Labels', 'file': csv_slm_labels },
-        {'file_name': 'Label Maps', 'file': csv_slm_label_maps }
+        {'file_name': 'SLM - Bookmarks', 'file': csv_bookmarks },
+        {'file_name': 'SLM - Bookmarks Statuses', 'file': csv_bookmarks_status },
+        {'file_name': 'SLM - Streaming Services', 'file': csv_streaming_services },
+        {'file_name': 'SLM - Subscribed Video Channels', 'file': csv_slm_subscribed_video_channels },
+        {'file_name': 'SLM - Provider Groups', 'file': csv_provider_groups },
+        {'file_name': 'SLM - Stream Link Mappings', 'file': csv_slmappings },
+        {'file_name': 'SLM - Labels', 'file': csv_slm_labels },
+        {'file_name': 'SLM - Label Maps', 'file': csv_slm_label_maps },
+        {'file_name': 'SLM - Feed Maps', 'file': csv_slm_feed_maps },
+        {'file_name': 'SLM - Feed Rules', 'file': csv_slm_feed_rules },
+        {'file_name': 'SLM - Feed Items', 'file': csv_slm_feed_items }
     ]
 
     plm_file_lists = [
-        {'file_name': 'Playlists', 'file': csv_playlistmanager_playlists },
-        {'file_name': 'Parent Station', 'file': csv_playlistmanager_parents },
-        {'file_name': 'Child to Parent Station Map', 'file': csv_playlistmanager_child_to_parent },
-        {'file_name': 'All Stations', 'file': csv_playlistmanager_combined_m3us },
-        {'file_name': 'Station Mappings', 'file': csv_playlistmanager_station_mappings }
+        {'file_name': 'PLM - Playlists', 'file': csv_playlistmanager_playlists },
+        {'file_name': 'PLM - Parent Station', 'file': csv_playlistmanager_parents },
+        {'file_name': 'PLM - Child to Parent Station Map', 'file': csv_playlistmanager_child_to_parent },
+        {'file_name': 'PLM - All Stations', 'file': csv_playlistmanager_combined_m3us },
+        {'file_name': 'PLM - Station Mappings', 'file': csv_playlistmanager_station_mappings }
     ]
 
     plm_streaming_stations_file_lists = [
-        {'file_name': 'Streaming Stations', 'file': csv_playlistmanager_streaming_stations }
+        {'file_name': 'PLM - Streaming Stations', 'file': csv_playlistmanager_streaming_stations }
     ]
 
     if slm_stream_link_file_manager:
@@ -16323,14 +15064,14 @@ def directory_delete(base_directory):
             try:
                 if not os.listdir(dir_path):
                     os.rmdir(dir_path)
-                    notification_add(f"    Removed empty directory: {dir_path}")
+                    notification_add(f"    REMOVED EMPTY DIRECTORY: {dir_path}")
             except OSError as e:
                 print(f"    Error removing directory {dir_path}: {e}")
                 print(f"    Attempting to remove via read-only handle...")
                 try:
                     os.chmod(dir_path, stat.S_IWRITE)  # Mark the folder as writable
                     os.rmdir(dir_path)
-                    notification_add(f"    Using read-only handle, removed empty directory: {dir_path}")
+                    notification_add(f"    REMOVED EMPTY DIRECTORY (REH): {dir_path}")
                 except OSError as e:
                     notification_add(f"    Final error removing directory {dir_path}: {e}")
 
@@ -16344,7 +15085,7 @@ def create_file(path, name, url, special_action):
         with open(file_path, 'w', encoding="utf-8") as file:
             try:
                 file.write(url)
-                print(f"    Created: {file_path}")
+                print(f"    CREATED: {file_path}")
                 file_path_return = file_path
             except OSError as e:
                 print(f"    Error creating file {file_path}: {e}")
@@ -16410,9 +15151,9 @@ def file_delete(path, name, special_action):
             if os.path.exists(file_path):
                 os.remove(file_path)
                 if special_action in ['m3u', 'xml', 'gz', 'm3u8']:
-                    notification_add(f"    Deleted: {name}.{special_action}")
+                    notification_add(f"    DELETED: {name}.{special_action}")
                 else:
-                    notification_add(f"    Deleted: {file_path}")
+                    notification_add(f"    DELETED: {file_path}")
         except OSError as e:
             notification_add(f"    Error removing file {file_path}: {e}")
     except FileNotFoundError as fnf_error:
@@ -16455,7 +15196,7 @@ def remove_rogue_empty(movie_path, tv_path, video_path, bookmarks_statuses):
     for rogue_file in rogue_files:
         try:
             os.remove(rogue_file)
-            notification_add(f"    Deleted Rogue File: {rogue_file}")
+            notification_add(f"    DELETED ROGUE FILE: {rogue_file}")
         except OSError as e:
             notification_add(f"    Error removing Rogue File {rogue_file}: {e}")
 
@@ -18421,6 +17162,7 @@ provider_groups_default = [
         "provider_group_name": "None"
     }
 ]
+all_season_episodes_offers_lookup = {}
 
 ### [SLM] Settings and Automation
 slm_stream_address_prior = None
