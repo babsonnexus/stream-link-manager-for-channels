@@ -32,16 +32,16 @@ from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtu
 from youtubesearchpython import Video as get_youtube_video_info
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2025.12.15.1330"
+slm_version = "v2026.01.01.1120"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2025.12.30.1854"
+    slm_version = "v2026.01.01.1120"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -2014,14 +2014,6 @@ def webpage_manage_programs():
                                     bookmarks_statuses_delete_list.append(bookmarks_status)
                                     bookmarks_statuses_delete_count = int(bookmarks_statuses_delete_count) + 1
 
-                                ###### Make a program manual
-                                elif (
-                                    ( field_bookmark_selected_action_input == 'make_manual' ) and
-                                    ( manual_entry_id not in [None, ''] )
-                                ):
-                                    
-                                    bookmarks_status['entry_id'] = manual_entry_id
-
                                 ###### Move or Hide Item
                                 elif(
                                     ( bookmarks_statuses_selected_action.startswith('move') ) or
@@ -2320,6 +2312,14 @@ def webpage_manage_programs():
                                         elif field_override_program_sort_input != 'manual' and field_override_program_sort_prior == 'manual':
                                             bookmarks_status['manual_order'] = None
 
+                                ###### Make a program manual
+                                if (
+                                    ( field_bookmark_selected_action_input == 'make_manual' ) and
+                                    ( manual_entry_id not in [None, ''] )
+                                ):
+                                    
+                                    bookmarks_status['entry_id'] = manual_entry_id
+
                         if bookmarks_statuses_delete_count > 0:
                             bookmarks_statuses = [bookmarks_status for bookmarks_status in bookmarks_statuses if bookmarks_status not in bookmarks_statuses_delete_list]
 
@@ -2385,7 +2385,7 @@ def webpage_manage_programs():
                         program_modify_add_label_input = request.form.get('program_modify_add_label')
                         program_modify_add_label_new = None
 
-                        if program_modify_add_label_input is not None and program_modify_add_label_input != '':
+                        if program_modify_add_label_input not in [None, '']:
 
                             program_modify_add_label_new = get_next_label_id(slm_labels)
 
@@ -2408,9 +2408,9 @@ def webpage_manage_programs():
                         # Label Maps
                         program_modify_other_actions_save_labels_input = request.form.get('program_modify_other_actions_save_labels')
 
-                        if program_modify_other_actions_save_labels_input == 'on' or program_modify_add_label_new or field_bookmark_selected_action_input == 'delete':
+                        if program_modify_other_actions_save_labels_input == 'on' or program_modify_add_label_new or field_bookmark_selected_action_input in ['delete', 'make_manual']:
 
-                            if program_modify_other_actions_save_labels_input == 'on' or field_bookmark_selected_action_input == 'delete':
+                            if program_modify_other_actions_save_labels_input == 'on' or field_bookmark_selected_action_input in ['delete', 'make_manual']:
 
                                 webpage_label_active_inputs = {}
                                 webpage_label_id_inputs = {}
@@ -2420,9 +2420,19 @@ def webpage_manage_programs():
                                 webpage_label_active_inputs = {str(i): 'Off' for i in range(1, total_number_of_checkboxes + 1)}
 
                             if program_modify_add_label_new and field_bookmark_selected_action_input != 'delete':
+
+                                if (
+                                    ( field_bookmark_selected_action_input == 'make_manual' ) and
+                                    ( manual_entry_id not in [None, ''] )
+                                ):
+                                    program_modify_add_label_new_entry_id = manual_entry_id
+
+                                else:
+                                    program_modify_add_label_new_entry_id = entry_id_selected_prior
+
                                 label_maps.append({
                                     'label_id': program_modify_add_label_new,
-                                    'entry_id': entry_id_selected_prior
+                                    'entry_id': program_modify_add_label_new_entry_id
                                 })
 
                             if label_maps:
@@ -2431,7 +2441,7 @@ def webpage_manage_programs():
                                 temp_record = initial_data(csv_slm_label_maps)[0]
                             run_empty_rows = False
 
-                            if program_modify_other_actions_save_labels_input == 'on' or field_bookmark_selected_action_input == 'delete':
+                            if program_modify_other_actions_save_labels_input == 'on' or field_bookmark_selected_action_input in ['delete', 'make_manual']:
 
                                 for key in request.form.keys():
                                     if key.startswith('webpage_label_active_'):
@@ -2449,16 +2459,33 @@ def webpage_manage_programs():
 
                                     for label_map in label_maps:
                                         if label_map['entry_id'] == entry_id_selected_prior and label_map['label_id'] == webpage_label_id_input:
+
                                             if webpage_label_active_input == "Off" or field_bookmark_selected_action_input == 'delete':
                                                 label_maps.remove(label_map)
+
+                                            if (
+                                                ( field_bookmark_selected_action_input == 'make_manual' ) and
+                                                ( manual_entry_id not in [None, ''] )
+                                            ):
+                                                label_map['entry_id'] = manual_entry_id
+
                                             label_exists = True
                                             break
 
                                     if not label_exists and field_bookmark_selected_action_input != 'delete':
                                         if webpage_label_active_input == "On":
+
+                                            if (
+                                                ( field_bookmark_selected_action_input == 'make_manual' ) and
+                                                ( manual_entry_id not in [None, ''] )
+                                            ):
+                                                webpage_entry_id_input = manual_entry_id
+                                            else:
+                                                webpage_entry_id_input = entry_id_selected_prior
+
                                             label_maps.append({
                                                 'label_id': webpage_label_id_input,
-                                                'entry_id': entry_id_selected_prior
+                                                'entry_id': webpage_entry_id_input
                                             })
 
                             if not label_maps:
@@ -2469,7 +2496,7 @@ def webpage_manage_programs():
                             if temp_label_maps != label_maps and field_bookmark_selected_action_input != 'delete':
                                 if manage_programs_message not in [None, '']:
                                     manage_programs_message += f"\n"
-                                manage_programs_message += f"{current_time()} INFO: Updated label assignments!"
+                                manage_programs_message += f"{current_time()} INFO: Updated label assignments."
 
                             write_data(csv_slm_label_maps, label_maps)
                             if run_empty_rows:
@@ -10694,15 +10721,56 @@ def run_query(query_name):
                 if dvr_files_data:
                     run_query = True
 
-                    dvr_files_data_processed = []
+                    dvr_files_data_processed_base = []
                     for item in dvr_files_data:
-                        dvr_files_data_processed.append({
+                        dvr_files_data_processed_base.append({
                             "File ID": item.get("File ID", ''),
+                            "Season Episode": item.get("Season Episode", 'S00E00'),
                             "Group ID": item.get("Group ID", ''),
                             "File Size": item.get("File Size", 0),
                             "Duration": item.get("Duration", 0)
                         })
 
+                    dvr_files_data_processed_grouped = {}
+                    for item in dvr_files_data_processed_base:
+                        group_id = item["Group ID"]
+                        season_episode = item["Season Episode"]
+
+                        if group_id != "movies" and not group_id.startswith("videos"):
+                            key = (group_id, season_episode)
+                            if key not in dvr_files_data_processed_grouped:
+                                dvr_files_data_processed_grouped[key] = {
+                                    "File ID": item["File ID"],
+                                    "Group ID": group_id,
+                                    "File Size": item["File Size"],
+                                    "Duration_sum": item["Duration"],
+                                    "Duration_count": 1
+                                }
+                            else:
+                                dvr_files_data_processed_grouped[key]["File Size"] += item["File Size"]
+                                dvr_files_data_processed_grouped[key]["Duration_sum"] += item["Duration"]
+                                dvr_files_data_processed_grouped[key]["Duration_count"] += 1
+
+                        else:
+                            key = (item["File ID"],)
+                            dvr_files_data_processed_grouped[key] = {
+                                "File ID": item["File ID"],
+                                "Group ID": group_id,
+                                "File Size": item["File Size"],
+                                "Duration_sum": item["Duration"],
+                                "Duration_count": 1
+                            }
+
+                    dvr_files_data_processed = []
+                    for v in dvr_files_data_processed_grouped.values():
+                        avg_duration = v["Duration_sum"] / v["Duration_count"] if v["Duration_count"] > 0 else 0
+                        dvr_files_data_processed.append({
+                            "File ID": v["File ID"],
+                            "Group ID": v["Group ID"],
+                            "File Size": v["File Size"],
+                            "Duration": avg_duration
+                        })
+                    
                     dvr_files = pd.DataFrame(dvr_files_data_processed)
 
                     query = """
@@ -11415,6 +11483,8 @@ def webpage_tools_automation():
         "Every 24 hours"
     ]
     slm_end_to_end_frequencies = [
+        "Every 2 hours",
+        "Every 4 hours",
         "Every 8 hours",
         "Every 12 hours",
         "Every 24 hours"
@@ -15118,7 +15188,7 @@ def create_program_file(filename, content):
         with open(file_path, 'w', encoding="utf-8") as file:
             try:
                 file.write(content)
-                notification_add(f"    Created: {filename}")
+                notification_add(f"    CREATED: {filename}")
             except OSError as e:
                 notification_add(f"    Error creating file {filename}: {e}")
 
@@ -15139,7 +15209,7 @@ def rename_files_suffix(directory, old_suffix, new_suffix):
             
             os.rename(old_file, new_file)
 
-            notification_add(f"    Created: {new_filename}")
+            notification_add(f"    CREATED: {new_filename}")
 
 # Delete a file if it exists
 def file_delete(path, name, special_action):
@@ -16706,9 +16776,20 @@ def get_channels_dvr_json(selection):
                         dvr_files_import_query = result.get("ImportQuery", '')
                         dvr_files_import_group = result.get("ImportGroup", '')
                         dvr_files_imported_at = result.get("ImportedAt", '')
-                    
+
+                        dvr_files_season_number = None
+                        dvr_files_episode_number = None
+                        dvr_files_season_number = result.get("Airing", {}).get("SeasonNumber", '')
+                        dvr_files_episode_number = result.get("Airing", {}).get("EpisodeNumber", '')
+
+                        if dvr_files_season_number not in [None, ''] and dvr_files_episode_number not in [None, '']:
+                            dvr_files_season_epsiode = f"S{dvr_files_season_number}E{dvr_files_episode_number}"
+                        else:
+                            dvr_files_season_epsiode = f"S00E00"
+
                         results_library.append({
                             "File ID": dvr_files_id,
+                            "Season Episode": dvr_files_season_epsiode,
                             "Group ID": dvr_files_group_id,
                             "Path": dvr_files_path,
                             "Checksum": dvr_files_checksum,
