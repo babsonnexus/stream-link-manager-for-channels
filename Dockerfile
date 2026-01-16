@@ -7,8 +7,16 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libffi-dev \
     python3-dev \
+    curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js (LTS) and npm
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
 WORKDIR /app
@@ -37,4 +45,3 @@ ENV PORT=5000
 
 # Run slm.py when the container launches
 CMD ["python", "slm.py"]
-
