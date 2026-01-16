@@ -32,7 +32,7 @@ from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtu
 from youtubesearchpython import Video as get_youtube_video_info
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.01.1120"
+    slm_version = "v2026.01.16.1432"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -9665,7 +9665,7 @@ def stream_video(url):
 def get_online_video(url, parse_type):
     print(f"{current_time()} INFO: Starting to retrieve manifest for {url}.")
 
-    youtube_player_clients = ['web_safari', 'web']
+    youtube_player_clients = ['ios', 'web_safari', 'web']
 
     m3u8_url = None
     m3u8_protocol = None
@@ -9680,6 +9680,8 @@ def get_online_video(url, parse_type):
             'retries': 0,                                           # Retry up to 0 times in case of failure
             'fragment_retries': 0,                                  # Retry up to 0 times for each fragment
             'logger': YTDLLogger(),                                 # Pass the custom logger
+            'enable_js': True,                                      # Enable JavaScript challenge solving
+            'js_exe': 'node',                                       # Path to Node.js executable (or just 'node' if in PATH)
             'extractor_args': {                                     # Set extractor arguments for specific websites
                 'youtube': {
                     'player_client': [youtube_player_client],       # Force player API client to specific client(s) in order to speed up finding a compatible format
