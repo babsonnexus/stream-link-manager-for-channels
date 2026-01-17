@@ -32,16 +32,16 @@ from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtu
 from youtubesearchpython import Video as get_youtube_video_info
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.01.01.1120"
+slm_version = "v2026.01.17.1250"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.16.1432"
+    slm_version = "v2026.01.17.1250"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -1146,7 +1146,6 @@ def webpage_manage_programs():
                         feed_map['target_status'] = save_feed_maps_input['target_status']
                         feed_map['target_label_ids'] = save_feed_maps_input['target_label_ids']
                         feed_map['target_action'] = save_feed_maps_input['target_action']
-                        feed_map['action'] = save_feed_maps_input['action']
 
                         program_feed_map_source_field_string_test = None
 
