@@ -18,9 +18,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Explicitly allow Node to read files and spawn processes
-ENV NODE_OPTIONS="--allow-fs-read=* --allow-child-process --no-warnings"
-
 # Set the working directory in the container
 WORKDIR /app
 
@@ -48,3 +45,4 @@ ENV PORT=5000
 
 # Run slm.py when the container launches
 CMD ["python", "slm.py"]
+
