@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.21.1150"
+    slm_version = "v2026.01.21.1344"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -9681,8 +9681,7 @@ def get_online_video(url, parse_type):
             'logger': YTDLLogger(),                                 # Pass the custom logger
             'js_runtimes': {
                 'node': {
-                    'exe': 'node',                                  # Use Node.js for solving Javascript Challenges
-                    'args': ['--no-warnings']                       # Override yt-dlp options for multi-OS compatibility, especially in Docker
+                    'exe': 'node --no-warnings --'                  # Use Node.js for solving Javascript Challenges, stop yt-dlp from using functions that break Docker
                 }
             },
             'extractor_args': {                                     # Set extractor arguments for specific websites
@@ -9741,11 +9740,24 @@ def parse_online_video(url, ydl_opts, parse_type):
                         protocol_http_formats = []
                         audio_formats = []
                         video_formats = []
+                        throttled_count = 0
 
                         for format in formats:
-                            # print(f"{current_time()} INFO: Found format: {format}") # Keep this for testing but not production
+                            # print(f"{current_time()} INFO: Found format: {format}")               # Keep this for testing but not production
 
-                            if format.get("has_drm") is False:
+                            is_throttled = False
+                            if "youtu" in url:
+                                format_url = format.get("url", "")
+                                parsed_query = urllib.parse.parse_qs(urllib.parse.urlparse(format_url).query)
+                                n_param_list = parsed_query.get('n')
+                                
+                                if n_param_list:
+                                    n_param = n_param_list[0]
+                                    if len(n_param) > 15:                                           # Logic: Short is solved, Long is failed 
+                                        is_throttled = True
+                                        throttled_count += 1
+
+                            if format.get("has_drm") is False and not is_throttled:
                                 acodec = format.get("acodec")
                                 vcodec = format.get("vcodec")
                                 protocol = format.get("protocol", "")
@@ -9761,6 +9773,12 @@ def parse_online_video(url, ydl_opts, parse_type):
 
                                 else:
                                     audio_formats.append(format)
+
+                        if throttled_count > 0:
+                            if throttled_count == len(formats):
+                                print(f"{current_time()} WARNING: All {throttled_count} formats have been filtered out due to potentially malformed n-parameters.")
+                            else:
+                                print(f"{current_time()} INFO: {throttled_count} formats have been filtered out due to potentially malformed n-parameters.")
 
                         best_format = parse_online_video_formats(protocol_m3u8_formats, language_preferences)
                         if best_format:
@@ -9809,6 +9827,7 @@ def parse_online_video(url, ydl_opts, parse_type):
 
                     else:
                         print(f"{current_time()} WARNING: No formats available for {url}.")
+
             else:
                 print(f"{current_time()} ERROR: Failed to extract info for {url}.")
 
