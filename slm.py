@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.21.1541"
+    slm_version = "v2026.01.21.1552"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -9752,13 +9752,9 @@ def parse_online_video(url, ydl_opts, parse_type):
                                 n_param = None
 
                                 format_url = format.get("url", "")
-                                print(f"TEST | format_url == {format_url}")
                                 parsed_query = urllib.parse.parse_qs(urllib.parse.urlparse(format_url).query)
-                                print(f"TEST | parsed_query == {parsed_query}")
                                 
-                                n_param_list = parsed_query.get('n')
-                                print(f"TEST | n_param_list == {n_param_list}")
-                                                                
+                                n_param_list = parsed_query.get('n')                                                                
                                 if n_param_list:
                                     n_param = n_param_list[0]
 
@@ -9769,13 +9765,10 @@ def parse_online_video(url, ydl_opts, parse_type):
                                         pass
 
                                 if n_param:
-                                    print(f"TEST | n_param == {n_param}")
-                                    print(f"TEST | len(n_param) == {len(n_param)}")
                                     if len(n_param) > 15:                                           # Logic: Short is solved, Long is failed 
                                         is_throttled = True
                                         throttled_count += 1
                                 else:
-                                    print(f"TEST | n_param is None")
                                     missing_n_param += 1
 
                             if format.get("has_drm") is False:
