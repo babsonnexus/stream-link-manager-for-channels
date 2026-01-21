@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.21.1436"
+    slm_version = "v2026.01.21.1501"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -9681,15 +9681,13 @@ def get_online_video(url, parse_type):
             'logger': YTDLLogger(),                                 # Pass the custom logger
             'js_runtimes': {
                 'node': {
-                    'exe': 'node',                                  # Use Node.js for solving Javascript Challenges
-                    'args': []                                      # Stop yt-dlp from using functions that break Docker
+                    'exe': 'node'                                   # Use Node.js for solving Javascript Challenges
                 }
             },
             'extractor_args': {                                     # Set extractor arguments for specific websites
                 'youtube': {
                     'player_client': [youtube_player_client],       # Force player API client to specific client(s) in order to speed up finding a compatible format
                     'formats': ['missing_pot'],                     # Stop testing for PO token
-                    'js_challenge': ['node'],                       # Another layer to stop yt-dlp from using functions that break Docker
                     'player_skip': ['configs', 'webpage'],          # Skip player configuration, webpage
                     'skip': ['dash', 'translated_subs']             # Skip DASH manifests and translated subtitles
                 }
@@ -9801,13 +9799,13 @@ def parse_online_video(url, ydl_opts, parse_type):
                             if throttled_count == len(formats):
                                 print(f"{current_time()} WARNING: All {throttled_count} formats have been filtered out due to potentially malformed n-parameters.")
                             else:
-                                print(f"{current_time()} INFO: {throttled_count} formats have been filtered out due to potentially malformed n-parameters.")
+                                print(f"{current_time()} INFO: {throttled_count} format(s) has/have been filtered out due to potentially malformed n-parameter(s).")
 
                         if missing_n_param > 0:
                             if missing_n_param == len(formats):
                                 print(f"{current_time()} WARNING: All {missing_n_param} formats have been filtered out due to missing n-parameters.")
                             else:
-                                print(f"{current_time()} INFO: {missing_n_param} formats have been filtered out due to missing n-parameters.")
+                                print(f"{current_time()} INFO: {missing_n_param} format(s) has/have been filtered out due to missing n-parameter(s).")
 
                         best_format = parse_online_video_formats(protocol_m3u8_formats, language_preferences)
                         if best_format:
