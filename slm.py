@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.21.1120"
+    slm_version = "v2026.01.21.1150"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -9681,7 +9681,8 @@ def get_online_video(url, parse_type):
             'logger': YTDLLogger(),                                 # Pass the custom logger
             'js_runtimes': {
                 'node': {
-                    'exe': 'node',
+                    'exe': 'node',                                  # Use Node.js for solving Javascript Challenges
+                    'args': ['--no-warnings']                       # Override yt-dlp options for multi-OS compatibility, especially in Docker
                 }
             },
             'extractor_args': {                                     # Set extractor arguments for specific websites
