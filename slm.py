@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.21.1344"
+    slm_version = "v2026.01.21.1436"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -9681,13 +9681,15 @@ def get_online_video(url, parse_type):
             'logger': YTDLLogger(),                                 # Pass the custom logger
             'js_runtimes': {
                 'node': {
-                    'exe': 'node --no-warnings --'                  # Use Node.js for solving Javascript Challenges, stop yt-dlp from using functions that break Docker
+                    'exe': 'node',                                  # Use Node.js for solving Javascript Challenges
+                    'args': []                                      # Stop yt-dlp from using functions that break Docker
                 }
             },
             'extractor_args': {                                     # Set extractor arguments for specific websites
                 'youtube': {
                     'player_client': [youtube_player_client],       # Force player API client to specific client(s) in order to speed up finding a compatible format
                     'formats': ['missing_pot'],                     # Stop testing for PO token
+                    'js_challenge': ['node'],                       # Another layer to stop yt-dlp from using functions that break Docker
                     'player_skip': ['configs', 'webpage'],          # Skip player configuration, webpage
                     'skip': ['dash', 'translated_subs']             # Skip DASH manifests and translated subtitles
                 }
@@ -9741,29 +9743,50 @@ def parse_online_video(url, ydl_opts, parse_type):
                         audio_formats = []
                         video_formats = []
                         throttled_count = 0
+                        no_n_param = 0
 
                         for format in formats:
                             # print(f"{current_time()} INFO: Found format: {format}")               # Keep this for testing but not production
 
                             is_throttled = False
+                            missing_n_param = False
                             if "youtu" in url:
+                                n_param = None
+
                                 format_url = format.get("url", "")
+                                print(f"TEST | format_url == {format_url}")
                                 parsed_query = urllib.parse.parse_qs(urllib.parse.urlparse(format_url).query)
-                                n_param_list = parsed_query.get('n')
+                                print(f"TEST | parsed_query == {parsed_query}")
                                 
+                                n_param_list = parsed_query.get('n')
+                                print(f"TEST | n_param_list == {n_param_list}")
+                                                                
                                 if n_param_list:
                                     n_param = n_param_list[0]
+
+                                if not n_param and "/n/" in format_url:
+                                    try:
+                                        n_param = format_url.split("/n/")[1].split("/")[0]
+                                    except IndexError:
+                                        pass
+
+                                if n_param:
+                                    print(f"TEST | n_param == {n_param}")
+                                    print(f"TEST | len(n_param) == {len(n_param)}")
                                     if len(n_param) > 15:                                           # Logic: Short is solved, Long is failed 
                                         is_throttled = True
                                         throttled_count += 1
+                                else:
+                                    print(f"TEST | n_param is None")
+                                    missing_n_param += 1
 
-                            if format.get("has_drm") is False and not is_throttled:
+                            if format.get("has_drm") is False:
                                 acodec = format.get("acodec")
                                 vcodec = format.get("vcodec")
                                 protocol = format.get("protocol", "")
 
                                 if acodec != "none" and vcodec != "none":
-                                    if "m3u8" in protocol:
+                                    if "m3u8" in protocol and not is_throttled and not missing_n_param:
                                         protocol_m3u8_formats.append(format)
                                     elif "http" in protocol:
                                         protocol_http_formats.append(format)
@@ -9779,6 +9802,12 @@ def parse_online_video(url, ydl_opts, parse_type):
                                 print(f"{current_time()} WARNING: All {throttled_count} formats have been filtered out due to potentially malformed n-parameters.")
                             else:
                                 print(f"{current_time()} INFO: {throttled_count} formats have been filtered out due to potentially malformed n-parameters.")
+
+                        if missing_n_param > 0:
+                            if missing_n_param == len(formats):
+                                print(f"{current_time()} WARNING: All {missing_n_param} formats have been filtered out due to missing n-parameters.")
+                            else:
+                                print(f"{current_time()} INFO: {missing_n_param} formats have been filtered out due to missing n-parameters.")
 
                         best_format = parse_online_video_formats(protocol_m3u8_formats, language_preferences)
                         if best_format:
@@ -17376,26 +17405,27 @@ if os.path.exists(program_files_dir):
     create_backup()
 
 ### Set up session logging
-###### Custom logger to write yt-dlp output to your log file
+###### Custom logger to write yt-dlp output to the log file
+ignored_yt_dlp_phrases = [
+    "forcing SABR"
+]
+
 class YTDLLogger:
     def debug(self, msg):
-        ignored_phrases = [
-            "missing a URL",
-            "forcing SABR",
-            "skipped as they are missing"
-        ]
-        
-        if not any(phrase in msg for phrase in ignored_phrases):
+        if not any(phrase in msg for phrase in ignored_yt_dlp_phrases):
             log.write(msg + "\n")
 
     def info(self, msg):
-        log.write(msg + "\n")
+        if not any(phrase in msg for phrase in ignored_yt_dlp_phrases):
+            log.write(msg + "\n")
 
     def warning(self, msg):
-        log.write("[WARNING] " + msg + "\n")
+        if not any(phrase in msg for phrase in ignored_yt_dlp_phrases):
+            log.write("[WARNING] " + msg + "\n")
 
     def error(self, msg):
-        log.write("[ERROR] " + msg + "\n")
+        if not any(phrase in msg for phrase in ignored_yt_dlp_phrases):
+            log.write("[ERROR] " + msg + "\n")
 
 ###### Log Setup
 log_filename_fullpath = full_path(log_filename)
