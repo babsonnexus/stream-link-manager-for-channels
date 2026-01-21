@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.21.1501"
+    slm_version = "v2026.01.21.1541"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -12648,6 +12648,8 @@ def get_all_season_episodes(entry_id, country_code, language_code):
 
 # Fetch a single page of of details for season/episodes in a Show
 def get_season_episodes(entry_id, country_code, language_code, limit, offset):
+    time.sleep(1) # Wait 1 second between calls to make sure not to push JustWatch's servers
+
     season_episdes_response = {}
     season_episdes_response_json = {}
     season_episdes_array = {}
