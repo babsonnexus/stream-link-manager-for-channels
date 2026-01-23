@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.22.0940"
+    slm_version = "v2026.01.23.1354"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -3764,7 +3764,7 @@ def get_program_search(program_search, country_code, language_code, num_results)
     }
 
     try:
-        program_search_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+        program_search_results = get_justwatch_graphql_data(json_data, False)
         program_search_results_json = program_search_results.json()
     except requests.RequestException as e:
         print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
@@ -4371,7 +4371,7 @@ def get_program_new(date_new_default_range, country_code, language_code, num_res
 
         if check_services_codes:
             try:
-                program_new_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+                program_new_results = get_justwatch_graphql_data(json_data, True)
                 program_new_results_json = program_new_results.json()
             except requests.RequestException as e:
                 print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
@@ -4534,7 +4534,7 @@ def get_streaming_services_map():
     }
 
     try:
-        provider_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+        provider_results = get_justwatch_graphql_data(json_data, False)
     except requests.RequestException as e:
         print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
 
@@ -6327,7 +6327,7 @@ def get_streaming_services():
     }
 
     try:
-        provider_results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+        provider_results = get_justwatch_graphql_data(json_data, False)
     except requests.RequestException as e:
         print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
 
@@ -12641,8 +12641,6 @@ def get_all_season_episodes(entry_id, country_code, language_code):
 
 # Fetch a single page of of details for season/episodes in a Show
 def get_season_episodes(entry_id, country_code, language_code, limit, offset):
-    time.sleep(10) # Wait 10 seconds between calls to make sure not to push JustWatch's servers
-
     season_episdes_response = {}
     season_episdes_response_json = {}
     season_episdes_array = {}
@@ -12786,7 +12784,7 @@ def get_season_episodes(entry_id, country_code, language_code, limit, offset):
     }
 
     try:
-        season_episdes_response = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+        season_episdes_response = get_justwatch_graphql_data(json_data, True)
 
         if season_episdes_response:
             season_episdes_response_json = season_episdes_response.json()
@@ -13271,7 +13269,7 @@ def get_offers(node_id, country_code, language_code):
     }
 
     try:
-        offers = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+        offers = get_justwatch_graphql_data(json_data, True)
         offers_json = offers.json()
         offers_json_offers_array = offers_json["data"]["node"]
     except requests.RequestException as e:
@@ -14185,7 +14183,7 @@ def get_movie_show_metadata_item(node_id, country_code, language_code, query_typ
     }
 
     try:
-        results = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+        results = get_justwatch_graphql_data(json_data, True)
         results_json = results.json()
         node_data = results_json.get('data', {}).get('node', {})
         if node_data is not None:
@@ -16221,21 +16219,33 @@ def initial_data(csv_file):
 
     return data
 
-# Website check in loop
-def check_website(url):
-    while True:
+# Website check in limited loop
+def check_website(url, retries, delay):
+
+    for attempt in range(int(retries)):
+
         try:
             response = requests.get(url, headers=url_headers)
+
             if response.status_code == 200:
-                print(f"{current_time()} SUCCESS: {url} is accessible. Continuing...")
+                print(f"{current_time()} SUCCESS: {url} is accessible.")
                 break
+
             else:
                 print(f"{current_time()} ERROR: {url} reports {response.status_code}")
+
         except requests.RequestException as e:
             print(f"{current_time()} ERROR: {url} reports {e}")
         
-        print(f"{current_time()} INFO: Retrying in 1 minute...")
-        time.sleep(60)
+        if attempt < retries - 1:
+            print(f"{current_time()} INFO: Retrying {url} in {delay} second(s)...")
+            time.sleep(int(delay))
+
+        else:
+            print(f"{current_time()} INFO: Connecting to '{url}' failed after {retries} attempt(s).")
+
+            if 'justwatch' in url:
+                notification_add(f"{current_time()} ERROR: Could not connect to JustWatch, therefore SLM functionality will be limited until a connection is possible. Please review 'Troubleshooting & FAQ' on the Wiki: https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Troubleshooting-&-FAQ#gen-after-an-installupgrade-the-program-wont-start-looking-at-the-logs-it-appears-to-be-in-an-infinite-loop-trying-to-connect-to-justwatchcom")
 
 # Check if a video stream is working and determine its type (HLS or MPEG-TS)
 def test_video_stream(url):
@@ -16511,6 +16521,34 @@ def post_url(url, json_data, retries, delay):
                 time.sleep(delay)
             else:
                 notification_add(f"{current_time()} ERROR: For '{url}', after {retries} attempts, could not resolve error ({e}). Skipping...") 
+
+# Gets data from JustWatch using GraphQL, with a cooldown in case there are too many successive connections and JustWatch gets spooked
+def get_justwatch_graphql_data(json_data, retry):
+
+    cooldown = 60
+    response = None
+
+    while True:
+
+        try:
+            response = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+
+            if response.status_code == 200:
+                return response
+
+            print(f"{current_time()} WARNING: JustWatch responded with status code '{response.status_code}'.")
+
+        except Exception as e:
+            print(f"{current_time()} ERROR: JustWatch responded with '{e}'.")
+
+        if retry:
+            print(f"{current_time()} INFO: Initiating JustWatch 'cooldown' for {cooldown} second(s) and then trying again...")
+            time.sleep(cooldown)
+            cooldown += 60
+
+        else:
+            print(f"{current_time()} INFO: No data retrieved from JustWatch.")
+            break
 
 # Searches for an IP Address on the LAN that responds to Port 8089
 def get_channels_url():
@@ -17488,8 +17526,6 @@ log = logger()
 ### Initialization
 notification_add(f"{current_time()} Beginning Initialization Process (see log for details)...")
 
-check_website(engine_url)
-
 for csv_file in csv_files:
     check_and_create_csv(csv_file)
 
@@ -17545,6 +17581,9 @@ if global_articles_raw:
             global_articles = ast.literal_eval(global_articles_raw)
         except (ValueError, SyntaxError):
             print(f"{current_time()} ERROR: For global 'Articles', unable to convert to a list.")
+
+if slm_stream_link_file_manager:
+    check_website(engine_url, 1, 0)
 
 if slm_channels_dvr_integration:
     check_channels_url(None)
