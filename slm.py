@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.23.1354"
+    slm_version = "v2026.01.23.1635"
 if slm_environment_port == "PRERELEASE":
     slm_port = None
 
@@ -16258,10 +16258,10 @@ def test_video_stream(url):
     for attempt in range(retries):
         try:
             with requests.Session() as session:
-                resp = session.get(url, headers=url_headers, stream=True, timeout=10, allow_redirects=True)
+                resp = session.get(url, headers=url_headers_extended, stream=True, timeout=10, allow_redirects=True)
 
-                with session.get(resp.url, headers=url_headers, stream=True, timeout=10) as response:
-                    if response.status_code == 200:
+                with session.get(resp.url, headers=url_headers_extended, stream=True, timeout=10) as response:
+                    if response.status_code in [200, 206]:
                         first_byte = None
                         for chunk in response.iter_content(chunk_size=1):
                             if chunk:
@@ -17048,6 +17048,14 @@ github_url = "https://github.com/babsonnexus/stream-link-manager-for-channels"
 github_url_raw = "https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/refs/heads/main/"
 url_headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
+}
+url_headers_extended = { 
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    "Accept": "*/*",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Range": "bytes=0-",
+    "Referer": "https://www.distrotv.com/"
 }
 notifications = []
 timeout_occurred = None
