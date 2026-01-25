@@ -12,6 +12,7 @@ import requests
 import datetime
 import time
 import threading
+import random
 import logging
 import aiohttp
 import asyncio
@@ -41,9 +42,9 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.23.1635"
+    slm_version = "v2026.01.24.1931"
 if slm_environment_port == "PRERELEASE":
-    slm_port = None
+    slm_port = 5003
 
 if slm_port is None:
     slm_port = 5000
@@ -15058,12 +15059,24 @@ def timeout_handler():
     global timeout_occurred
     timeout_occurred = True
 
+def set_global_engine_request_counter(action):
+    global global_engine_request_counter
+
+    if action in [None, '']:
+        global_engine_request_counter = random.randint(10, 50)
+        print(f"{current_time()} INFO: Random pause will execute after {global_engine_request_counter} SLM engine requests.")
+
+    elif action == 'minus':
+        if global_engine_request_counter > 0:
+            global_engine_request_counter -= 1
+        else:
+            global_engine_request_counter = 0
+
 # Remove invalid characters (e.g., colons, slashes, etc.)
 def sanitize_name(name):
     # sanitized = re.sub(r'[\\/:*?"<>|]', '', name)                                         # Blacklist Method
     sanitized = re.sub(r'[^\w\s.,!@#$%^&\-+=()\[\]{}\'~`]', '', name, flags=re.UNICODE)     # Whitelist Method
     return sanitized
-
 
 # Alphabetic sort ignoring user controlled articles and non-alphanumeric characters
 def sort_key(title):
@@ -16528,10 +16541,22 @@ def get_justwatch_graphql_data(json_data, retry):
     cooldown = 60
     response = None
 
+    if global_engine_request_counter <= 0:
+
+        if global_engine_request_counter == 0:
+            pause_time = random.uniform(1, 5)
+            time.sleep(pause_time)
+            print(f"{current_time()} INFO: Executing SLM engine random pause for {pause_time} seconds.")
+
+        set_global_engine_request_counter(None)
+
+    else:
+        set_global_engine_request_counter('minus')
+
     while True:
 
         try:
-            response = requests.post(_GRAPHQL_API_URL, headers=url_headers, json=json_data)
+            response = requests.post(_GRAPHQL_API_URL, headers=url_headers_justwatch, json=json_data)
 
             if response.status_code == 200:
                 return response
@@ -16937,6 +16962,7 @@ def get_channels_dvr_json(selection):
 
     return results_library
 
+# Checks the current activity in Channels DVR
 def get_channels_dvr_activity():
     results_library = []
     results_library = get_channels_dvr_json('dvr_status')
@@ -17049,14 +17075,22 @@ github_url_raw = "https://raw.githubusercontent.com/babsonnexus/stream-link-mana
 url_headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
 }
-url_headers_extended = { 
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+url_headers_extended = url_headers.copy()
+url_headers_extended.update({
     "Accept": "*/*",
     "Accept-Encoding": "gzip, deflate, br",
     "Connection": "keep-alive",
     "Range": "bytes=0-",
-    "Referer": "https://www.distrotv.com/"
-}
+    "Referer": "https://www.google.com/"
+})
+url_headers_justwatch = url_headers.copy()
+url_headers_justwatch.update({
+    "Accept": "*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br, zstd",
+    "Origin": "https://www.justwatch.com",
+    "Referer": "https://www.justwatch.com/"
+})
 notifications = []
 timeout_occurred = None
 
@@ -17129,6 +17163,7 @@ engine_image_url = "https://images.justwatch.com"
 engine_image_profile_poster = "s718"
 engine_image_profile_backdrop = "s1920"
 engine_image_profile_icon = "s100"
+global_engine_request_counter = -1
 valid_country_codes = [
     "AD",
     "AE",
