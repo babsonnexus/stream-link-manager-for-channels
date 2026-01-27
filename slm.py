@@ -33,16 +33,16 @@ from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtu
 from youtubesearchpython import Video as get_youtube_video_info
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.01.17.1250"
+slm_version = "v2026.01.27.1120"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.24.1931"
+    slm_version = "v2026.01.27.1120"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -6328,7 +6328,8 @@ def get_streaming_services():
     }
 
     try:
-        provider_results = get_justwatch_graphql_data(json_data, False)
+        if settings[23]['settings'] == "On":
+            provider_results = get_justwatch_graphql_data(json_data, False)
     except requests.RequestException as e:
         print(f"{current_time()} WARNING: {e}. Skipping, please try again.")
 
@@ -15783,8 +15784,10 @@ def check_and_create_csv(csv_file):
 
     # Append/Remove rows to data that may update
     if csv_file == csv_streaming_services:
-        id_field = "streaming_service_name"
-        update_rows(csv_file, data, id_field, None)
+        settings = read_data(csv_settings)
+        if settings[23]['settings'] == "On":
+            id_field = "streaming_service_name"
+            update_rows(csv_file, data, id_field, None)
 
     # Add rows for new functionality
     if csv_file == csv_settings:
