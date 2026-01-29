@@ -42,7 +42,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.29.0957"
+    slm_version = "v2026.01.29.1603"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -11684,7 +11684,7 @@ def webpage_tools_automation():
 
                 elif action.startswith('get_new_episodes'):
                     action_friendly_name = 'Get New Episodes'
-                    get_new_episodes(None, False)
+                    get_new_episodes(None, False, False)
 
                 elif action.startswith('import_program_updates'):
                     action_friendly_name = 'Import Updates from '
@@ -12193,7 +12193,7 @@ def end_to_end():
 
     update_streaming_services()
     time.sleep(2)
-    get_new_episodes(None, True)
+    get_new_episodes(None, True, True)
     time.sleep(2)
     if slm_channels_dvr_integration or slm_media_players_integration:
         import_program_updates()
@@ -12233,7 +12233,7 @@ def set_slm_process_active_flag(flag_type):
             slm_process_active_flag_turn_off = None
 
 # Check for new episodes
-def get_new_episodes(entry_id_filter, generate_offers_flag):
+def get_new_episodes(entry_id_filter, generate_offers_flag, include_disabled_flag):
     print("\n==========================================================")
     print("|                                                        |")
     print("|             Check for New Episodes & Videos            |")
@@ -12291,7 +12291,7 @@ def get_new_episodes(entry_id_filter, generate_offers_flag):
             and bookmark['bookmark_action'] not in ["Hide", "Disable Get New Episodes"]
         ]
 
-        if generate_offers_flag:
+        if include_disabled_flag:
 
             disabled_show_bookmarks = [
                 bookmark for bookmark in bookmarks 
@@ -14100,7 +14100,7 @@ def run_slm_new_recent_releases():
     start_time = time.time()
 
     # Get new episodes
-    get_new_episodes(None, False)
+    get_new_episodes(None, True, False)
     time.sleep(2)
     
     # Generate Stream Links for New & Recent Releases
