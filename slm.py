@@ -42,7 +42,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.28.1637"
+    slm_version = "v2026.01.29.0957"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -8025,6 +8025,7 @@ def check_child_station_status(check_child_station_status_single, check_child_st
     disable_child_stations = []
     skipped_child_stations = []
     drm_child_stations = []
+    auth_child_stations = []
     hls_child_stations = []
     mpegts_child_stations = []
 
@@ -8106,6 +8107,9 @@ def check_child_station_status(check_child_station_status_single, check_child_st
                 elif station_check_response == 'DRM':
                     drm_child_stations.append(check_m3u_id_channel_id)
 
+                elif station_check_response == 'auth':
+                    auth_child_stations.append(check_m3u_id_channel_id)
+
                 elif station_check_response == 'HLS':
                     hls_child_stations.append(check_m3u_id_channel_id)
                 
@@ -8123,6 +8127,8 @@ def check_child_station_status(check_child_station_status_single, check_child_st
                 map['child_station_check'] = 'Disabled (Skipped Check)'
             elif map['child_m3u_id_channel_id'] in drm_child_stations:
                 map['child_station_check'] = 'Disabled (DRM)'
+            elif map['child_m3u_id_channel_id'] in auth_child_stations:
+                map['child_station_check'] = 'Disabled (Authorization Required)'
             elif map['child_m3u_id_channel_id'] in hls_child_stations:
                 map['child_station_check'] = 'HLS'
             elif map['child_m3u_id_channel_id'] in mpegts_child_stations:
@@ -8146,7 +8152,7 @@ def check_child_station_status(check_child_station_status_single, check_child_st
 def parse_m3u(m3u_id, m3u_name, response):
     print(f"{current_time()} INFO: Beginning parse of {m3u_name} ({m3u_id}).")
 
-    skip_lines = [  '#EXTVLCOPT', 
+    skip_lines = [  '#EXTVLCOPT',
                     '#EXT-X-STREAM-INF',
                     '#EXT-X-MEDIA', 
                     '#EXT-X-MAP'
@@ -16334,7 +16340,12 @@ def test_video_stream(url):
             with requests.Session() as session:
                 resp = session.get(url, headers=url_headers_extended, stream=True, timeout=10, allow_redirects=True)
 
-                with session.get(resp.url, headers=url_headers_extended, stream=True, timeout=10) as response:
+                url_headers_modified = url_headers_extended.copy()
+                if resp.status_code in [403, 404]:
+                    url_headers_modified["Referer"] = "https://www.google.com/"
+                    resp = session.get(url, headers=url_headers_modified, stream=True, timeout=10, allow_redirects=True)
+
+                with session.get(resp.url, headers=url_headers_modified, stream=True, timeout=10) as response:
                     if response.status_code in [200, 206]:
                         first_byte = None
                         for chunk in response.iter_content(chunk_size=1):
@@ -16351,6 +16362,10 @@ def test_video_stream(url):
                                 status = "okay"
                         else:
                             status = "fail"
+
+                    elif response.status_code == 401:
+                        status = "auth"
+
                     else:
                         status = "fail"
 
@@ -17150,8 +17165,7 @@ url_headers_extended.update({
     "Accept": "*/*",
     "Accept-Encoding": "gzip, deflate, br",
     "Connection": "keep-alive",
-    "Range": "bytes=0-",
-    "Referer": "https://www.google.com/"
+    "Range": "bytes=0-"
 })
 url_headers_justwatch = url_headers.copy()
 url_headers_justwatch.update({
