@@ -33,16 +33,16 @@ from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtu
 from youtubesearchpython import Video as get_youtube_video_info
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.01.27.1120"
+slm_version = "v2026.01.31.1215"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.29.1603"
+    slm_version = "v2026.01.31.1215"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -16341,9 +16341,17 @@ def test_video_stream(url):
                 resp = session.get(url, headers=url_headers_extended, stream=True, timeout=10, allow_redirects=True)
 
                 url_headers_modified = url_headers_extended.copy()
-                if resp.status_code in [403, 404]:
-                    url_headers_modified["Referer"] = "https://www.google.com/"
-                    resp = session.get(url, headers=url_headers_modified, stream=True, timeout=10, allow_redirects=True)
+
+                if resp.status_code not in [200, 206]:
+                    print(f"{current_time()} WARNING: '{url}' responded '{resp.status_code}'.")
+
+                    if resp.status_code in [403, 404]:
+                        print(f"{current_time()} INFO: Attempting '{url}' with referer...")
+                        url_headers_modified["Referer"] = "https://www.google.com/"
+                        resp = session.get(url, headers=url_headers_modified, stream=True, timeout=10, allow_redirects=True)
+
+                        if resp.status_code not in [200, 206]:
+                            print(f"{current_time()} WARNING: After attempting referer, '{url}' responded '{resp.status_code}'.")
 
                 with session.get(resp.url, headers=url_headers_modified, stream=True, timeout=10) as response:
                     if response.status_code in [200, 206]:
