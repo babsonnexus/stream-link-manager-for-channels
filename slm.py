@@ -33,7 +33,7 @@ from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtu
 from youtubesearchpython import Video as get_youtube_video_info
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -42,7 +42,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.01.31.1215"
+    slm_version = "v2026.02.01.1107"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -7917,6 +7917,10 @@ def run_child_station_mapping():
                                             elif station_mapping['source_field_compare_id'] == 'regex':
                                                 target_field_value = re.sub(station_mapping['source_field_string'], f"{station_mapping['target_field_string']}{station_mapping['source_field_string']}", target_field_base)
 
+                                        if target_field_value:
+                                            if 'var_use_source_field_value' in target_field_value:
+                                                target_field_value = target_field_value.replace('var_use_source_field_value', source_field_value)
+
                                         station[target_field] = target_field_value
                                         write_stations = True
                                         notification_add(f"    MAPPED: {station['station_playlist']}")
@@ -12246,7 +12250,6 @@ def get_new_episodes(entry_id_filter, generate_offers_flag, include_disabled_fla
 
     global all_season_episodes_offers_lookup
 
-    base_bookmarks = []
     bookmarks = []
     show_bookmarks = []
     disabled_show_bookmarks = []
