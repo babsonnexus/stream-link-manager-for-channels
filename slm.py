@@ -42,7 +42,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.02.01.1107"
+    slm_version = "v2026.02.02.1224"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -7918,8 +7918,16 @@ def run_child_station_mapping():
                                                 target_field_value = re.sub(station_mapping['source_field_string'], f"{station_mapping['target_field_string']}{station_mapping['source_field_string']}", target_field_base)
 
                                         if target_field_value:
-                                            if 'var_use_source_field_value' in target_field_value:
-                                                target_field_value = target_field_value.replace('var_use_source_field_value', source_field_value)
+                                            if 'var_use' in target_field_value:
+
+                                                if 'var_use_source_field_value' in target_field_value:
+                                                    target_field_value = target_field_value.replace('var_use_source_field_value', source_field_value)
+
+                                                for plm_field in plm_fields_base:
+
+                                                    plm_field_check = f"var_use_field_{plm_field['field_id']}_value"
+                                                    if plm_field_check in target_field_value:
+                                                        target_field_value = target_field_value.replace(plm_field_check, station[plm_field['field_id']])
 
                                         station[target_field] = target_field_value
                                         write_stations = True
@@ -16364,7 +16372,11 @@ def test_video_stream(url):
                                 first_byte = chunk[0:1]
                                 break
 
-                        if first_byte is not None:
+                        content_type = response.headers.get("Content-Type", "")
+                        if "text/html" in content_type:
+                            status = "fail"
+
+                        elif first_byte is not None:
                             if first_byte == b'G' or first_byte == b'\x47':
                                 status = "MPEG-TS"
                             elif first_byte == b'#':
