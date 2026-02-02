@@ -33,16 +33,16 @@ from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtu
 from youtubesearchpython import Video as get_youtube_video_info
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.01.31.1215"
+slm_version = "v2026.02.02.1350"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.02.02.1224"
+    slm_version = "v2026.02.02.1350"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
