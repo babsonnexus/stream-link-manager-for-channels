@@ -8,3 +8,4 @@ yt_dlp
 streamlink
 youtube-search-python
 httpx==0.27.2
+curl_cffi
