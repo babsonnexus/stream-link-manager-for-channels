@@ -31,18 +31,19 @@ from youtubesearchpython import ChannelsSearch as youtube_search_channels
 from youtubesearchpython import Playlist as get_youtube_playlist_info
 from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtube_channel_info
 from youtubesearchpython import Video as get_youtube_video_info
+import curl_cffi
 
 # Top Controls
 slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.02.02.1350"
+slm_version = "v2026.02.15.1021"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.02.02.1350"
+    slm_version = "v2026.02.15.1021"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
