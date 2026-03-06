@@ -268,15 +268,15 @@
   <script>
     $(document).ready(function() {
         console.log("Document ready");
-  
+
         // Extract column headers dynamically
         var columnHeaders = [];
         $('#myTable thead th').each(function() {
             columnHeaders.push({ "data": $(this).text().trim() });
         });
-  
+
         console.log("Column headers:", columnHeaders);
-  
+
         // Initialize DataTables with dynamic columns and disable sorting
         var table = $('#myTable').DataTable({
             "columns": columnHeaders,
@@ -286,10 +286,42 @@
             "initComplete": function(settings, json) {
                 // Show the table once DataTables is initialized
                 $('.table-wrapper').show();
+                // Move Export button next to DataTables length dropdown
+                var exportBtn = $('<button>', {
+                  id: 'export-btn',
+                  type: 'submit',
+                  text: 'Export',
+                  style: 'margin-left:25px; vertical-align:middle;'
+                });
+                exportBtn.on('click', function(e) {
+                  e.preventDefault();
+                  // Create and submit a hidden form for export
+                  var form = $('<form>', {
+                    method: 'POST',
+                    action: '/reports_queries'
+                  });
+                  form.append($('<input>', {
+                    type: 'hidden',
+                    name: 'action',
+                    value: 'reports_queries_export'
+                  }));
+                  form.append($('<input>', {
+                    type: 'hidden',
+                    name: 'select_report_query',
+                    value: $('#select_report_query').val()
+                  }));
+                  document.body.appendChild(form[0]);
+                  form[0].submit();
+                });
+                // Insert the button after the DataTables length dropdown
+                var dtLength = $('.dataTables_length');
+                if (dtLength.length) {
+                  dtLength.find('label').after(exportBtn);
+                }
             }
         });
         console.log("DataTable initialized");
-  
+
         // Apply the search
         $('#myTable thead').on('keyup change', '.filter-input', function() {
             var columnIndex = $(this).parent().index();
