@@ -38,12 +38,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.02.15.1021"
+slm_version = "v2026.03.05.2017"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.02.15.1021"
+    slm_version = "v2026.03.05.2017"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -4959,6 +4959,9 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
 
     if program_search_results_base_submissions:
 
+        entry_id_feed_items_remove_lookup = []
+        url_feed_items_remove_lookup = []
+
         for program_search_results_base_submission in program_search_results_base_submissions:
 
             if program_search_results_base_submission['program_search_results_action_input'] != 'none':
@@ -4974,6 +4977,11 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
                 ):
                     previously_bookmarked_count = int(previously_bookmarked_count) + 1
 
+                    if program_search_results_base_submission['program_search_results_object_type_input'] in ["MOVIE", "SHOW"]:
+                        entry_id_feed_items_remove_lookup.append(program_search_results_base_submission['program_search_results_entry_id_input'])
+                    elif program_search_results_base_submission['program_search_results_object_type_input'] == "VIDEO":
+                        url_feed_items_remove_lookup.append(program_search_results_base_submission['program_search_results_url_input'])
+
                 else:
                     program_search_results_submissions.append(program_search_results_base_submission)
 
@@ -4982,8 +4990,6 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
             if program_search_results_submissions:
 
                 video_group_entry_id_same = None
-                entry_id_feed_items_remove_lookup = []
-                url_feed_items_remove_lookup = []
                 all_season_episodes = []
                 
                 for program_search_results_submission in program_search_results_submissions:
@@ -5380,22 +5386,6 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
                 if all_season_episodes:
                     all_season_episodes_offers_lookup = {all_season_episode['season_episode_id']: all_season_episode['offers'] for all_season_episode in all_season_episodes}
 
-                feed_items = read_data(csv_slm_feed_items)
-                if feed_items and ( len(entry_id_feed_items_remove_lookup) > 0 or len(url_feed_items_remove_lookup) > 0 ):
-
-                    temp_record = create_temp_record(feed_items[0].keys())
-                    run_empty_rows = False
-
-                    feed_items = [feed_item for feed_item in feed_items if not feed_item['entry_id'] in entry_id_feed_items_remove_lookup and not feed_item['url'] in url_feed_items_remove_lookup]
-
-                    if not feed_items:
-                        feed_items.append(temp_record)
-                        run_empty_rows = True
-
-                    write_data(csv_slm_feed_items, feed_items)
-                    if run_empty_rows:
-                        remove_empty_row(csv_slm_feed_items)
-
                 message = f"{current_time()} INFO: After selections/imports, {bookmarked_count} item(s) bookmarked, {hide_bookmarked_count} item(s) hidden, and {previously_bookmarked_count} item(s) skipped due to already being previously bookmarked."
 
             elif previously_bookmarked_count > 0:
@@ -5408,6 +5398,24 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
                 if message not in [None, '']:
                     message += f"\n"
                 message += f"{current_time()} WARNING: Nothing was bookmarked due to no actions selected. Please try again or clear results."
+
+        if entry_id_feed_items_remove_lookup or url_feed_items_remove_lookup:
+
+            feed_items = read_data(csv_slm_feed_items)
+            if feed_items and ( len(entry_id_feed_items_remove_lookup) > 0 or len(url_feed_items_remove_lookup) > 0 ):
+
+                temp_record = create_temp_record(feed_items[0].keys())
+                run_empty_rows = False
+
+                feed_items = [feed_item for feed_item in feed_items if not feed_item['entry_id'] in entry_id_feed_items_remove_lookup and not feed_item['url'] in url_feed_items_remove_lookup]
+
+                if not feed_items:
+                    feed_items.append(temp_record)
+                    run_empty_rows = True
+
+                write_data(csv_slm_feed_items, feed_items)
+                if run_empty_rows:
+                    remove_empty_row(csv_slm_feed_items)
 
     if int(metadata_import_error_count) > 0:                    
         if message not in [None, '']:
@@ -5617,11 +5625,13 @@ def get_video_metadata(url):
             if thumbnails:
                 override_image = max(thumbnails, key=lambda t: t.get('width', 0)).get('url', default_poster_url)
             override_duration = info_dict.get('duration', {}).get('secondsText', None)
-            if override_duration == '0' or int(override_duration) == 0:
-                override_duration = None
+            if override_duration:
+                if override_duration == '0' or int(override_duration) == 0:
+                    override_duration = None
 
-    if override_duration == '0' or int(override_duration) == 0:
-        override_duration = ''
+    if override_duration:
+        if override_duration == '0' or int(override_duration) == 0:
+            override_duration = ''
 
     return original_release_date, override_episode_title, override_summary, override_image, override_duration
 
@@ -10200,9 +10210,9 @@ def make_streaming_stations_m3us():
 # Reports / Queries webpage
 @app.route('/reports_queries', methods=['GET', 'POST'])
 def webpage_reports_queries():
+    global slm_query_raw
     global slm_query
     global select_report_query_prior
-    slm_query_raw = []
 
     reports_queries_lists = [{'name': 'Select a Report or Query...', 'value': 'reports_queries_cancel'}]
 
@@ -10232,7 +10242,6 @@ def webpage_reports_queries():
     if request.method == 'POST':
         action = request.form['action']
         select_report_query_input = request.form.get('select_report_query')
-        select_report_query_prior = select_report_query_input
 
         if "reports_queries_cancel" in [action, select_report_query_input]:
             slm_query_raw = []
@@ -10240,16 +10249,37 @@ def webpage_reports_queries():
             select_report_query_prior = 'reports_queries_cancel'
 
         elif action == 'reports_queries_view':
+
+            select_report_query_prior = select_report_query_input
+
             slm_query_raw = run_query(select_report_query_input)
 
             if select_report_query_input in [
                             "query_currently_unavailable",
                             "query_previously_watched",
                             "query_not_on_justwatch"
-                         ]:
+                        ]:
                 slm_query_raw = sorted(slm_query_raw, key=lambda x: (x["Type"], sort_key(x["Name"].casefold())))
 
             slm_query = view_csv(slm_query_raw, "library", None)
+
+        elif action == 'reports_queries_export':
+
+            if slm_query_raw:
+
+                csv_name = f"{select_report_query_prior}.csv"
+                csv_data = None
+
+                if slm_query_raw and isinstance(slm_query_raw, list) and len(slm_query_raw) > 0:
+                    csv_output = io.StringIO()
+                    csv_writer = csv.DictWriter(csv_output, fieldnames=slm_query_raw[0].keys())
+                    csv_writer.writeheader()
+                    csv_writer.writerows(slm_query_raw)
+                    csv_data = csv_output.getvalue()
+                    csv_output.close()
+
+                if csv_data:
+                    return export_internal_data(csv_data, csv_name, 'text/csv')
 
     return render_template(
         'main/tools_reports_queries.html',
@@ -12493,6 +12523,8 @@ def get_new_episodes(entry_id_filter, generate_offers_flag, include_disabled_fla
 
     if video_bookmarks:
 
+        check_feed_video_bookmarks = []
+
         for video_bookmark in video_bookmarks:
 
             if video_bookmark['bookmark_action'] == 'Sync Online Playlist':
@@ -12509,6 +12541,8 @@ def get_new_episodes(entry_id_filter, generate_offers_flag, include_disabled_fla
                             field_stream_link_override = playlist_video['url']
 
                             if field_stream_link_override and field_stream_link_override not in slm_streams_lookup:
+
+                                check_feed_video_bookmarks.append(field_stream_link_override)
 
                                 field_season_episode = None
                                 field_original_release_date = None
@@ -12564,6 +12598,24 @@ def get_new_episodes(entry_id_filter, generate_offers_flag, include_disabled_fla
 
                 else:
                     notification_add(f"    WARNING: URL needed for sync'ing is missing for the Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}.")
+
+        if check_feed_video_bookmarks:
+
+            feed_items = read_data(csv_slm_feed_items)
+            if feed_items and len(feed_items) > 0:
+
+                temp_record = create_temp_record(feed_items[0].keys())
+                run_empty_rows = False
+
+                feed_items = [feed_item for feed_item in feed_items if not feed_item['url'] in check_feed_video_bookmarks]
+
+                if not feed_items:
+                    feed_items.append(temp_record)
+                    run_empty_rows = True
+
+                write_data(csv_slm_feed_items, feed_items)
+                if run_empty_rows:
+                    remove_empty_row(csv_slm_feed_items)
 
         if bookmarks_statuses:
 
@@ -14626,6 +14678,14 @@ def is_image_url(url):
 def export_csv(csv_file):
     return send_file(full_path(csv_file), as_attachment=True)
 
+# Exports data that only exists internally to the program
+def export_internal_data(data, name, mimetype):
+    return Response(
+        data,
+        mimetype=mimetype,
+        headers={'Content-Disposition': f'attachment; filename={name}'}
+    )
+
 # Imports a file as a replacement
 def replace_csv(csv_file, file_key):
     replace_message = None
@@ -16435,12 +16495,16 @@ def test_video_stream(url):
                 # Manifest/playlist inspection for HLS/DASH
                 content_type = response.headers.get("Content-Type", "")
                 manifest_drm_type = None
+
                 if status == "HLS" or "application/vnd.apple.mpegurl" in content_type or url.endswith(".m3u8"):
                     manifest = response.content.decode(errors="ignore")
+
                     if "#EXT-X-STREAM-INF" in manifest:
                         stream_metadata.append({"field": "HLS Variant Playlist", "value": True})
+
                     codecs_found = []
                     resolutions_found = []
+
                     for line in manifest.splitlines():
                         if line.startswith("#EXT-X-STREAM-INF"):
                             # Extract RESOLUTION
@@ -16451,26 +16515,58 @@ def test_video_stream(url):
                             codecs_match = re.search(r'CODECS="([^"]+)"', line)
                             if codecs_match:
                                 codecs_found.append(codecs_match.group(1))
+
+                        # Check for #EXT-X-KEY tags (HLS encryption)
+                        if line.startswith("#EXT-X-KEY"):
+                            method_match = re.search(r'METHOD=([^,]+)', line)
+                            uri_match = re.search(r'URI="([^"]+)"', line)
+                            keyformat_match = re.search(r'KEYFORMAT="([^"]+)"', line, re.IGNORECASE)
+                            method = method_match.group(1) if method_match else None
+                            uri = uri_match.group(1) if uri_match else None
+                            keyformat = keyformat_match.group(1) if keyformat_match else None
+
+                            if method and method != "NONE" and uri:
+                                stream_metadata.append({"field": "DRM Detected (HLS)", "value": True})
+                                drm_detected = True
+
+                                drm_type = None
+                                if keyformat:
+                                    kf_lower = keyformat.lower()
+                                    if "widevine" in kf_lower or "urn:uuid" in kf_lower:
+                                        drm_type = "Widevine"
+                                    elif "fairplay" in kf_lower or "apple" in kf_lower:
+                                        drm_type = "FairPlay"
+                                    elif "playready" in kf_lower or "microsoft" in kf_lower:
+                                        drm_type = "PlayReady"
+                                    else:
+                                        drm_type = f"Unknown (KEYFORMAT={keyformat})"
+
+                                    stream_metadata.append({"field": "DRM Type (HLS)", "value": drm_type})
+                                    stream_metadata.append({"field": "DRM Keyformat (HLS)", "value": keyformat})
+
+                                else:
+                                    stream_metadata.append({"field": "DRM Type (HLS)", "value": f"Encrypted (METHOD={method})"})
+
                     if codecs_found:
                         stream_metadata.append({"field": "Codecs", "value": "; ".join(codecs_found)})
+
                     if resolutions_found:
                         stream_metadata.append({"field": "Resolutions", "value": ", ".join(resolutions_found)})
+
                     # DRM in manifest
-                    if "widevine" in manifest.lower():
+                    manifest_drm_terms = ["widevine", "playready", "fairplay"]
+                    if any(term in manifest.lower() for term in manifest_drm_terms ):
                         stream_metadata.append({"field": "DRM Detected (HLS)", "value": True})
-                        stream_metadata.append({"field": "DRM Type (HLS)", "value": "Widevine"})
                         drm_detected = True
-                        manifest_drm_type = "Widevine"
-                    elif "playready" in manifest.lower():
-                        stream_metadata.append({"field": "DRM Detected (HLS)", "value": True})
-                        stream_metadata.append({"field": "DRM Type (HLS)", "value": "PlayReady"})
-                        drm_detected = True
-                        manifest_drm_type = "PlayReady"
-                    elif "fairplay" in manifest.lower():
-                        stream_metadata.append({"field": "DRM Detected (HLS)", "value": True})
-                        stream_metadata.append({"field": "DRM Type (HLS)", "value": "FairPlay"})
-                        drm_detected = True
-                        manifest_drm_type = "FairPlay"
+
+                        if "widevine" in manifest.lower():
+                            manifest_drm_type = "Widevine"
+                        elif "playready" in manifest.lower():
+                            manifest_drm_type = "PlayReady"
+                        elif "fairplay" in manifest.lower():
+                            manifest_drm_type = "FairPlay"
+
+                        stream_metadata.append({"field": "DRM Type (HLS)", "value": manifest_drm_type})
 
                 # MPEG-TS advanced inspection (pure Python)
                 if status == "MPEG-TS":
@@ -17565,6 +17661,7 @@ plm_fields_base = [
 
 ### [MTM] Tools
 select_report_query_prior = 'reports_queries_cancel'
+slm_query_raw = []
 slm_query = None
 gracenote_search_results = None
 gracenote_search_entry_prior = ''
