@@ -34,7 +34,7 @@ from youtubesearchpython import Video as get_youtube_video_info
 import curl_cffi
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -43,7 +43,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.03.05.2017"
+    slm_version = "v2026.03.16.1919"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -7698,95 +7698,10 @@ def download_uploads(filename):
 # Used to dynamically create an internal file
 @app.route('/playlists/uploads/internal/<filename>')
 def download_internal(filename):
-    settings = read_data(csv_settings)
-    plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
-    plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
-    pbs_csv_url = 'https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/refs/heads/main/executables/pbs_stations.csv'
-
-    source_records = []
     final_m3us = []
 
-    if filename == 'plmint_pbs_mpeg_ts_m3u_01.m3u' and plm_internal_pbs_stations == "On":
-        waste_results, source_records, waste_message = parse_csv_url(pbs_csv_url)
-
-    if source_records:
-
-        for source_record in source_records:
-            title = None
-            tvc_guide_title = None
-            channel_id = None
-            tvg_id = None
-            tvg_name = None
-            tvg_logo = None
-            tvg_chno = None
-            channel_number = None
-            tvg_description = None
-            tvc_guide_description = None
-            group_title = None
-            tvc_guide_stationid = None
-            tvc_guide_art = None
-            tvc_guide_tags = None
-            tvc_guide_genres = None
-            tvc_guide_categories = None
-            tvc_guide_placeholders = None
-            tvc_stream_vcodec = None
-            tvc_stream_acodec = None
-            url = None
-            stream_format = None
-            run_append = True
-
-            if filename == 'plmint_pbs_mpeg_ts_m3u_01.m3u':
-
-                if source_record['status'] == "Good":
-                    title = source_record['clean_name']
-                    tvc_guide_title = title
-                    channel_id = source_record['channel_id']
-                    tvg_id = ''
-                    tvg_name = title
-                    tvg_logo = source_record['logo_color']
-                    tvg_chno = source_record['unique_station_num']
-                    channel_number = tvg_chno
-                    tvg_description = ''
-                    tvc_guide_description = tvg_description
-                    group_title = ''
-                    tvc_guide_stationid = source_record['gracenote_id']
-                    tvc_guide_art = tvg_logo
-                    tvc_guide_tags =''
-                    tvc_guide_genres = ''
-                    tvc_guide_categories = ''
-                    tvc_guide_placeholders = ''
-                    tvc_stream_vcodec = ''
-                    tvc_stream_acodec = ''
-                    url = f"{plm_internal_pbs_url_base}/pbs/watch/{source_record['station_id']}"
-                    stream_format = "MPEG-TS"
-
-                else:
-                    run_append = False
-
-            if run_append:
-                final_m3us.append({
-                    "title": title,
-                    "tvc_guide_title": tvc_guide_title,
-                    "channel_id": channel_id,
-                    "tvg_id": tvg_id,
-                    "tvg_name": tvg_name,
-                    "tvg_logo": tvg_logo,
-                    "tvg_chno": tvg_chno,
-                    "channel_number": channel_number,
-                    "tvg_description": tvg_description,
-                    "tvc_guide_description": tvc_guide_description,
-                    "group_title": group_title,
-                    "tvc_guide_stationid": tvc_guide_stationid,
-                    "tvc_guide_art": tvc_guide_art,
-                    "tvc_guide_tags": tvc_guide_tags,
-                    "tvc_guide_genres": tvc_guide_genres,
-                    "tvc_guide_categories": tvc_guide_categories,
-                    "tvc_guide_placeholders": tvc_guide_placeholders,
-                    "tvc_stream_vcodec": tvc_stream_vcodec,
-                    "tvc_stream_acodec": tvc_stream_acodec,
-                    "url": url,
-                    "stream_format": stream_format
-                })
+    if filename == 'plmint_pbs_mpeg_ts_m3u_01.m3u':
+        final_m3us = get_pbs_stream_data(False, True)
 
     if final_m3us:
         m3u_content = "#EXTM3U\n"
@@ -7820,6 +7735,885 @@ def download_internal(filename):
     else:
         return f"{current_time()} ERROR: '{filename}' does not exist or is not turned on."
 
+# Gets the data from PBS to set up the m3u
+def get_pbs_stream_data(run_pbs_scrape_flag, run_final_pbs_stations):
+    settings = read_data(csv_settings)
+    plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
+    plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
+    pbs_csv_url = 'https://raw.githubusercontent.com/babsonnexus/stream-link-manager-for-channels/refs/heads/main/executables/pbs_gracenote_map.csv'
+
+    pbs_stations_api_url = "https://station.services.pbs.org/api/public/v1/stations/"
+    pbs_substations_and_guide_api_url_base = "https://www.pbs.org/api/station/"
+    pbs_substations_and_guide_api_url_end = "/livestream/"
+
+    playlist_internal_pbs = []
+    pbs_stations_response = None
+    base_pbs_stations = []
+    base_pbs_stations_filtered = []
+    pbs_stations = []
+    pbs_stations_to_gracenote = []
+    pbs_stations_to_gracenote_lookup = {}
+
+    if plm_internal_pbs_stations == "On":
+
+        playlist_internal_pbs = read_data(csv_playlistmanager_playlist_internal_pbs)
+
+        if not playlist_internal_pbs or run_pbs_scrape_flag:
+
+            start_time = time.time()
+            print(f"{current_time()} INFO: Starting scrape of PBS Stations...")
+
+            try:
+                pbs_stations_response = requests.get(pbs_stations_api_url, headers=url_headers)
+            except requests.RequestException as e:
+                print(f"{current_time()} ERROR: Unable to retrieve PBS Station List, received '{e}'.")
+
+            if pbs_stations_response:
+                pbs_stations_response_json = None
+
+                while True:
+                    pbs_stations_response_json = pbs_stations_response.json()
+
+                    pbs_stations_response_json_data = pbs_stations_response_json.get('data', {})
+
+                    for pbs_station in pbs_stations_response_json_data:
+
+                        pbs_station_attributes = pbs_station.get('attributes', {})
+                        pbs_station_attribute_images = pbs_station_attributes.get('images', {})
+
+                        pbs_station_type = pbs_station.get('type', None)
+                        pbs_station_id = pbs_station.get('id', None)
+                        pbs_station_attribute_call_sign = pbs_station_attributes.get('call_sign', None)
+                        pbs_station_attribute_full_common_name = pbs_station_attributes.get('full_common_name', None)
+                        pbs_station_attribute_short_common_name = pbs_station_attributes.get('short_common_name', None)
+                        pbs_station_attribute_tvss_url = pbs_station_attributes.get('tvss_url', None)
+                        pbs_station_attribute_donate_url = pbs_station_attributes.get('donate_url', None)
+                        pbs_station_attribute_timezone = pbs_station_attributes.get('timezone', None)
+                        pbs_station_attribute_secondary_timezone = pbs_station_attributes.get('secondary_timezone', None)
+                        pbs_station_attribute_video_portal_url = pbs_station_attributes.get('video_portal_url', None)
+                        pbs_station_attribute_website_url = pbs_station_attributes.get('website_url', None)
+                        pbs_station_attribute_learn_more_passport_url = pbs_station_attributes.get('learn_more_passport_url', None)
+                        pbs_station_attribute_facebook_url = pbs_station_attributes.get('facebook_url', None)
+                        pbs_station_attribute_twitter_url = pbs_station_attributes.get('twitter_url', None)
+                        pbs_station_attribute_youtube_url = pbs_station_attributes.get('youtube_url', None)
+                        pbs_station_attribute_instagram_url = pbs_station_attributes.get('instagram_url', None)
+                        pbs_station_attribute_tiktok_url = pbs_station_attributes.get('tiktok_url', None)
+                        pbs_station_attribute_station_kids_url = pbs_station_attributes.get('station_kids_url', None)
+                        pbs_station_attribute_passport_url = pbs_station_attributes.get('passport_url', None)
+                        pbs_station_attribute_telephone = pbs_station_attributes.get('telephone', None)
+                        pbs_station_attribute_fax = pbs_station_attributes.get('fax', None)
+                        pbs_station_attribute_city = pbs_station_attributes.get('city', None)
+                        pbs_station_attribute_state = pbs_station_attributes.get('state', None)
+                        pbs_station_attribute_address_line_1 = pbs_station_attributes.get('address_line_1', None)
+                        pbs_station_attribute_address_line_2 = pbs_station_attributes.get('address_line_2', None)
+                        pbs_station_attribute_zip_code = pbs_station_attributes.get('zip_code', None)
+                        pbs_station_attribute_country_code = pbs_station_attributes.get('country_code', None)
+                        pbs_station_attribute_email = pbs_station_attributes.get('email', None)
+                        pbs_station_attribute_tag_line = pbs_station_attributes.get('tag_line', None)
+                        pbs_station_attribute_page_tracking = pbs_station_attributes.get('page_tracking', None)
+                        pbs_station_attribute_event_tracking = pbs_station_attributes.get('event_tracking', None)
+                        pbs_station_attribute_primary_channel = pbs_station_attributes.get('primary_channel', None)
+                        pbs_station_attribute_primetime_start = pbs_station_attributes.get('primetime_start', None)
+
+                        pbs_station_attribute_image_black_logo = None
+                        pbs_station_attribute_image_white_logo = None
+                        pbs_station_attribute_image_color_logo = None
+                        pbs_station_attribute_image_white_cobranded_logo = None
+                        pbs_station_attribute_image_color_cobranded_logo = None
+                        pbs_station_attribute_image_white_single_brand_logo = None
+                        pbs_station_attribute_image_color_single_brand_logo = None
+
+                        for pbs_station_attribute_image in pbs_station_attribute_images:
+                            pbs_station_attribute_image_profile = pbs_station_attribute_image.get('profile', None)
+                            pbs_station_attribute_image_url = pbs_station_attribute_image.get('url', None)
+
+                            if pbs_station_attribute_image_profile == 'black-logo':
+                                pbs_station_attribute_image_black_logo = pbs_station_attribute_image_url
+                            elif pbs_station_attribute_image_profile == 'white-logo':
+                                pbs_station_attribute_image_white_logo = pbs_station_attribute_image_url
+                            elif pbs_station_attribute_image_profile == 'color-logo':
+                                pbs_station_attribute_image_color_logo = pbs_station_attribute_image_url
+                            elif pbs_station_attribute_image_profile == 'white-cobranded-logo':
+                                pbs_station_attribute_image_white_cobranded_logo = pbs_station_attribute_image_url
+                            elif pbs_station_attribute_image_profile == 'color-cobranded-logo':
+                                pbs_station_attribute_image_color_cobranded_logo = pbs_station_attribute_image_url
+                            elif pbs_station_attribute_image_profile == 'white-single-brand-logo':
+                                pbs_station_attribute_image_white_single_brand_logo = pbs_station_attribute_image_url
+                            elif pbs_station_attribute_image_profile == 'color-single-brand-logo':
+                                pbs_station_attribute_image_color_single_brand_logo = pbs_station_attribute_image_url
+
+                        pbs_substation_ga_main = False
+                        pbs_substation_ga_main_feed_cid = None
+                        pbs_substation_ga_main_drm_hls_url = None
+                        pbs_substation_ga_main_non_drm_url = None
+                        pbs_substation_ga_main_drm_dash_url = None
+                        pbs_substation_ga_main_logo_overlay = None
+                        pbs_substation_ga_main_drm_fairplay_license_url = None
+                        pbs_substation_ga_main_drm_widevine_license_url = None
+                        pbs_substation_ga_main_drm_playready_license_url = None
+                        pbs_substation_ga_main_hls_widevine_license_url = None
+                        pbs_substation_ga_main_hls_playready_license_url = None
+                        pbs_substation_ga_main_feed_image = None
+                        pbs_substation_ga_main_digital_channel = None
+                        pbs_substation_ga_main_analog_channel = None
+                        pbs_substation_ga_main_short_name = None
+                        pbs_substation_ga_main_full_name = None
+                        pbs_substation_ga_main_timezone = None
+
+                        pbs_substation_ga_local_subchannel_1 = False
+                        pbs_substation_ga_local_subchannel_1_feed_cid = None
+                        pbs_substation_ga_local_subchannel_1_drm_hls_url = None
+                        pbs_substation_ga_local_subchannel_1_non_drm_url = None
+                        pbs_substation_ga_local_subchannel_1_drm_dash_url = None
+                        pbs_substation_ga_local_subchannel_1_logo_overlay = None
+                        pbs_substation_ga_local_subchannel_1_drm_fairplay_license_url = None
+                        pbs_substation_ga_local_subchannel_1_drm_widevine_license_url = None
+                        pbs_substation_ga_local_subchannel_1_drm_playready_license_url = None
+                        pbs_substation_ga_local_subchannel_1_hls_widevine_license_url = None
+                        pbs_substation_ga_local_subchannel_1_hls_playready_license_url = None
+                        pbs_substation_ga_local_subchannel_1_feed_image = None
+                        pbs_substation_ga_local_subchannel_1_digital_channel = None
+                        pbs_substation_ga_local_subchannel_1_analog_channel = None
+                        pbs_substation_ga_local_subchannel_1_short_name = None
+                        pbs_substation_ga_local_subchannel_1_full_name = None
+                        pbs_substation_ga_local_subchannel_1_timezone = None
+
+                        pbs_substation_ga_local_subchannel_2 = False
+                        pbs_substation_ga_local_subchannel_2_feed_cid = None
+                        pbs_substation_ga_local_subchannel_2_drm_hls_url = None
+                        pbs_substation_ga_local_subchannel_2_non_drm_url = None
+                        pbs_substation_ga_local_subchannel_2_drm_dash_url = None
+                        pbs_substation_ga_local_subchannel_2_logo_overlay = None
+                        pbs_substation_ga_local_subchannel_2_drm_fairplay_license_url = None
+                        pbs_substation_ga_local_subchannel_2_drm_widevine_license_url = None
+                        pbs_substation_ga_local_subchannel_2_drm_playready_license_url = None
+                        pbs_substation_ga_local_subchannel_2_hls_widevine_license_url = None
+                        pbs_substation_ga_local_subchannel_2_hls_playready_license_url = None
+                        pbs_substation_ga_local_subchannel_2_feed_image = None
+                        pbs_substation_ga_local_subchannel_2_digital_channel = None
+                        pbs_substation_ga_local_subchannel_2_analog_channel = None
+                        pbs_substation_ga_local_subchannel_2_short_name = None
+                        pbs_substation_ga_local_subchannel_2_full_name = None
+                        pbs_substation_ga_local_subchannel_2_timezone = None
+
+                        pbs_substation_ga_create = False
+                        pbs_substation_ga_create_feed_cid = None
+                        pbs_substation_ga_create_drm_hls_url = None
+                        pbs_substation_ga_create_non_drm_url = None
+                        pbs_substation_ga_create_drm_dash_url = None
+                        pbs_substation_ga_create_logo_overlay = None
+                        pbs_substation_ga_create_drm_fairplay_license_url = None
+                        pbs_substation_ga_create_drm_widevine_license_url = None
+                        pbs_substation_ga_create_drm_playready_license_url = None
+                        pbs_substation_ga_create_hls_widevine_license_url = None
+                        pbs_substation_ga_create_hls_playready_license_url = None
+                        pbs_substation_ga_create_feed_image = None
+                        pbs_substation_ga_create_digital_channel = None
+                        pbs_substation_ga_create_analog_channel = None
+                        pbs_substation_ga_create_short_name = None
+                        pbs_substation_ga_create_full_name = None
+                        pbs_substation_ga_create_timezone = None
+
+                        pbs_substation_ga_world = False
+                        pbs_substation_ga_world_feed_cid = None
+                        pbs_substation_ga_world_drm_hls_url = None
+                        pbs_substation_ga_world_non_drm_url = None
+                        pbs_substation_ga_world_drm_dash_url = None
+                        pbs_substation_ga_world_logo_overlay = None
+                        pbs_substation_ga_world_drm_fairplay_license_url = None
+                        pbs_substation_ga_world_drm_widevine_license_url = None
+                        pbs_substation_ga_world_drm_playready_license_url = None
+                        pbs_substation_ga_world_hls_widevine_license_url = None
+                        pbs_substation_ga_world_hls_playready_license_url = None
+                        pbs_substation_ga_world_feed_image = None
+                        pbs_substation_ga_world_digital_channel = None
+                        pbs_substation_ga_world_analog_channel = None
+                        pbs_substation_ga_world_short_name = None
+                        pbs_substation_ga_world_full_name = None
+                        pbs_substation_ga_world_timezone = None
+
+                        pbs_substation_ga_fnx = False
+                        pbs_substation_ga_fnx_feed_cid = None
+                        pbs_substation_ga_fnx_drm_hls_url = None
+                        pbs_substation_ga_fnx_non_drm_url = None
+                        pbs_substation_ga_fnx_drm_dash_url = None
+                        pbs_substation_ga_fnx_logo_overlay = None
+                        pbs_substation_ga_fnx_drm_fairplay_license_url = None
+                        pbs_substation_ga_fnx_drm_widevine_license_url = None
+                        pbs_substation_ga_fnx_drm_playready_license_url = None
+                        pbs_substation_ga_fnx_hls_widevine_license_url = None
+                        pbs_substation_ga_fnx_hls_playready_license_url = None
+                        pbs_substation_ga_fnx_feed_image = None
+                        pbs_substation_ga_fnx_digital_channel = None
+                        pbs_substation_ga_fnx_analog_channel = None
+                        pbs_substation_ga_fnx_short_name = None
+                        pbs_substation_ga_fnx_full_name = None
+                        pbs_substation_ga_fnx_timezone = None
+
+                        pbs_substation_ga_nhk = False
+                        pbs_substation_ga_nhk_feed_cid = None
+                        pbs_substation_ga_nhk_drm_hls_url = None
+                        pbs_substation_ga_nhk_non_drm_url = None
+                        pbs_substation_ga_nhk_drm_dash_url = None
+                        pbs_substation_ga_nhk_logo_overlay = None
+                        pbs_substation_ga_nhk_drm_fairplay_license_url = None
+                        pbs_substation_ga_nhk_drm_widevine_license_url = None
+                        pbs_substation_ga_nhk_drm_playready_license_url = None
+                        pbs_substation_ga_nhk_hls_widevine_license_url = None
+                        pbs_substation_ga_nhk_hls_playready_license_url = None
+                        pbs_substation_ga_nhk_feed_image = None
+                        pbs_substation_ga_nhk_digital_channel = None
+                        pbs_substation_ga_nhk_analog_channel = None
+                        pbs_substation_ga_nhk_short_name = None
+                        pbs_substation_ga_nhk_full_name = None
+                        pbs_substation_ga_nhk_timezone = None
+
+                        pbs_substation_kids_main = False
+                        pbs_substation_kids_main_feed_cid = None
+                        pbs_substation_kids_main_drm_hls_url = None
+                        pbs_substation_kids_main_non_drm_url = None
+                        pbs_substation_kids_main_drm_dash_url = None
+                        pbs_substation_kids_main_logo_overlay = None
+                        pbs_substation_kids_main_drm_fairplay_license_url = None
+                        pbs_substation_kids_main_drm_widevine_license_url = None
+                        pbs_substation_kids_main_drm_playready_license_url = None
+                        pbs_substation_kids_main_hls_widevine_license_url = None
+                        pbs_substation_kids_main_hls_playready_license_url = None
+                        pbs_substation_kids_main_feed_image = None
+                        pbs_substation_kids_main_digital_channel = None
+                        pbs_substation_kids_main_analog_channel = None
+                        pbs_substation_kids_main_short_name = None
+                        pbs_substation_kids_main_full_name = None
+                        pbs_substation_kids_main_timezone = None
+
+                        pbs_substations_and_guide_api_url = f"{pbs_substations_and_guide_api_url_base}{pbs_station_id}{pbs_substations_and_guide_api_url_end}"
+                        pbs_substations_and_guide_response = None
+                        try:
+                            pbs_substations_and_guide_response = requests.get(pbs_substations_and_guide_api_url, headers=url_headers)
+                        except requests.RequestException as e:
+                            print(f"{current_time()} ERROR: Unable to retrieve PBS Sub-Station List, received '{e}'.")
+
+                        if pbs_substations_and_guide_response:
+                            pbs_substations_and_guide_response_text = pbs_substations_and_guide_response.text
+                            pbs_substations_and_guide_response_json = json.loads(pbs_substations_and_guide_response_text)
+
+                            pbs_substations_and_guide_response_json_data_base = pbs_substations_and_guide_response_json.get('schedule', {}).get('content', [])
+                            if pbs_substations_and_guide_response_json_data_base and isinstance(pbs_substations_and_guide_response_json_data_base, list):
+                                pbs_substations_and_guide_response_json_data = pbs_substations_and_guide_response_json_data_base[0].get('channels', [])
+                            else:
+                                pbs_substations_and_guide_response_json_data = []
+
+                            if pbs_substations_and_guide_response_json_data:
+                                for pbs_substation in pbs_substations_and_guide_response_json_data:
+
+                                    pbs_substation_profile = pbs_substation.get('profile', None)
+                                    pbs_substation_feed_cid = pbs_substation.get('feed_cid', None)
+                                    pbs_substation_drm_hls_url = pbs_substation.get('drm_hls_url', None)
+                                    pbs_substation_non_drm_url = pbs_substation.get('non_drm_url', None)
+                                    pbs_substation_drm_dash_url = pbs_substation.get('drm_dash_url', None)
+                                    pbs_substation_logo_overlay = pbs_substation.get('logo_overlay', None)
+                                    pbs_substation_drm_fairplay_license_url = pbs_substation.get('drm_fairplay_license_url', None)
+                                    pbs_substation_drm_widevine_license_url = pbs_substation.get('drm_widevine_license_url', None)
+                                    pbs_substation_drm_playready_license_url = pbs_substation.get('drm_playready_license_url', None)
+                                    pbs_substation_hls_widevine_license_url = pbs_substation.get('hls_widevine_license_url', None)
+                                    pbs_substation_hls_playready_license_url = pbs_substation.get('hls_playready_license_url', None)
+                                    pbs_substation_feed_image = None
+                                    pbs_substation_digital_channel = pbs_substation.get('digital_channel', None)
+                                    pbs_substation_analog_channel = pbs_substation.get('analog_channel', None)
+                                    pbs_substation_short_name = pbs_substation.get('short_name', None)
+                                    pbs_substation_full_name = pbs_substation.get('full_name', None)
+                                    pbs_substation_timezone = pbs_substation.get('timezone', None)
+
+                                    pbs_substation_feed_images = pbs_substation.get('feed_image') or {}
+                                    pbs_substation_feed_image_color_logo = pbs_substation_feed_images.get('color_logo', None)
+                                    pbs_substation_feed_image_white_logo = pbs_substation_feed_images.get('white_logo', None)
+                                    if pbs_substation_feed_image_color_logo:
+                                        pbs_substation_feed_image = pbs_substation_feed_image_color_logo
+                                    elif pbs_substation_feed_image_white_logo:
+                                        pbs_substation_feed_image = pbs_substation_feed_image_white_logo
+
+                                    if pbs_substation_profile == 'ga-main':
+                                        pbs_substation_ga_main = True
+                                        pbs_substation_ga_main_feed_cid = pbs_substation_feed_cid
+                                        pbs_substation_ga_main_drm_hls_url = pbs_substation_drm_hls_url
+                                        pbs_substation_ga_main_non_drm_url = pbs_substation_non_drm_url
+                                        pbs_substation_ga_main_drm_dash_url = pbs_substation_drm_dash_url
+                                        pbs_substation_ga_main_logo_overlay = pbs_substation_logo_overlay
+                                        pbs_substation_ga_main_drm_fairplay_license_url = pbs_substation_drm_fairplay_license_url
+                                        pbs_substation_ga_main_drm_widevine_license_url = pbs_substation_drm_widevine_license_url
+                                        pbs_substation_ga_main_drm_playready_license_url = pbs_substation_drm_playready_license_url
+                                        pbs_substation_ga_main_hls_widevine_license_url = pbs_substation_hls_widevine_license_url
+                                        pbs_substation_ga_main_hls_playready_license_url = pbs_substation_hls_playready_license_url
+                                        pbs_substation_ga_main_feed_image = pbs_substation_feed_image
+                                        pbs_substation_ga_main_digital_channel = pbs_substation_digital_channel
+                                        pbs_substation_ga_main_analog_channel = pbs_substation_analog_channel
+                                        pbs_substation_ga_main_short_name = pbs_substation_short_name
+                                        pbs_substation_ga_main_full_name = pbs_substation_full_name
+                                        pbs_substation_ga_main_timezone = pbs_substation_timezone
+
+                                    elif pbs_substation_profile == 'ga-local-subchannel-1':
+                                        pbs_substation_ga_local_subchannel_1 = True
+                                        pbs_substation_ga_local_subchannel_1_feed_cid = pbs_substation_feed_cid
+                                        pbs_substation_ga_local_subchannel_1_drm_hls_url = pbs_substation_drm_hls_url
+                                        pbs_substation_ga_local_subchannel_1_non_drm_url = pbs_substation_non_drm_url
+                                        pbs_substation_ga_local_subchannel_1_drm_dash_url = pbs_substation_drm_dash_url
+                                        pbs_substation_ga_local_subchannel_1_logo_overlay = pbs_substation_logo_overlay
+                                        pbs_substation_ga_local_subchannel_1_drm_fairplay_license_url = pbs_substation_drm_fairplay_license_url
+                                        pbs_substation_ga_local_subchannel_1_drm_widevine_license_url = pbs_substation_drm_widevine_license_url
+                                        pbs_substation_ga_local_subchannel_1_drm_playready_license_url = pbs_substation_drm_playready_license_url
+                                        pbs_substation_ga_local_subchannel_1_hls_widevine_license_url = pbs_substation_hls_widevine_license_url
+                                        pbs_substation_ga_local_subchannel_1_hls_playready_license_url = pbs_substation_hls_playready_license_url
+                                        pbs_substation_ga_local_subchannel_1_feed_image = pbs_substation_feed_image
+                                        pbs_substation_ga_local_subchannel_1_digital_channel = pbs_substation_digital_channel
+                                        pbs_substation_ga_local_subchannel_1_analog_channel = pbs_substation_analog_channel
+                                        pbs_substation_ga_local_subchannel_1_short_name = pbs_substation_short_name
+                                        pbs_substation_ga_local_subchannel_1_full_name = pbs_substation_full_name
+                                        pbs_substation_ga_local_subchannel_1_timezone = pbs_substation_timezone
+
+                                    elif pbs_substation_profile == 'ga-local-subchannel-2':
+                                        pbs_substation_ga_local_subchannel_2 = True
+                                        pbs_substation_ga_local_subchannel_2_feed_cid = pbs_substation_feed_cid
+                                        pbs_substation_ga_local_subchannel_2_drm_hls_url = pbs_substation_drm_hls_url
+                                        pbs_substation_ga_local_subchannel_2_non_drm_url = pbs_substation_non_drm_url
+                                        pbs_substation_ga_local_subchannel_2_drm_dash_url = pbs_substation_drm_dash_url
+                                        pbs_substation_ga_local_subchannel_2_logo_overlay = pbs_substation_logo_overlay
+                                        pbs_substation_ga_local_subchannel_2_drm_fairplay_license_url = pbs_substation_drm_fairplay_license_url
+                                        pbs_substation_ga_local_subchannel_2_drm_widevine_license_url = pbs_substation_drm_widevine_license_url
+                                        pbs_substation_ga_local_subchannel_2_drm_playready_license_url = pbs_substation_drm_playready_license_url
+                                        pbs_substation_ga_local_subchannel_2_hls_widevine_license_url = pbs_substation_hls_widevine_license_url
+                                        pbs_substation_ga_local_subchannel_2_hls_playready_license_url = pbs_substation_hls_playready_license_url
+                                        pbs_substation_ga_local_subchannel_2_feed_image = pbs_substation_feed_image
+                                        pbs_substation_ga_local_subchannel_2_digital_channel = pbs_substation_digital_channel
+                                        pbs_substation_ga_local_subchannel_2_analog_channel = pbs_substation_analog_channel
+                                        pbs_substation_ga_local_subchannel_2_short_name = pbs_substation_short_name
+                                        pbs_substation_ga_local_subchannel_2_full_name = pbs_substation_full_name
+                                        pbs_substation_ga_local_subchannel_2_timezone = pbs_substation_timezone
+
+                                    elif pbs_substation_profile == 'ga-create':
+                                        pbs_substation_ga_create = True
+                                        pbs_substation_ga_create_feed_cid = pbs_substation_feed_cid
+                                        pbs_substation_ga_create_drm_hls_url = pbs_substation_drm_hls_url
+                                        pbs_substation_ga_create_non_drm_url = pbs_substation_non_drm_url
+                                        pbs_substation_ga_create_drm_dash_url = pbs_substation_drm_dash_url
+                                        pbs_substation_ga_create_logo_overlay = pbs_substation_logo_overlay
+                                        pbs_substation_ga_create_drm_fairplay_license_url = pbs_substation_drm_fairplay_license_url
+                                        pbs_substation_ga_create_drm_widevine_license_url = pbs_substation_drm_widevine_license_url
+                                        pbs_substation_ga_create_drm_playready_license_url = pbs_substation_drm_playready_license_url
+                                        pbs_substation_ga_create_hls_widevine_license_url = pbs_substation_hls_widevine_license_url
+                                        pbs_substation_ga_create_hls_playready_license_url = pbs_substation_hls_playready_license_url
+                                        pbs_substation_ga_create_feed_image = pbs_substation_feed_image
+                                        pbs_substation_ga_create_digital_channel = pbs_substation_digital_channel
+                                        pbs_substation_ga_create_analog_channel = pbs_substation_analog_channel
+                                        pbs_substation_ga_create_short_name = pbs_substation_short_name
+                                        pbs_substation_ga_create_full_name = pbs_substation_full_name
+                                        pbs_substation_ga_create_timezone = pbs_substation_timezone
+
+                                    elif pbs_substation_profile == 'ga-world':
+                                        pbs_substation_ga_world = True
+                                        pbs_substation_ga_world_feed_cid = pbs_substation_feed_cid
+                                        pbs_substation_ga_world_drm_hls_url = pbs_substation_drm_hls_url
+                                        pbs_substation_ga_world_non_drm_url = pbs_substation_non_drm_url
+                                        pbs_substation_ga_world_drm_dash_url = pbs_substation_drm_dash_url
+                                        pbs_substation_ga_world_logo_overlay = pbs_substation_logo_overlay
+                                        pbs_substation_ga_world_drm_fairplay_license_url = pbs_substation_drm_fairplay_license_url
+                                        pbs_substation_ga_world_drm_widevine_license_url = pbs_substation_drm_widevine_license_url
+                                        pbs_substation_ga_world_drm_playready_license_url = pbs_substation_drm_playready_license_url
+                                        pbs_substation_ga_world_hls_widevine_license_url = pbs_substation_hls_widevine_license_url
+                                        pbs_substation_ga_world_hls_playready_license_url = pbs_substation_hls_playready_license_url
+                                        pbs_substation_ga_world_feed_image = pbs_substation_feed_image
+                                        pbs_substation_ga_world_digital_channel = pbs_substation_digital_channel
+                                        pbs_substation_ga_world_analog_channel = pbs_substation_analog_channel
+                                        pbs_substation_ga_world_short_name = pbs_substation_short_name
+                                        pbs_substation_ga_world_full_name = pbs_substation_full_name
+                                        pbs_substation_ga_world_timezone = pbs_substation_timezone
+
+                                    elif pbs_substation_profile == 'ga-fnx':
+                                        pbs_substation_ga_fnx = True
+                                        pbs_substation_ga_fnx_feed_cid = pbs_substation_feed_cid
+                                        pbs_substation_ga_fnx_drm_hls_url = pbs_substation_drm_hls_url
+                                        pbs_substation_ga_fnx_non_drm_url = pbs_substation_non_drm_url
+                                        pbs_substation_ga_fnx_drm_dash_url = pbs_substation_drm_dash_url
+                                        pbs_substation_ga_fnx_logo_overlay = pbs_substation_logo_overlay
+                                        pbs_substation_ga_fnx_drm_fairplay_license_url = pbs_substation_drm_fairplay_license_url
+                                        pbs_substation_ga_fnx_drm_widevine_license_url = pbs_substation_drm_widevine_license_url
+                                        pbs_substation_ga_fnx_drm_playready_license_url = pbs_substation_drm_playready_license_url
+                                        pbs_substation_ga_fnx_hls_widevine_license_url = pbs_substation_hls_widevine_license_url
+                                        pbs_substation_ga_fnx_hls_playready_license_url = pbs_substation_hls_playready_license_url
+                                        pbs_substation_ga_fnx_feed_image = pbs_substation_feed_image
+                                        pbs_substation_ga_fnx_digital_channel = pbs_substation_digital_channel
+                                        pbs_substation_ga_fnx_analog_channel = pbs_substation_analog_channel
+                                        pbs_substation_ga_fnx_short_name = pbs_substation_short_name
+                                        pbs_substation_ga_fnx_full_name = pbs_substation_full_name
+                                        pbs_substation_ga_fnx_timezone = pbs_substation_timezone
+
+                                    elif pbs_substation_profile == 'ga-nhk':
+                                        pbs_substation_ga_nhk = True
+                                        pbs_substation_ga_nhk_feed_cid = pbs_substation_feed_cid
+                                        pbs_substation_ga_nhk_drm_hls_url = pbs_substation_drm_hls_url
+                                        pbs_substation_ga_nhk_non_drm_url = pbs_substation_non_drm_url
+                                        pbs_substation_ga_nhk_drm_dash_url = pbs_substation_drm_dash_url
+                                        pbs_substation_ga_nhk_logo_overlay = pbs_substation_logo_overlay
+                                        pbs_substation_ga_nhk_drm_fairplay_license_url = pbs_substation_drm_fairplay_license_url
+                                        pbs_substation_ga_nhk_drm_widevine_license_url = pbs_substation_drm_widevine_license_url
+                                        pbs_substation_ga_nhk_drm_playready_license_url = pbs_substation_drm_playready_license_url
+                                        pbs_substation_ga_nhk_hls_widevine_license_url = pbs_substation_hls_widevine_license_url
+                                        pbs_substation_ga_nhk_hls_playready_license_url = pbs_substation_hls_playready_license_url
+                                        pbs_substation_ga_nhk_feed_image = pbs_substation_feed_image
+                                        pbs_substation_ga_nhk_digital_channel = pbs_substation_digital_channel
+                                        pbs_substation_ga_nhk_analog_channel = pbs_substation_analog_channel
+                                        pbs_substation_ga_nhk_short_name = pbs_substation_short_name
+                                        pbs_substation_ga_nhk_full_name = pbs_substation_full_name
+                                        pbs_substation_ga_nhk_timezone = pbs_substation_timezone
+
+                                    elif pbs_substation_profile == 'kids-main':
+                                        pbs_substation_kids_main = True
+                                        pbs_substation_kids_main_feed_cid = pbs_substation_feed_cid
+                                        pbs_substation_kids_main_drm_hls_url = pbs_substation_drm_hls_url
+                                        pbs_substation_kids_main_non_drm_url = pbs_substation_non_drm_url
+                                        pbs_substation_kids_main_drm_dash_url = pbs_substation_drm_dash_url
+                                        pbs_substation_kids_main_logo_overlay = pbs_substation_logo_overlay
+                                        pbs_substation_kids_main_drm_fairplay_license_url = pbs_substation_drm_fairplay_license_url
+                                        pbs_substation_kids_main_drm_widevine_license_url = pbs_substation_drm_widevine_license_url
+                                        pbs_substation_kids_main_drm_playready_license_url = pbs_substation_drm_playready_license_url
+                                        pbs_substation_kids_main_hls_widevine_license_url = pbs_substation_hls_widevine_license_url
+                                        pbs_substation_kids_main_hls_playready_license_url = pbs_substation_hls_playready_license_url
+                                        pbs_substation_kids_main_feed_image = pbs_substation_feed_image
+                                        pbs_substation_kids_main_digital_channel = pbs_substation_digital_channel
+                                        pbs_substation_kids_main_analog_channel = pbs_substation_analog_channel
+                                        pbs_substation_kids_main_short_name = pbs_substation_short_name
+                                        pbs_substation_kids_main_full_name = pbs_substation_full_name
+                                        pbs_substation_kids_main_timezone = pbs_substation_timezone
+
+                        base_pbs_stations.append({
+                            'pbs_station_type': pbs_station_type,
+                            'pbs_station_id': pbs_station_id,
+                            'pbs_station_attribute_call_sign': pbs_station_attribute_call_sign,
+                            'pbs_station_attribute_full_common_name': pbs_station_attribute_full_common_name,
+                            'pbs_station_attribute_short_common_name': pbs_station_attribute_short_common_name,
+                            'pbs_station_attribute_tvss_url': pbs_station_attribute_tvss_url,
+                            'pbs_station_attribute_donate_url': pbs_station_attribute_donate_url,
+                            'pbs_station_attribute_timezone': pbs_station_attribute_timezone,
+                            'pbs_station_attribute_secondary_timezone': pbs_station_attribute_secondary_timezone,
+                            'pbs_station_attribute_video_portal_url': pbs_station_attribute_video_portal_url,
+                            'pbs_station_attribute_website_url': pbs_station_attribute_website_url,
+                            'pbs_station_attribute_learn_more_passport_url': pbs_station_attribute_learn_more_passport_url,
+                            'pbs_station_attribute_facebook_url': pbs_station_attribute_facebook_url,
+                            'pbs_station_attribute_twitter_url': pbs_station_attribute_twitter_url,
+                            'pbs_station_attribute_youtube_url': pbs_station_attribute_youtube_url,
+                            'pbs_station_attribute_instagram_url': pbs_station_attribute_instagram_url,
+                            'pbs_station_attribute_tiktok_url': pbs_station_attribute_tiktok_url,
+                            'pbs_station_attribute_station_kids_url': pbs_station_attribute_station_kids_url,
+                            'pbs_station_attribute_passport_url': pbs_station_attribute_passport_url,
+                            'pbs_station_attribute_telephone': pbs_station_attribute_telephone,
+                            'pbs_station_attribute_fax': pbs_station_attribute_fax,
+                            'pbs_station_attribute_city': pbs_station_attribute_city,
+                            'pbs_station_attribute_state': pbs_station_attribute_state,
+                            'pbs_station_attribute_address_line_1': pbs_station_attribute_address_line_1,
+                            'pbs_station_attribute_address_line_2': pbs_station_attribute_address_line_2,
+                            'pbs_station_attribute_zip_code': pbs_station_attribute_zip_code,
+                            'pbs_station_attribute_country_code': pbs_station_attribute_country_code,
+                            'pbs_station_attribute_email': pbs_station_attribute_email,
+                            'pbs_station_attribute_tag_line': pbs_station_attribute_tag_line,
+                            'pbs_station_attribute_page_tracking': pbs_station_attribute_page_tracking,
+                            'pbs_station_attribute_event_tracking': pbs_station_attribute_event_tracking,
+                            'pbs_station_attribute_primary_channel': pbs_station_attribute_primary_channel,
+                            'pbs_station_attribute_primetime_start': pbs_station_attribute_primetime_start,
+                            'pbs_station_attribute_image_black_logo': pbs_station_attribute_image_black_logo,
+                            'pbs_station_attribute_image_white_logo': pbs_station_attribute_image_white_logo,
+                            'pbs_station_attribute_image_color_logo': pbs_station_attribute_image_color_logo,
+                            'pbs_station_attribute_image_white_cobranded_logo': pbs_station_attribute_image_white_cobranded_logo,
+                            'pbs_station_attribute_image_color_cobranded_logo': pbs_station_attribute_image_color_cobranded_logo,
+                            'pbs_station_attribute_image_white_single_brand_logo': pbs_station_attribute_image_white_single_brand_logo,
+                            'pbs_station_attribute_image_color_single_brand_logo': pbs_station_attribute_image_color_single_brand_logo,
+                            'pbs_substation_ga_main': pbs_substation_ga_main,
+                            'pbs_substation_ga_main_feed_cid': pbs_substation_ga_main_feed_cid,
+                            'pbs_substation_ga_main_drm_hls_url': pbs_substation_ga_main_drm_hls_url,
+                            'pbs_substation_ga_main_non_drm_url': pbs_substation_ga_main_non_drm_url,
+                            'pbs_substation_ga_main_drm_dash_url': pbs_substation_ga_main_drm_dash_url,
+                            'pbs_substation_ga_main_logo_overlay': pbs_substation_ga_main_logo_overlay,
+                            'pbs_substation_ga_main_drm_fairplay_license_url': pbs_substation_ga_main_drm_fairplay_license_url,
+                            'pbs_substation_ga_main_drm_widevine_license_url': pbs_substation_ga_main_drm_widevine_license_url,
+                            'pbs_substation_ga_main_drm_playready_license_url': pbs_substation_ga_main_drm_playready_license_url,
+                            'pbs_substation_ga_main_hls_widevine_license_url': pbs_substation_ga_main_hls_widevine_license_url,
+                            'pbs_substation_ga_main_hls_playready_license_url': pbs_substation_ga_main_hls_playready_license_url,
+                            'pbs_substation_ga_main_feed_image': pbs_substation_ga_main_feed_image,
+                            'pbs_substation_ga_main_digital_channel': pbs_substation_ga_main_digital_channel,
+                            'pbs_substation_ga_main_analog_channel': pbs_substation_ga_main_analog_channel,
+                            'pbs_substation_ga_main_short_name': pbs_substation_ga_main_short_name,
+                            'pbs_substation_ga_main_full_name': pbs_substation_ga_main_full_name,
+                            'pbs_substation_ga_main_timezone': pbs_substation_ga_main_timezone,
+                            'pbs_substation_ga_local_subchannel_1': pbs_substation_ga_local_subchannel_1,
+                            'pbs_substation_ga_local_subchannel_1_feed_cid': pbs_substation_ga_local_subchannel_1_feed_cid,
+                            'pbs_substation_ga_local_subchannel_1_drm_hls_url': pbs_substation_ga_local_subchannel_1_drm_hls_url,
+                            'pbs_substation_ga_local_subchannel_1_non_drm_url': pbs_substation_ga_local_subchannel_1_non_drm_url,
+                            'pbs_substation_ga_local_subchannel_1_drm_dash_url': pbs_substation_ga_local_subchannel_1_drm_dash_url,
+                            'pbs_substation_ga_local_subchannel_1_logo_overlay': pbs_substation_ga_local_subchannel_1_logo_overlay,
+                            'pbs_substation_ga_local_subchannel_1_drm_fairplay_license_url': pbs_substation_ga_local_subchannel_1_drm_fairplay_license_url,
+                            'pbs_substation_ga_local_subchannel_1_drm_widevine_license_url': pbs_substation_ga_local_subchannel_1_drm_widevine_license_url,
+                            'pbs_substation_ga_local_subchannel_1_drm_playready_license_url': pbs_substation_ga_local_subchannel_1_drm_playready_license_url,
+                            'pbs_substation_ga_local_subchannel_1_hls_widevine_license_url': pbs_substation_ga_local_subchannel_1_hls_widevine_license_url,
+                            'pbs_substation_ga_local_subchannel_1_hls_playready_license_url': pbs_substation_ga_local_subchannel_1_hls_playready_license_url,
+                            'pbs_substation_ga_local_subchannel_1_feed_image': pbs_substation_ga_local_subchannel_1_feed_image,
+                            'pbs_substation_ga_local_subchannel_1_digital_channel': pbs_substation_ga_local_subchannel_1_digital_channel,
+                            'pbs_substation_ga_local_subchannel_1_analog_channel': pbs_substation_ga_local_subchannel_1_analog_channel,
+                            'pbs_substation_ga_local_subchannel_1_short_name': pbs_substation_ga_local_subchannel_1_short_name,
+                            'pbs_substation_ga_local_subchannel_1_full_name': pbs_substation_ga_local_subchannel_1_full_name,
+                            'pbs_substation_ga_local_subchannel_1_timezone': pbs_substation_ga_local_subchannel_1_timezone,
+                            'pbs_substation_ga_local_subchannel_2': pbs_substation_ga_local_subchannel_2,
+                            'pbs_substation_ga_local_subchannel_2_feed_cid': pbs_substation_ga_local_subchannel_2_feed_cid,
+                            'pbs_substation_ga_local_subchannel_2_drm_hls_url': pbs_substation_ga_local_subchannel_2_drm_hls_url,
+                            'pbs_substation_ga_local_subchannel_2_non_drm_url': pbs_substation_ga_local_subchannel_2_non_drm_url,
+                            'pbs_substation_ga_local_subchannel_2_drm_dash_url': pbs_substation_ga_local_subchannel_2_drm_dash_url,
+                            'pbs_substation_ga_local_subchannel_2_logo_overlay': pbs_substation_ga_local_subchannel_2_logo_overlay,
+                            'pbs_substation_ga_local_subchannel_2_drm_fairplay_license_url': pbs_substation_ga_local_subchannel_2_drm_fairplay_license_url,
+                            'pbs_substation_ga_local_subchannel_2_drm_widevine_license_url': pbs_substation_ga_local_subchannel_2_drm_widevine_license_url,
+                            'pbs_substation_ga_local_subchannel_2_drm_playready_license_url': pbs_substation_ga_local_subchannel_2_drm_playready_license_url,
+                            'pbs_substation_ga_local_subchannel_2_hls_widevine_license_url': pbs_substation_ga_local_subchannel_2_hls_widevine_license_url,
+                            'pbs_substation_ga_local_subchannel_2_hls_playready_license_url': pbs_substation_ga_local_subchannel_2_hls_playready_license_url,
+                            'pbs_substation_ga_local_subchannel_2_feed_image': pbs_substation_ga_local_subchannel_2_feed_image,
+                            'pbs_substation_ga_local_subchannel_2_digital_channel': pbs_substation_ga_local_subchannel_2_digital_channel,
+                            'pbs_substation_ga_local_subchannel_2_analog_channel': pbs_substation_ga_local_subchannel_2_analog_channel,
+                            'pbs_substation_ga_local_subchannel_2_short_name': pbs_substation_ga_local_subchannel_2_short_name,
+                            'pbs_substation_ga_local_subchannel_2_full_name': pbs_substation_ga_local_subchannel_2_full_name,
+                            'pbs_substation_ga_local_subchannel_2_timezone': pbs_substation_ga_local_subchannel_2_timezone,
+                            'pbs_substation_ga_create': pbs_substation_ga_create,
+                            'pbs_substation_ga_create_feed_cid': pbs_substation_ga_create_feed_cid,
+                            'pbs_substation_ga_create_drm_hls_url': pbs_substation_ga_create_drm_hls_url,
+                            'pbs_substation_ga_create_non_drm_url': pbs_substation_ga_create_non_drm_url,
+                            'pbs_substation_ga_create_drm_dash_url': pbs_substation_ga_create_drm_dash_url,
+                            'pbs_substation_ga_create_logo_overlay': pbs_substation_ga_create_logo_overlay,
+                            'pbs_substation_ga_create_drm_fairplay_license_url': pbs_substation_ga_create_drm_fairplay_license_url,
+                            'pbs_substation_ga_create_drm_widevine_license_url': pbs_substation_ga_create_drm_widevine_license_url,
+                            'pbs_substation_ga_create_drm_playready_license_url': pbs_substation_ga_create_drm_playready_license_url,
+                            'pbs_substation_ga_create_hls_widevine_license_url': pbs_substation_ga_create_hls_widevine_license_url,
+                            'pbs_substation_ga_create_hls_playready_license_url': pbs_substation_ga_create_hls_playready_license_url,
+                            'pbs_substation_ga_create_feed_image': pbs_substation_ga_create_feed_image,
+                            'pbs_substation_ga_create_digital_channel': pbs_substation_ga_create_digital_channel,
+                            'pbs_substation_ga_create_analog_channel': pbs_substation_ga_create_analog_channel,
+                            'pbs_substation_ga_create_short_name': pbs_substation_ga_create_short_name,
+                            'pbs_substation_ga_create_full_name': pbs_substation_ga_create_full_name,
+                            'pbs_substation_ga_create_timezone': pbs_substation_ga_create_timezone,
+                            'pbs_substation_ga_world': pbs_substation_ga_world,
+                            'pbs_substation_ga_world_feed_cid': pbs_substation_ga_world_feed_cid,
+                            'pbs_substation_ga_world_drm_hls_url': pbs_substation_ga_world_drm_hls_url,
+                            'pbs_substation_ga_world_non_drm_url': pbs_substation_ga_world_non_drm_url,
+                            'pbs_substation_ga_world_drm_dash_url': pbs_substation_ga_world_drm_dash_url,
+                            'pbs_substation_ga_world_logo_overlay': pbs_substation_ga_world_logo_overlay,
+                            'pbs_substation_ga_world_drm_fairplay_license_url': pbs_substation_ga_world_drm_fairplay_license_url,
+                            'pbs_substation_ga_world_drm_widevine_license_url': pbs_substation_ga_world_drm_widevine_license_url,
+                            'pbs_substation_ga_world_drm_playready_license_url': pbs_substation_ga_world_drm_playready_license_url,
+                            'pbs_substation_ga_world_hls_widevine_license_url': pbs_substation_ga_world_hls_widevine_license_url,
+                            'pbs_substation_ga_world_hls_playready_license_url': pbs_substation_ga_world_hls_playready_license_url,
+                            'pbs_substation_ga_world_feed_image': pbs_substation_ga_world_feed_image,
+                            'pbs_substation_ga_world_digital_channel': pbs_substation_ga_world_digital_channel,
+                            'pbs_substation_ga_world_analog_channel': pbs_substation_ga_world_analog_channel,
+                            'pbs_substation_ga_world_short_name': pbs_substation_ga_world_short_name,
+                            'pbs_substation_ga_world_full_name': pbs_substation_ga_world_full_name,
+                            'pbs_substation_ga_world_timezone': pbs_substation_ga_world_timezone,
+                            'pbs_substation_ga_fnx': pbs_substation_ga_fnx,
+                            'pbs_substation_ga_fnx_feed_cid': pbs_substation_ga_fnx_feed_cid,
+                            'pbs_substation_ga_fnx_drm_hls_url': pbs_substation_ga_fnx_drm_hls_url,
+                            'pbs_substation_ga_fnx_non_drm_url': pbs_substation_ga_fnx_non_drm_url,
+                            'pbs_substation_ga_fnx_drm_dash_url': pbs_substation_ga_fnx_drm_dash_url,
+                            'pbs_substation_ga_fnx_logo_overlay': pbs_substation_ga_fnx_logo_overlay,
+                            'pbs_substation_ga_fnx_drm_fairplay_license_url': pbs_substation_ga_fnx_drm_fairplay_license_url,
+                            'pbs_substation_ga_fnx_drm_widevine_license_url': pbs_substation_ga_fnx_drm_widevine_license_url,
+                            'pbs_substation_ga_fnx_drm_playready_license_url': pbs_substation_ga_fnx_drm_playready_license_url,
+                            'pbs_substation_ga_fnx_hls_widevine_license_url': pbs_substation_ga_fnx_hls_widevine_license_url,
+                            'pbs_substation_ga_fnx_hls_playready_license_url': pbs_substation_ga_fnx_hls_playready_license_url,
+                            'pbs_substation_ga_fnx_feed_image': pbs_substation_ga_fnx_feed_image,
+                            'pbs_substation_ga_fnx_digital_channel': pbs_substation_ga_fnx_digital_channel,
+                            'pbs_substation_ga_fnx_analog_channel': pbs_substation_ga_fnx_analog_channel,
+                            'pbs_substation_ga_fnx_short_name': pbs_substation_ga_fnx_short_name,
+                            'pbs_substation_ga_fnx_full_name': pbs_substation_ga_fnx_full_name,
+                            'pbs_substation_ga_fnx_timezone': pbs_substation_ga_fnx_timezone,
+                            'pbs_substation_ga_nhk': pbs_substation_ga_nhk,
+                            'pbs_substation_ga_nhk_feed_cid': pbs_substation_ga_nhk_feed_cid,
+                            'pbs_substation_ga_nhk_drm_hls_url': pbs_substation_ga_nhk_drm_hls_url,
+                            'pbs_substation_ga_nhk_non_drm_url': pbs_substation_ga_nhk_non_drm_url,
+                            'pbs_substation_ga_nhk_drm_dash_url': pbs_substation_ga_nhk_drm_dash_url,
+                            'pbs_substation_ga_nhk_logo_overlay': pbs_substation_ga_nhk_logo_overlay,
+                            'pbs_substation_ga_nhk_drm_fairplay_license_url': pbs_substation_ga_nhk_drm_fairplay_license_url,
+                            'pbs_substation_ga_nhk_drm_widevine_license_url': pbs_substation_ga_nhk_drm_widevine_license_url,
+                            'pbs_substation_ga_nhk_drm_playready_license_url': pbs_substation_ga_nhk_drm_playready_license_url,
+                            'pbs_substation_ga_nhk_hls_widevine_license_url': pbs_substation_ga_nhk_hls_widevine_license_url,
+                            'pbs_substation_ga_nhk_hls_playready_license_url': pbs_substation_ga_nhk_hls_playready_license_url,
+                            'pbs_substation_ga_nhk_feed_image': pbs_substation_ga_nhk_feed_image,
+                            'pbs_substation_ga_nhk_digital_channel': pbs_substation_ga_nhk_digital_channel,
+                            'pbs_substation_ga_nhk_analog_channel': pbs_substation_ga_nhk_analog_channel,
+                            'pbs_substation_ga_nhk_short_name': pbs_substation_ga_nhk_short_name,
+                            'pbs_substation_ga_nhk_full_name': pbs_substation_ga_nhk_full_name,
+                            'pbs_substation_ga_nhk_timezone': pbs_substation_ga_nhk_timezone,
+                            'pbs_substation_kids_main': pbs_substation_kids_main,
+                            'pbs_substation_kids_main_feed_cid': pbs_substation_kids_main_feed_cid,
+                            'pbs_substation_kids_main_drm_hls_url': pbs_substation_kids_main_drm_hls_url,
+                            'pbs_substation_kids_main_non_drm_url': pbs_substation_kids_main_non_drm_url,
+                            'pbs_substation_kids_main_drm_dash_url': pbs_substation_kids_main_drm_dash_url,
+                            'pbs_substation_kids_main_logo_overlay': pbs_substation_kids_main_logo_overlay,
+                            'pbs_substation_kids_main_drm_fairplay_license_url': pbs_substation_kids_main_drm_fairplay_license_url,
+                            'pbs_substation_kids_main_drm_widevine_license_url': pbs_substation_kids_main_drm_widevine_license_url,
+                            'pbs_substation_kids_main_drm_playready_license_url': pbs_substation_kids_main_drm_playready_license_url,
+                            'pbs_substation_kids_main_hls_widevine_license_url': pbs_substation_kids_main_hls_widevine_license_url,
+                            'pbs_substation_kids_main_hls_playready_license_url': pbs_substation_kids_main_hls_playready_license_url,
+                            'pbs_substation_kids_main_feed_image': pbs_substation_kids_main_feed_image,
+                            'pbs_substation_kids_main_digital_channel': pbs_substation_kids_main_digital_channel,
+                            'pbs_substation_kids_main_analog_channel': pbs_substation_kids_main_analog_channel,
+                            'pbs_substation_kids_main_short_name': pbs_substation_kids_main_short_name,
+                            'pbs_substation_kids_main_full_name': pbs_substation_kids_main_full_name,
+                            'pbs_substation_kids_main_timezone': pbs_substation_kids_main_timezone
+                        })
+
+                    pbs_stations_response_json_next = pbs_stations_response_json.get('links', {}).get('next', None)
+                    if pbs_stations_response_json_next in [None, [], {}, 'null']:
+                        break
+                    else:
+                        try:
+                            pbs_stations_response = requests.get(pbs_stations_response_json_next, headers=url_headers)
+                        except requests.RequestException as e:
+                            print(f"{current_time()} ERROR: Unable to retrieve next page of PBS Stations, received '{e}'.")
+
+            if playlist_internal_pbs:
+                temp_record = create_temp_record(playlist_internal_pbs[0].keys())
+            else:
+                temp_record = initial_data(csv_playlistmanager_playlist_internal_pbs)[0]
+            run_empty_rows = False
+
+            playlist_internal_pbs = base_pbs_stations.copy()
+
+            if not playlist_internal_pbs:
+                playlist_internal_pbs.append(temp_record)
+                run_empty_rows = True
+
+            write_data(csv_playlistmanager_playlist_internal_pbs, playlist_internal_pbs)
+            if run_empty_rows:
+                remove_empty_row(csv_playlistmanager_playlist_internal_pbs)
+
+            end_time = time.time()
+            elapsed_seconds = end_time - start_time
+            hours, remainder = divmod(elapsed_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+
+            print(f"{current_time()} INFO: Finished scrape of PBS Stations in {int(hours)} hours | {int(minutes)} minutes | {int(seconds)} seconds.")
+
+        else:
+            base_pbs_stations = playlist_internal_pbs.copy()
+
+        if base_pbs_stations and run_final_pbs_stations:
+            used_channel_numbers = []
+            waste_results, pbs_stations_to_gracenote, waste_message = parse_csv_url(pbs_csv_url)
+
+            pbs_stations_to_check = [
+                'ga-main',
+                'ga-local-subchannel-1',
+                'ga-local-subchannel-2',
+                'ga-create',
+                'ga-world',
+                'ga-fnx',
+                'ga-nhk',
+                'kids-main'
+            ]
+
+            state_base_numbers = {
+                "AK": 100, "AL": 110, "AR": 120, "AS": 130, "AZ": 140,
+                "CA": 150, "CO": 160, "CT": 170, "DC": 180, "DE": 190,
+                "FL": 200, "GA": 210, "GU": 220, "HI": 230, "IA": 240,
+                "ID": 250, "IL": 260, "IN": 270, "KS": 280, "KY": 290,
+                "LA": 300, "MA": 310, "MD": 320, "ME": 330, "MI": 340,
+                "MN": 350, "MO": 360, "MP": 370, "MS": 380, "MT": 390,
+                "NC": 400, "ND": 410, "NE": 420, "NH": 430, "NJ": 440,
+                "NM": 450, "NV": 460, "NY": 470, "OH": 480, "OK": 490,
+                "OR": 500, "PA": 510, "PR": 520, "RI": 530, "SC": 540,
+                "SD": 550, "TN": 560, "TT": 570, "TX": 580, "UT": 590,
+                "VA": 600, "VI": 610, "VT": 620, "WA": 630, "WI": 640,
+                "WV": 650, "WY": 660
+            }
+
+            if pbs_stations_to_gracenote:
+                pbs_stations_to_gracenote_lookup = {pbs_station_to_gracenote['channel_id']: pbs_station_to_gracenote['gracenote_id'] for pbs_station_to_gracenote in pbs_stations_to_gracenote}
+
+            pbs_stations_ignore = [
+                'KOTH'
+            ]
+
+            base_pbs_stations_filtered = [base_pbs_station_item for base_pbs_station_item in base_pbs_stations if base_pbs_station_item['pbs_station_attribute_call_sign'] not in pbs_stations_ignore]
+
+            for base_pbs_station in base_pbs_stations_filtered:
+
+                call_sign = base_pbs_station['pbs_station_attribute_call_sign']
+                base_channel_id = f"PBS_{call_sign}"
+                state_num = str(state_base_numbers[base_pbs_station['pbs_station_attribute_state']])
+                channel_no = '991'
+                zero = ''
+                zero_check_ran = False
+
+                for pbs_station_to_check in pbs_stations_to_check:
+
+                    pbs_station_append = False
+                    zero_check = False
+
+                    if pbs_station_to_check in ['ga-main', 'ga-local-subchannel-1', 'ga-local-subchannel-2']:
+
+                        if pbs_station_to_check == 'ga-main' and base_pbs_station['pbs_substation_ga_main'] in [True, 'True', 'true']:
+                            base_channel_no = str(base_pbs_station['pbs_substation_ga_main_digital_channel'])
+
+                        elif pbs_station_to_check == 'ga-local-subchannel-1' and base_pbs_station['pbs_substation_ga_local_subchannel_1'] in [True, 'True', 'true']:
+                            base_channel_no = str(base_pbs_station['pbs_substation_ga_local_subchannel_1_digital_channel'])
+
+                        elif pbs_station_to_check == 'ga-local-subchannel-2' and base_pbs_station['pbs_substation_ga_local_subchannel_2'] in [True, 'True', 'true']:
+                            base_channel_no = str(base_pbs_station['pbs_substation_ga_local_subchannel_2_digital_channel'])
+
+                        if base_channel_no not in [None, '', 'null', 'Null']:
+                            channel_no = base_channel_no.replace('.', '')
+                            zero_check = True
+
+                    else:
+                        if channel_no not in [None, '', 'null', 'Null']:
+                            channel_no = str(int(channel_no) + 1)
+                            zero_check = True
+
+                    if zero_check and not zero_check_ran:
+                        zero_check_ran = True
+                        if len(channel_no) < 3:
+                            zero = '0'
+
+                    if(
+                        ( pbs_station_to_check == 'ga-main' and base_pbs_station['pbs_substation_ga_main'] in [True, 'True', 'true'] ) or
+                        ( pbs_station_to_check == 'ga-local-subchannel-1' and base_pbs_station['pbs_substation_ga_local_subchannel_1'] in [True, 'True', 'true'] ) or
+                        ( pbs_station_to_check == 'ga-local-subchannel-2' and base_pbs_station['pbs_substation_ga_local_subchannel_2'] in [True, 'True', 'true'] ) or
+                        ( pbs_station_to_check == 'ga-create' and base_pbs_station['pbs_substation_ga_create'] in [True, 'True', 'true'] ) or
+                        ( pbs_station_to_check == 'ga-world' and base_pbs_station['pbs_substation_ga_world'] in [True, 'True', 'true'] ) or
+                        ( pbs_station_to_check == 'ga-fnx' and base_pbs_station['pbs_substation_ga_fnx'] in [True, 'True', 'true'] ) or
+                        ( pbs_station_to_check == 'ga-nhk' and base_pbs_station['pbs_substation_ga_nhk'] in [True, 'True', 'true'] ) or
+                        ( pbs_station_to_check == 'kids-main' and base_pbs_station['pbs_substation_kids_main'] in [True, 'True', 'true'] )
+                    ):
+                        pbs_station_append = True
+
+                    tvg_description = ''
+                    tvg_logo = ''
+                    tvc_guide_stationid = ''
+
+                    if pbs_station_to_check == 'ga-main' and base_pbs_station['pbs_substation_ga_main'] in [True, 'True', 'true']:
+
+                        title = f"PBS {base_pbs_station['pbs_station_attribute_state']} {base_pbs_station['pbs_station_attribute_city']} ({call_sign}) [{base_pbs_station['pbs_substation_ga_main_digital_channel']}]"
+                        channel_id = f"{base_channel_id}"
+                        if base_pbs_station['pbs_station_attribute_image_color_cobranded_logo'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_station_attribute_image_color_cobranded_logo']
+                        elif base_pbs_station['pbs_station_attribute_image_white_cobranded_logo'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_station_attribute_image_white_cobranded_logo']
+                        elif base_pbs_station['pbs_station_attribute_image_color_single_brand_logo'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_station_attribute_image_color_single_brand_logo']
+                        elif base_pbs_station['pbs_station_attribute_image_white_single_brand_logo'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_station_attribute_image_white_single_brand_logo']
+                        elif base_pbs_station['pbs_station_attribute_image_color_logo'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_station_attribute_image_color_logo']
+                        elif base_pbs_station['pbs_station_attribute_image_white_logo'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_station_attribute_image_white_logo']
+                        elif base_pbs_station['pbs_station_attribute_image_black_logo'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_station_attribute_image_black_logo']
+                        elif base_pbs_station['pbs_substation_ga_main_feed_image'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_substation_ga_main_feed_image']
+                        tvg_description = base_pbs_station['pbs_station_attribute_tag_line']
+
+                    elif pbs_station_to_check == 'ga-local-subchannel-1' and base_pbs_station['pbs_substation_ga_local_subchannel_1'] in [True, 'True', 'true']:
+
+                        title = f"{base_pbs_station['pbs_substation_ga_local_subchannel_1_full_name']} ({call_sign}) [{base_pbs_station['pbs_substation_ga_local_subchannel_1_digital_channel']}]"
+                        channel_id = f"{base_channel_id}_ga_local_subchannel_1"
+                        if base_pbs_station['pbs_substation_ga_local_subchannel_1_feed_image'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_substation_ga_local_subchannel_1_feed_image']
+                           
+                    elif pbs_station_to_check == 'ga-local-subchannel-2' and base_pbs_station['pbs_substation_ga_local_subchannel_2'] in [True, 'True', 'true']:
+
+                        title = f"{base_pbs_station['pbs_substation_ga_local_subchannel_2_full_name']} ({call_sign}) [{base_pbs_station['pbs_substation_ga_local_subchannel_2_digital_channel']}]"
+                        channel_id = f"{base_channel_id}_ga_local_subchannel_2"
+                        if base_pbs_station['pbs_substation_ga_local_subchannel_2_feed_image'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_substation_ga_local_subchannel_2_feed_image']
+
+                    elif pbs_station_to_check == 'ga-create' and base_pbs_station['pbs_substation_ga_create'] in [True, 'True', 'true']:
+
+                        title = f"PBS Create ({call_sign})"
+                        channel_id = f"{base_channel_id}_ga_create"
+                        if base_pbs_station['pbs_substation_ga_create_feed_image'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_substation_ga_create_feed_image']
+
+                    elif pbs_station_to_check == 'ga-world' and base_pbs_station['pbs_substation_ga_world'] in [True, 'True', 'true']:
+
+                        title = f"PBS World ({call_sign})"
+                        channel_id = f"{base_channel_id}_ga_world"
+                        if base_pbs_station['pbs_substation_ga_world_feed_image'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_substation_ga_world_feed_image']
+
+                    elif pbs_station_to_check == 'ga-fnx' and base_pbs_station['pbs_substation_ga_fnx'] in [True, 'True', 'true']:
+
+                        title = f"First Nations Experience ({call_sign})"
+                        channel_id = f"{base_channel_id}_ga_fnx"
+                        if base_pbs_station['pbs_substation_ga_fnx_feed_image'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_substation_ga_fnx_feed_image']
+
+                    elif pbs_station_to_check == 'ga-nhk' and base_pbs_station['pbs_substation_ga_nhk'] in [True, 'True', 'true']:
+
+                        title = f"NHK World ({call_sign})"
+                        channel_id = f"{base_channel_id}_ga_nhk"
+                        if base_pbs_station['pbs_substation_ga_nhk_feed_image'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_substation_ga_nhk_feed_image']
+
+                    elif pbs_station_to_check == 'kids-main' and base_pbs_station['pbs_substation_kids_main'] in [True, 'True', 'true']:
+
+                        title = f"PBS Kids ({call_sign})"
+                        channel_id = f"{base_channel_id}_kids_main"
+                        if base_pbs_station['pbs_substation_kids_main_feed_image'] not in [None, '', 'null']:
+                            tvg_logo = base_pbs_station['pbs_substation_kids_main_feed_image']
+
+                    if pbs_station_append:
+                        tvc_guide_title = title
+                        tvg_id = ''
+                        tvg_name = title
+                        tvg_chno = f"{state_num}{zero}{channel_no}"
+                        while True:
+                            if tvg_chno in used_channel_numbers:
+                                tvg_chno = str(int(tvg_chno) + 1000)
+                            else:
+                                break
+                        channel_number = tvg_chno
+                        tvc_guide_description = tvg_description
+                        group_title = ''
+                        if channel_id in pbs_stations_to_gracenote_lookup:
+                            tvc_guide_stationid = pbs_stations_to_gracenote_lookup[channel_id]
+                        tvc_guide_art = tvg_logo
+                        tvc_guide_tags =''
+                        tvc_guide_genres = ''
+                        tvc_guide_categories = ''
+                        tvc_guide_placeholders = ''
+                        tvc_stream_vcodec = ''
+                        tvc_stream_acodec = ''
+                        url = f"{plm_internal_pbs_url_base}/pbs/watch/{base_pbs_station['pbs_station_id']}/{pbs_station_to_check}"
+
+                        pbs_stations.append({
+                            "title": title,
+                            "tvc_guide_title": tvc_guide_title,
+                            "channel_id": channel_id,
+                            "tvg_id": tvg_id,
+                            "tvg_name": tvg_name,
+                            "tvg_logo": tvg_logo,
+                            "tvg_chno": tvg_chno,
+                            "channel_number": channel_number,
+                            "tvg_description": tvg_description,
+                            "tvc_guide_description": tvc_guide_description,
+                            "group_title": group_title,
+                            "tvc_guide_stationid": tvc_guide_stationid,
+                            "tvc_guide_art": tvc_guide_art,
+                            "tvc_guide_tags": tvc_guide_tags,
+                            "tvc_guide_genres": tvc_guide_genres,
+                            "tvc_guide_categories": tvc_guide_categories,
+                            "tvc_guide_placeholders": tvc_guide_placeholders,
+                            "tvc_stream_vcodec": tvc_stream_vcodec,
+                            "tvc_stream_acodec": tvc_stream_acodec,
+                            "url": url
+                        })
+
+                        used_channel_numbers.append(tvg_chno)
+
+    return pbs_stations
+
 # Goes through each of the playlists and combines all m3us together into a single list
 def get_combined_m3us():
     playlists = read_data(csv_playlistmanager_playlists)
@@ -7829,7 +8623,7 @@ def get_combined_m3us():
 
     for playlist in playlists:
         response = None
-        response = fetch_url(playlist['m3u_url'], 3, 10)
+        response = fetch_url(playlist['m3u_url'], 3, 10, 300)
         if response:
             combined_m3us.extend(parse_m3u(playlist['m3u_id'], playlist['m3u_name'], response))
 
@@ -9037,7 +9831,7 @@ def get_combined_xml_guide():
     # Fetch EPG XML data
     for playlist in playlists:
         if playlist['m3u_active'] == "On" and playlist['epg_xml']:
-            response = fetch_url(playlist['epg_xml'], 5, 10)
+            response = fetch_url(playlist['epg_xml'], 5, 10, 300)
             if response:
                 # Get the final URL after redirection
                 final_url = response.url
@@ -10214,6 +11008,9 @@ def webpage_reports_queries():
     global slm_query
     global select_report_query_prior
 
+    settings = read_data(csv_settings)
+    plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
+
     reports_queries_lists = [{'name': 'Select a Report or Query...', 'value': 'reports_queries_cancel'}]
 
     if slm_stream_link_file_manager:
@@ -10236,6 +11033,8 @@ def webpage_reports_queries():
     if slm_playlist_manager:
         reports_queries_lists.append({'name': 'Linear: Stations - Parents and Children', 'value': 'query_plm_parent_children'})
         reports_queries_lists.append({'name': 'Linear: Combined XML Guide Stations', 'value': 'query_plm_combined_xml_guide_stations'})
+        if plm_internal_pbs_stations in ['on', 'On']:
+            reports_queries_lists.append({'name': 'Linear: Internal Playlist - PBS', 'value': 'query_plm_internal_playlist_pbs'})
         if slm_channels_dvr_integration:
             reports_queries_lists.append({'name': 'Channels DVR: Stations by Channel Collection', 'value': 'query_mtm_stations_by_channel_collection'})
 
@@ -10339,14 +11138,14 @@ def run_query(query_name):
     plm_station_mappings = pd.DataFrame(plm_station_mappings_data)
 
     if query_name in [
-                        'query_slm_summary',
-                        'query_currently_unavailable',
-                        'query_previously_watched',
-                        'query_slm_recent_releases_7_days',
-                        'query_slm_recent_releases_30_days',
-                        'query_slm_recent_releases_90_days',
-                        'query_not_on_justwatch'
-                     ]:
+        'query_slm_summary',
+        'query_currently_unavailable',
+        'query_previously_watched',
+        'query_slm_recent_releases_7_days',
+        'query_slm_recent_releases_30_days',
+        'query_slm_recent_releases_90_days',
+        'query_not_on_justwatch'
+    ]:
 
         if bookmarks.empty or bookmarks_status.empty:
             pass
@@ -10619,8 +11418,8 @@ def run_query(query_name):
                 """
 
     elif query_name in [
-                            'query_plm_parent_children'
-                       ]:
+        'query_plm_parent_children'
+    ]:
 
         if plm_playlists.empty or plm_all_stations.empty or plm_parents.empty:
             results = []
@@ -10721,8 +11520,8 @@ def run_query(query_name):
                 """
 
     elif query_name in [
-                            'query_mtm_stations_by_channel_collection'
-                       ]:
+        'query_mtm_stations_by_channel_collection'
+    ]:
 
         # Get list of all Channels DVR Stations
         all_stations_data = get_channels_dvr_json('all_stations')
@@ -10755,13 +11554,13 @@ def run_query(query_name):
             """
 
     elif query_name in [
-                            'query_mtm_programs_by_library_collection',
-                            'query_mtm_programs_by_size_on_disk',
-                            'query_mtm_programs_by_number_of_files',
-                            'query_mtm_programs_by_average_file_size',
-                            'query_mtm_programs_by_duration',
-                            'query_mtm_programs_by_average_file_size_per_duration'
-                       ]:
+        'query_mtm_programs_by_library_collection',
+        'query_mtm_programs_by_size_on_disk',
+        'query_mtm_programs_by_number_of_files',
+        'query_mtm_programs_by_average_file_size',
+        'query_mtm_programs_by_duration',
+        'query_mtm_programs_by_average_file_size_per_duration'
+    ]:
 
         # Get a list of Channels DVR Movies
         channels_movies_url = f"{channels_url}/api/v1/movies?format=csv"
@@ -11079,8 +11878,8 @@ def run_query(query_name):
                     """
 
     elif query_name in [
-                            'query_plm_combined_xml_guide_stations'
-                       ]:
+        'query_plm_combined_xml_guide_stations'
+    ]:
         
         combined_xml_guide_stations_data = get_combined_xml_guide_stations()
 
@@ -11109,6 +11908,26 @@ def run_query(query_name):
             ORDER BY
                 "Station EPG Name",
                 "Station EPG Guide ID"
+            """
+
+    elif query_name in [
+        'query_plm_internal_playlist_pbs'
+    ]:
+
+        internal_playlist_data = []
+
+        if query_name == 'query_plm_internal_playlist_pbs':
+            internal_playlist_data = get_pbs_stream_data(False, True)
+
+        if internal_playlist_data:
+            run_query = True
+            internal_playlist_table = pd.DataFrame(internal_playlist_data)
+
+            query = """
+            SELECT
+                *
+            FROM
+                internal_playlist_table
             """
 
     # Execute the query
@@ -11401,7 +12220,7 @@ def parse_csv_url(url):
     results = None
     message = ''
 
-    results_base = fetch_url(url, 3, 5)
+    results_base = fetch_url(url, 3, 5, 120)
 
     if results_base:
         results_text = results_base.content.decode('utf-8-sig')
@@ -11443,6 +12262,7 @@ def webpage_tools_channelsclients():
     client_port = ':57000'
     retries = 3
     delay = 5
+    timeout_duration = 120
     # Non-API GET paths
     client_log_path = '/log'
     # API GET paths
@@ -11496,7 +12316,7 @@ def webpage_tools_channelsclients():
 
         if action == 'client_non_api_get_log':
             url = f"{url_base}{client_log_path}"            
-            response = fetch_url(url, retries, delay)
+            response = fetch_url(url, retries, delay, timeout_duration)
             
             if response:
                 client_log = response.text.splitlines()
@@ -11608,6 +12428,10 @@ def webpage_tools_automation():
     slm_update_feed =  settings[68]["settings"]                                     # [68] MTM: Run SLM 'Feed & Auto-Mapping' Functionality On/Off
     slm_update_feed_time = settings[69]["settings"]                                 # [69] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Start Time
     slm_update_feed_frequency = settings[70]["settings"]                            # [70] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Frequency
+    plm_internal_pbs_stations = settings[48]['settings']                            # [48] PLM: Internal PBS Stations On/Off
+    plm_interal_playlist_pbs_scrape = settings[75]["settings"]                      # [75] PLM: Run 'Internal Playlist - PBS Scrape' Functionality On/Off
+    plm_interal_playlist_pbs_scrape_time = settings[76]["settings"]                 # [76] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Start Time
+    plm_interal_playlist_pbs_scrape_frequency = settings[77]["settings"]            # [77] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Frequency
 
     automation_message = ''
     action_friendly_name = ''
@@ -11748,6 +12572,10 @@ def webpage_tools_automation():
                 elif action.startswith('slm_update_feed'):
                     action_friendly_name = 'Stream Links: Update Feeds and Run Auto-Mapping'
                     run_slm_update_feed()
+
+                elif action.startswith('plm_interal_playlist_pbs_scrape'):
+                    action_friendly_name = 'Internal Playlist: PBS - Scrape'
+                    get_pbs_stream_data(True, False)
 
                 automation_message = f"{current_time()} INFO: '{action_friendly_name}' completed. See 'Logs' for more details."
                 print(f"{automation_message}")
@@ -11892,6 +12720,15 @@ def webpage_tools_automation():
                     settings[69]["settings"] = slm_update_feed_time_input
                     settings[70]["settings"] = slm_update_feed_frequency_input
 
+                elif action.startswith('plm_interal_playlist_pbs_scrape'):
+                    plm_interal_playlist_pbs_scrape_input = request.form.get('plm_interal_playlist_pbs_scrape')
+                    plm_interal_playlist_pbs_scrape_time_input = request.form.get('plm_interal_playlist_pbs_scrape_time')
+                    plm_interal_playlist_pbs_scrape_frequency_input = request.form.get('plm_interal_playlist_pbs_scrape_frequency')
+
+                    settings[75]["settings"] = "On" if plm_interal_playlist_pbs_scrape_input == 'on' else "Off"
+                    settings[76]["settings"] = plm_interal_playlist_pbs_scrape_time_input
+                    settings[77]["settings"] = plm_interal_playlist_pbs_scrape_frequency_input
+
                 csv_to_write = csv_settings
                 data_to_write = settings
                 write_data(csv_to_write, data_to_write)
@@ -11939,6 +12776,10 @@ def webpage_tools_automation():
             slm_update_feed =  settings[68]["settings"]                                     # [68] MTM: Run SLM 'Feed & Auto-Mapping' Functionality On/Off
             slm_update_feed_time = settings[69]["settings"]                                 # [69] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Start Time
             slm_update_feed_frequency = settings[70]["settings"]                            # [70] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Frequency
+            plm_internal_pbs_stations = settings[48]['settings']                            # [48] PLM: Internal PBS Stations On/Off
+            plm_interal_playlist_pbs_scrape = settings[75]["settings"]                      # [75] PLM: Run 'Internal Playlist - PBS Scrape' Functionality On/Off
+            plm_interal_playlist_pbs_scrape_time = settings[76]["settings"]                 # [76] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Start Time
+            plm_interal_playlist_pbs_scrape_frequency = settings[77]["settings"]            # [77] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Frequency
 
     return render_template(
         'main/tools_automation.html',
@@ -11997,7 +12838,11 @@ def webpage_tools_automation():
         html_settings_use_feed_map = settings_use_feed_map,
         html_slm_update_feed = slm_update_feed,
         html_slm_update_feed_time = slm_update_feed_time,
-        html_slm_update_feed_frequency = slm_update_feed_frequency
+        html_slm_update_feed_frequency = slm_update_feed_frequency,
+        html_plm_internal_pbs_stations = plm_internal_pbs_stations,
+        html_plm_interal_playlist_pbs_scrape = plm_interal_playlist_pbs_scrape,
+        html_plm_interal_playlist_pbs_scrape_time = plm_interal_playlist_pbs_scrape_time,
+        html_plm_interal_playlist_pbs_scrape_frequency = plm_interal_playlist_pbs_scrape_frequency
     )
 
 # Create a continous stream of the log file
@@ -12070,6 +12915,11 @@ def check_schedule():
         slm_update_feed_time = settings[69]["settings"]                                 # [69] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Start Time
         slm_update_feed_frequency = settings[70]["settings"]                            # [70] MTM: Run SLM 'Feed & Auto-Mapping' Functionality Frequency
         slm_update_feed_frequency_parsed = int(re.search(r'\d+', slm_update_feed_frequency).group())
+        plm_internal_pbs_stations = settings[48]['settings']                            # [48] PLM: Internal PBS Stations On/Off
+        plm_interal_playlist_pbs_scrape = settings[75]["settings"]                      # [75] PLM: Run 'Internal Playlist - PBS Scrape' Functionality On/Off
+        plm_interal_playlist_pbs_scrape_time = settings[76]["settings"]                 # [76] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Start Time
+        plm_interal_playlist_pbs_scrape_frequency = settings[77]["settings"]            # [77] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Frequency
+        plm_interal_playlist_pbs_scrape_frequency_parsed = int(re.search(r'\d+', plm_interal_playlist_pbs_scrape_frequency).group())
 
         if gen_backup_schedule == 'On' and gen_backup_schedule_time:
             gen_backup_schedule_hour, gen_backup_schedule_minute = map(int, gen_backup_schedule_time.split(':'))
@@ -12148,6 +12998,13 @@ def check_schedule():
                 threading.Thread(target=run_slm_update_feed).start()
                 wait_trigger = True
 
+        if plm_internal_pbs_stations == 'On' and plm_interal_playlist_pbs_scrape == 'On' and plm_interal_playlist_pbs_scrape_time:
+            plm_interal_playlist_pbs_scrape_hour, plm_interal_playlist_pbs_scrape_minute = map(int, plm_interal_playlist_pbs_scrape_time.split(':'))
+
+            if current_minute == plm_interal_playlist_pbs_scrape_minute and (current_hour - plm_interal_playlist_pbs_scrape_hour) % plm_interal_playlist_pbs_scrape_frequency_parsed == 0:
+                threading.Thread(target=get_pbs_stream_data, args=(True, False,)).start()
+                wait_trigger = True
+
         if wait_trigger:
             time.sleep(65)  # Wait a bit longer to avoid multiple triggers within the same minute+
             wait_trigger = None
@@ -12205,7 +13062,7 @@ def check_upgrade():
     start_index = len(check_line)
     check_url = f"{github_url_raw}slm.py"
 
-    response = fetch_url(check_url, 5, 10)
+    response = fetch_url(check_url, 5, 10, 60)
     if response:
         response_text = response.text.splitlines()
 
@@ -14546,6 +15403,9 @@ def run_channels_remove_old_files_empty_directories(action_type):
 def webpage_files():
     global select_file_prior
 
+    settings = read_data(csv_settings)
+    plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
+
     table_html = None
     replace_message = None
 
@@ -14590,6 +15450,9 @@ def webpage_files():
     if plm_streaming_stations:
         for plm_streaming_stations_file_list in plm_streaming_stations_file_lists:
             file_lists.append({'file_name': plm_streaming_stations_file_list['file_name'], 'file': plm_streaming_stations_file_list['file']})
+
+    if plm_internal_pbs_stations in ['On', 'on']:
+        file_lists.append({'file_name': 'PLM - Internal Playlist - PBS', 'file': csv_playlistmanager_playlist_internal_pbs})
 
     if request.method == 'POST':
         action = request.form['action']
@@ -16005,6 +16868,9 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Off"}, 74, "GEN: Media Players Integration On/Off")
         check_and_append(csv_file, {"settings": "Off"}, 75, "SLM: Add TV Show Title to File Name On/Off")
         check_and_append(csv_file, {"settings": "Off"}, 76, "SLM: Add Episode Title to TV Show File Name On/Off")
+        check_and_append(csv_file, {"settings": "Off"}, 77, "PLM: Run 'Internal Playlist - PBS Scrape' Functionality On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 78, "PLM: Run 'Internal Playlist - PBS Scrape' Functionality Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 79, "PLM: Run 'Internal Playlist - PBS Scrape' Functionality Frequency")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -16098,7 +16964,10 @@ def initial_data(csv_file):
             ]},                                                                        # [71] GEN: List of 'Articles for Sorting'
             {"settings": "Off"},                                                       # [72] GEN: Media Players Integration On/Off
             {"settings": "Off"},                                                       # [73] SLM: Add TV Show Title to File Name On/Off
-            {"settings": "Off"}                                                        # [74] SLM: Add Episode Title to TV Show File Name On/Off
+            {"settings": "Off"},                                                       # [74] SLM: Add Episode Title to TV Show File Name On/Off
+            {"settings": "Off"},                                                       # [75] PLM: Run 'Internal Playlist - PBS Scrape' Functionality On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [76] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Start Time
+            {"settings": "Every 24 hours"}                                             # [77] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Frequency
         ]
 
     # Stream Link/File Manager
@@ -16367,6 +17236,186 @@ def initial_data(csv_file):
             "target_field_string": None,
             "target_parent_channel_id": None,
             "target_stream_format_override": None
+        }]
+
+    elif csv_file == csv_playlistmanager_playlist_internal_pbs:
+        data = [{
+            'pbs_station_type': None,
+            'pbs_station_id': None,
+            'pbs_station_attribute_call_sign': None,
+            'pbs_station_attribute_full_common_name': None,
+            'pbs_station_attribute_short_common_name': None,
+            'pbs_station_attribute_tvss_url': None,
+            'pbs_station_attribute_donate_url': None,
+            'pbs_station_attribute_timezone': None,
+            'pbs_station_attribute_secondary_timezone': None,
+            'pbs_station_attribute_video_portal_url': None,
+            'pbs_station_attribute_website_url': None,
+            'pbs_station_attribute_learn_more_passport_url': None,
+            'pbs_station_attribute_facebook_url': None,
+            'pbs_station_attribute_twitter_url': None,
+            'pbs_station_attribute_youtube_url': None,
+            'pbs_station_attribute_instagram_url': None,
+            'pbs_station_attribute_tiktok_url': None,
+            'pbs_station_attribute_station_kids_url': None,
+            'pbs_station_attribute_passport_url': None,
+            'pbs_station_attribute_telephone': None,
+            'pbs_station_attribute_fax': None,
+            'pbs_station_attribute_city': None,
+            'pbs_station_attribute_state': None,
+            'pbs_station_attribute_address_line_1': None,
+            'pbs_station_attribute_address_line_2': None,
+            'pbs_station_attribute_zip_code': None,
+            'pbs_station_attribute_country_code': None,
+            'pbs_station_attribute_email': None,
+            'pbs_station_attribute_tag_line': None,
+            'pbs_station_attribute_page_tracking': None,
+            'pbs_station_attribute_event_tracking': None,
+            'pbs_station_attribute_primary_channel': None,
+            'pbs_station_attribute_primetime_start': None,
+            'pbs_station_attribute_image_black_logo': None,
+            'pbs_station_attribute_image_white_logo': None,
+            'pbs_station_attribute_image_color_logo': None,
+            'pbs_station_attribute_image_white_cobranded_logo': None,
+            'pbs_station_attribute_image_color_cobranded_logo': None,
+            'pbs_station_attribute_image_white_single_brand_logo': None,
+            'pbs_station_attribute_image_color_single_brand_logo': None,
+            'pbs_substation_ga_main': None,
+            'pbs_substation_ga_main_feed_cid': None,
+            'pbs_substation_ga_main_drm_hls_url': None,
+            'pbs_substation_ga_main_non_drm_url': None,
+            'pbs_substation_ga_main_drm_dash_url': None,
+            'pbs_substation_ga_main_logo_overlay': None,
+            'pbs_substation_ga_main_drm_fairplay_license_url': None,
+            'pbs_substation_ga_main_drm_widevine_license_url': None,
+            'pbs_substation_ga_main_drm_playready_license_url': None,
+            'pbs_substation_ga_main_hls_widevine_license_url': None,
+            'pbs_substation_ga_main_hls_playready_license_url': None,
+            'pbs_substation_ga_main_feed_image': None,
+            'pbs_substation_ga_main_digital_channel': None,
+            'pbs_substation_ga_main_analog_channel': None,
+            'pbs_substation_ga_main_short_name': None,
+            'pbs_substation_ga_main_full_name': None,
+            'pbs_substation_ga_main_timezone': None,
+            'pbs_substation_ga_local_subchannel_1': None,
+            'pbs_substation_ga_local_subchannel_1_feed_cid': None,
+            'pbs_substation_ga_local_subchannel_1_drm_hls_url': None,
+            'pbs_substation_ga_local_subchannel_1_non_drm_url': None,
+            'pbs_substation_ga_local_subchannel_1_drm_dash_url': None,
+            'pbs_substation_ga_local_subchannel_1_logo_overlay': None,
+            'pbs_substation_ga_local_subchannel_1_drm_fairplay_license_url': None,
+            'pbs_substation_ga_local_subchannel_1_drm_widevine_license_url': None,
+            'pbs_substation_ga_local_subchannel_1_drm_playready_license_url': None,
+            'pbs_substation_ga_local_subchannel_1_hls_widevine_license_url': None,
+            'pbs_substation_ga_local_subchannel_1_hls_playready_license_url': None,
+            'pbs_substation_ga_local_subchannel_1_feed_image': None,
+            'pbs_substation_ga_local_subchannel_1_digital_channel': None,
+            'pbs_substation_ga_local_subchannel_1_analog_channel': None,
+            'pbs_substation_ga_local_subchannel_1_short_name': None,
+            'pbs_substation_ga_local_subchannel_1_full_name': None,
+            'pbs_substation_ga_local_subchannel_1_timezone': None,
+            'pbs_substation_ga_local_subchannel_2': None,
+            'pbs_substation_ga_local_subchannel_2_feed_cid': None,
+            'pbs_substation_ga_local_subchannel_2_drm_hls_url': None,
+            'pbs_substation_ga_local_subchannel_2_non_drm_url': None,
+            'pbs_substation_ga_local_subchannel_2_drm_dash_url': None,
+            'pbs_substation_ga_local_subchannel_2_logo_overlay': None,
+            'pbs_substation_ga_local_subchannel_2_drm_fairplay_license_url': None,
+            'pbs_substation_ga_local_subchannel_2_drm_widevine_license_url': None,
+            'pbs_substation_ga_local_subchannel_2_drm_playready_license_url': None,
+            'pbs_substation_ga_local_subchannel_2_hls_widevine_license_url': None,
+            'pbs_substation_ga_local_subchannel_2_hls_playready_license_url': None,
+            'pbs_substation_ga_local_subchannel_2_feed_image': None,
+            'pbs_substation_ga_local_subchannel_2_digital_channel': None,
+            'pbs_substation_ga_local_subchannel_2_analog_channel': None,
+            'pbs_substation_ga_local_subchannel_2_short_name': None,
+            'pbs_substation_ga_local_subchannel_2_full_name': None,
+            'pbs_substation_ga_local_subchannel_2_timezone': None,
+            'pbs_substation_ga_create': None,
+            'pbs_substation_ga_create_feed_cid': None,
+            'pbs_substation_ga_create_drm_hls_url': None,
+            'pbs_substation_ga_create_non_drm_url': None,
+            'pbs_substation_ga_create_drm_dash_url': None,
+            'pbs_substation_ga_create_logo_overlay': None,
+            'pbs_substation_ga_create_drm_fairplay_license_url': None,
+            'pbs_substation_ga_create_drm_widevine_license_url': None,
+            'pbs_substation_ga_create_drm_playready_license_url': None,
+            'pbs_substation_ga_create_hls_widevine_license_url': None,
+            'pbs_substation_ga_create_hls_playready_license_url': None,
+            'pbs_substation_ga_create_feed_image': None,
+            'pbs_substation_ga_create_digital_channel': None,
+            'pbs_substation_ga_create_analog_channel': None,
+            'pbs_substation_ga_create_short_name': None,
+            'pbs_substation_ga_create_full_name': None,
+            'pbs_substation_ga_create_timezone': None,
+            'pbs_substation_ga_world': None,
+            'pbs_substation_ga_world_feed_cid': None,
+            'pbs_substation_ga_world_drm_hls_url': None,
+            'pbs_substation_ga_world_non_drm_url': None,
+            'pbs_substation_ga_world_drm_dash_url': None,
+            'pbs_substation_ga_world_logo_overlay': None,
+            'pbs_substation_ga_world_drm_fairplay_license_url': None,
+            'pbs_substation_ga_world_drm_widevine_license_url': None,
+            'pbs_substation_ga_world_drm_playready_license_url': None,
+            'pbs_substation_ga_world_hls_widevine_license_url': None,
+            'pbs_substation_ga_world_hls_playready_license_url': None,
+            'pbs_substation_ga_world_feed_image': None,
+            'pbs_substation_ga_world_digital_channel': None,
+            'pbs_substation_ga_world_analog_channel': None,
+            'pbs_substation_ga_world_short_name': None,
+            'pbs_substation_ga_world_full_name': None,
+            'pbs_substation_ga_world_timezone': None,
+            'pbs_substation_ga_fnx': None,
+            'pbs_substation_ga_fnx_feed_cid': None,
+            'pbs_substation_ga_fnx_drm_hls_url': None,
+            'pbs_substation_ga_fnx_non_drm_url': None,
+            'pbs_substation_ga_fnx_drm_dash_url': None,
+            'pbs_substation_ga_fnx_logo_overlay': None,
+            'pbs_substation_ga_fnx_drm_fairplay_license_url': None,
+            'pbs_substation_ga_fnx_drm_widevine_license_url': None,
+            'pbs_substation_ga_fnx_drm_playready_license_url': None,
+            'pbs_substation_ga_fnx_hls_widevine_license_url': None,
+            'pbs_substation_ga_fnx_hls_playready_license_url': None,
+            'pbs_substation_ga_fnx_feed_image': None,
+            'pbs_substation_ga_fnx_digital_channel': None,
+            'pbs_substation_ga_fnx_analog_channel': None,
+            'pbs_substation_ga_fnx_short_name': None,
+            'pbs_substation_ga_fnx_full_name': None,
+            'pbs_substation_ga_fnx_timezone': None,
+            'pbs_substation_ga_nhk': None,
+            'pbs_substation_ga_nhk_feed_cid': None,
+            'pbs_substation_ga_nhk_drm_hls_url': None,
+            'pbs_substation_ga_nhk_non_drm_url': None,
+            'pbs_substation_ga_nhk_drm_dash_url': None,
+            'pbs_substation_ga_nhk_logo_overlay': None,
+            'pbs_substation_ga_nhk_drm_fairplay_license_url': None,
+            'pbs_substation_ga_nhk_drm_widevine_license_url': None,
+            'pbs_substation_ga_nhk_drm_playready_license_url': None,
+            'pbs_substation_ga_nhk_hls_widevine_license_url': None,
+            'pbs_substation_ga_nhk_hls_playready_license_url': None,
+            'pbs_substation_ga_nhk_feed_image': None,
+            'pbs_substation_ga_nhk_digital_channel': None,
+            'pbs_substation_ga_nhk_analog_channel': None,
+            'pbs_substation_ga_nhk_short_name': None,
+            'pbs_substation_ga_nhk_full_name': None,
+            'pbs_substation_ga_nhk_timezone': None,
+            'pbs_substation_kids_main': None,
+            'pbs_substation_kids_main_feed_cid': None,
+            'pbs_substation_kids_main_drm_hls_url': None,
+            'pbs_substation_kids_main_non_drm_url': None,
+            'pbs_substation_kids_main_drm_dash_url': None,
+            'pbs_substation_kids_main_logo_overlay': None,
+            'pbs_substation_kids_main_drm_fairplay_license_url': None,
+            'pbs_substation_kids_main_drm_widevine_license_url': None,
+            'pbs_substation_kids_main_drm_playready_license_url': None,
+            'pbs_substation_kids_main_hls_widevine_license_url': None,
+            'pbs_substation_kids_main_hls_playready_license_url': None,
+            'pbs_substation_kids_main_feed_image': None,
+            'pbs_substation_kids_main_digital_channel': None,
+            'pbs_substation_kids_main_analog_channel': None,
+            'pbs_substation_kids_main_short_name': None,
+            'pbs_substation_kids_main_full_name': None,
+            'pbs_substation_kids_main_timezone': None
         }]
 
     return data
@@ -16684,8 +17733,7 @@ def inspect_mpeg_ts_stream(ts_bytes, max_packets=1000):
     }
 
 # Used to loop through a URL that might error
-def fetch_url(url, retries, delay):
-    timeout_duration = 120
+def fetch_url(url, retries, delay, timeout_duration):
 
     for attempt in range(retries):
         try:
@@ -17253,6 +18301,7 @@ csv_playlistmanager_parents = "PlaylistManager_Parents.csv"
 csv_playlistmanager_child_to_parent = "PlaylistManager_ChildToParent.csv"
 csv_playlistmanager_streaming_stations = "PlaylistManager_StreamingStations.csv"
 csv_playlistmanager_station_mappings = "PlaylistManager_StationMappings.csv"
+csv_playlistmanager_playlist_internal_pbs = "PlaylistManager_PlaylistInternalPBS.csv"
 csv_files = [
     csv_settings,
     csv_streaming_services,
@@ -17271,7 +18320,8 @@ csv_files = [
     csv_playlistmanager_parents,
     csv_playlistmanager_child_to_parent,
     csv_playlistmanager_streaming_stations,
-    csv_playlistmanager_station_mappings
+    csv_playlistmanager_station_mappings,
+    csv_playlistmanager_playlist_internal_pbs
 ]
 program_files = csv_files + [log_filename]
 gen_upgrade_flag = None
