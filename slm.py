@@ -34,16 +34,16 @@ from youtubesearchpython import Video as get_youtube_video_info
 import curl_cffi
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.03.05.2017"
+slm_version = "v2026.03.17.1101"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.03.16.1919"
+    slm_version = "v2026.03.17.1101"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -8432,7 +8432,8 @@ def get_pbs_stream_data(run_pbs_scrape_flag, run_final_pbs_stations):
                 pbs_stations_to_gracenote_lookup = {pbs_station_to_gracenote['channel_id']: pbs_station_to_gracenote['gracenote_id'] for pbs_station_to_gracenote in pbs_stations_to_gracenote}
 
             pbs_stations_ignore = [
-                'KOTH'
+                'KOTH',
+                'KWSU'
             ]
 
             base_pbs_stations_filtered = [base_pbs_station_item for base_pbs_station_item in base_pbs_stations if base_pbs_station_item['pbs_station_attribute_call_sign'] not in pbs_stations_ignore]
