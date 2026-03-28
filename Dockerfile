@@ -12,10 +12,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js (LTS) and npm, locked to a specific version
-RUN curl -fsSL https://deb.nodesource.com/node_24.x/pool/main/n/nodejs/nodejs_24.13.0-1nodesource1_amd64.deb -o node.deb \
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get update \
-    && apt-get install -y ./node.deb \
-    && rm node.deb \
+    && apt-get install -y nodejs=24.13.0-1nodesource1 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
