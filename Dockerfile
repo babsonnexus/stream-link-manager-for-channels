@@ -11,12 +11,13 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js (LTS) and npm
-RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
-    apt-get update && \
-    apt-get install -y nodejs && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install Node.js (LTS) and npm, locked to a specific version
+RUN curl -fsSL https://deb.nodesource.com/node_24.x/pool/main/n/nodejs/nodejs_24.13.0-1nodesource1_amd64.deb -o node.deb \
+    && apt-get update \
+    && apt-get install -y ./node.deb \
+    && rm node.deb \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Explicitly allow Node to read files and spawn processes
 ENV NODE_OPTIONS="--allow-fs-read=* --allow-child-process --no-warnings"
