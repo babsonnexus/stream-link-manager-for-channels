@@ -38,12 +38,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.03.17.1101"
+slm_version = "v2026.03.29.1338"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.03.17.1101"
+    slm_version = "v2026.03.29.1338"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -8622,11 +8622,27 @@ def get_combined_m3us():
 
     print(f"{current_time()} Starting combination of playlists...")
 
+    base_stations = read_data(csv_playlistmanager_combined_m3us)
+
     for playlist in playlists:
         response = None
-        response = fetch_url(playlist['m3u_url'], 3, 10, 300)
+
+        if playlist['m3u_active'] == 'On':
+            response = fetch_url(playlist['m3u_url'], 3, 10, 300)
+
         if response:
             combined_m3us.extend(parse_m3u(playlist['m3u_id'], playlist['m3u_name'], response))
+
+        else:
+
+            if playlist['m3u_active'] == 'On':
+                notification_add(f"{current_time()} WARNING: Playlist '{playlist['m3u_name']}' did not respond. Previously added child stations have been maintained.")
+            else:
+                notification_add(f"{current_time()} INFO: Playlist '{playlist['m3u_name']}' is inactive. Previously added child stations have been maintained, although they are not visible for modification.")
+
+            for base_station in base_stations:
+                if base_station['m3u_id'] == playlist['m3u_id']:
+                    combined_m3us.append(base_station)
 
     id_field = "station_playlist"
     update_rows(csv_playlistmanager_combined_m3us, combined_m3us, id_field, True)
@@ -11682,18 +11698,25 @@ def run_query(query_name):
                         group_id = item["Group ID"]
                         season_episode = item["Season Episode"]
 
+                        if item["File Size"] in [None, '', 0, '0', 'null']:
+                            item_file_size = 0
+                        else:
+                            item_file_size = item["File Size"]
+
                         if group_id != "movies" and not group_id.startswith("videos"):
+
                             key = (group_id, season_episode)
                             if key not in dvr_files_data_processed_grouped:
                                 dvr_files_data_processed_grouped[key] = {
                                     "File ID": item["File ID"],
                                     "Group ID": group_id,
-                                    "File Size": item["File Size"],
+                                    "File Size": item_file_size,
                                     "Duration_sum": item["Duration"],
                                     "Duration_count": 1
                                 }
+
                             else:
-                                dvr_files_data_processed_grouped[key]["File Size"] += item["File Size"]
+                                dvr_files_data_processed_grouped[key]["File Size"] += item_file_size
                                 dvr_files_data_processed_grouped[key]["Duration_sum"] += item["Duration"]
                                 dvr_files_data_processed_grouped[key]["Duration_count"] += 1
 
@@ -11702,7 +11725,7 @@ def run_query(query_name):
                             dvr_files_data_processed_grouped[key] = {
                                 "File ID": item["File ID"],
                                 "Group ID": group_id,
-                                "File Size": item["File Size"],
+                                "File Size": item_file_size,
                                 "Duration_sum": item["Duration"],
                                 "Duration_count": 1
                             }
@@ -13452,10 +13475,10 @@ def get_new_episodes(entry_id_filter, generate_offers_flag, include_disabled_fla
                                 notification_add(f"    For Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}', added '{field_override_episode_title}'")
 
                     else:
-                        notification_add(f"    ERROR: No videos found online for the Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}.")
+                        notification_add(f"    ERROR: No videos found online for the Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}'.")
 
                 else:
-                    notification_add(f"    WARNING: URL needed for sync'ing is missing for the Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}.")
+                    notification_add(f"    WARNING: URL needed for sync'ing is missing for the Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}'.")
 
         if check_feed_video_bookmarks:
 
