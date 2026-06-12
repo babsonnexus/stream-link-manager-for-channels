@@ -34,7 +34,7 @@ from youtubesearchpython import Video as get_youtube_video_info
 import curl_cffi
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -43,7 +43,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.03.29.1338"
+    slm_version = "v2026.06.12.1701"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -433,12 +433,60 @@ def webpage_manage_programs():
                                 except (ValueError, SyntaxError):
                                     print(f"{current_time()} ERROR: For 'Feed Items', unable to convert 'Offers List' to a list.")
 
-                        if feed_items:
-                            program_search_results_prior = feed_items
+                        combined_feed_items = []
+                        feed_items_lookup = {}
+
+                        for item in feed_items:
+                            feed_item_entry_id = item.get("entry_id")
+                            if feed_item_entry_id == "videos_from_channel":
+                                combined_feed_items.append(item)
+
+                            elif feed_item_entry_id not in feed_items_lookup:
+
+                                feed_items_lookup[feed_item_entry_id] = item.copy()
+                                combined_feed_items.append(feed_items_lookup[feed_item_entry_id])
+                                if feed_items_lookup[feed_item_entry_id].get("offers_list") is None:
+                                    feed_items_lookup[feed_item_entry_id]["offers_list"] = []
+
+                            else:
+
+                                existing_offers = feed_items_lookup[feed_item_entry_id].get("offers_list", [])
+
+                                if isinstance(existing_offers, str):
+                                    try:
+                                        existing_offers = ast.literal_eval(existing_offers)
+                                    except (ValueError, SyntaxError):
+                                        existing_offers = [existing_offers]
+
+                                current_offers = item.get("offers_list", [])
+                                if isinstance(current_offers, str):
+                                    try:
+                                        current_offers = ast.literal_eval(current_offers)
+                                    except (ValueError, SyntaxError):
+                                        current_offers = [current_offers]
+
+                                if existing_offers is None:
+                                    existing_offers = []
+                                if current_offers is None:
+                                    current_offers = []
+
+                                if not isinstance(existing_offers, list):
+                                    existing_offers = [existing_offers]
+                                if not isinstance(current_offers, list):
+                                    current_offers = [current_offers]
+
+                                merged_offers = existing_offers + current_offers
+                                feed_items_lookup[feed_item_entry_id]["offers_list"] = list(dict.fromkeys(merged_offers))
+
+                        if combined_feed_items:
+                            program_search_results_prior = combined_feed_items
+
                             if manage_programs_message not in [None, '']:
                                 manage_programs_message += f"\n"
                             manage_programs_message += f"{current_time()} INFO: Displaying feed results..."
+
                         else:
+
                             if manage_programs_message not in [None, '']:
                                 manage_programs_message += f"\n"
                             manage_programs_message += f"{current_time()} INFO: Your feed is currently empty. Please check again later!"
@@ -11595,16 +11643,26 @@ def run_query(query_name):
         channels_programs_data = []
 
         if channels_movies_data:
+            unique_movie_program_ids = set()
+
             for item in channels_movies_data:
-                channels_programs_data.append(
-                    {
-                        "program_type": "MOVIE",
-                        "program_id": item.get("ID", ''),
-                        "program_title": item.get("Title", ''),
-                        "program_year": '' if item.get("Release Year", 0) == 0 else item.get("Release Year", ''),
-                        "program_labels": item.get("Labels", '')
-                    }
-                )
+
+                unique_movie_program_id = item.get("Program ID", '')
+
+                if unique_movie_program_id not in unique_movie_program_ids:
+
+                    if unique_movie_program_id not in (None, ''):
+                        unique_movie_program_ids.add(unique_movie_program_id)
+
+                    channels_programs_data.append(
+                        {
+                            "program_type": "MOVIE",
+                            "program_id": item.get("ID", ''),
+                            "program_title": item.get("Title", ''),
+                            "program_year": '' if item.get("Release Year", 0) == 0 else item.get("Release Year", ''),
+                            "program_labels": item.get("Labels", '')
+                        }
+                    )
 
         if channels_shows_data:
             for item in channels_shows_data:
@@ -18167,11 +18225,21 @@ def get_channels_dvr_json(selection):
                         dvr_files_episode_number = None
                         dvr_files_season_number = result.get("Airing", {}).get("SeasonNumber", '')
                         dvr_files_episode_number = result.get("Airing", {}).get("EpisodeNumber", '')
+                        dvr_files_categories = {}
+                        dvr_files_categories = result.get("Airing", {}).get("Categories", {})
+                        dvr_files_programid = result.get("Airing", {}).get("ProgramID", '')
 
                         if dvr_files_season_number not in [None, ''] and dvr_files_episode_number not in [None, '']:
                             dvr_files_season_epsiode = f"S{dvr_files_season_number}E{dvr_files_episode_number}"
+
                         else:
-                            dvr_files_season_epsiode = f"S00E00"
+                            if ( 
+                                ( any(term in dvr_files_categories for term in ['Sports', 'sports', 'Sports Event', 'Sports event', 'sports event', 'sports Event']) ) and
+                                ( dvr_files_programid not in [None, 'None', '', '0'] )
+                            ):
+                                dvr_files_season_epsiode = dvr_files_programid
+                            else:
+                                dvr_files_season_epsiode = f"S00E00"
 
                         results_library.append({
                             "File ID": dvr_files_id,
