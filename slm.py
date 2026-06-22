@@ -43,7 +43,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.06.22.1617"
+    slm_version = "v2026.06.22.1910"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -220,6 +220,7 @@ def webpage_manage_programs():
             'program_add_manual',
             'program_add_import_playlist',
             'slm_manage_programs_search_results_save',
+            'slm_manage_programs_search_results_hide',
             'program_feed_update',
             'program_feed_view'
         ]:
@@ -589,7 +590,8 @@ def webpage_manage_programs():
             elif manage_programs_action in [
                 'program_add_manual',
                 'program_add_import_playlist',
-                'slm_manage_programs_search_results_save'
+                'slm_manage_programs_search_results_save',
+                'slm_manage_programs_search_results_hide'
             ]:
 
                 program_search_results_base_submissions = []
@@ -670,7 +672,11 @@ def webpage_manage_programs():
                                 else:
                                     manage_programs_message = f"{current_time()} ERROR: No videos found in entered 'Video Playlist'."
 
-                elif manage_programs_action == 'slm_manage_programs_search_results_save':
+                elif manage_programs_action in [
+                    'slm_manage_programs_search_results_save',
+                    'slm_manage_programs_search_results_hide'
+                ]:
+                    
                     program_search_results_entry_id_inputs = {}
                     program_search_results_title_inputs = {}
                     program_search_results_release_year_inputs = {}
@@ -753,6 +759,8 @@ def webpage_manage_programs():
                         program_search_results_labels_input = program_search_results_labels_inputs.get(row, [])
                         program_search_results_status_input = program_search_results_status_inputs.get(row, 'watched')
                         program_search_results_action_input = program_search_results_action_inputs.get(row)
+                        if manage_programs_action == 'slm_manage_programs_search_results_hide' and program_search_results_action_input == 'none':
+                            program_search_results_action_input = 'hide'
 
                         program_search_results_base_submissions.append({
                             'program_search_results_entry_id_input': program_search_results_entry_id_input,
