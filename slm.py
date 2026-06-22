@@ -26,10 +26,10 @@ from jinja2 import TemplateNotFound
 import yt_dlp
 import streamlink
 from collections import OrderedDict
-from youtubesearchpython import VideosSearch as youtube_search_videos
-from youtubesearchpython import ChannelsSearch as youtube_search_channels
-from youtubesearchpython import Playlist as get_youtube_playlist_info
-from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtube_channel_info
+# from youtubesearchpython import VideosSearch as youtube_search_videos
+# from youtubesearchpython import ChannelsSearch as youtube_search_channels
+# from youtubesearchpython import Playlist as get_youtube_playlist_info
+# from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtube_channel_info
 from youtubesearchpython import Video as get_youtube_video_info
 import curl_cffi
 
@@ -43,7 +43,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.06.12.1701"
+    slm_version = "v2026.06.22.1617"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -3523,6 +3523,29 @@ def parse_duration_to_seconds(duration_str):
 
     return total_seconds
 
+# Convert a numeric duration in seconds into the expected string format (e.g. 1887 -> "31 minutes 27 seconds")
+def format_duration_to_string(duration_seconds):
+    if duration_seconds is None:
+        return 'Unknown'
+
+    try:
+        duration_seconds = int(float(duration_seconds))
+    except Exception:
+        return 'Unknown'
+
+    hours, remainder = divmod(duration_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    parts = []
+    if hours:
+        parts.append(f"{hours} hour" + ("s" if hours != 1 else ""))
+    if minutes:
+        parts.append(f"{minutes} minute" + ("s" if minutes != 1 else ""))
+    if seconds or not parts:
+        parts.append(f"{seconds} second" + ("s" if seconds != 1 else ""))
+
+    return " ".join(parts)
+
 # Checks a video name (season_episode) to see if it is unique within the Video Group
 def check_video_name_unique(bookmarks_statuses, entry_id, video_name):
     season_episode_exists = False
@@ -3937,40 +3960,180 @@ def search_video_providers(providers, query, search_type, num_results, language_
     default_poster_url = 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Missing_barnstar.jpg'
     extracted_data = []
     message = ''
-    
-    if int(num_results) > 100:
-        num_results = '100'
+
+    if search_type.startswith("videos"):
+        object_type = "VIDEO"
+    elif search_type == "channels":
+        object_type = "CHANNEL"
+
+    # NOTE: Searching for 'Channels' in the 'yt_dlp' method is currently ignoring all limitations and will just max out
+    try:
+        num_results = int(num_results)
+    except Exception:
+        num_results = 100
 
     for provider in providers:
         base_results = {}
         base_info = {}
-        
+
         if provider == 'youtube':
             offers_list = ["https://images.justwatch.com/icon/59562423/s100/youtube.png"]
 
-            try:
-                if search_type.startswith("videos"):
-                    object_type = "VIDEO"
+            # NOTE: 'youtube_search_python' is no longer completely functional, so disabling until adding 'tubescrape'
+            # try:
+            #     if search_type.startswith("videos"):
                     
-                    if search_type == "videos":
-                        base_results = youtube_search_videos(query, limit=int(num_results), language=language_code, region=country_code).result()
+            #         if search_type == "videos":
+            #             base_results = youtube_search_videos(query, limit=int(num_results), language=language_code, region=country_code).result()
                     
-                    elif search_type == "videos_from_playlist":
-                        base_results = get_youtube_playlist_info(query)
-                        if base_results:
-                            base_info = base_results.info.get('info', {})
+            #         elif search_type == "videos_from_playlist":
+            #             base_results = get_youtube_playlist_info(query)
+            #             if base_results:
+            #                 base_info = base_results.info.get('info', {})
 
-                    elif search_type == "videos_from_channel":
-                        base_results = get_youtube_playlist_info(get_youtube_channel_info(query))
+            #         elif search_type == "videos_from_channel":
+            #             base_results = get_youtube_playlist_info(get_youtube_channel_info(query))
 
-                elif search_type == "channels":
-                    object_type = "CHANNEL"
-                    base_results = youtube_search_channels(query, limit=int(num_results), language=language_code, region=country_code).result()
+            #     elif search_type == "channels":
+            #         base_results = youtube_search_channels(query, limit=int(num_results), language=language_code, region=country_code).result()
             
-            except Exception as e:
-                message = f"{current_time()} ERROR: Retrieving videos from YouTube. Returned: {str(e)}"
+            # except Exception as e:
+            #     message = f"{current_time()} ERROR: Retrieving videos from YouTube. Returned: {str(e)}"
+
+            # In case the default method fails, fall back to 'yt_dlp'
+            if base_results in [{}, [], '', None]:
+                print(f"{current_time()} WARNING: Default video search helper returned no base results. Attempting backup with helper 'yt_dlp'...")
+
+                info_dict = {}
+                info_dict_entries = []
+                waste_formats = {}
+
+                if search_type in ["videos_from_playlist", "videos_from_channel"]:
+
+                    if search_type == "videos_from_channel":
+
+                        if query.startswith('UC'):
+                            query = f"https://www.youtube.com/playlist?list=UU{query[2:]}"
+                        else:
+                            query = f"https://www.youtube.com/channel/{query}"
+
+                    print(f"{current_time()} INFO: Extracting info from '{query}'...")
+
+                elif search_type in ["videos", "channels"]:
+
+                    if search_type == "videos":
+                        query = f"ytsearch{int(num_results)}:{query}"
+                    
+                    elif search_type == "channels":
+                        encoded_query = urllib.parse.quote(query)
+                        query = f"https://www.youtube.com/results?search_query={encoded_query}&sp=EgIQAg%253D%253D"
+
+                    print(f"{current_time()} INFO: Searching YouTube for {search_type} using '{query}'...")
+
+                for youtube_player_client in youtube_player_clients:
+
+                    ydl_opts = {
+                        "skip_download": True,                                  # Do not download, only getting lists
+                        "extract_flat": True,                                   # Get the basic data for faster processing, not all data
+                        'verbose': True,                                        # Get verbose output
+                        'no_warnings': False,                                   # Show warnings
+                        'retries': 0,                                           # Retry up to 0 times in case of failure
+                        'logger': YTDLLogger(),                                 # Pass the custom logger
+                        'js_runtimes': {
+                            'node': {
+                                'exe': 'node'                                   # Use Node.js for solving Javascript Challenges
+                            }
+                        },
+                        'extractor_args': {                                     # Set extractor arguments for specific websites
+                            'youtube': {
+                                'player_client': [youtube_player_client],       # Force player API client to specific client(s) in order to speed up finding a compatible format
+                                'formats': ['missing_pot'],                     # Stop testing for PO token
+                                'player_skip': ['configs', 'webpage'],          # Skip player configuration, webpage
+                                'skip': ['dash', 'translated_subs'],            # Skip DASH manifests and translated subtitles
+                            }
+                        }
+                    }
+
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        try:
+                            info_dict, waste_formats = parse_online_video_info_dict_formats(ydl, query, None)
+
+                        except Exception as error:
+                            if search_type in ["videos_from_playlist", "videos_from_channel"]:
+                                print(f"{current_time()} ERROR: While processing '{query}', received: '{error}'.")
+                            elif search_type in ["videos", "channels"]:
+                                print(f"{current_time()} ERROR: While searching YouTube for {search_type} using '{query}', received: '{error}'.")
+
+                    if info_dict:
+
+                        try:
+                            base_info = info_dict.get('info', {}) or info_dict
+                        except Exception:
+                            base_info = info_dict
+
+                        info_dict_entries = info_dict.get('entries', [])
+
+                        if info_dict_entries:
+                            if not isinstance(info_dict_entries, list):
+                                info_dict_entries = list(info_dict_entries)
+
+                            transformed_results = []
+                            for info_dict_entry in info_dict_entries:
+                                transformed_title = None
+                                transformed_link = None
+                                transformed_channel = None
+                                transformed_descriptionSnippet = []
+                                transformed_thumbnails = []
+                                transformed_accessibility = None
+                                transformed_subscribers = None
+
+                                transformed_title = info_dict_entry.get('title', 'Unknown Title')
+
+                                transformed_link = info_dict_entry.get('url', info_dict_entry.get('webpage_url', 'http://url_not_found'))
+
+                                if search_type == 'videos_from_channel':
+                                    transformed_channel= base_info.get('channel') or base_info.get('uploader') or info_dict_entry.get('uploader') or info_dict_entry.get('channel') or 'YouTube'
+
+                                else:
+                                    transformed_channel = info_dict_entry.get('channel') or info_dict_entry.get('uploader', 'YouTube')
+
+                                transformed_descriptionSnippet_base = info_dict_entry.get('description', '')
+                                transformed_descriptionSnippet = [{'text': transformed_descriptionSnippet_base}] if transformed_descriptionSnippet_base else []
+
+                                transformed_thumbnails = info_dict_entry.get('thumbnails', [])
+
+                                if search_type.startswith('videos'):
+                                    transformed_accessibility_base = info_dict_entry.get('duration')
+                                    transformed_accessibility = {'duration': format_duration_to_string(transformed_accessibility_base)}
+
+                                transformed_subscribers = info_dict_entry.get('channel_follower_count', 'Unknown subscribers')
+                                if isinstance(transformed_subscribers, int):
+                                    transformed_subscribers = f"{transformed_subscribers:,} Subscribers"
+
+                                transformed_entry = {
+                                        'title': transformed_title,
+                                        'link': transformed_link,
+                                        'channel': {'name': transformed_channel},
+                                        'descriptionSnippet': transformed_descriptionSnippet,
+                                        'thumbnails': transformed_thumbnails,
+                                        'accessibility': transformed_accessibility,
+                                        'subscribers': transformed_subscribers
+                                    }
+
+                                transformed_results.append(transformed_entry)
+                            
+                            if search_type in ["videos", "channels"]:
+                                base_results = {'result': transformed_results}
+                            elif search_type.startswith("videos_"):
+                                base_results = type('obj', (object,), {'videos': transformed_results})()
+
+                            break
+
+                else:
+                    message = f"{current_time()} ERROR: Unable to find YouTube videos using all methods."
 
             if base_results:
+
                 if search_type in ["videos", "channels"]:
                     processed_results = base_results.get('result', [])
                 elif search_type.startswith("videos_"):
@@ -3997,13 +4160,34 @@ def search_video_providers(providers, query, search_type, num_results, language_
                         poster = max(thumbnails, key=lambda t: t.get('width', 0)).get('url', default_poster_url)
                     else:
                         poster = default_poster_url
-                    if search_type == "channels":
+                    if not poster.startswith('http'):
                         poster = f"https:{poster}"
                     
                     if search_type == "channels":
                         score = f"Subscribe"
                     elif search_type == "videos_from_playlist":
-                        score = base_info.get('title', 'Unknown Playlist Name')
+                        playlist_name = None
+                        try:
+                            if isinstance(base_info, dict):
+                                playlist_name = (
+                                    base_info.get('title')
+                                    or base_info.get('playlist_title')
+                                    or base_info.get('fulltitle')
+                                    or base_info.get('name')
+                                    or base_info.get('playlist')
+                                )
+                            else:
+                                playlist_name = (
+                                    getattr(base_info, 'title', None)
+                                    or getattr(base_info, 'playlist_title', None)
+                                    or getattr(base_info, 'fulltitle', None)
+                                    or getattr(base_info, 'name', None)
+                                    or getattr(base_info, 'playlist', None)
+                                )
+                        except Exception:
+                            playlist_name = None
+
+                        score = playlist_name or 'Unknown Playlist Name'
                     elif search_type in ["videos", "videos_from_channel"]:
                         score = f"Duration: {processed_result.get('accessibility', {}).get('duration', 'Unknown')}"
 
@@ -5661,6 +5845,7 @@ def get_video_metadata(url):
 
         if video_id:
             try:
+                # NOTE: THIS NEEDS TO BE REPLACED WITH NEW METHOD
                 info_dict = get_youtube_video_info.getInfo(video_id)
             except Exception as error:
                 print(f"{current_time()} ERROR: While processing {url} using secondary method, error was: {error}")
@@ -10604,8 +10789,6 @@ def stream_video(url):
 # Gets the manifest needed for the live stream or static video
 def get_online_video(url, parse_type):
     print(f"{current_time()} INFO: Starting to retrieve manifest for {url}.")
-
-    youtube_player_clients = ['web_safari', 'web', 'ios']
 
     m3u8_url = None
     m3u8_protocol = None
@@ -18672,6 +18855,11 @@ special_actions_default = [
 ]
 video_providers = [
     "youtube"
+]
+youtube_player_clients = [
+    'web_safari',
+    'web',
+    'ios'
 ]
 
 ### [SLM] Search / Add / Modify Programs
