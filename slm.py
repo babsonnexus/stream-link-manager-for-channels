@@ -43,7 +43,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.06.22.1910"
+    slm_version = "v2026.06.23.1728"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -13682,7 +13682,6 @@ def get_new_episodes(entry_id_filter, generate_offers_flag, include_disabled_fla
                                 field_override_duration = None
                                 field_manual_order = None
 
-                                bookmarks_statuses = read_data(csv_bookmarks_status)
                                 field_season_episode = check_video_name_unique(bookmarks_statuses, video_bookmark['entry_id'], f"{playlist_video['title']} ({playlist_video['release_year']})")
 
                                 if import_metadata_options_flag:
