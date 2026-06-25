@@ -34,16 +34,16 @@ from youtubesearchpython import Video as get_youtube_video_info
 import curl_cffi
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.03.29.1338"
+slm_version = "v2026.06.25.1156"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.06.23.1728"
+    slm_version = "v2026.06.25.1156"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
