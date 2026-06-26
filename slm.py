@@ -26,15 +26,11 @@ from jinja2 import TemplateNotFound
 import yt_dlp
 import streamlink
 from collections import OrderedDict
-# from youtubesearchpython import VideosSearch as youtube_search_videos
-# from youtubesearchpython import ChannelsSearch as youtube_search_channels
-# from youtubesearchpython import Playlist as get_youtube_playlist_info
-# from youtubesearchpython.core.utils import playlist_from_channel_id as get_youtube_channel_info
-from youtubesearchpython import Video as get_youtube_video_info
+import tubescrape
 import curl_cffi
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -43,7 +39,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.06.25.1156"
+    slm_version = "v2026.06.26.1558"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -3987,33 +3983,110 @@ def search_video_providers(providers, query, search_type, num_results, language_
         if provider == 'youtube':
             offers_list = ["https://images.justwatch.com/icon/59562423/s100/youtube.png"]
 
-            # NOTE: 'youtube_search_python' is no longer completely functional, so disabling until adding 'tubescrape'
-            # try:
-            #     if search_type.startswith("videos"):
-                    
-            #         if search_type == "videos":
-            #             base_results = youtube_search_videos(query, limit=int(num_results), language=language_code, region=country_code).result()
-                    
-            #         elif search_type == "videos_from_playlist":
-            #             base_results = get_youtube_playlist_info(query)
-            #             if base_results:
-            #                 base_info = base_results.info.get('info', {})
+            tubescape_opts = {
+                'query': query
+            }
 
-            #         elif search_type == "videos_from_channel":
-            #             base_results = get_youtube_playlist_info(get_youtube_channel_info(query))
+            try:
+                if search_type in ['videos', 'channels']:
+                    tubescape_opts['max_results'] = num_results
+                    tubescape_opts['type'] = search_type[:-1]
 
-            #     elif search_type == "channels":
-            #         base_results = youtube_search_channels(query, limit=int(num_results), language=language_code, region=country_code).result()
+                    # NOTE: Temporarily disabled because videos are maxing out at 20 and channels are not returning results
+                    base_results = {} # tubescrape.YouTube().search(**tubescape_opts)
+
+                elif search_type in ['videos_from_playlist', 'videos_from_channel']:
+
+                    if search_type == 'videos_from_playlist':
+                        # NOTE: Temporarily disabled because playlists are maxing out at 100 videos
+                        base_results = {} # tubescrape.YouTube().get_playlist(query, max_results=0)
+
+                    elif search_type == 'videos_from_channel':
+                        # NOTE: Temporarily disabled because channel name is missing from metadata
+                        base_results = {} # tubescrape.YouTube().get_channel_videos(query, max_results=0)
+                
+                tubescrape.YouTube().close()
+
+            except Exception as e:
+                message = f"{current_time()} ERROR: Retrieving videos from YouTube. Returned: {str(e)}"
+
+            info_dict = {}
+            info_dict_entries = []
+            transformed_results = []
             
-            # except Exception as e:
-            #     message = f"{current_time()} ERROR: Retrieving videos from YouTube. Returned: {str(e)}"
+            # Transform 'tubescaper' base results into old 'youtube-search-python' format
+            if base_results:
+                info_dict = base_results.to_dict()
 
+                if search_type in ['videos_from_playlist', 'videos_from_channel']:
+                    base_info = {
+                        'channel': info_dict.get('channel', info_dict.get('channel_id', 'Unknown Channel Name'))
+                    }
+
+                    if search_type == 'videos_from_playlist':
+                        base_info['playlist_id'] = info_dict.get('playlist_id', 'Unknown Playlist ID')
+                        base_info['playlist_title'] = info_dict.get('title', 'Unknown Playlist Title')
+
+                    elif search_type == 'videos_from_channel':
+                        base_info['channel_id']= info_dict.get('channel_id', '')
+
+                if search_type.startswith('video'):
+                    info_dict_entries = info_dict.get('videos', [])
+                elif search_type == 'channels':
+                    info_dict_entries = info_dict.get('channels', [])
+
+                if info_dict_entries:
+                    if not isinstance(info_dict_entries, list):
+                        info_dict_entries = list(info_dict_entries)
+
+                    for info_dict_entry in info_dict_entries:
+                        transformed_title = None
+                        transformed_link = None
+                        transformed_channel = None
+                        transformed_descriptionSnippet = []
+                        transformed_thumbnails = []
+                        transformed_accessibility = None
+                        transformed_subscribers = None
+
+                        transformed_title = info_dict_entry.get('title', 'Unknown Title')
+
+                        transformed_link = info_dict_entry.get('url', 'http://url_not_found')
+
+                        if search_type == 'videos_from_channel':
+                            transformed_channel = base_info.get('channel', 'Error Retrieving Channel Name')
+                        elif search_type == "channels":
+                            transformed_channel = info_dict_entry.get('title', 'Unknown Channel Name')
+                        else:
+                            transformed_channel = info_dict_entry.get('channel', info_dict_entry.get('channel_id', 'Unknown Channel Name'))
+
+                        transformed_descriptionSnippet_base = info_dict_entry.get('description_snippet', '')
+                        transformed_descriptionSnippet = [{'text': transformed_descriptionSnippet_base}] if transformed_descriptionSnippet_base else []
+
+                        transformed_thumbnails = info_dict_entry.get('thumbnails', [])
+
+                        if search_type.startswith('videos'):
+                            transformed_accessibility_base = info_dict_entry.get('duration_seconds')
+                            transformed_accessibility = {'duration': format_duration_to_string(transformed_accessibility_base)}
+
+                        transformed_subscribers = info_dict_entry.get('channel_follower_count', 'Unknown subscribers')
+                        if isinstance(transformed_subscribers, int):
+                            transformed_subscribers = f"{transformed_subscribers:,} Subscribers"
+
+                        transformed_entry = {
+                                'title': transformed_title,
+                                'link': transformed_link,
+                                'channel': {'name': transformed_channel},
+                                'descriptionSnippet': transformed_descriptionSnippet,
+                                'thumbnails': transformed_thumbnails,
+                                'accessibility': transformed_accessibility,
+                                'subscribers': transformed_subscribers
+                            }
+
+                        transformed_results.append(transformed_entry)
+            
             # In case the default method fails, fall back to 'yt_dlp'
-            if base_results in [{}, [], '', None]:
+            if not transformed_results:
                 print(f"{current_time()} WARNING: Default video search helper returned no base results. Attempting backup with helper 'yt_dlp'...")
-
-                info_dict = {}
-                info_dict_entries = []
                 waste_formats = {}
 
                 if search_type in ["videos_from_playlist", "videos_from_channel"]:
@@ -4085,7 +4158,6 @@ def search_video_providers(providers, query, search_type, num_results, language_
                             if not isinstance(info_dict_entries, list):
                                 info_dict_entries = list(info_dict_entries)
 
-                            transformed_results = []
                             for info_dict_entry in info_dict_entries:
                                 transformed_title = None
                                 transformed_link = None
@@ -4100,8 +4172,9 @@ def search_video_providers(providers, query, search_type, num_results, language_
                                 transformed_link = info_dict_entry.get('url', info_dict_entry.get('webpage_url', 'http://url_not_found'))
 
                                 if search_type == 'videos_from_channel':
-                                    transformed_channel= base_info.get('channel') or base_info.get('uploader') or info_dict_entry.get('uploader') or info_dict_entry.get('channel') or 'YouTube'
-
+                                    transformed_channel = base_info.get('channel') or base_info.get('uploader') or info_dict_entry.get('uploader') or info_dict_entry.get('channel') or 'YouTube'
+                                elif search_type == "channels":
+                                    transformed_channel = info_dict_entry.get('uploader_id', 'Unknown Channel ID')
                                 else:
                                     transformed_channel = info_dict_entry.get('channel') or info_dict_entry.get('uploader', 'YouTube')
 
@@ -4129,16 +4202,21 @@ def search_video_providers(providers, query, search_type, num_results, language_
                                     }
 
                                 transformed_results.append(transformed_entry)
-                            
-                            if search_type in ["videos", "channels"]:
-                                base_results = {'result': transformed_results}
-                            elif search_type.startswith("videos_"):
-                                base_results = type('obj', (object,), {'videos': transformed_results})()
 
                             break
 
                 else:
                     message = f"{current_time()} ERROR: Unable to find YouTube videos using all methods."
+
+            if transformed_results:
+
+                    if search_type in ["videos", "channels"]:
+                        base_results = {'result': transformed_results}
+                    elif search_type.startswith("videos_"):
+                        base_results = type('obj', (object,), {'videos': transformed_results})()
+
+            else:
+                base_results = {}
 
             if base_results:
 
@@ -4150,11 +4228,11 @@ def search_video_providers(providers, query, search_type, num_results, language_
                 for processed_result in processed_results:
                     title = processed_result.get('title', 'Unknown Title')
 
+                    channel = processed_result.get('channel', {}).get('name', 'Unknown Channel')
                     if search_type.startswith("videos"):
-                        channel = processed_result.get('channel', {}).get('name', 'Unknown Channel')
                         release_year = f"Channel: {channel}"                      
                     elif search_type == "channels":
-                        release_year = processed_result.get('subscribers', 'Unknown subscribers')
+                        release_year = channel
                         
                     url = processed_result.get('link', 'http://url_not_found')
                     if search_type.startswith("videos_"):
@@ -4172,7 +4250,7 @@ def search_video_providers(providers, query, search_type, num_results, language_
                         poster = f"https:{poster}"
                     
                     if search_type == "channels":
-                        score = f"Subscribe"
+                        score = processed_result.get('subscribers', 'Unknown subscribers')
                     elif search_type == "videos_from_playlist":
                         playlist_name = None
                         try:
@@ -5846,26 +5924,27 @@ def get_video_metadata(url):
 
         video_id = None
 
-        if 'youtube' in url:
-            video_id = url.split('?v=')[1]
-        elif 'youtu.' in url:
-            video_id = url.split('/')[1]
+        if 'youtu' in url:
+            video_id = url
 
         if video_id:
             try:
-                # NOTE: THIS NEEDS TO BE REPLACED WITH NEW METHOD
-                info_dict = get_youtube_video_info.getInfo(video_id)
+                info_dict = tubescrape.YouTube().get_video_info(video_id)
             except Exception as error:
                 print(f"{current_time()} ERROR: While processing {url} using secondary method, error was: {error}")
 
+            tubescrape.YouTube().close()
+
         if info_dict:
+            info_dict = info_dict.to_dict()
+
             original_release_date = '9999-12-31'
             override_episode_title = info_dict.get('title', None)
             override_summary = info_dict.get('description', None)
             thumbnails = info_dict.get('thumbnails', [])
             if thumbnails:
                 override_image = max(thumbnails, key=lambda t: t.get('width', 0)).get('url', default_poster_url)
-            override_duration = info_dict.get('duration', {}).get('secondsText', None)
+            override_duration = info_dict.get('duration_seconds', None)
             if override_duration:
                 if override_duration == '0' or int(override_duration) == 0:
                     override_duration = None
