@@ -39,7 +39,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.06.26.1558"
+    slm_version = "v2026.07.11.1127"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -163,6 +163,9 @@ def webpage_manage_programs():
     settings_minimum_video_length = None
     settings_show_hidden_programs = None
     settings_use_feed_map = None
+    settings_video_search_shorts = None
+    settings_filter_video_upload_date = None
+    settings_video_channel_max_results = None
     sorted_bookmarks = []
     provider_statuses = []
     provider_groups = []
@@ -256,6 +259,9 @@ def webpage_manage_programs():
                         settings_minimum_video_length_test = None
                         settings_minimum_video_length_test = positive_integer_test(settings_minimum_video_length_input, True)
                         settings_provider_status_input = request.form.get('select_provider_status')
+                        settings_video_channel_max_results_input = request.form.get('settings_video_channel_max_results')
+                        settings_video_channel_max_results_test = None
+                        settings_video_channel_max_results_test = positive_integer_test(settings_video_channel_max_results_input, False)
 
                         if manage_programs_action in [
                             'search_defaults_save',
@@ -266,6 +272,8 @@ def webpage_manage_programs():
                             settings_num_results_input = request.form.get('settings_num_results')
                             settings_num_results_test = None
                             settings_num_results_test = positive_integer_test(settings_num_results_input, False)
+                            settings_video_search_shorts_input = "On" if request.form.get('settings_video_search_shorts') in ['on', 'On'] else "Off"
+                            settings_filter_video_upload_date_input = request.form.get('settings_filter_video_upload_date')
 
                             if manage_programs_action == 'search_defaults_save':
                                 settings_show_hidden_programs_input = "On" if request.form.get('settings_show_hidden_programs') in ['on', 'On'] else "Off"
@@ -290,30 +298,51 @@ def webpage_manage_programs():
                                         manage_programs_message += f"\n"
 
                                     if settings_minimum_video_length_test == 'unknown':
-                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, an unknown issue happened in relation to 'Minimum Video Length (Seconds)'. As such, it has reverted to the prior value."
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, an unknown issue happened in relation to 'Minimum Video Length'. As such, it has reverted to the prior value."
                                     elif settings_minimum_video_length_test == 'missing':
-                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Minimum Video Length (Seconds)' is required. As such, it has reverted to the prior value."
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Minimum Video Length' is required. As such, it has reverted to the prior value."
                                     elif settings_minimum_video_length_test == 'not_number':
-                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, a number is required for 'Minimum Video Length (Seconds)'. As such, it has reverted to the prior value."
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, a number is required for 'Minimum Video Length '. As such, it has reverted to the prior value."
                                     elif settings_minimum_video_length_test == 'not_positive':
-                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, a positive integer is required for 'Minimum Video Length (Seconds)'. As such, it has reverted to the prior value."
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, a positive integer is required for 'Minimum Video Length'. As such, it has reverted to the prior value."
                                     else:
-                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Minimum Video Length (Seconds)' was unable to be evaluated. As such, it has reverted to the prior value."
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Minimum Video Length' was unable to be evaluated. As such, it has reverted to the prior value."
+
+                                if settings_video_channel_max_results_test != "pass":
+
+                                    if manage_programs_message not in [None, '']:
+                                        manage_programs_message += f"\n"
+
+                                    if settings_video_channel_max_results_test == 'unknown':
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, an unknown issue happened in relation to 'Max Number of Videos'. As such, it has reverted to the prior value."
+                                    elif settings_video_channel_max_results_test == 'missing':
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Max Number of Videos' is required. As such, it has reverted to the prior value."
+                                    elif settings_video_channel_max_results_test == 'not_number':
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, a number is required for 'Max Number of Videos'. As such, it has reverted to the prior value."
+                                    elif settings_video_channel_max_results_test == 'not_positive':
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, a positive integer is required for 'Max Number of Videos'. As such, it has reverted to the prior value."
+                                    else:
+                                        manage_programs_message += f"{current_time()} ERROR: While other 'Settings & Options' saved, 'Max Number of Videos' was unable to be evaluated. As such, it has reverted to the prior value."
 
                                 settings = read_data(csv_settings)
-                                settings_country_code_prior = settings[2]["settings"]               # [2]  Search Defaults: Country Code
+                                settings_country_code_prior = settings[2]["settings"]                       # [2]  Search Defaults: Country Code
 
                                 if settings_num_results_test == "pass":
-                                    settings[4]["settings"] = settings_num_results_input              # [4]  Search Defaults: Number of Results
-                                settings[64]["settings"] = settings_search_selection_input            # [64] SLM: 'Add Programs' Search Selection (Default)
-                                settings[47]["settings"] = settings_provider_status_input             # [47] SLM: Search Default for Provider Status
-                                settings[9]["settings"] = settings_hide_bookmarked_input              # [9]  Search Defaults: Filter out already bookmarked
-                                settings[2]["settings"] = settings_country_code_input_prior           # [2]  Search Defaults: Country Code
-                                settings[3]["settings"] = settings_language_code_input_prior          # [3]  Search Defaults: Language Code
+                                    settings[4]["settings"] = settings_num_results_input                    # [4]  Search Defaults: Number of Results
+                                settings[64]["settings"] = settings_search_selection_input                  # [64] SLM: 'Add Programs' Search Selection (Default)
+                                settings[47]["settings"] = settings_provider_status_input                   # [47] SLM: Search Default for Provider Status
+                                settings[9]["settings"] = settings_hide_bookmarked_input                    # [9]  Search Defaults: Filter out already bookmarked
+                                settings[2]["settings"] = settings_country_code_input_prior                 # [2]  Search Defaults: Country Code
+                                settings[3]["settings"] = settings_language_code_input_prior                # [3]  Search Defaults: Language Code
                                 if settings_minimum_video_length_test == "pass":
-                                    settings[65]["settings"] = settings_minimum_video_length_input    # [65] SLM: Minimum Video Length (in Seconds) for Search
-                                settings[66]["settings"] = settings_show_hidden_programs_input        # [66] SLM: Show 'Hidden Programs' in Dropdown Selection (Default)
-                                settings[67]["settings"] = settings_use_feed_map_input                # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
+                                    settings[65]["settings"] = settings_minimum_video_length_input          # [65] SLM: Minimum Video Length (in Seconds) for Search
+                                settings[66]["settings"] = settings_show_hidden_programs_input              # [66] SLM: Show 'Hidden Programs' in Dropdown Selection (Default)
+                                settings[67]["settings"] = settings_use_feed_map_input                      # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
+                                settings[78]["settings"] = settings_video_search_shorts_input               # [78] SLM: Show 'YouTube Shorts' in Search Results
+                                settings[79]["settings"] = settings_filter_video_upload_date_input          # [79] SLM: Video 'Upload Date' in Search Results (Default)
+                                if settings_video_channel_max_results_test == "pass":
+                                    settings[80]["settings"] = settings_video_channel_max_results_input     # [80] SLM: Video Channels max number of videos by type (0 = Unlimited)
+
                                 write_data(csv_settings, settings)
 
                                 if settings_country_code_input_prior != settings_country_code_prior:
@@ -332,9 +361,9 @@ def webpage_manage_programs():
                                         if settings_search_selection_input in ['all', 'movies_shows_videos', 'movies_shows']:
                                             movies_shows_search_results = search_bookmark(settings_country_code_input_prior, settings_language_code_input_prior, settings_num_results_input, program_add_prior)
                                         if settings_search_selection_input in ['all', 'movies_shows_videos', 'videos_channels', 'videos']:
-                                            videos_search_results, manage_programs_message = search_video_providers(video_providers, program_add_prior, 'videos', settings_num_results_input, settings_language_code_input_prior, settings_country_code_input_prior)
+                                            videos_search_results, manage_programs_message = search_video_providers(video_providers, program_add_prior, 'videos', settings_num_results_input, settings_video_search_shorts_input, settings_filter_video_upload_date_input)
                                         if settings_search_selection_input in ['all', 'videos_channels', 'channels']:
-                                            channels_search_results, manage_programs_message = search_video_providers(video_providers, program_add_prior, 'channels', settings_num_results_input, settings_language_code_input_prior, settings_country_code_input_prior)
+                                            channels_search_results, manage_programs_message = search_video_providers(video_providers, program_add_prior, 'channels', settings_num_results_input, False, 'none')
 
                                         if 'ERROR' not in manage_programs_message:
                                             
@@ -357,15 +386,15 @@ def webpage_manage_programs():
                                     else:
 
                                         if settings_minimum_video_length_test == 'unknown':
-                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', an unknown issue happened in relation to 'Minimum Video Length (Seconds)'."
+                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', an unknown issue happened in relation to 'Minimum Video Length'."
                                         elif settings_minimum_video_length_test == 'missing':
-                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', 'Minimum Video Length (Seconds)' is required."
+                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', 'Minimum Video Length' is required."
                                         elif settings_minimum_video_length_test == 'not_number':
-                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a number for 'Minimum Video Length (Seconds)'."
+                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a number for 'Minimum Video Length'."
                                         elif settings_minimum_video_length_test == 'not_positive':
-                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a positive integer for 'Minimum Video Length (Seconds)'."
+                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', please enter a positive integer for 'Minimum Video Length'."
                                         else:
-                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', unable to test the value for 'Minimum Video Length (Seconds)'."
+                                            manage_programs_message = f"{current_time()} ERROR: For 'Search', unable to test the value for 'Minimum Video Length'."
 
                                 else:
 
@@ -398,15 +427,17 @@ def webpage_manage_programs():
                                 for i in range((datetime.datetime.strptime(date_new_default_end_prior, '%Y-%m-%d') - datetime.datetime.strptime(date_new_default_start_prior, '%Y-%m-%d')).days + 1)
                             ]
 
-                            settings_num_results_input = 100 # Maximum number of new programs
-
                             if date_new_default_range:
-                                program_search_results_prior = get_program_new(date_new_default_range, settings_country_code_input_prior, settings_language_code_input_prior, settings_num_results_input, settings_provider_status_input, video_providers)
+                                program_search_results_prior, program_search_results_message = get_program_new(date_new_default_range, settings_country_code_input_prior, settings_language_code_input_prior, 100, settings_provider_status_input, video_providers, settings_video_channel_max_results_input)
 
                             if program_search_results_prior:
                                 manage_programs_message = f"{current_time()} INFO: Displaying 'New & Updated' results on your selected provider(s)."
                             else:
                                 manage_programs_message = f"{current_time()} INFO: No 'New & Updated' results on your selected provider(s)."
+
+                            if program_search_results_message:
+                                manage_programs_message += f"\n"
+                                manage_programs_message += program_search_results_message
 
                     elif manage_programs_action in [
                         'program_feed_update',
@@ -644,7 +675,7 @@ def webpage_manage_programs():
                         else:
                             program_add_import_playlist_prior = field_program_add_import_playlist_input
                             
-                            program_search_results_videos, manage_programs_message = search_video_providers(video_providers, program_add_import_playlist_prior, 'videos_from_playlist', 100, settings_language_code_input_prior, settings_country_code_input_prior)
+                            program_search_results_videos, manage_programs_message = search_video_providers(video_providers, program_add_import_playlist_prior, 'videos_from_playlist', 0, False, 'none')
 
                             if manage_programs_message is None or manage_programs_message == '':
 
@@ -822,7 +853,9 @@ def webpage_manage_programs():
 
             elif program_feed_rule_action_new_input == 'add':
                 program_feed_rule_override_min_video_length_new_input = None
+                program_feed_rule_override_max_videos_number_new_input = None
                 program_feed_rule_override_min_video_length_new_input = request.form.get('program_feed_rule_override_min_video_length_new', None)
+                program_feed_rule_override_max_videos_number_new_input = request.form.get('program_feed_rule_override_max_videos_number_new', None)
 
                 program_feed_rule_override_min_video_length_new_test = None
                 if program_feed_rule_override_min_video_length_new_input in ['', None]:
@@ -830,19 +863,37 @@ def webpage_manage_programs():
                 else:
                     program_feed_rule_override_min_video_length_new_test = positive_integer_test(program_feed_rule_override_min_video_length_new_input, True)
 
-                if program_feed_rule_override_min_video_length_new_test != 'pass':
+                program_feed_rule_override_max_videos_number_new_test = None
+                if program_feed_rule_override_max_videos_number_new_input in ['', None]:
+                    program_feed_rule_override_max_videos_number_new_test = 'pass'
+                else:
+                    program_feed_rule_override_max_videos_number_new_test = positive_integer_test(program_feed_rule_override_max_videos_number_new_input, True)
+
+                if (
+                    ( program_feed_rule_override_min_video_length_new_test != 'pass' ) or
+                    ( program_feed_rule_override_max_videos_number_new_test != 'pass' )
+                ):
 
                     if manage_programs_message not in [None, '']:
                         manage_programs_message += f"\n"
 
                     if program_feed_rule_override_min_video_length_new_test == 'unknown':
-                        manage_programs_message += f"{current_time()} ERROR: An unknown issue happened in relation to 'Override Minimum Video Length (Seconds)'. As such, the new 'Feed Rule' was not saved."
+                        manage_programs_message += f"{current_time()} ERROR: An unknown issue happened in relation to 'Override Minimum Video Length'. As such, the new 'Feed Rule' was not saved."
                     elif program_feed_rule_override_min_video_length_new_test == 'not_number':
-                        manage_programs_message += f"{current_time()} ERROR: A number is required for 'Override Minimum Video Length (Seconds)'. As such, the new 'Feed Rule' was not saved."
+                        manage_programs_message += f"{current_time()} ERROR: A number is required for 'Override Minimum Video Length'. As such, the new 'Feed Rule' was not saved."
                     elif program_feed_rule_override_min_video_length_new_test == 'not_positive':
-                        manage_programs_message += f"{current_time()} ERROR: A positive integer is required for 'Override Minimum Video Length (Seconds)'. As such, the new 'Feed Rule' was not saved."
+                        manage_programs_message += f"{current_time()} ERROR: A positive integer is required for 'Override Minimum Video Length'. As such, the new 'Feed Rule' was not saved."
                     else:
-                        manage_programs_message += f"{current_time()} ERROR: 'Override Minimum Video Length (Seconds)' was unable to be evaluated. As such, the new 'Feed Rule' was not saved."
+                        manage_programs_message += f"{current_time()} ERROR: 'Override Minimum Video Length' was unable to be evaluated. As such, the new 'Feed Rule' was not saved."
+
+                    if program_feed_rule_override_max_videos_number_new_test == 'unknown':
+                        manage_programs_message += f"{current_time()} ERROR: An unknown issue happened in relation to 'Override Max Videos'. As such, the new 'Feed Rule' was not saved."
+                    elif program_feed_rule_override_max_videos_number_new_test == 'not_number':
+                        manage_programs_message += f"{current_time()} ERROR: A number is required for 'Override Max Videos'. As such, the new 'Feed Rule' was not saved."
+                    elif program_feed_rule_override_max_videos_number_new_test == 'not_positive':
+                        manage_programs_message += f"{current_time()} ERROR: A positive integer is required for 'Override Max Videos'. As such, the new 'Feed Rule' was not saved."
+                    else:
+                        manage_programs_message += f"{current_time()} ERROR: 'Override Max Videos' was unable to be evaluated. As such, the new 'Feed Rule' was not saved."
 
                 else:
                     write_feed_rules = True
@@ -864,7 +915,8 @@ def webpage_manage_programs():
                         'feed_rule_name': program_feed_rule_name_new_input,
                         'provider': program_feed_rule_provider_new_input,
                         'date_range': program_feed_rule_date_range_new_input,
-                        'override_min_video_length': program_feed_rule_override_min_video_length_new_input
+                        'override_min_video_length': program_feed_rule_override_min_video_length_new_input,
+                        'override_max_videos_number': program_feed_rule_override_max_videos_number_new_input
                     })
 
             # Get new Feed Map
@@ -948,6 +1000,7 @@ def webpage_manage_programs():
             program_feed_rule_provider_inputs = {}
             program_feed_rule_date_range_inputs = {}
             program_feed_rule_override_min_video_length_inputs = {}
+            program_feed_rule_override_max_videos_number_inputs = {}
             program_feed_rule_action_inputs = {}
             feed_rules_inputs = []
             delete_feed_rules_inputs = []
@@ -979,6 +1032,10 @@ def webpage_manage_programs():
                     index = key.split('_')[-1]
                     program_feed_rule_override_min_video_length_inputs[index] = request.form.get(key, None)
 
+                if key.startswith('program_feed_rule_override_max_videos_number_'):
+                    index = key.split('_')[-1]
+                    program_feed_rule_override_max_videos_number_inputs[index] = request.form.get(key, None)
+
                 if key.startswith('program_feed_rule_action_'):
                     index = key.split('_')[-1]
                     program_feed_rule_action_inputs[index] = request.form.get(key, 'none')
@@ -990,6 +1047,7 @@ def webpage_manage_programs():
                 program_feed_rule_provider_input = None
                 program_feed_rule_date_range_input = None
                 program_feed_rule_override_min_video_length_input = None
+                program_feed_rule_override_max_videos_number_input = None
                 program_feed_rule_action_input = None
 
                 program_feed_rule_id_input = program_feed_rule_id_inputs.get(row, None)
@@ -998,6 +1056,7 @@ def webpage_manage_programs():
                 program_feed_rule_provider_input = program_feed_rule_provider_inputs.get(row, None)
                 program_feed_rule_date_range_input = program_feed_rule_date_range_inputs.get(row, None)
                 program_feed_rule_override_min_video_length_input = program_feed_rule_override_min_video_length_inputs.get(row, None)
+                program_feed_rule_override_max_videos_number_input = program_feed_rule_override_max_videos_number_inputs.get(row, None)
                 program_feed_rule_action_input = program_feed_rule_action_inputs.get(row, None)
 
                 feed_rules_inputs.append({
@@ -1007,6 +1066,7 @@ def webpage_manage_programs():
                     'provider': program_feed_rule_provider_input,
                     'date_range': program_feed_rule_date_range_input,
                     'override_min_video_length': program_feed_rule_override_min_video_length_input,
+                    'override_max_videos_number': program_feed_rule_override_max_videos_number_input,
                     'action': program_feed_rule_action_input
                 })
 
@@ -1053,16 +1113,41 @@ def webpage_manage_programs():
                                 manage_programs_message += f"\n"
 
                             if program_feed_rule_override_min_video_length_new_test == 'unknown':
-                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', an unknown issue happened in relation to 'Override Minimum Video Length (Seconds)'. As such, this field has reverted to its previous value."
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', an unknown issue happened in relation to 'Override Minimum Video Length'. As such, this field has reverted to its previous value."
                             elif program_feed_rule_override_min_video_length_new_test == 'not_number':
-                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', a number is required for 'Override Minimum Video Length (Seconds)'. As such, this field has reverted to its previous value."
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', a number is required for 'Override Minimum Video Length'. As such, this field has reverted to its previous value."
                             elif program_feed_rule_override_min_video_length_new_test == 'not_positive':
-                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', a positive integer is required for 'Override Minimum Video Length (Seconds)'. As such, this field has reverted to its previous value."
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', a positive integer is required for 'Override Minimum Video Length'. As such, this field has reverted to its previous value."
                             else:
-                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', 'Override Minimum Video Length (Seconds)' was unable to be evaluated. As such, this field has reverted to its previous value."
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', 'Override Minimum Video Length' was unable to be evaluated. As such, this field has reverted to its previous value."
 
                         else:
                             feed_rule['override_min_video_length'] = save_feed_rules_input['override_min_video_length']
+
+
+                        program_feed_rule_override_max_videos_number_test = None
+                        if save_feed_rules_input['override_max_videos_number'] in ['', None]:
+                            program_feed_rule_override_max_videos_number_test = 'pass'
+                        else:
+                            program_feed_rule_override_max_videos_number_test = positive_integer_test(save_feed_rules_input['override_max_videos_number'], True)
+
+                        if program_feed_rule_override_max_videos_number_test != 'pass':
+
+                            if manage_programs_message not in [None, '']:
+                                manage_programs_message += f"\n"
+
+                            if program_feed_rule_override_max_videos_number_new_test == 'unknown':
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', an unknown issue happened in relation to 'Override Max Videos'. As such, this field has reverted to its previous value."
+                            elif program_feed_rule_override_max_videos_number_new_test == 'not_number':
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', a number is required for 'Override Max Videos'. As such, this field has reverted to its previous value."
+                            elif program_feed_rule_override_max_videos_number_new_test == 'not_positive':
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', a positive integer is required for 'Override Max Videos'. As such, this field has reverted to its previous value."
+                            else:
+                                manage_programs_message += f"{current_time()} ERROR: For saved Feed Rule '{feed_rule_name}', 'Override Max Videos' was unable to be evaluated. As such, this field has reverted to its previous value."
+
+                        else:
+                            feed_rule['override_max_videos_number'] = save_feed_rules_input['override_max_videos_number']
+
 
             feed_rules = [feed_rule for feed_rule in feed_rules if feed_rule['feed_rule_id'] not in delete_feed_rules_inputs]
 
@@ -1341,6 +1426,9 @@ def webpage_manage_programs():
                         subscribed_video_channel_user_selected_input = None
                         subscribed_video_channel_description_selected_input = None
                         subscribed_video_channel_image_selected_input = None
+                        subscribed_video_channel_video_type_regular_selected_input = None
+                        subscribed_video_channel_video_type_live_selected_input = None
+                        subscribed_video_channel_video_type_shorts_selected_input = None
                         subscribed_video_channel_streaming_service_group_selected_input = None
 
                         subscribed_video_channel_selected_action_input = request.form.get('subscribed_video_channel_selected_action')
@@ -1374,6 +1462,9 @@ def webpage_manage_programs():
                                         subscribed_video_channel_user_selected_input = request.form.get('subscribed_video_channel_user_selected')
                                         subscribed_video_channel_description_selected_input = request.form.get('subscribed_video_channel_description_selected')
                                         subscribed_video_channel_image_selected_input = request.form.get('subscribed_video_channel_image_selected')
+                                        subscribed_video_channel_video_type_regular_selected_input = 'On' if request.form.get('subscribed_video_channel_video_type_regular_selected') in ['On', 'on'] else 'Off'
+                                        subscribed_video_channel_video_type_live_selected_input = 'On' if request.form.get('subscribed_video_channel_video_type_live_selected') in ['On', 'on'] else 'Off'
+                                        subscribed_video_channel_video_type_shorts_selected_input = 'On' if request.form.get('subscribed_video_channel_video_type_shorts_selected') in ['On', 'on'] else 'Off'
                                         subscribed_video_channel_streaming_service_group_selected_input = request.form.get('subscribed_video_channel_streaming_service_group_selected')
 
                                         subscribed_video_channel['channel_active'] = subscribed_video_channel_active_selected_input
@@ -1381,6 +1472,9 @@ def webpage_manage_programs():
                                         subscribed_video_channel['channel_user'] = subscribed_video_channel_user_selected_input
                                         subscribed_video_channel['channel_description'] = subscribed_video_channel_description_selected_input
                                         subscribed_video_channel['channel_image'] = subscribed_video_channel_image_selected_input
+                                        subscribed_video_channel['channel_video_type_regular'] = subscribed_video_channel_video_type_regular_selected_input
+                                        subscribed_video_channel['channel_video_type_live'] = subscribed_video_channel_video_type_live_selected_input
+                                        subscribed_video_channel['channel_video_type_shorts'] = subscribed_video_channel_video_type_shorts_selected_input
                                         subscribed_video_channel['channel_streaming_service_group'] = subscribed_video_channel_streaming_service_group_selected_input
                                         
                                         manage_programs_message = f"{current_time()} INFO: Updates to Video Channel '{subscribed_video_channel_name_selected_input}' saved."
@@ -2836,6 +2930,9 @@ def webpage_manage_programs():
             settings_num_results = settings[4]["settings"]                      # [4]  Search Defaults: Number of Results
             settings_search_selection = settings[64]["settings"]                # [64] SLM: 'Add Programs' Search Selection (Default)
             settings_provider_status = settings[47]["settings"]                 # [47] SLM: Search Default for Provider Status
+            settings_video_search_shorts = settings[78]["settings"]             # [78] SLM: Show 'YouTube Shorts' in Search Results
+            settings_filter_video_upload_date = settings[79]["settings"]        # [79] SLM: Video 'Upload Date' in Search Results (Default)
+            settings_video_channel_max_results = settings[80]["settings"]       # [80] SLM: Video Channels max number of videos by type (0 = Unlimited)
 
             ### Search Settings
             settings_use_feed_map = settings[67]["settings"]                    # [67] SLM: Use the 'Feed & Auto-Mapping' functionality
@@ -3389,7 +3486,11 @@ def webpage_manage_programs():
         html_new_program_feed_map_actions = new_program_feed_map_actions,
         html_feed_maps = feed_maps,
         html_feed_rules = feed_rules,
-        html_feed_map_source_providers = feed_map_source_providers
+        html_feed_map_source_providers = feed_map_source_providers,
+        html_filter_video_upload_dates = filter_video_upload_dates,
+        html_settings_video_search_shorts = settings_video_search_shorts,
+        html_settings_filter_video_upload_date = settings_filter_video_upload_date,
+        html_settings_video_channel_max_results = settings_video_channel_max_results
     )
 
 # Search for country code
@@ -3960,7 +4061,7 @@ def extract_program_search(program_search_json):
     return extracted_data
 
 # Searches video providers to return a list of videos, channels, or videos within a Playlist or Channel
-def search_video_providers(providers, query, search_type, num_results, language_code, country_code):
+def search_video_providers(providers, query, search_type, num_results, search_include_video_shorts, search_video_uploaded):
     default_poster_url = 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Missing_barnstar.jpg'
     extracted_data = []
     message = ''
@@ -3970,133 +4071,171 @@ def search_video_providers(providers, query, search_type, num_results, language_
     elif search_type == "channels":
         object_type = "CHANNEL"
 
-    # NOTE: Searching for 'Channels' in the 'yt_dlp' method is currently ignoring all limitations and will just max out
     try:
         num_results = int(num_results)
     except Exception:
         num_results = 100
 
     for provider in providers:
-        base_results = {}
-        base_info = {}
+        info_dict = {}
+        info_dict_entries = []
 
         if provider == 'youtube':
             offers_list = ["https://images.justwatch.com/icon/59562423/s100/youtube.png"]
 
-            tubescape_opts = {
-                'query': query
-            }
+            tubescape_opts = {}
+            tubescape_test = None
 
             try:
-                if search_type in ['videos', 'channels']:
-                    tubescape_opts['max_results'] = num_results
-                    tubescape_opts['type'] = search_type[:-1]
+                if search_type in ['videos', 'channels', 'videos_from_playlist']:
 
-                    # NOTE: Temporarily disabled because videos are maxing out at 20 and channels are not returning results
-                    base_results = {} # tubescrape.YouTube().search(**tubescape_opts)
+                    if search_type in ['videos', 'channels']:
+                        tubescape_opts['query'] = query
+                        tubescape_opts['max_results'] = num_results
 
-                elif search_type in ['videos_from_playlist', 'videos_from_channel']:
+                        if search_type == 'channels':
+                            tubescape_opts['type'] = search_type[:-1]
 
-                    if search_type == 'videos_from_playlist':
-                        # NOTE: Temporarily disabled because playlists are maxing out at 100 videos
-                        base_results = {} # tubescrape.YouTube().get_playlist(query, max_results=0)
+                        elif search_type == 'videos':
+                            if search_video_uploaded != 'none':
+                                tubescape_opts['upload_date'] = search_video_uploaded
 
-                    elif search_type == 'videos_from_channel':
-                        # NOTE: Temporarily disabled because channel name is missing from metadata
-                        base_results = {} # tubescrape.YouTube().get_channel_videos(query, max_results=0)
-                
+                        info_dict = tubescrape.YouTube().search(**tubescape_opts)
+
+                    elif search_type == 'videos_from_playlist':
+                        info_dict = tubescrape.YouTube().get_playlist(query, max_results=0)
+
+                    if info_dict:
+                        info_dict = info_dict.to_dict()
+
+                        if search_type in ['videos', 'channels']:
+                            tubescape_test = info_dict.get('query', None)
+                        elif search_type == 'videos_from_playlist':
+                            tubescape_test = info_dict.get('title', None)
+
+                        if search_type.startswith('video'):
+                            info_dict_entries = info_dict.get('videos', [])
+
+                            if search_type == 'videos' and search_include_video_shorts == "Off":
+                                info_dict_entries = [info_dict_entry for info_dict_entry in info_dict_entries if info_dict_entry['is_short'] not in [True, 'True', 'true']]
+
+                        elif search_type == 'channels':
+                            info_dict_entries = info_dict.get('channels', [])
+
+                elif search_type == 'videos_from_channel':
+                    video_type_regular_dict = {}
+                    video_type_live_dict = {}
+                    video_type_shorts_dict = {}
+                    video_type_regular_dict_entries = []
+                    video_type_live_dict_entries = []
+                    video_type_shorts_dict_base_entries = []
+                    video_type_shorts_dict_entries = []
+                    base_channel_id = None
+                    base_channel_name = None
+
+                    subscribed_video_channels = read_data(csv_slm_subscribed_video_channels)
+
+                    for subcribed_video_channel in subscribed_video_channels:
+
+                        if subcribed_video_channel['channel_url'].rstrip('/').split('/')[-1] == query:
+                            
+                            if (
+                                ( subcribed_video_channel['channel_video_type_regular'] not in ['On', 'on', 'ON'] ) and
+                                ( subcribed_video_channel['channel_video_type_live'] not in ['On', 'on', 'ON'] ) and
+                                ( subcribed_video_channel['channel_video_type_shorts'] not in ['On', 'on', 'ON'] )
+                            ):
+                                message = f"{current_time()} WARNING: For Video Channel '{subcribed_video_channel['channel_name']}', no video types are active. Please turn on at least one to get videos from this channel!"
+                                tubescape_test = message
+                                print(f"{message}")
+
+                            if subcribed_video_channel['channel_video_type_regular'] in ['On', 'on', 'ON']:
+                                video_type_regular_dict = tubescrape.YouTube().get_channel_videos(query, max_results=num_results)
+
+                            if subcribed_video_channel['channel_video_type_live'] in ['On', 'on', 'ON']:
+                                video_type_live_dict = tubescrape.YouTube().get_channel_streams(query, max_results=num_results)
+
+                            if subcribed_video_channel['channel_video_type_shorts'] in ['On', 'on', 'ON']:
+                                video_type_shorts_dict = tubescrape.YouTube().get_channel_shorts(query, max_results=num_results)
+
+                            break
+
+                    if video_type_regular_dict:
+                        video_type_regular_dict = video_type_regular_dict.to_dict()
+                        video_type_regular_dict_entries = video_type_regular_dict.get('videos', [])
+
+                        if not base_channel_name:
+                            base_channel_name = video_type_regular_dict.get('channel', base_channel_name)
+
+                        tubescape_test = video_type_regular_dict.get('channel_id', None)
+
+                    if video_type_live_dict:
+                        video_type_live_dict = video_type_live_dict.to_dict()
+                        video_type_live_dict_entries = video_type_live_dict.get('videos', [])
+
+                        if not base_channel_name:
+                            base_channel_name = video_type_live_dict.get('channel', base_channel_name)
+
+                        tubescape_test = video_type_live_dict.get('channel_id', None)
+
+                    if video_type_shorts_dict:
+                        video_type_shorts_dict = video_type_shorts_dict.to_dict()
+                        video_type_shorts_dict_base_entries = video_type_shorts_dict.get('shorts', [])
+
+                        base_channel_id = video_type_shorts_dict.get('channel_id', 'Unknown Channel ID for YouTube Short')
+                        if not base_channel_name:
+                            base_channel_name = f"YouTube Short for {base_channel_id}"
+
+                        tubescape_test = video_type_shorts_dict.get('channel_id', None)
+
+                        if video_type_shorts_dict_base_entries:
+                            for video_type_shorts_dict_base_entry in video_type_shorts_dict_base_entries:
+                                video_type_shorts_dict_entries.append({
+                                    'video_id': video_type_shorts_dict_base_entry.get('video_id', 'Missing Video ID'),
+                                    'title': video_type_shorts_dict_base_entry.get('title', 'Missing YouTube Short Title'),
+                                    'url': video_type_shorts_dict_base_entry.get('url', 'http://missing_youtube_short_url.com'),
+                                    'is_live': False,
+                                    'is_short': True,
+                                    'channel': base_channel_name,
+                                    'channel_id': base_channel_id,
+                                    'duration': '0:00',
+                                    'duration_seconds': 0,
+                                    'published_text': 'Unknown Publication Date',
+                                    'view_count': video_type_shorts_dict_base_entry.get('view_count', 'Unknown Views'),
+                                    'thumbnails': [
+                                        {
+                                            'url': video_type_shorts_dict_base_entry.get('thumbnail_url', default_poster_url),
+                                            'width': 1,
+                                            'height': 1
+                                        }
+                                    ],
+
+                                })
+                                
+                    info_dict_entries = video_type_regular_dict_entries + video_type_live_dict_entries + video_type_shorts_dict_entries
+
                 tubescrape.YouTube().close()
 
             except Exception as e:
-                message = f"{current_time()} ERROR: Retrieving videos from YouTube. Returned: {str(e)}"
+                print(f"{current_time()} ERROR: Retrieving videos from YouTube using default 'tubescape' method. Returned: '{str(e)}'.")
 
-            info_dict = {}
-            info_dict_entries = []
-            transformed_results = []
-            
-            # Transform 'tubescaper' base results into old 'youtube-search-python' format
-            if base_results:
-                info_dict = base_results.to_dict()
-
-                if search_type in ['videos_from_playlist', 'videos_from_channel']:
-                    base_info = {
-                        'channel': info_dict.get('channel', info_dict.get('channel_id', 'Unknown Channel Name'))
-                    }
-
-                    if search_type == 'videos_from_playlist':
-                        base_info['playlist_id'] = info_dict.get('playlist_id', 'Unknown Playlist ID')
-                        base_info['playlist_title'] = info_dict.get('title', 'Unknown Playlist Title')
-
-                    elif search_type == 'videos_from_channel':
-                        base_info['channel_id']= info_dict.get('channel_id', '')
-
-                if search_type.startswith('video'):
-                    info_dict_entries = info_dict.get('videos', [])
-                elif search_type == 'channels':
-                    info_dict_entries = info_dict.get('channels', [])
-
-                if info_dict_entries:
-                    if not isinstance(info_dict_entries, list):
-                        info_dict_entries = list(info_dict_entries)
-
-                    for info_dict_entry in info_dict_entries:
-                        transformed_title = None
-                        transformed_link = None
-                        transformed_channel = None
-                        transformed_descriptionSnippet = []
-                        transformed_thumbnails = []
-                        transformed_accessibility = None
-                        transformed_subscribers = None
-
-                        transformed_title = info_dict_entry.get('title', 'Unknown Title')
-
-                        transformed_link = info_dict_entry.get('url', 'http://url_not_found')
-
-                        if search_type == 'videos_from_channel':
-                            transformed_channel = base_info.get('channel', 'Error Retrieving Channel Name')
-                        elif search_type == "channels":
-                            transformed_channel = info_dict_entry.get('title', 'Unknown Channel Name')
-                        else:
-                            transformed_channel = info_dict_entry.get('channel', info_dict_entry.get('channel_id', 'Unknown Channel Name'))
-
-                        transformed_descriptionSnippet_base = info_dict_entry.get('description_snippet', '')
-                        transformed_descriptionSnippet = [{'text': transformed_descriptionSnippet_base}] if transformed_descriptionSnippet_base else []
-
-                        transformed_thumbnails = info_dict_entry.get('thumbnails', [])
-
-                        if search_type.startswith('videos'):
-                            transformed_accessibility_base = info_dict_entry.get('duration_seconds')
-                            transformed_accessibility = {'duration': format_duration_to_string(transformed_accessibility_base)}
-
-                        transformed_subscribers = info_dict_entry.get('channel_follower_count', 'Unknown subscribers')
-                        if isinstance(transformed_subscribers, int):
-                            transformed_subscribers = f"{transformed_subscribers:,} Subscribers"
-
-                        transformed_entry = {
-                                'title': transformed_title,
-                                'link': transformed_link,
-                                'channel': {'name': transformed_channel},
-                                'descriptionSnippet': transformed_descriptionSnippet,
-                                'thumbnails': transformed_thumbnails,
-                                'accessibility': transformed_accessibility,
-                                'subscribers': transformed_subscribers
-                            }
-
-                        transformed_results.append(transformed_entry)
-            
-            # In case the default method fails, fall back to 'yt_dlp'
-            if not transformed_results:
-                print(f"{current_time()} WARNING: Default video search helper returned no base results. Attempting backup with helper 'yt_dlp'...")
+            # In case the default 'tubescape' method fails, fall back to 'yt_dlp'
+            if not tubescape_test:
+                print(f"{current_time()} WARNING: Default video search helper 'tubescrape' returned no base results. Attempting backup with helper 'yt-dlp'...")
                 waste_formats = {}
 
                 if search_type in ["videos_from_playlist", "videos_from_channel"]:
 
                     if search_type == "videos_from_channel":
 
+                        query = query.rstrip('/').split('/')[-1]
+
                         if query.startswith('UC'):
                             query = f"https://www.youtube.com/playlist?list=UU{query[2:]}"
                         else:
                             query = f"https://www.youtube.com/channel/{query}"
+
+                    elif search_type == "videos_from_playlist":
+                        query = f"https://www.youtube.com/playlist?list={query}"
 
                     print(f"{current_time()} INFO: Extracting info from '{query}'...")
 
@@ -4104,7 +4243,8 @@ def search_video_providers(providers, query, search_type, num_results, language_
 
                     if search_type == "videos":
                         query = f"ytsearch{int(num_results)}:{query}"
-                    
+
+                    # NOTE: Searching for 'Channels' in the 'yt_dlp' method is currently ignoring all limitations and will just max out
                     elif search_type == "channels":
                         encoded_query = urllib.parse.quote(query)
                         query = f"https://www.youtube.com/results?search_query={encoded_query}&sp=EgIQAg%253D%253D"
@@ -4146,102 +4286,99 @@ def search_video_providers(providers, query, search_type, num_results, language_
                                 print(f"{current_time()} ERROR: While searching YouTube for {search_type} using '{query}', received: '{error}'.")
 
                     if info_dict:
+                        info_dict_base_entries = []
+                        info_dict_base_entries = info_dict.get('entries', [])
+                        if not isinstance(info_dict_base_entries, list):
+                            info_dict_base_entries = list(info_dict_base_entries)
 
-                        try:
-                            base_info = info_dict.get('info', {}) or info_dict
-                        except Exception:
-                            base_info = info_dict
+                        if info_dict_base_entries:
 
-                        info_dict_entries = info_dict.get('entries', [])
+                            for info_dict_base_entry in info_dict_base_entries:
 
-                        if info_dict_entries:
-                            if not isinstance(info_dict_entries, list):
-                                info_dict_entries = list(info_dict_entries)
+                                if search_type.startswith('video'):
+                                    
+                                    try:
+                                        view_count = f"{int(info_dict_base_entry.get('view_count', 0)):,}"
+                                    except:
+                                        view_count = "Unknown"
 
-                            for info_dict_entry in info_dict_entries:
-                                transformed_title = None
-                                transformed_link = None
-                                transformed_channel = None
-                                transformed_descriptionSnippet = []
-                                transformed_thumbnails = []
-                                transformed_accessibility = None
-                                transformed_subscribers = None
+                                    info_dict_entries.append({
+                                        'video_id': info_dict_base_entry.get('id', 'Unknown Video ID'),
+                                        'title': info_dict_base_entry.get('title', 'Unknown Video Title'),
+                                        'url': info_dict_base_entry.get('url', 'https://video_url_missing.com'),
+                                        'is_live': info_dict_base_entry.get('live_status', False),
+                                        'is_short': False,
+                                        'channel': info_dict_base_entry.get('channel', 'Unknown Channel'),
+                                        'channel_id': info_dict_base_entry.get('channel_id', 'Unknown Channel ID'),
+                                        'duration': 'N/A, see duration_seconds',
+                                        'duration_seconds': info_dict_base_entry.get('duration', 0),
+                                        'published_text': info_dict_base_entry.get('release_timestamp', 'Unknown Publication Time'),
+                                        'view_count': f"{view_count} views",
+                                        'short_view_count': 'N/A, see view_count',
+                                        'thumbnails': info_dict_base_entry.get('thumbnails', []),
+                                        'moving_thumbnail': 'N/A, see thumbnails',
+                                        'channel_thumbnail': 'N/A',
+                                        'description_snippet': info_dict_base_entry.get('description', ''),
+                                        'badges': []
+                                    })
 
-                                transformed_title = info_dict_entry.get('title', 'Unknown Title')
+                                elif search_type == 'channels':
 
-                                transformed_link = info_dict_entry.get('url', info_dict_entry.get('webpage_url', 'http://url_not_found'))
+                                    info_dict_entries.append({
+                                        "channel_id": info_dict_base_entry.get('id', 'Unknown Channel ID'),
+                                        "title": info_dict_base_entry.get('title', info_dict_base_entry.get('channel', info_dict_base_entry.get('uploader', 'Unknown Channel Name'))),
+                                        "url": info_dict_base_entry.get('url', info_dict_base_entry.get('channel_url', 'http://channel_url_missing.com')),
+                                        "handle": info_dict_base_entry.get('uploader_id', 'Unknown Channel Handle'),
+                                        "description": info_dict_base_entry.get('description', ''),
+                                        "subscriber_count": f"{int(info_dict_base_entry.get('channel_follower_count', 0)):,} subscribers",
+                                        "thumbnails": info_dict_base_entry.get('thumbnails', [])
+                                    })
 
-                                if search_type == 'videos_from_channel':
-                                    transformed_channel = base_info.get('channel') or base_info.get('uploader') or info_dict_entry.get('uploader') or info_dict_entry.get('channel') or 'YouTube'
-                                elif search_type == "channels":
-                                    transformed_channel = info_dict_entry.get('uploader_id', 'Unknown Channel ID')
-                                else:
-                                    transformed_channel = info_dict_entry.get('channel') or info_dict_entry.get('uploader', 'YouTube')
+                            if search_type in ['videos_from_channel', 'channels']:
+                                num_results_info_dict_entries = []
+                                
+                                for i in range(1, num_results + 1):
+                                    record = i - 1
+                                    num_results_info_dict_entries.append(info_dict_entries[record])
+                                
+                                info_dict_entries = num_results_info_dict_entries.copy()
 
-                                transformed_descriptionSnippet_base = info_dict_entry.get('description', '')
-                                transformed_descriptionSnippet = [{'text': transformed_descriptionSnippet_base}] if transformed_descriptionSnippet_base else []
-
-                                transformed_thumbnails = info_dict_entry.get('thumbnails', [])
-
-                                if search_type.startswith('videos'):
-                                    transformed_accessibility_base = info_dict_entry.get('duration')
-                                    transformed_accessibility = {'duration': format_duration_to_string(transformed_accessibility_base)}
-
-                                transformed_subscribers = info_dict_entry.get('channel_follower_count', 'Unknown subscribers')
-                                if isinstance(transformed_subscribers, int):
-                                    transformed_subscribers = f"{transformed_subscribers:,} Subscribers"
-
-                                transformed_entry = {
-                                        'title': transformed_title,
-                                        'link': transformed_link,
-                                        'channel': {'name': transformed_channel},
-                                        'descriptionSnippet': transformed_descriptionSnippet,
-                                        'thumbnails': transformed_thumbnails,
-                                        'accessibility': transformed_accessibility,
-                                        'subscribers': transformed_subscribers
-                                    }
-
-                                transformed_results.append(transformed_entry)
-
-                            break
+                        break
 
                 else:
                     message = f"{current_time()} ERROR: Unable to find YouTube videos using all methods."
 
-            if transformed_results:
+            if info_dict_entries:
+               
+                for info_dict_entry in info_dict_entries:
 
-                    if search_type in ["videos", "channels"]:
-                        base_results = {'result': transformed_results}
-                    elif search_type.startswith("videos_"):
-                        base_results = type('obj', (object,), {'videos': transformed_results})()
+                    title = info_dict_entry.get('title', 'Unknown Title')
 
-            else:
-                base_results = {}
-
-            if base_results:
-
-                if search_type in ["videos", "channels"]:
-                    processed_results = base_results.get('result', [])
-                elif search_type.startswith("videos_"):
-                    processed_results = base_results.videos
-                
-                for processed_result in processed_results:
-                    title = processed_result.get('title', 'Unknown Title')
-
-                    channel = processed_result.get('channel', {}).get('name', 'Unknown Channel')
                     if search_type.startswith("videos"):
-                        release_year = f"Channel: {channel}"                      
+                        release_year = f"Channel: {info_dict_entry.get('channel', 'Unknown Channel')}"
+
+                        published_text = info_dict_entry.get('published_text', None)
+                        if published_text not in [None, 'None', 'null', ''] and 'Unknown' not in published_text:
+                            release_year += f" | "
+                            if not published_text.startswith("Streamed"):
+                                release_year += f"Published "
+                            if positive_integer_test(published_text, False) == 'pass':
+                                published_text = datetime.datetime.fromtimestamp(published_text, tz=datetime.timezone.utc).strftime("%Y-%m-%d")
+                            release_year += f"{published_text}"
+
                     elif search_type == "channels":
-                        release_year = channel
+                        release_year = info_dict_entry.get('handle', 'Unknown @ Channel Handle')
                         
-                    url = processed_result.get('link', 'http://url_not_found')
+                    url = info_dict_entry.get('url', 'https://url_not_found.com')
                     if search_type.startswith("videos_"):
                         url = url.split('&list=')[0]
                     
-                    desc_snippet = processed_result.get('descriptionSnippet') or []
-                    short_description = "".join([d.get('text', '') for d in desc_snippet if 'text' in d])
+                    if search_type.startswith("videos"):
+                        short_description = info_dict_entry.get('description_snippet', '')
+                    elif search_type == "channels":
+                        short_description = info_dict_entry.get('description', '')
                     
-                    thumbnails = processed_result.get('thumbnails', [])
+                    thumbnails = info_dict_entry.get('thumbnails', [])
                     if thumbnails:
                         poster = max(thumbnails, key=lambda t: t.get('width', 0)).get('url', default_poster_url)
                     else:
@@ -4250,32 +4387,34 @@ def search_video_providers(providers, query, search_type, num_results, language_
                         poster = f"https:{poster}"
                     
                     if search_type == "channels":
-                        score = processed_result.get('subscribers', 'Unknown subscribers')
-                    elif search_type == "videos_from_playlist":
-                        playlist_name = None
-                        try:
-                            if isinstance(base_info, dict):
-                                playlist_name = (
-                                    base_info.get('title')
-                                    or base_info.get('playlist_title')
-                                    or base_info.get('fulltitle')
-                                    or base_info.get('name')
-                                    or base_info.get('playlist')
-                                )
-                            else:
-                                playlist_name = (
-                                    getattr(base_info, 'title', None)
-                                    or getattr(base_info, 'playlist_title', None)
-                                    or getattr(base_info, 'fulltitle', None)
-                                    or getattr(base_info, 'name', None)
-                                    or getattr(base_info, 'playlist', None)
-                                )
-                        except Exception:
-                            playlist_name = None
+                        score = info_dict_entry.get('subscriber_count', 'Unknown subscribers')
 
-                        score = playlist_name or 'Unknown Playlist Name'
+                    elif search_type == "videos_from_playlist":
+                        score = info_dict.get('title', 'Unknown Playlist')
+
                     elif search_type in ["videos", "videos_from_channel"]:
-                        score = f"Duration: {processed_result.get('accessibility', {}).get('duration', 'Unknown')}"
+                        if info_dict_entry.get('duration', '') == 'Upcoming':
+                            score = f"{info_dict_entry.get('duration', '')} YouTube Live"
+                            
+                        elif info_dict_entry.get('is_short', False) in [True, 'True', 'true', 'TRUE']:
+                            score = "YouTube Short"
+
+                        else:
+                            try:
+                                duration_seconds = int(info_dict_entry.get('duration_seconds', 0))
+                            except:
+                                duration_seconds = 0
+
+                            if duration_seconds > 0:
+                                duration_formatted = format_duration_to_string(duration_seconds)
+                            else:
+                                duration_formatted = 'Unknown'
+
+                            score = f"Duration: {duration_formatted}"
+                        
+                        view_count = info_dict_entry.get('view_count', None)
+                        if view_count:
+                            score += f" | {view_count}"
 
                     extracted_data.append({
                         "entry_id": search_type,
@@ -4292,8 +4431,9 @@ def search_video_providers(providers, query, search_type, num_results, language_
     return extracted_data, message
 
 # Find new programs on selected Streaming Services
-def get_program_new(date_new_default_range, country_code, language_code, num_results, provider_status, video_providers):
+def get_program_new(date_new_default_range, country_code, language_code, num_results, provider_status, video_providers, channel_videos_num_results):
     program_new_results_json_array_extracted_unique = []
+    message = None
 
     provider_groups = read_data(csv_provider_groups)
 
@@ -4866,11 +5006,22 @@ def get_program_new(date_new_default_range, country_code, language_code, num_res
     if check_video_services_codes:
         for check_video_services_code in check_video_services_codes:
             check_video_services_code_result = None
-            check_video_services_code_result, message_throwaway = search_video_providers(video_providers, check_video_services_code, 'videos_from_channel', num_results, language_code, country_code)
+            check_video_services_code_result_message = None
+
+            check_video_services_code_result, check_video_services_code_result_message = search_video_providers(video_providers, check_video_services_code, 'videos_from_channel', channel_videos_num_results, False, 'none')
+
             if check_video_services_code_result:
                 program_new_results_json_array_extracted_unique.extend(check_video_services_code_result)
 
-    return program_new_results_json_array_extracted_unique
+            if check_video_services_code_result_message:
+                if message not in [None, '']:
+                    message += f"\n"
+                    message += check_video_services_code_result_message
+                
+                else:
+                    message = check_video_services_code_result_message
+
+    return program_new_results_json_array_extracted_unique, message
 
 # Get a map for Streaming Services from "Clear Name" to "Short Name"
 def get_streaming_services_map():
@@ -4946,6 +5097,7 @@ def run_slm_update_feed():
         settings_country_code = settings[2]["settings"]                     # [2]  Search Defaults: Country Code
         settings_language_code = settings[3]["settings"]                    # [3]  Search Defaults: Language Code
         settings_minimum_video_length = settings[65]["settings"]            # [65] SLM: Minimum Video Length (in Seconds) for Search
+        settings_video_channel_max_results = settings[80]["settings"]       # [80] SLM: Video Channels max number of videos by type (0 = Unlimited)
 
         if settings_use_feed_map == 'On':
 
@@ -4979,10 +5131,16 @@ def run_slm_update_feed():
                         for i in range(int(feed_rule['date_range']) + 1)
                     ]  
                     
-                    num_results = 100 # Maximum number of new programs
-
                     if date_new_default_range:
-                        feed_search_results_base = get_program_new(date_new_default_range, settings_country_code, settings_language_code, num_results, feed_rule['provider'], video_providers)
+                        if feed_rule['override_max_videos_number'] not in ['', None]:
+                            video_channel_max_results = feed_rule['override_max_videos_number']
+                        else:
+                            video_channel_max_results = settings_video_channel_max_results
+
+                        feed_search_results_base, feed_search_message = get_program_new(date_new_default_range, settings_country_code, settings_language_code, 100, feed_rule['provider'], video_providers, video_channel_max_results)
+
+                    if feed_search_message:
+                        print(f"{feed_search_message}")
 
                     if feed_search_results_base:
                         if feed_rule['override_min_video_length'] not in ['', None]:
@@ -5226,7 +5384,24 @@ def filter_clean_slm_search_results(program_search_results_check, hide_bookmarke
         program_search_results_check = [entry for entry in program_search_results_check if entry['entry_id'] not in hidden_bookmarks and entry['url'] not in hidden_videos and entry['url'] not in hidden_subscribed_video_channels]
 
         # Filter out videos with durations less than xxx seconds
-        below_minimum_video_length_lookup = [program_search_result['url'] for program_search_result in program_search_results_check if program_search_result['object_type'] == "VIDEO" and int(parse_duration_to_seconds(program_search_result['score'])) <= int(minimum_video_length) ]
+        below_minimum_video_length_lookup = set()
+        for program_search_result in program_search_results_check:
+            score_value = program_search_result['score']
+            if ' |' in score_value:
+                score_value = score_value.split(' |', 1)[0]
+
+            if (
+                    ( program_search_result['object_type'] == "VIDEO" ) and 
+                    ( not any(term in score_value for term in ['Unknown', 'YouTube']) )
+            ):
+            
+                try:
+                    if int(parse_duration_to_seconds(score_value)) <= int(minimum_video_length):
+                        below_minimum_video_length_lookup.add(program_search_result['url'])
+
+                except:
+                    print(f"{current_time()} WARNING: While fitering out videos for durations less than xxx seconds, item had a duration value of '{program_search_result['score']}' which could not be converted to a number.")
+
         program_search_results_check = [entry for entry in program_search_results_check if entry['url'] not in below_minimum_video_length_lookup]
 
     if program_search_results_check:
@@ -5682,7 +5857,10 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
                             'channel_url': field_url,
                             'channel_image': field_poster,
                             'channel_streaming_service_group': channel_streaming_service_group,
-                            'channel_hidden': channel_hidden
+                            'channel_hidden': channel_hidden,
+                            'channel_video_type_regular': 'On',
+                            'channel_video_type_live': 'On',
+                            'channel_video_type_shorts': 'On'
                         })
 
                     if any(term in field_action for term in ['edit', 'manual', 'playlist', 'new']):
@@ -5898,60 +6076,55 @@ def get_video_metadata(url):
         override_duration
     ]
 
-    m3u8_url, m3u8_protocol, info_dict = get_online_video(url, "metadata")
+    if 'youtu' in url:
 
-    if info_dict:
+        try:
+            info_dict = tubescrape.YouTube().get_video_info(url)
+        except Exception as error:
+            print(f"{current_time()} ERROR: While processing '{url}' using primary 'tubescrape' method, received '{error}'.")
 
-        original_release_date = info_dict.get('upload_date', None)
-        if original_release_date:
-            original_release_date = f"{original_release_date[:4]}-{original_release_date[4:6]}-{original_release_date[6:]}"
-        override_episode_title = info_dict.get('title', None)
-        override_summary = info_dict.get('description', None)
-        override_image = info_dict.get('thumbnail', None)
-        override_duration = info_dict.get('duration', None)
-
-        if not override_image:
-            thumbnails = info_dict.get('thumbnails', [])
-            if thumbnails:
-                override_image = thumbnails[0].get('url', None)
-
-        for metadata_item in metadata_items:
-            if metadata_item is not None:
-                if metadata_item.lower() == "null":
-                    metadata_item = None
-
-    else:
-
-        video_id = None
-
-        if 'youtu' in url:
-            video_id = url
-
-        if video_id:
-            try:
-                info_dict = tubescrape.YouTube().get_video_info(video_id)
-            except Exception as error:
-                print(f"{current_time()} ERROR: While processing {url} using secondary method, error was: {error}")
-
-            tubescrape.YouTube().close()
+        tubescrape.YouTube().close()
 
         if info_dict:
+
             info_dict = info_dict.to_dict()
 
-            original_release_date = '9999-12-31'
+            original_release_date = info_dict.get('publish_date', '9999-12-31')[:10]
             override_episode_title = info_dict.get('title', None)
             override_summary = info_dict.get('description', None)
-            thumbnails = info_dict.get('thumbnails', [])
-            if thumbnails:
-                override_image = max(thumbnails, key=lambda t: t.get('width', 0)).get('url', default_poster_url)
+            override_image = info_dict.get('thumbnail', None)
             override_duration = info_dict.get('duration_seconds', None)
+
+        else:
+            
+            m3u8_url, m3u8_protocol, info_dict = get_online_video(url, "metadata")
+
+            original_release_date = info_dict.get('upload_date', '9999-12-31')
+            if original_release_date:
+                original_release_date = f"{original_release_date[:4]}-{original_release_date[4:6]}-{original_release_date[6:]}"
+            override_episode_title = info_dict.get('title', None)
+            override_summary = info_dict.get('description', None)
+            override_image = info_dict.get('thumbnail', None)
+            override_duration = info_dict.get('duration', None)
+
+        if info_dict:
+
+            for metadata_item in metadata_items:
+                if metadata_item is not None:
+                    if metadata_item.lower() == "null":
+                        metadata_item = None
+
+            if not override_image:
+                thumbnails = info_dict.get('thumbnails', [])
+                if thumbnails:
+                    override_image = max(thumbnails, key=lambda t: t.get('width', 0)).get('url', default_poster_url)
+
             if override_duration:
                 if override_duration == '0' or int(override_duration) == 0:
-                    override_duration = None
+                    override_duration = ''
 
-    if override_duration:
-        if override_duration == '0' or int(override_duration) == 0:
-            override_duration = ''
+        else:
+            print(f"{current_time()} ERROR: All methods for processing '{url}' failed.")
 
     return original_release_date, override_episode_title, override_summary, override_image, override_duration
 
@@ -6464,6 +6637,9 @@ def webpage_manage_providers():
                         subscribed_video_channel_description_new_input = request.form.get('subscribed_video_channel_description_new')
                         subscribed_video_channel_url_new_input = request.form.get('subscribed_video_channel_url_new')
                         subscribed_video_channel_image_new_input = request.form.get('subscribed_video_channel_image_new')
+                        subscribed_video_channel_video_type_regular_new_input = 'On' if request.form.get('subscribed_video_channel_video_type_regular_new') == 'on' else 'Off'
+                        subscribed_video_channel_video_type_live_new_input = 'On' if request.form.get('subscribed_video_channel_video_type_live_new') == 'on' else 'Off'
+                        subscribed_video_channel_video_type_shorts_new_input = 'On' if request.form.get('subscribed_video_channel_video_type_shorts_new') == 'on' else 'Off'
                         subscribed_video_channel_streaming_service_group_new_input = request.form.get('subscribed_video_channel_streaming_service_group_new')
 
                         subscribed_video_channel_url_new_input_valid, subscribed_video_channels_message = check_video_channel_url(subscribed_video_channel_url_new_input, subscribed_video_channels, subscribed_video_channel_id_new_input)
@@ -6478,7 +6654,10 @@ def webpage_manage_providers():
                                 "channel_url": subscribed_video_channel_url_new_input,
                                 "channel_image": subscribed_video_channel_image_new_input,
                                 "channel_streaming_service_group": subscribed_video_channel_streaming_service_group_new_input,
-                                "channel_hidden": "False"
+                                "channel_hidden": "False",
+                                "channel_video_type_regular": subscribed_video_channel_video_type_regular_new_input,
+                                "channel_video_type_live": subscribed_video_channel_video_type_live_new_input,
+                                "channel_video_type_shorts": subscribed_video_channel_video_type_shorts_new_input
                             })
                             
                         else:
@@ -6493,6 +6672,9 @@ def webpage_manage_providers():
                         subscribed_video_channel_description_inputs = {}
                         subscribed_video_channel_url_inputs = {}
                         subscribed_video_channel_image_inputs = {}
+                        subscribed_video_channel_video_type_regular_inputs = {}
+                        subscribed_video_channel_video_type_live_inputs = {}
+                        subscribed_video_channel_video_type_shorts_inputs = {}
                         subscribed_video_channel_streaming_service_group_inputs = {}
 
                         total_number_of_checkboxes = len(subscribed_video_channels)
@@ -6527,6 +6709,18 @@ def webpage_manage_providers():
                                 index = key.split('_')[-1]
                                 subscribed_video_channel_image_inputs[index] = request.form.get(key)
 
+                            if key.startswith('subscribed_video_channel_video_type_regular_'):
+                                index = key.split('_')[-1]
+                                subscribed_video_channel_video_type_regular_inputs[index] = 'On' if request.form.get(key) in ['on', 'On', 'ON'] else 'Off'
+
+                            if key.startswith('subscribed_video_channel_video_type_live_'):
+                                index = key.split('_')[-1]
+                                subscribed_video_channel_video_type_live_inputs[index] = 'On' if request.form.get(key) in ['on', 'On', 'ON'] else 'Off'
+
+                            if key.startswith('subscribed_video_channel_video_type_shorts_'):
+                                index = key.split('_')[-1]
+                                subscribed_video_channel_video_type_shorts_inputs[index] = 'On' if request.form.get(key) in ['on', 'On', 'ON'] else 'Off'
+
                             if key.startswith('subscribed_video_channel_streaming_service_group_'):
                                 index = key.split('_')[-1]
                                 subscribed_video_channel_streaming_service_group_inputs[index] = request.form.get(key)
@@ -6547,6 +6741,9 @@ def webpage_manage_providers():
                             subscribed_video_channel_description_input = subscribed_video_channel_description_inputs.get(row)
                             subscribed_video_channel_url_input = subscribed_video_channel_url_inputs.get(row)
                             subscribed_video_channel_image_input = subscribed_video_channel_image_inputs.get(row)
+                            subscribed_video_channel_video_type_regular_input = subscribed_video_channel_video_type_regular_inputs.get(row)
+                            subscribed_video_channel_video_type_live_input = subscribed_video_channel_video_type_live_inputs.get(row)
+                            subscribed_video_channel_video_type_shorts_input = subscribed_video_channel_video_type_shorts_inputs.get(row)
                             subscribed_video_channel_streaming_service_group_input = subscribed_video_channel_streaming_service_group_inputs.get(row)
 
                             for subscribed_video_channel in subscribed_video_channels:
@@ -6564,6 +6761,9 @@ def webpage_manage_providers():
                                         else:
                                             subscribed_video_channels_save_errors = int(subscribed_video_channels_save_errors) +1
                                         subscribed_video_channel['channel_image'] = subscribed_video_channel_image_input
+                                        subscribed_video_channel['channel_video_type_regular'] = subscribed_video_channel_video_type_regular_input
+                                        subscribed_video_channel['channel_video_type_live'] = subscribed_video_channel_video_type_live_input
+                                        subscribed_video_channel['channel_video_type_shorts'] = subscribed_video_channel_video_type_shorts_input
                                         subscribed_video_channel['channel_streaming_service_group'] = subscribed_video_channel_streaming_service_group_input
                                         if subscribed_video_channel_active_input == "On" and subscribed_video_channel['channel_hidden'] == "True":
                                             subscribed_video_channel['channel_hidden'] = "False"
@@ -6813,8 +7013,13 @@ def webpage_playlists(sub_page):
     max_stations = settings[12]['settings']
     plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
     plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Status On/Off
+    plm_station_status_number_attempts = settings[61]['settings']               # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
+    plm_station_status_delay_attempts = settings[62]['settings']                # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
+    plm_station_status_skip_after_fails = settings[63]['settings']              # [63] PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)
     plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
     plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
+    plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
+    plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
     settings_message = ''
 
     playlists_anchor_id = None
@@ -6895,31 +7100,45 @@ def webpage_playlists(sub_page):
                     max_stations_input = request.form.get('max_stations')
                     plm_url_tag_in_m3us_input = request.form.get('plm_url_tag_in_m3us')
                     plm_check_child_station_status_input = request.form.get('plm_check_child_station_status')
+                    plm_station_status_number_attempts_input = request.form.get('plm_station_status_number_attempts')
+                    plm_station_status_delay_attempts_input = request.form.get('plm_station_status_delay_attempts')
+                    plm_station_status_skip_after_fails_input = request.form.get('plm_station_status_skip_after_fails')
 
                     try:
-                        if int(station_start_number_input) > 0 and int(max_stations_input) > 0:
+                        if ( 
+                            ( int(station_start_number_input) > 0 ) and 
+                            ( int(max_stations_input) > 0 ) and
+                            ( int(plm_station_status_number_attempts_input) > 0 ) and 
+                            ( int(plm_station_status_delay_attempts_input) > 0 ) and 
+                            ( int(plm_station_status_skip_after_fails_input) >= 0 )
+                        
+                        ):
                             
                             settings[11]['settings'] = int(station_start_number_input)
                             settings[12]['settings'] = int(max_stations_input)
                             settings[42]['settings'] = "On" if plm_url_tag_in_m3us_input == 'on' else "Off"
                             settings[59]['settings'] = "On" if plm_check_child_station_status_input == 'on' else "Off"
                             plm_check_child_station_status_global = True if settings[59]['settings'] == "On" else None
+                            settings[61]['settings'] = int(plm_station_status_number_attempts_input)
+                            settings[62]['settings'] = int(plm_station_status_delay_attempts_input)
+                            settings[63]['settings'] = int(plm_station_status_skip_after_fails_input)
+
                             if settings[42]['settings'] == "On":
                                 settings[43]['settings'] = f"{request.url_root}"
 
                         else:
-                            settings_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
+                            settings_message = f"{current_time()} ERROR: Numeric fields must be positive integers or default values."
+
                     except ValueError:
-                        settings_message = f"{current_time()} ERROR: 'Station Start Number' and 'Max Stations per m3u' must be numbers."
+                        settings_message = f"{current_time()} ERROR: Numeric fields must be numbers."
 
                 elif playlists_action == 'internal_playlists_save_settings':
-                    plm_streaming_stations_input = request.form.get('plm_streaming_stations')
-                    plm_internal_pbs_stations_input = request.form.get('plm_internal_pbs_stations')
-                    plm_internal_pbs_url_base_input = request.form.get('plm_internal_pbs_url_base')
-                    if plm_internal_pbs_url_base_input == '' or plm_internal_pbs_url_base_input is None:
-                        plm_internal_pbs_url_base_input = 'http://[address_required]:[port_required]'
 
                     # Streaming Stations
+                    plm_streaming_stations_input = request.form.get('plm_streaming_stations')
+                    plm_streaming_stations_station_start_number_input = request.form.get('plm_streaming_stations_station_start_number')
+                    plm_streaming_stations_max_stations_input = request.form.get('plm_streaming_stations_max_stations')
+
                     settings[39]["settings"] = "On" if plm_streaming_stations_input == 'on' else "Off"
                     if plm_streaming_stations_input == 'on':
                         plm_streaming_stations = True
@@ -6927,7 +7146,23 @@ def webpage_playlists(sub_page):
                     else:
                         plm_streaming_stations = None
 
+                    try:
+                        if int(plm_streaming_stations_station_start_number_input) > 0 and int(plm_streaming_stations_max_stations_input) > 0:
+                            settings[40]['settings'] = int(plm_streaming_stations_station_start_number_input)
+                            settings[41]['settings'] = int(plm_streaming_stations_max_stations_input)
+
+                        else:
+                            settings_message = f"{current_time()} ERROR: For Streaming Stations, 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
+                    
+                    except ValueError:
+                        settings_message = f"{current_time()} ERROR: For Streaming Stations, 'Station Start Number' and 'Max Stations per m3u' must be numbers."
+
                     # PBS Stations
+                    plm_internal_pbs_stations_input = request.form.get('plm_internal_pbs_stations')
+                    plm_internal_pbs_url_base_input = request.form.get('plm_internal_pbs_url_base')
+                    if plm_internal_pbs_url_base_input == '' or plm_internal_pbs_url_base_input is None:
+                        plm_internal_pbs_url_base_input = 'http://[address_required]:[port_required]'
+
                     settings[48]['settings'] = "On" if plm_internal_pbs_stations_input == 'on' else "Off"
                     settings[49]['settings'] = plm_internal_pbs_url_base_input
 
@@ -6937,8 +7172,13 @@ def webpage_playlists(sub_page):
                 max_stations = settings[12]['settings']
                 plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
                 plm_check_child_station_status = settings[59]['settings']                   # [59] PLM/MTM: Check Child Station Status On/Off
+                plm_station_status_number_attempts = settings[61]['settings']               # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
+                plm_station_status_delay_attempts = settings[62]['settings']                # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
+                plm_station_status_skip_after_fails = settings[63]['settings']              # [63] PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)
                 plm_internal_pbs_stations = settings[48]['settings']                        # [48] PLM: Internal PBS Stations On/Off
                 plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
+                plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
+                plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
 
                 uploaded_playlist_files = get_uploaded_playlist_files()
 
@@ -7984,9 +8224,14 @@ def webpage_playlists(sub_page):
         html_max_stations = max_stations,
         html_plm_url_tag_in_m3us = plm_url_tag_in_m3us,
         html_plm_check_child_station_status = plm_check_child_station_status,
+        html_plm_station_status_number_attempts = plm_station_status_number_attempts,
+        html_plm_station_status_delay_attempts = plm_station_status_delay_attempts,
+        html_plm_station_status_skip_after_fails = plm_station_status_skip_after_fails,
         html_settings_message = settings_message,
         html_plm_internal_pbs_stations = plm_internal_pbs_stations,
         html_plm_internal_pbs_url_base = plm_internal_pbs_url_base,
+        html_plm_streaming_stations_station_start_number = plm_streaming_stations_station_start_number,
+        html_plm_streaming_stations_max_stations = plm_streaming_stations_max_stations,
         html_station_mappings = station_mappings,
         html_station_mapping_source_m3u_ids = station_mapping_source_m3u_ids,
         html_station_mapping_source_fields = station_mapping_source_fields,
@@ -10396,11 +10641,6 @@ def webpage_playlists_streams():
     global filter_streams_tvc_stream_vcodec
     global filter_streams_tvc_stream_acodec
 
-    settings = read_data(csv_settings)
-    plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
-    plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
-    settings_message = ''
-
     streaming_stations = read_data(csv_playlistmanager_streaming_stations)
 
     streaming_station_options = [
@@ -10417,29 +10657,7 @@ def webpage_playlists_streams():
     if request.method == 'POST':
         action = request.form['action']
 
-        if action.endswith('settings'):
-
-            if action == 'plm_streaming_stations_save_settings':
-                plm_streaming_stations_station_start_number_input = request.form.get('plm_streaming_stations_station_start_number')
-                plm_streaming_stations_max_stations_input = request.form.get('plm_streaming_stations_max_stations')
-
-                try:
-                    if int(plm_streaming_stations_station_start_number_input) > 0 and int(plm_streaming_stations_max_stations_input) > 0:
-                        settings[40]['settings'] = int(plm_streaming_stations_station_start_number_input)
-                        settings[41]['settings'] = int(plm_streaming_stations_max_stations_input)
-
-                    else:
-                        settings_message = f"{current_time()} ERROR: For Streaming Stations, 'Station Start Number' and 'Max Stations per m3u' must be positive integers."
-                
-                except ValueError:
-                    settings_message = f"{current_time()} ERROR: For Streaming Stations, 'Station Start Number' and 'Max Stations per m3u' must be numbers."
-
-                write_data(csv_settings, settings)
-                settings = read_data(csv_settings)
-                plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
-                plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
-
-        elif action.endswith('test'):
+        if action.endswith('test'):
             streaming_stations_source_test_input = request.form.get('streaming_stations_source_test')
             streaming_stations_url_test_input = request.form.get('streaming_stations_url_test')
 
@@ -10693,10 +10911,7 @@ def webpage_playlists_streams():
         html_filter_streams_tvc_guide_categories = filter_streams_tvc_guide_categories,
         html_filter_streams_tvc_guide_placeholders = filter_streams_tvc_guide_placeholders,
         html_filter_streams_tvc_stream_vcodec = filter_streams_tvc_stream_vcodec,
-        html_filter_streams_tvc_stream_acodec = filter_streams_tvc_stream_acodec,
-        html_plm_streaming_stations_station_start_number = plm_streaming_stations_station_start_number,
-        html_plm_streaming_stations_max_stations = plm_streaming_stations_max_stations,
-        html_settings_message = settings_message
+        html_filter_streams_tvc_stream_acodec = filter_streams_tvc_stream_acodec
     )
 
 # Check a Station Status and get additional details
@@ -10707,12 +10922,6 @@ def webpage_playlists_station_status():
     global station_status_results_prior
     global station_status_message_prior
 
-    settings = read_data(csv_settings)
-    plm_station_status_number_attempts = settings[61]['settings']           # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
-    plm_station_status_delay_attempts = settings[62]['settings']            # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
-    plm_station_status_skip_after_fails = settings[63]['settings']          # [63] PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)
-    settings_message = ''
-    
     station_status_child_m3u_id_channel_id_input = None
     station_status_manual_link_input = None
     
@@ -10732,31 +10941,6 @@ def webpage_playlists_station_status():
 
     if request.method == 'POST':
         action = request.form['action']
-
-        if action.endswith('settings'):
-
-            if action == 'plm_station_status_save_settings':
-                plm_station_status_number_attempts_input = request.form.get('plm_station_status_number_attempts')
-                plm_station_status_delay_attempts_input = request.form.get('plm_station_status_delay_attempts')
-                plm_station_status_skip_after_fails_input = request.form.get('plm_station_status_skip_after_fails')
-
-                try:
-                    if int(plm_station_status_number_attempts_input) > 0 and int(plm_station_status_delay_attempts_input) > 0 and int(plm_station_status_skip_after_fails_input) >= 0:
-                        settings[61]['settings'] = int(plm_station_status_number_attempts_input)
-                        settings[62]['settings'] = int(plm_station_status_delay_attempts_input)
-                        settings[63]['settings'] = int(plm_station_status_skip_after_fails_input)
-
-                    else:
-                        settings_message = f"{current_time()} ERROR: For Station Status 'Number of Attempts' and 'Delay Between Attempts' must be positive integers, and 'Skip Playlist After Fails' must be the same or zero to disable."
-                
-                except ValueError:
-                    settings_message = f"{current_time()} ERROR: For Station Status, 'Number of Attempts', 'Delay Between Attempts', and 'Skip Playlist After Fails' must be numbers."
-
-                write_data(csv_settings, settings)
-                settings = read_data(csv_settings)
-                plm_station_status_number_attempts = settings[61]['settings']           # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
-                plm_station_status_delay_attempts = settings[62]['settings']            # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
-                plm_station_status_skip_after_fails = settings[63]['settings']          # [63] PLM/MTM: Check Child Station Status Skip Playlist After Fails (0 = Disabled)
 
         if action.startswith('station_status'):
             
@@ -10786,10 +10970,6 @@ def webpage_playlists_station_status():
         html_slm_media_tools_manager = slm_media_tools_manager,
         html_plm_streaming_stations = plm_streaming_stations,
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
-        html_settings_message = settings_message,
-        html_plm_station_status_number_attempts = plm_station_status_number_attempts,
-        html_plm_station_status_delay_attempts = plm_station_status_delay_attempts,
-        html_plm_station_status_skip_after_fails = plm_station_status_skip_after_fails,
         html_station_status_selections = station_status_selections,
         html_station_status_child_m3u_id_channel_id_prior = station_status_child_m3u_id_channel_id_prior,
         html_station_status_manual_link_prior = station_status_manual_link_prior,
@@ -10833,7 +11013,6 @@ def get_station_status(station_status_child_m3u_id_channel_id_input, station_sta
 
 # Creates an m3u8 or video file for an individual live stream (HLS) or static video
 @app.route('/playlists/streams/stream', methods=['GET'])
-@app.route('/playlists/streams/youtubelive', methods=['GET']) # Old method, to be removed in the future
 def streams_live():
     response = "URL is required"
     url = request.args.get('url', type=str)
@@ -10955,7 +11134,7 @@ def parse_online_video(url, ydl_opts, parse_type):
                         no_n_param = 0
 
                         for format in formats:
-                            # print(f"{current_time()} INFO: Found format: {format}")               # Keep this for testing but not production
+                            print(f"{current_time()} INFO: Found format: {format}")               # Keep this for testing but not production
 
                             is_throttled = False
                             missing_n_param = False
@@ -11222,6 +11401,155 @@ def chunk_play_stream(fd):
             yield chunk
     finally:
         fd.close()
+
+# Finds the highest priority child stream for a parent station and checks its status. If it is available, it returns that stream. If not, it continues in priorty order until a working one is found.
+@app.route('/playlists/streams/fallback', methods=['GET'])
+def stream_parent_fallback():
+    try:
+        submitted_parent_channel_id = request.args.get('parent', type=str)
+    except:
+        submitted_parent_channel_id = None
+    response = "A valid 'parent_channel_id' is required in the format '?parent=[parent_channel_id]'..."
+    print_response = True
+
+    parents = []
+    maps = []
+    stations = []
+    playlists = []
+    lookup_parent_titles = {}
+    lookup_active_parent_channel_ids = {}
+    lookup_inactive_parent_channel_ids = {}
+    lookup_parent_preferred_playlists = {}
+    lookup_station_child_m3u_id_channel_ids = {}
+    lookup_station_urls = {}
+    lookup_station_station_playlists = {}
+    lookup_playlists_m3u_ids = {}
+    lookup_mapped_parent_channel_ids = set()
+    parent_title = None
+    submitted_parent_preferred_playlist = None
+    playlist_preferences = []
+    no_more_children = True
+
+    parents = read_data(csv_playlistmanager_parents)
+    maps = read_data(csv_playlistmanager_child_to_parent)
+    stations = read_data(csv_playlistmanager_combined_m3us)
+    playlists = read_data(csv_playlistmanager_playlists)
+    playlists.sort(key=lambda x: int(x.get("m3u_priority", float("inf"))))
+
+    lookup_parent_titles = {parent['parent_channel_id']: parent['parent_title'] for parent in parents}
+    lookup_active_parent_channel_ids = {parent['parent_channel_id'] for parent in parents if parent['parent_active'] in ['On', 'on', 'ON']}
+    lookup_inactive_parent_channel_ids = {parent['parent_channel_id'] for parent in parents if parent['parent_active'] not in ['On', 'on', 'ON']}
+    lookup_parent_preferred_playlists = {parent['parent_channel_id']: parent['parent_preferred_playlist'] for parent in parents}
+    lookup_station_child_m3u_id_channel_ids = {f"{station['m3u_id']}_{station['channel_id']}" for station in stations}
+    lookup_station_urls = {f"{station['m3u_id']}_{station['channel_id']}": station['url'] for station in stations}
+    lookup_station_station_playlists = {f"{station['m3u_id']}_{station['channel_id']}": station['station_playlist'] for station in stations}
+    lookup_playlists_m3u_ids = {playlist['m3u_id'] for playlist in playlists}
+
+    for map in maps:
+        if map['parent_channel_id'] not in lookup_mapped_parent_channel_ids:
+            lookup_mapped_parent_channel_ids.add(map['parent_channel_id'])
+
+    if submitted_parent_channel_id:
+
+        if submitted_parent_channel_id in lookup_inactive_parent_channel_ids:
+            response = f"Parent station with the ID '{submitted_parent_channel_id}' is inactive. Please activate this parent station first!"
+
+        elif submitted_parent_channel_id in lookup_active_parent_channel_ids:
+
+            parent_title = lookup_parent_titles[submitted_parent_channel_id]
+            print(f"{current_time()} INFO: Attempting to play parent station '{parent_title}'...")
+
+            if submitted_parent_channel_id in lookup_mapped_parent_channel_ids:
+
+                submitted_parent_preferred_playlist = lookup_parent_preferred_playlists[submitted_parent_channel_id]
+
+                if submitted_parent_preferred_playlist not in [None, 'None', 'none', '']:
+                    playlist_preferences.append(submitted_parent_preferred_playlist)
+
+                inactive_playlists = []
+                for playlist in playlists:
+                    if playlist['m3u_active'] == "On":
+                        playlist_preferences.append(playlist['m3u_id'])
+                    else:
+                        inactive_playlists.append(playlist['m3u_id'])
+                
+                if submitted_parent_preferred_playlist in inactive_playlists:
+                    playlist_preferences.remove(submitted_parent_preferred_playlist)
+
+                children = []
+                for map in maps:
+                    if (
+                        ( map['parent_channel_id'] == submitted_parent_channel_id ) and 
+                        ( not map['child_station_check'].startswith('Disabled') ) and
+                        ( re.search(r'm3u_\d{4}', map['child_m3u_id_channel_id']).group(0) in lookup_playlists_m3u_ids ) and
+                        ( map['child_m3u_id_channel_id'] in lookup_station_child_m3u_id_channel_ids )
+                    ):
+                        children.append(map)
+
+                if children:
+
+                    children = [child for child in children if re.search(r'm3u_\d{4}', child['child_m3u_id_channel_id']).group(0) in playlist_preferences]
+
+                    children = sorted(
+                        children,
+                        key=lambda child: (
+                            playlist_preferences.index(re.match(r'm3u_\d{4}', child['child_m3u_id_channel_id']).group(0)),
+                            re.sub(r'^m3u_\d{4}_', '', child['child_m3u_id_channel_id'])
+                        )
+                    )
+
+                    for child in children:
+                        child_m3u_id_channel_id = None
+                        enable_child_station_check = None
+                        url = None
+                        station_playlist = None
+                        station_check_response = None
+                        stream_metadata = []
+
+                        child_m3u_id_channel_id = child['child_m3u_id_channel_id']
+                        enable_child_station_check = child['enable_child_station_check']
+                        url = lookup_station_urls[child_m3u_id_channel_id]
+                        station_playlist = lookup_station_station_playlists[child_m3u_id_channel_id]
+
+                        if enable_child_station_check in ['On', 'on', 'ON']:
+                            station_check_response, stream_metadata = test_video_stream(url)
+
+                        if (
+                            ( station_check_response not in ['fail', 'DRM'] ) or
+                            ( enable_child_station_check not in ['On', 'on', 'ON'] )
+                        ):
+
+                            response = redirect(url)
+                            print_response = False
+                            no_more_children = False
+
+                            if enable_child_station_check not in ['On', 'on', 'ON']:
+                                print(f"{current_time()} INFO: Child Station '{station_playlist}' is set to not be checked. Attempting to play directly without verification...")
+
+                            else:
+                                print(f"{current_time()} INFO: Child Station '{station_playlist}' responded '{station_check_response}'. Beginning to play...")
+
+                            break
+
+                        else:
+                            print(f"{current_time()} WARNING: Child Station '{station_playlist}' responded '{station_check_response}'. Attempting next child station...")
+
+                    if no_more_children:
+                        response = f"All children for parent station '{parent_title} (ID: {submitted_parent_channel_id})' failed."
+
+                else:
+                    response = f"Parent station with the ID '{submitted_parent_channel_id}' has no active/enabled children. Please set at least one child station to active and enabled first!"
+
+            else:
+                response = f"Parent station with the ID '{submitted_parent_channel_id}' has no children. Please map a child station first!"
+
+        else:
+            response = f"No parent station with the ID '{submitted_parent_channel_id}' found. Please submit a valid value!"
+
+    if print_response:
+        print(f"{current_time()} INFO: {response}")
+
+    return response
 
 # Creates the m3u(s) for Streaming Stations
 def make_streaming_stations_m3us():
@@ -13735,13 +14063,15 @@ def get_new_episodes(entry_id_filter, generate_offers_flag, include_disabled_fla
         check_feed_video_bookmarks = []
 
         for video_bookmark in video_bookmarks:
+            
+            message_loop = None
 
             if video_bookmark['bookmark_action'] == 'Sync Online Playlist':
 
                 print(f"{current_time()} INFO: Checking for new videos in the Video Group '{bookmarks_name_lookup[video_bookmark['entry_id']]}'...")
 
                 if not video_bookmark['url'] in [None, '']:
-                    playlist_videos, message_throwaway = search_video_providers(video_providers, video_bookmark['url'], 'videos_from_playlist', 100, video_bookmark['language_code'], video_bookmark['country_code'])
+                    playlist_videos, message_throwaway = search_video_providers(video_providers, video_bookmark['url'], 'videos_from_playlist', 0, False, 'none')
 
                     if playlist_videos:
                         for playlist_video in playlist_videos:
@@ -17132,6 +17462,14 @@ def check_and_create_csv(csv_file):
         if streaming_services_update_flag:
             write_data(csv_file, streaming_services)
 
+    if csv_file == csv_slm_subscribed_video_channels:
+        check_and_add_column(csv_file, 'channel_video_type_regular', 'On')
+        check_and_add_column(csv_file, 'channel_video_type_live', 'On')
+        check_and_add_column(csv_file, 'channel_video_type_shorts', 'On')
+
+    if csv_file == csv_slm_feed_rules:
+        check_and_add_column(csv_file, 'override_max_videos_number', '')
+
     # Append/Remove rows to data that may update
     if csv_file == csv_streaming_services:
         settings = read_data(csv_settings)
@@ -17222,6 +17560,11 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Off"}, 77, "PLM: Run 'Internal Playlist - PBS Scrape' Functionality On/Off")
         check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 78, "PLM: Run 'Internal Playlist - PBS Scrape' Functionality Start Time")
         check_and_append(csv_file, {"settings": "Every 24 hours"}, 79, "PLM: Run 'Internal Playlist - PBS Scrape' Functionality Frequency")
+        check_and_append(csv_file, {"settings": "On"}, 80, "SLM: Show 'YouTube Shorts' in Search Results")
+        check_and_append(csv_file, {"settings": "none"}, 81, "SLM: Video 'upload date' in Search Results")
+        check_and_append(csv_file, {"settings": 0}, 82, "SLM: Video Channels max number of videos by type (0 = Unlimited)")
+        check_and_append(csv_file, {"settings": "On"}, 83, "PLM: Generate 'Default Feed' playlists and guide data")
+        check_and_append(csv_file, {"settings": "Off"}, 84, "PLM: Generate 'Fallback Feed' playlists and guide data")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -17318,7 +17661,12 @@ def initial_data(csv_file):
             {"settings": "Off"},                                                       # [74] SLM: Add Episode Title to TV Show File Name On/Off
             {"settings": "Off"},                                                       # [75] PLM: Run 'Internal Playlist - PBS Scrape' Functionality On/Off
             {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [76] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Start Time
-            {"settings": "Every 24 hours"}                                             # [77] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Frequency
+            {"settings": "Every 24 hours"},                                            # [77] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Frequency
+            {"settings": "On"},                                                        # [78] SLM: Show 'YouTube Shorts' in Search Results
+            {"settings": "none"},                                                      # [79] SLM: Video 'Upload Date' in Search Results (Default)
+            {"settings": 0},                                                           # [80] SLM: Video Channels max number of videos by type (0 = Unlimited)
+            {"settings": "On"},                                                        # [81] PLM: Generate 'Default Feed' playlists and guide data
+            {"settings": "Off"}                                                        # [82] PLM: Generate 'Fallback Feed' playlists and guide data
         ]
 
     # Stream Link/File Manager
@@ -17335,7 +17683,10 @@ def initial_data(csv_file):
             "channel_url": None,
             "channel_image": None,
             "channel_streaming_service_group": None,
-            "channel_hidden": None
+            "channel_hidden": None,
+            "channel_video_type_regular": None,
+            "channel_video_type_live": None,
+            "channel_video_type_shorts": None
         }]
 
     elif csv_file == csv_bookmarks:
@@ -17471,7 +17822,8 @@ def initial_data(csv_file):
             "feed_rule_name": None,
             "provider": None,
             "date_range": None,
-            "override_min_video_length": None
+            "override_min_video_length": None,
+            "override_max_videos_number": None
         }]
 
     elif csv_file == csv_slm_feed_maps:
@@ -18943,9 +19295,9 @@ video_providers = [
     "youtube"
 ]
 youtube_player_clients = [
-    'web_safari',
-    'web',
-    'ios'
+    'web_safari' #,
+    # 'web',
+    # 'ios'
 ]
 
 ### [SLM] Search / Add / Modify Programs
@@ -18991,6 +19343,14 @@ provider_groups_default = [
     }
 ]
 all_season_episodes_offers_lookup = {}
+filter_video_upload_dates = [
+    {'filter_video_upload_date_id': 'none', 'filter_video_upload_date_name': 'No Limit'},
+    {'filter_video_upload_date_id': 'this_year', 'filter_video_upload_date_name': 'This Year'},
+    {'filter_video_upload_date_id': 'this_month', 'filter_video_upload_date_name': 'This Month'},
+    {'filter_video_upload_date_id': 'this_week', 'filter_video_upload_date_name': 'This Week'},
+    {'filter_video_upload_date_id': 'today', 'filter_video_upload_date_name': 'Today'},
+    {'filter_video_upload_date_id': 'last_hour', 'filter_video_upload_date_name': 'Last Hour'}
+]
 
 ### [SLM] Settings and Automation
 slm_stream_address_prior = None
