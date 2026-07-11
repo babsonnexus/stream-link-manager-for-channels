@@ -315,13 +315,14 @@
                           <div class="grid-container" style="text-align: center;">
                             <div class="grid-item"><h6>Active</h6></div>
                             <div class="grid-item" style="grid-column: span 2;"><h6>Name / Description</h6></div>
-                            <div class="grid-item" style="grid-column: span 3;"><h6>Provider(s)
+                            <div class="grid-item" style="grid-column: span 2;"><h6>Provider(s)
                               <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Provider-Groups" target="_blank">
                                 <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
                               </a>
                             </h6></div>
-                            <div class="grid-item" style="grid-column: span 2;"><h6>Date Range</h6></div>
-                            <div class="grid-item"><h6>Override Minimum Video Length (Seconds)</h6></div>
+                            <div class="grid-item" style="grid-column: span 2;"><h6>Movies & TV Shows Date Range</h6></div>
+                            <div class="grid-item" title="In Seconds"><h6>Override Minimum Video Length</h6></div>
+                            <div class="grid-item" title="By Video Type, 0 = Unlimited"><h6>Override Max Videos</h6></div>
                             <div class="grid-item"><h6>Select Action</h6></div>
                           </div>
                           {% if html_feed_rules %}
@@ -339,7 +340,7 @@
                                 <div class="grid-item" style="grid-column: span 2;">
                                   <input type="text" id="program_feed_rule_name_{{ loop.index }}" name="program_feed_rule_name_{{ loop.index }}" value="{{ html_feed_rule.feed_rule_name }}"  title="{{ html_feed_rule.feed_rule_name }}">
                                 </div>
-                                <div class="grid-item" style="grid-column: span 3;">
+                                <div class="grid-item" style="grid-column: span 2;">
                                   <select class="select2" name="program_feed_rule_provider_{{ loop.index }}" id="program_feed_rule_provider_{{ loop.index }}" style="width: 100%;">
                                     {% for provider_status_item in html_provider_statuses %}
                                       <option value="{{ provider_status_item }}" style="width: auto; min-width: 100%;"
@@ -357,6 +358,9 @@
                                 </div>
                                 <div class="grid-item">
                                   <input type="number" min="0" id="program_feed_rule_override_min_video_length_{{ loop.index }}" name="program_feed_rule_override_min_video_length_{{ loop.index }}"  value="{{ html_feed_rule.override_min_video_length }}"  title="{{ html_feed_rule.override_min_video_length }}" style="width: 100%;">
+                                </div>
+                                <div class="grid-item">
+                                  <input type="number" min="0" id="program_feed_rule_override_max_videos_number_{{ loop.index }}" name="program_feed_rule_override_max_videos_number_{{ loop.index }}"  value="{{ html_feed_rule.override_max_videos_number }}"  title="{{ html_feed_rule.override_max_videos_number }}" style="width: 100%;">
                                 </div>
                                 <div class="grid-item">
                                   <select class="select2" name="program_feed_rule_action_{{ loop.index }}" id="program_feed_rule_action_{{ loop.index }}" style="width: 100%;">
@@ -377,7 +381,7 @@
                             <div class="grid-item" style="grid-column: span 2;">
                               <input type="text" id="program_feed_rule_name_new" name="program_feed_rule_name_new" placeholder="i.e., All Shows & Movies" title="i.e., All Shows & Movies">
                             </div>
-                            <div class="grid-item" style="grid-column: span 3;">
+                            <div class="grid-item" style="grid-column: span 2;">
                               <select class="select2" name="program_feed_rule_provider_new" id="program_feed_rule_provider_new" style="width: 100%;">
                                 {% for provider_status_item in html_provider_statuses %}
                                   <option value="{{ provider_status_item }}" style="width: auto; min-width: 100%;">{{ provider_status_item }}</option>
@@ -393,6 +397,9 @@
                             </div>
                             <div class="grid-item">
                               <input type="number" min="0" id="program_feed_rule_override_min_video_length_new" name="program_feed_rule_override_min_video_length_new" placeholder="i.e., 0" title="i.e., 0" style="width: 100%;">
+                            </div>
+                            <div class="grid-item">
+                              <input type="number" min="0" id="program_feed_rule_override_max_videos_number_new" name="program_feed_rule_override_max_videos_number_new" placeholder="i.e., 0" title="i.e., 0" style="width: 100%;">
                             </div>
                             <div class="grid-item">
                               <select class="select2" name="program_feed_rule_action_new" id="program_feed_rule_action_new" style="width: 100%;">
@@ -565,34 +572,43 @@
                       <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
                     </a>
                   </h5>
-                  <div class="search container-fluid">
+                  <div class="search_double container-fluid">
                     <div class="grid-container" style="text-align: center; margin-bottom: -8px;">
-                      <div class="grid-item"><h6>Provider(s)
+                      <div class="grid-item" style="grid-column: span 3;"><h6></h6></div>
+                      <div class="grid-item" style="grid-column: span 2;"><h6>- Movies & TV Shows -</h6></div>
+                      <div class="grid-item" style="grid-column: span 1;"><h6>- Videos -</h6></div>
+                    </div>
+                    <div class="grid-container" style="text-align: center; margin-bottom: -8px;">
+                      <div class="grid-item" style="grid-column: span 3;"><h6>Provider(s)
                         <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Provider-Groups" target="_blank">
                           <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
                         </a>
                       </h6></div>
-                      <div class="grid-item"><h6>From Date</h6></div>
-                      <div class="grid-item"><h6>To Date</h6></div>
+                      <div class="grid-item" style="grid-column: span 1;"><h6>From</h6></div>
+                      <div class="grid-item" style="grid-column: span 1;"><h6>To</h6></div>
+                      <div class="grid-item" style="grid-column: span 1;" title="By Video Type, 0 = Unlimited"><h6>Max</h6></div>
                     </div>
                     <div class="grid-container">
-                      <div class="grid-item">
+                      <div class="grid-item" style="grid-column: span 3;">
                         <select class="select2" name="select_provider_status" id="select_provider_status" style="width: 100%;">
                           {% for provider_status_item in html_provider_statuses %}
                             <option value="{{ provider_status_item }}" {% if provider_status_item == html_settings_provider_status %}selected{% endif %}>{{ provider_status_item }}</option>
                           {% endfor %}
                         </select>
                       </div>
-                      <div class="grid-item">
+                      <div class="grid-item" style="grid-column: span 1;">
                         <input type="date" id="field_date_new_default_start" name="field_date_new_default_start" value="{{ html_date_new_default_start_prior }}" style="width: 100%;">
                       </div>
-                      <div class="grid-item">
+                      <div class="grid-item" style="grid-column: span 1;">
                         <input type="date" id="field_date_new_default_end" name="field_date_new_default_end" value="{{ html_date_new_default_end_prior }}" style="width: 100%;">
                       </div>
-                      <div class="grid-item">
+                      <div class="grid-item" style="grid-column: span 1;">
+                        <input type="number" min="0" id="settings_video_channel_max_results" name="settings_video_channel_max_results" value="{{ html_settings_video_channel_max_results }}" placeholder="i.e., 9" title="{{ html_settings_video_channel_max_results }}" style="width: 100%;">
+                      </div>
+                      <div class="grid-item" style="grid-column: span 2;">
                         <button type="submit" name="action" value="program_new_search" class="btn bg-gradient-primary my-2 mb-2">Date Range</button>
                       </div>
-                      <div class="grid-item">
+                      <div class="grid-item" style="grid-column: span 2;">
                         <button type="submit" name="action" value="program_new_today" class="btn bg-gradient-primary my-2 mb-2">Today</button>
                       </div>
                     </div>
@@ -604,14 +620,16 @@
                       <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
                     </a>
                   </h5>
-                  <div class="search container-fluid">
+                  <div class="search_double container-fluid">
                     <div class="grid-container" style="text-align: center; margin-bottom: -8px;">
-                      <div class="grid-item"><h6>Selection</h6></div>
-                      <div class="grid-item" style="grid-column: span 2;"><h6>Query</h6></div>
-                      <div class="grid-item"><h6>Quantity</h6></div>
+                      <div class="grid-item" style="grid-column: span 2;"><h6>Selection</h6></div>
+                      <div class="grid-item" style="grid-column: span 3;"><h6>Query</h6></div>
+                      <div class="grid-item" style="grid-column: span 1;"><h6>Include Video Shorts</h6></div>
+                      <div class="grid-item" style="grid-column: span 1;"><h6>Video Uploaded</h6></div>
+                      <div class="grid-item" style="grid-column: span 1;"><h6>Quantity</h6></div>
                     </div>
                     <div class="grid-container">
-                      <div class="grid-item">
+                      <div class="grid-item" style="grid-column: span 2;">
                         <select class="select2" name="select_search_selection" id="select_search_selection" style="width: 100%;">
                           {% for html_search_selection in html_search_selections %}
                             <option value="{{ html_search_selection.search_selection_id }}"
@@ -621,13 +639,28 @@
                           {% endfor %}
                         </select>
                       </div>
-                      <div class="grid-item" style="grid-column: span 2;">
+                      <div class="grid-item" style="grid-column: span 3;">
                         <input type="text" id="field_program_add" name="field_program_add" placeholder="i.e., Golden Girls" value="{{ html_program_add_prior }}">
                       </div>
-                      <div class="grid-item">
+                      <div class="grid-item" style="grid-column: span 1;">
+                        <div class="form-check form-switch ps-0 is-filled">
+                          <input type="checkbox" class="form-check-input" id="settings_video_search_shorts" name="settings_video_search_shorts" {% if html_settings_video_search_shorts == "On" %}checked{% endif %} style="margin-left: -10px;">
+                        </div>
+                      </div>
+                      <div class="grid-item" style="grid-column: span 1;">
+                        <select class="select2" name="settings_filter_video_upload_date" id="settings_filter_video_upload_date" style="width: 100%;">
+                          {% for html_filter_video_upload_date in html_filter_video_upload_dates %}
+                            <option value="{{ html_filter_video_upload_date.filter_video_upload_date_id }}"
+                              {% if html_filter_video_upload_date.filter_video_upload_date_id == html_settings_filter_video_upload_date %}selected{% endif %}>
+                              {{ html_filter_video_upload_date.filter_video_upload_date_name }}
+                          </option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="grid-item" style="grid-column: span 1;">
                         <input type="number" min="1" id="settings_num_results" name="settings_num_results" value="{{ html_settings_num_results }}" placeholder="i.e., 9" title="{{ html_settings_num_results }}" style="width: 100%;">
                       </div>
-                      <div class="grid-item">
+                      <div class="grid-item" style="grid-column: span 2;">
                         <button type="submit" name="action" value="program_add_search" class="btn bg-gradient-primary my-2 mb-2">Search</button>
                       </div>
                     </div>
@@ -718,31 +751,7 @@
                     <button type="submit" name="action" value="manage_programs_cancel" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;">Clear / Reset</button>
                   </div>
                   <hr>
-                  <h6>Previously Bookmarked</h6>
-                  <div style="margin-top: 8px;">
-                    <label for="settings_show_hidden_programs"><b>Show Hidden Programs</b></label>
-                    <div class="form-check form-switch ps-0 is-filled">
-                      <input type="checkbox" class="form-check-input" id="settings_show_hidden_programs" name="settings_show_hidden_programs" {% if html_settings_show_hidden_programs == "On" %}checked{% endif %}>
-                    </div>
-                  </div>
-                  <hr>
                   <h6>Discovery</h6>
-                  <div style="margin-top: 8px;">
-                    <label for="settings_use_feed_map"><b>Use Feed & Auto-Mapping
-                      <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Feed-and-Auto%E2%80%90Mapping" target="_blank">
-                        <i class="material-icons opacity-10" style="position: relative; top: 6px;">help_outline</i>
-                      </a>
-                    </b></label>
-                    <div class="form-check form-switch ps-0 is-filled">
-                      <input type="checkbox" class="form-check-input" id="settings_use_feed_map" name="settings_use_feed_map" {% if html_settings_use_feed_map == "On" %}checked{% endif %}>
-                    </div>
-                  </div>
-                  <div style="margin-top: 8px;">
-                    <label for="settings_hide_bookmarked"><b>Hide Bookmarked</b></label>
-                    <div class="form-check form-switch ps-0 is-filled">
-                      <input type="checkbox" class="form-check-input" id="settings_hide_bookmarked" name="settings_hide_bookmarked" {% if html_settings_hide_bookmarked == "On" %}checked{% endif %}>
-                    </div>
-                  </div>
                   <div style="margin-top: 8px;">
                     <label for="settings_country_code"><b>Country Code</b></label>
                     <select class="select2" name="settings_country_code" id="settings_country_code" style="width: 98%;">
@@ -760,8 +769,32 @@
                     </select>
                   </div>
                   <div style="margin-top: 8px;">
-                    <label for="settings_minimum_video_length"><b>Minimum Video Length (Seconds)</b></label>
+                    <label for="settings_minimum_video_length" title="In Seconds"><b>Minimum Video Length</b></label>
                     <input type="number" min="0" id="settings_minimum_video_length" name="settings_minimum_video_length" value="{{ html_settings_minimum_video_length }}" style="width: 100%;">
+                  </div>
+                  <div style="margin-top: 8px;">
+                    <label for="settings_hide_bookmarked"><b>Hide Previously Bookmarked</b></label>
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" class="form-check-input" id="settings_hide_bookmarked" name="settings_hide_bookmarked" {% if html_settings_hide_bookmarked == "On" %}checked{% endif %}>
+                    </div>
+                  </div>
+                  <hr>
+                  <h6>Functions</h6>
+                  <div style="margin-top: 8px;">
+                    <label for="settings_use_feed_map"><b>Use Feed & Auto-Mapping
+                      <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Feed-and-Auto%E2%80%90Mapping" target="_blank">
+                        <i class="material-icons opacity-10" style="position: relative; top: 6px;">help_outline</i>
+                      </a>
+                    </b></label>
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" class="form-check-input" id="settings_use_feed_map" name="settings_use_feed_map" {% if html_settings_use_feed_map == "On" %}checked{% endif %}>
+                    </div>
+                  </div>
+                  <div style="margin-top: 8px;">
+                    <label for="settings_show_hidden_programs"><b>Show Hidden Programs</b></label>
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" class="form-check-input" id="settings_show_hidden_programs" name="settings_show_hidden_programs" {% if html_settings_show_hidden_programs == "On" %}checked{% endif %}>
+                    </div>
                   </div>
                   <hr>
                   <div>
@@ -1001,16 +1034,24 @@
                         <h6><ul>
                           <li>Mark Video Channel as 'inactive' by unchecking.</li>
                           <li>Modify the display name, user (i.e., '@' address), description, or image.</li>
+                          <li>Choose which types of vidoes you want from the Video Channel (Regular, Live, Shorts)</li>
                           <li>If desired, select a 'Group' assignment.</li>
                         </ul></h6>
                         <div class="modify_program_bookmarks_status container-fluid">
+                          <div class="grid-container" style="text-align: center;">
+                            <div class="grid-item" style="grid-column: span 8;"><h6></h6></div>
+                            <div class="grid-item" style="grid-column: span 3;"><h6>- Video Types -</h6></div>
+                          </div>
                           <div class="grid-container dynamic-bg" style="text-align: center; position: sticky; top: 0; z-index: 10; margin-top: 5px;">
                             <div class="grid-item"><h6>Active</h6></div>
                             <div class="grid-item" style="grid-column: span 2;"><h6>Name</h6></div>
-                            <div class="grid-item" style="grid-column: span 2;"><h6>User</h6></div>
-                            <div class="grid-item" style="grid-column: span 3;"><h6>Description</h6></div>
+                            <div class="grid-item"><h6>User</h6></div>
+                            <div class="grid-item" style="grid-column: span 2;"><h6>Description</h6></div>
                             <div class="grid-item"><h6>Link</h6></div>
                             <div class="grid-item"><h6>Image</h6></div>
+                            <div class="grid-item"><h6>Regular</h6></div>
+                            <div class="grid-item"><h6>Live</h6></div>
+                            <div class="grid-item"><h6>Shorts</h6></div>
                             <div class="grid-item"><h6>Group
                               <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-SLM-%E2%80%90-Settings:-Provider-Groups" target="_blank">
                                 <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
@@ -1026,16 +1067,16 @@
                                   <input type="checkbox" id="subscribed_video_channel_active_selected" name="subscribed_video_channel_active_selected" class="form-check-input" 
                                     {% if item.channel_active|lower == 'on' %}checked{% endif %} 
                                     onchange="this.value = this.checked ? 'On' : 'Off'" 
-                                    value="On" style="margin-left: -20px;">
+                                    value="On" style="margin-left: -10px;">
                                 </div>
                               </div>
                               <div class="grid-item" style="grid-column: span 2;">
                                 <input type="text" id="subscribed_video_channel_name_selected" name="subscribed_video_channel_name_selected" value="{{ item.channel_name }}" title="{{ item.channel_name }}">
                               </div>
-                              <div class="grid-item" style="grid-column: span 2;">
+                              <div class="grid-item">
                                 <input type="text" id="subscribed_video_channel_user_selected" name="subscribed_video_channel_user_selected" value="{{ item.channel_user }}" title="{{ item.channel_user }}">
                               </div>
-                              <div class="grid-item" style="grid-column: span 3;">
+                              <div class="grid-item" style="grid-column: span 2;">
                                 <input type="text" id="subscribed_video_channel_description_selected" name="subscribed_video_channel_description_selected" value="{{ item.channel_description }}" title="{{ item.channel_description }}">
                               </div>
                               <div class="grid-item">
@@ -1043,6 +1084,30 @@
                               </div>
                               <div class="grid-item">
                                 <input type="text" id="subscribed_video_channel_image_selected" name="subscribed_video_channel_image_selected" value="{{ item.channel_image }}" title="{{ item.channel_image }}">
+                              </div>
+                              <div class="grid-item">
+                                <div class="form-check form-switch ps-0 is-filled">
+                                  <input type="checkbox" id="subscribed_video_channel_video_type_regular_selected" name="subscribed_video_channel_video_type_regular_selected" class="form-check-input" 
+                                    {% if item.channel_active|lower == 'on' %}checked{% endif %} 
+                                    onchange="this.value = this.checked ? 'On' : 'Off'" 
+                                    value="On" style="margin-left: -10px;">
+                                </div>
+                              </div>
+                              <div class="grid-item">
+                                <div class="form-check form-switch ps-0 is-filled">
+                                  <input type="checkbox" id="subscribed_video_channel_video_type_live_selected" name="subscribed_video_channel_video_type_live_selected" class="form-check-input" 
+                                    {% if item.channel_active|lower == 'on' %}checked{% endif %} 
+                                    onchange="this.value = this.checked ? 'On' : 'Off'" 
+                                    value="On" style="margin-left: -10px;">
+                                </div>
+                              </div>
+                              <div class="grid-item">
+                                <div class="form-check form-switch ps-0 is-filled">
+                                  <input type="checkbox" id="subscribed_video_channel_video_type_shorts_selected" name="subscribed_video_channel_video_type_shorts_selected" class="form-check-input" 
+                                    {% if item.channel_active|lower == 'on' %}checked{% endif %} 
+                                    onchange="this.value = this.checked ? 'On' : 'Off'" 
+                                    value="On" style="margin-left: -10px;">
+                                </div>
                               </div>
                               <div class="grid-item">
                                 <select class="select2" name="subscribed_video_channel_streaming_service_group_selected" id="subscribed_video_channel_streaming_service_group_selected" style="width: 100%; max-width: 100%;">

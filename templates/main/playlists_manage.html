@@ -178,6 +178,14 @@
   <div class="row min-vh-80 h-100">
     <div class="col-12">
       <form method="POST" action="/playlists/plm_manage" id="process-form" enctype="multipart/form-data">
+        <!-- Message -->
+        {% if html_settings_message %}
+          <hr>
+          <div id="html_settings_message">
+            <b>{{ html_settings_message|safe }}</b>
+          </div>
+          <hr>
+        {% endif %}
         <!-- Prioritize Playlists -->
         <h4 id="priority_playlists_anchor">Prioritize Playlists
           <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Manage-Playlists" target="_blank">
@@ -330,6 +338,14 @@
                 <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
               </a>
             </label>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 0px; margin-bottom: 10px;">
+              <label class="form-check-label text-body mb-0" for="plm_streaming_stations_station_start_number"><b>Station Start Number:</b></label>
+              <input type="number" min="1" style="width: 100%;" id="plm_streaming_stations_station_start_number" name="plm_streaming_stations_station_start_number" style="flex: 1;" value="{{ html_plm_streaming_stations_station_start_number }}">
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 0px; margin-bottom: 10px;">
+              <label class="form-check-label text-body mb-0" for="plm_streaming_stations_max_stations"><b>Max Stations per m3u:</b></label>
+              <input type="number" min="1" style="width: 100%;" id="plm_streaming_stations_max_stations" name="plm_streaming_stations_max_stations" style="flex: 1;" value="{{ html_plm_streaming_stations_max_stations }}">
+            </div>
             <p><em>Create your own stations from places like YouTube, Twitch, news websites, and other similar sources.</em></p>
           </div>
           <!-- PBS Stations -->

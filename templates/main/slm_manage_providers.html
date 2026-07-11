@@ -31,7 +31,7 @@
 
   .slm-subscribed-video-channels .grid-container {
       display: grid;
-      grid-template-columns: 0.5fr 2fr 1fr 2fr 2fr 1fr 1.5fr 1fr;
+      grid-template-columns: 0.5fr 2fr 1fr 1.5fr 1.5fr 1fr 0.5fr 0.5fr 0.5fr 1fr 1fr;
       gap: 10px;
   }
 
@@ -214,7 +214,7 @@
                       <input type="checkbox" id="ssss_streaming_service_active_{{ loop.index }}" name="ssss_streaming_service_active_{{ loop.index }}" class="form-check-input" 
                         {% if item.streaming_service_active|lower == 'on' %}checked{% endif %} 
                         onchange="this.value = this.checked ? 'On' : 'Off'" 
-                        value="On" style="margin-left: 5px;">
+                        value="On" style="margin-left: -10px;">
                     </div>
                   </div>
                   <div class="grid-item">
@@ -244,12 +244,19 @@
             </h4>
             <div class="slm-subscribed-video-channels container-fluid">
               <div class="grid-container" style="text-align: center;">
+                <div class="grid-item" style="grid-column: span 6;"><h6></h6></div>
+                <div class="grid-item" style="grid-column: span 3;"><h6>- Video Types -</h6></div>
+              </div>
+              <div class="grid-container" style="text-align: center;">
                 <div class="grid-item"><h6>Active</h6></div>
                 <div class="grid-item"><h6>Name</h6></div>
                 <div class="grid-item"><h6>User</h6></div>
                 <div class="grid-item"><h6>Description</h6></div>
                 <div class="grid-item"><h6>Link</h6></div>
                 <div class="grid-item"><h6>Image</h6></div>
+                <div class="grid-item"><h6>Regular</h6></div>
+                <div class="grid-item"><h6>Live</h6></div>
+                <div class="grid-item"><h6>Shorts</h6></div>
                 <div class="grid-item"><h6>Group</h6></div>
                 <div class="grid-item"><h6>Action</h6></div>
               </div>
@@ -261,7 +268,7 @@
                       <input type="checkbox" id="subscribed_video_channel_active_{{ loop.index }}" name="subscribed_video_channel_active_{{ loop.index }}" class="form-check-input" 
                         {% if item.channel_active|lower == 'on' %}checked{% endif %} 
                         onchange="this.value = this.checked ? 'On' : 'Off'" 
-                        value="On" style="margin-left: 5px;">
+                        value="On" style="margin-left: -10px;">
                     </div>
                   </div>
                   <div class="grid-item">
@@ -280,6 +287,30 @@
                     <input type="text" id="subscribed_video_channel_image_{{ loop.index }}" name="subscribed_video_channel_image_{{ loop.index }}" value="{{ item.channel_image }}" title="{{ item.channel_image }}">
                   </div>
                   <div class="grid-item">
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" id="subscribed_video_channel_video_type_regular_{{ loop.index }}" name="subscribed_video_channel_video_type_regular_{{ loop.index }}" class="form-check-input" 
+                        {% if item.channel_video_type_regular|lower == 'on' %}checked{% endif %} 
+                        onchange="this.value = this.checked ? 'On' : 'Off'" 
+                        value="On" style="margin-left: -10px;">
+                    </div>
+                  </div>
+                  <div class="grid-item">
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" id="subscribed_video_channel_video_type_live_{{ loop.index }}" name="subscribed_video_channel_video_type_live_{{ loop.index }}" class="form-check-input" 
+                        {% if item.channel_video_type_live|lower == 'on' %}checked{% endif %} 
+                        onchange="this.value = this.checked ? 'On' : 'Off'" 
+                        value="On" style="margin-left: -10px;">
+                    </div>
+                  </div>
+                  <div class="grid-item">
+                    <div class="form-check form-switch ps-0 is-filled">
+                      <input type="checkbox" id="subscribed_video_channel_video_type_shorts_{{ loop.index }}" name="subscribed_video_channel_video_type_shorts_{{ loop.index }}" class="form-check-input" 
+                        {% if item.channel_video_type_shorts|lower == 'on' %}checked{% endif %} 
+                        onchange="this.value = this.checked ? 'On' : 'Off'" 
+                        value="On" style="margin-left: -10px;">
+                    </div>
+                  </div>
+                  <div class="grid-item">
                     <select class="select2" name="subscribed_video_channel_streaming_service_group_{{ loop.index }}" id="subscribed_video_channel_streaming_service_group_{{ loop.index }}" style="width: 100%; max-width: 100%;">
                       {% for provider_group_item in html_provider_groups %}
                         <option value="{{ provider_group_item.provider_group_id }}" {% if provider_group_item.provider_group_id == item.channel_streaming_service_group %}selected{% endif %} style="width: auto; min-width: 100%;">{{ provider_group_item.provider_group_name }}</option>
@@ -294,7 +325,7 @@
               <div class="grid-container">
                 <div class="grid-item">
                   <div class="form-check form-switch ps-0 is-filled">
-                    <input type="checkbox" id="subscribed_video_channel_active_new" name="subscribed_video_channel_active_new" class="form-check-input"  style="margin-left: 5px;" checked>
+                    <input type="checkbox" id="subscribed_video_channel_active_new" name="subscribed_video_channel_active_new" class="form-check-input"  style="margin-left: -10px;" checked>
                   </div>
                 </div>
                 <div class="grid-item">
@@ -311,6 +342,21 @@
                 </div>
                 <div class="grid-item">
                   <input type="text" id="subscribed_video_channel_image_new" name="subscribed_video_channel_image_new" title="i.e., https://yt3.googleusercontent.com/ytc/AIdro_n4YNQmAew201Ay95Ow2ZX3EH6a7AzOuYjlgF3WyMC_8ZI=s176-c-k-c0x00ffffff-no-rj-mo" placeholder="i.e., https://yt3.googleusercontent.com/ytc/AIdro_n4YNQmAew201Ay95Ow2ZX3EH6a7AzOuYjlgF3WyMC_8ZI=s176-c-k-c0x00ffffff-no-rj-mo">
+                </div>
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" id="subscribed_video_channel_video_type_regular_new" name="subscribed_video_channel_video_type_regular_new" class="form-check-input"  style="margin-left: -10px;" checked>
+                  </div>
+                </div>
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" id="subscribed_video_channel_video_type_live_new" name="subscribed_video_channel_video_type_live_new" class="form-check-input"  style="margin-left: -10px;" checked>
+                  </div>
+                </div>
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" id="subscribed_video_channel_video_type_shorts_new" name="subscribed_video_channel_video_type_shorts_new" class="form-check-input"  style="margin-left: -10px;" checked>
+                  </div>
                 </div>
                 <div class="grid-item">
                   <select class="select2" name="subscribed_video_channel_streaming_service_group_new" id="subscribed_video_channel_streaming_service_group_new" style="width: 100%; max-width: 100%;">
@@ -350,7 +396,7 @@
                       <input type="checkbox" id="provider_group_active_{{ loop.index }}" name="provider_group_active_{{ loop.index }}" class="form-check-input" 
                         {% if item.provider_group_active|lower == 'on' %}checked{% endif %} 
                         onchange="this.value = this.checked ? 'On' : 'Off'" 
-                        value="On" style="margin-left: 5px;">
+                        value="On" style="margin-left: -10px;">
                     </div>
                   </div>
                   <div class="grid-item">
@@ -367,7 +413,7 @@
               <div class="grid-container">
                 <div class="grid-item">
                   <div class="form-check form-switch ps-0 is-filled">
-                    <input type="checkbox" id="provider_group_active_new" name="provider_group_active_new" class="form-check-input" style="margin-left: 5px;" checked>
+                    <input type="checkbox" id="provider_group_active_new" name="provider_group_active_new" class="form-check-input" style="margin-left: -10px;" checked>
                   </div>
                 </div>
                 <div class="grid-item">
@@ -408,7 +454,7 @@
                       <input type="checkbox" id="slmapping_active_existing_{{ loop.index }}" name="slmapping_active_existing_{{ loop.index }}" class="form-check-input" 
                         {% if item.active|lower == 'on' %}checked{% endif %} 
                         onchange="this.value = this.checked ? 'On' : 'Off'" 
-                        value="On" style="margin-left: 5px;">
+                        value="On" style="margin-left: -10px;">
                     </div>
                   </div>
                   <div class="grid-item">
@@ -439,7 +485,7 @@
               <div class="grid-container">
                 <div class="grid-item">
                   <div class="form-check form-switch ps-0 is-filled">
-                    <input type="checkbox" id="slmapping_active_new" name="slmapping_active_new" class="form-check-input" style="margin-left: 5px;" checked>
+                    <input type="checkbox" id="slmapping_active_new" name="slmapping_active_new" class="form-check-input" style="margin-left: -10px;" checked>
                   </div>
                 </div>
                 <div class="grid-item">
@@ -492,7 +538,7 @@
                     <input type="checkbox" id="slm_label_active_{{ loop.index }}" name="slm_label_active_{{ loop.index }}" class="form-check-input" 
                       {% if item.label_active|lower == 'on' %}checked{% endif %} 
                       onchange="this.value = this.checked ? 'On' : 'Off'" 
-                      value="On" style="margin-left: 5px;">
+                      value="On" style="margin-left: -10px;">
                   </div>
                 </div>
                 <div class="grid-item">
@@ -509,7 +555,7 @@
             <div class="grid-container">
               <div class="grid-item">
                 <div class="form-check form-switch ps-0 is-filled">
-                  <input type="checkbox" id="slm_label_active_new" name="slm_label_active_new" class="form-check-input" style="margin-left: 5px;" checked>
+                  <input type="checkbox" id="slm_label_active_new" name="slm_label_active_new" class="form-check-input" style="margin-left: -10px;" checked>
                 </div>
               </div>
               <div class="grid-item">

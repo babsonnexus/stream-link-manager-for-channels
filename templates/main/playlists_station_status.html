@@ -98,26 +98,6 @@
         <div class="row">
           <div class="col-12 my-2"></div>
         </div>
-        <!-- Station Status Settings -->
-        {% if html_settings_message %}
-          <em>{{ html_settings_message}}</em>
-          <div class="row">
-            <div class="col-12 my-2"></div>
-          </div>
-        {% endif %}
-        <div class="settings-box" style="width: 98%; display: flex; justify-content: center; align-items: center; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
-          <label for="plm_station_status_number_attempts" style="margin-top: 8px; margin-right: 5px;"><b>Number of Attempts:</b></label>
-          <input type="text" id="plm_station_status_number_attempts" name="plm_station_status_number_attempts" style="width: 5%; margin-right: 10px;" value="{{ html_plm_station_status_number_attempts }}">
-          <label for="plm_station_status_delay_attempts" style="margin-top: 8px; margin-right: 5px;"><b>Delay Between Attempts:</b></label>
-          <input type="text" id="plm_station_status_delay_attempts" name="plm_station_status_delay_attempts" style="width: 5%; margin-right: 10px;" value="{{ html_plm_station_status_delay_attempts }}">
-          <label for="plm_station_status_skip_after_fails" style="margin-top: 8px; margin-right: 5px;"><b>Skip Playlist After Fails (0 = Disabled):</b></label>
-          <input type="text" id="plm_station_status_skip_after_fails" name="plm_station_status_skip_after_fails" style="width: 5%; margin-right: 25px;" value="{{ html_plm_station_status_skip_after_fails }}">
-          <button type="submit" name="action" value="plm_station_status_save_settings" class="btn bg-gradient-primary w-15 my-2 mb-2">Save Settings</button>
-        </div>
-        <!-- Spacer row -->
-        <div class="row">
-          <div class="col-12 my-2"></div>
-        </div>
         <!-- Selection -->
         <div class="row justify-content-center">
           <div style="width: 80%;">
