@@ -39,7 +39,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.07.11.1127"
+    slm_version = "v2026.07.14.1221"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -261,7 +261,7 @@ def webpage_manage_programs():
                         settings_provider_status_input = request.form.get('select_provider_status')
                         settings_video_channel_max_results_input = request.form.get('settings_video_channel_max_results')
                         settings_video_channel_max_results_test = None
-                        settings_video_channel_max_results_test = positive_integer_test(settings_video_channel_max_results_input, False)
+                        settings_video_channel_max_results_test = positive_integer_test(settings_video_channel_max_results_input, True)
 
                         if manage_programs_action in [
                             'search_defaults_save',
@@ -6194,6 +6194,7 @@ def webpage_manage_providers():
     slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
     if slm_stream_address_prior is None or slm_stream_address_prior == '':
         slm_stream_address_prior = slm_stream_address
+    settings_slm_stream_youtube_special_treatment = settings[83]['settings']    # [83] SLM: SLM Stream YouTube Special Treatment
     slm_stream_address_message = ""    
 
     # File Name Management
@@ -6203,6 +6204,7 @@ def webpage_manage_providers():
     if request.method == 'POST':
         settings_action = request.form['action']
         slm_stream_address_input = request.form.get('slm_stream_address')
+        settings_slm_stream_youtube_special_treatment_input = request.form.get('settings_slm_stream_youtube_special_treatment')
         streaming_services_input = request.form.get('streaming_services')
 
         for prefix, anchor_id in action_to_anchor.items():
@@ -6225,6 +6227,8 @@ def webpage_manage_providers():
                     if settings_action == 'slm_stream_address_save':
                         settings[46]["settings"] = slm_stream_address_input
                         slm_stream_address_prior = slm_stream_address_input
+
+                        settings[83]['settings'] = settings_slm_stream_youtube_special_treatment_input
 
                     if settings_action == 'file_name_options_save':
                         settings[73]['settings'] = 'On' if request.form.get('settings_slm_add_show_title') in ['on', 'On', 'ON'] else 'Off'
@@ -6816,6 +6820,7 @@ def webpage_manage_providers():
         slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
         if slm_stream_address_prior is None or slm_stream_address_prior == '':
             slm_stream_address_prior = slm_stream_address
+        settings_slm_stream_youtube_special_treatment = settings[83]['settings']    # [83] SLM: SLM Stream YouTube Special Treatment
         settings_slm_add_show_title = settings[73]['settings']                      # [73] SLM: Add TV Show Title to File Name On/Off
         settings_slm_add_episode_title = settings[74]['settings']                   # [74] SLM: Add Episode Title to TV Show File Name On/Off
 
@@ -6871,7 +6876,9 @@ def webpage_manage_providers():
         html_subscribed_video_channels = visible_subscribed_video_channels,
         html_subscribed_video_channels_message = subscribed_video_channels_message,
         html_settings_slm_add_show_title = settings_slm_add_show_title,
-        html_settings_slm_add_episode_title = settings_slm_add_episode_title
+        html_settings_slm_add_episode_title = settings_slm_add_episode_title,
+        html_slm_stream_youtube_special_treatments = slm_stream_youtube_special_treatments,
+        html_settings_slm_stream_youtube_special_treatment = settings_slm_stream_youtube_special_treatment
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -11077,8 +11084,8 @@ def get_online_video(url, parse_type):
             'extractor_args': {                                     # Set extractor arguments for specific websites
                 'youtube': {
                     'player_client': [youtube_player_client],       # Force player API client to specific client(s) in order to speed up finding a compatible format
-                    'formats': ['missing_pot'],                     # Stop testing for PO token
                     'player_skip': ['configs', 'webpage'],          # Skip player configuration, webpage
+                    'formats': ['missing_pot'],                     # Stop attempting to get PO Token
                     'skip': ['dash', 'translated_subs']             # Skip DASH manifests and translated subtitles
                 }
             }
@@ -11277,75 +11284,6 @@ def parse_online_video_formats(formats, language_preferences):
         best_format = max(formats, key=lambda f: f.get("tbr", 0))
 
     return best_format
-
-# Gets the PO token for a YouTube static video
-### NOTICE: This is currently not needed, but saving here for the future as this solution did work when necessary
-# def get_youtube_po_token(url):
-#     po_token = 'unable_to_determine_po_token'
-#     video_id = None
-#     max_wait = 15
-#     parsed_url = urllib.parse.urlparse(url)
-
-#     if "youtu.be" in parsed_url.netloc:
-#         video_id = parsed_url.path[1:]
-
-#     elif "youtube.com" in parsed_url.netloc:
-#         query_params = urllib.parse.parse_qs(parsed_url.query)
-#         video_id = query_params.get("v", [""])[0]
-
-#     if not video_id:
-#         print(f"{current_time()} ERROR: Invalid video ID for {url}.")
-
-#     else:
-#         embed_url = f"https://www.youtube.com/embed/{video_id}"
-
-#         # Set up Selenium options and enable performance logging
-#         options = webdriver.ChromeOptions()
-#         options.add_argument("--headless")
-#         options.add_argument("--disable-gpu")
-#         options.add_argument("--no-sandbox")
-#         options.add_argument("--mute-audio") 
-#         options.add_experimental_option("excludeSwitches", ["enable-logging"])
-#         capabilities = DesiredCapabilities.CHROME.copy()
-#         capabilities["goog:loggingPrefs"] = {"performance": "ALL"}
-#         options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
-
-#         # Initialize the WebDriver with the updated options
-#         driver = webdriver.Chrome(options=options)
-
-#         try:
-#             # Open the embed URL
-#             driver.get(embed_url)
-
-#             try:
-#                 # Wait for the video player to load
-#                 play_button = WebDriverWait(driver, max_wait).until(
-#                     EC.element_to_be_clickable((By.CLASS_NAME, "ytp-large-play-button"))
-#                 )
-
-#                 # Simulate clicking the play button
-#                 ActionChains(driver).move_to_element(play_button).click(play_button).perform()
-
-#                 # Let the video play for a few seconds
-#                 time.sleep(2)
-
-#                 # Fetch logs and extract the PO token
-#                 logs = driver.get_log("performance")
-#                 for entry in logs:
-#                     log = entry["message"]
-#                     if "googlevideo.com" in log and "pot=" in log:
-#                         # Use regex to extract the `pot` parameter value
-#                         match = re.search(r"pot=([^&]+)", log)
-#                         if match:
-#                             po_token = match.group(1)
-
-#             except Exception as e:
-#                 print(f"{current_time()} ERROR: During playback simulation, saw {e}")
-
-#         finally:
-#             driver.quit()
-
-#     return po_token
 
 # Play live streams as MPEG-TS using Streamlink
 @app.route('/playlists/streams/stream_mpegts', methods=['GET'])
@@ -15122,6 +15060,7 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
 
     settings_slm_add_show_title = settings[73]['settings']                      # [73] SLM: Add TV Show Title to File Name On/Off
     settings_slm_add_episode_title = settings[74]['settings']                   # [74] SLM: Add Episode Title to TV Show File Name On/Off
+    settings_slm_stream_youtube_special_treatment = settings[83]['settings']    # [83] SLM: SLM Stream YouTube Special Treatment
 
     bookmarks_statuses = read_data(csv_bookmarks_status)
 
@@ -15171,6 +15110,7 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
                 stream_link_path = None
                 stream_link_file_name = None
                 stream_link_url = None
+                youtube_video_id = None
 
                 if bookmark['object_type'] == "MOVIE":
                     stream_link_path = movie_path
@@ -15203,8 +15143,26 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
                 if bookmark_status['stream_link_override'] != "":
                     if special_action != "Make SLM Stream":
                         stream_link_url = bookmark_status['stream_link_override']
+
                     elif special_action == "Make SLM Stream":
-                        stream_link_url = f"{slm_stream_address_full}{bookmark_status['stream_link_override']}"
+
+                        if (
+                            ( 'youtu' in bookmark_status['stream_link_override'] ) and
+                            ( settings_slm_stream_youtube_special_treatment.startswith('make_strmlnk') )
+                        ):
+                            youtube_video_id = get_youtube_video_id(bookmark_status['stream_link_override'])
+
+                        if youtube_video_id:
+
+                            if settings_slm_stream_youtube_special_treatment == 'make_strmlnk':
+                                stream_link_url = f"https://www.youtube.com/watch?v={youtube_video_id}"
+
+                            elif settings_slm_stream_youtube_special_treatment == 'make_strmlnk_schema':
+                                stream_link_url = f"youtube://play?v={youtube_video_id}"
+
+                        else:
+                            stream_link_url = f"{slm_stream_address_full}{bookmark_status['stream_link_override']}"
+
                 elif bookmark_status['stream_link'] != "":
                     if special_action in ["Make STRM", "Make SLM Stream"]:
                         pass
@@ -15212,6 +15170,9 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
                         stream_link_url = bookmark_status['stream_link']
 
                 if bookmark_status['status'].lower() == "unwatched" and stream_link_url:
+
+                    if youtube_video_id:
+                        special_action = 'None'
 
                     if ( 
                         ( original_release_date_list is None ) or 
@@ -15244,6 +15205,48 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
         remove_rogue_empty(movie_path, tv_path, video_path, bookmarks_statuses)
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
+
+import re
+from urllib.parse import urlparse, parse_qs
+
+# Parses a YouTube URL and returns its video ID.
+def get_youtube_video_id(url):
+    video_id = None
+
+    if url:
+        # Standardize the URL by removing leading/trailing whitespaces
+        url = url.strip()
+
+        # 1. Handle standard watch URLs and shorts/embeds
+        parsed_url = urlparse(url)
+        
+        # Extract from short domains like youtu.be
+        if parsed_url.netloc in ('youtu.be', 'www.youtu.be'):
+            # Extract just the path cleanly before any queries
+            video_id = parsed_url.path.lstrip('/')
+
+        # Extract from standard youtube.com watch links
+        elif parsed_url.netloc in ('youtube.com', 'www.youtube.com', 'm.youtube.com'):
+            path_parts = parsed_url.path.split('/')
+
+            # Case A: Standard video link (e.g., youtube.com/watch?v=dQw4w9WgXcQ)
+            if parsed_url.path == '/watch':
+                query_params = parse_qs(parsed_url.query)
+                video_id = query_params.get('v', [None])[0]
+            
+            # Case B: Shorts or Embed links (e.g., youtube.com/shorts/dQw4w9WgXcQ)
+            elif len(path_parts) > 2 and path_parts[1] in ('embed', 'shorts', 'v'):
+                video_id = path_parts[2]
+
+        # 2. True Fallback: Runs if URL parsed successfully but no ID was found, 
+        # or if it was an unexpected domain structure (like music.youtube.com)
+        if not video_id:
+            regex = r'(?:v=|\/shorts\/|\/embed\/|\/v\/|youtu\.be\/|\/el\/|watch\?v%3D|watch\?feature=player_embedded&v=)?([a-zA-Z0-9_-]{11})'
+            match = re.search(regex, url)
+            if match:
+                video_id = match.group(1)
+
+    return video_id
 
 # Runs the necessary updates in Channels and gets info afterwards
 def prune_scan_channels():
@@ -17565,6 +17568,7 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": 0}, 82, "SLM: Video Channels max number of videos by type (0 = Unlimited)")
         check_and_append(csv_file, {"settings": "On"}, 83, "PLM: Generate 'Default Feed' playlists and guide data")
         check_and_append(csv_file, {"settings": "Off"}, 84, "PLM: Generate 'Fallback Feed' playlists and guide data")
+        check_and_append(csv_file, {"settings": "none"}, 85, "SLM: SLM Stream YouTube Special Treatment")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -17666,7 +17670,8 @@ def initial_data(csv_file):
             {"settings": "none"},                                                      # [79] SLM: Video 'Upload Date' in Search Results (Default)
             {"settings": 0},                                                           # [80] SLM: Video Channels max number of videos by type (0 = Unlimited)
             {"settings": "On"},                                                        # [81] PLM: Generate 'Default Feed' playlists and guide data
-            {"settings": "Off"}                                                        # [82] PLM: Generate 'Fallback Feed' playlists and guide data
+            {"settings": "Off"},                                                       # [82] PLM: Generate 'Fallback Feed' playlists and guide data
+            {"settings": "none"}                                                       # [83] SLM: SLM Stream YouTube Special Treatment
         ]
 
     # Stream Link/File Manager
@@ -19295,7 +19300,8 @@ video_providers = [
     "youtube"
 ]
 youtube_player_clients = [
-    'web_safari' #,
+    'mweb',
+    # 'web_safari',
     # 'web',
     # 'ios'
 ]
@@ -19354,6 +19360,11 @@ filter_video_upload_dates = [
 
 ### [SLM] Settings and Automation
 slm_stream_address_prior = None
+slm_stream_youtube_special_treatments = [
+    {'slm_stream_youtube_special_treatment_id': 'none', 'slm_stream_youtube_special_treatment_name': 'Default (Normal)'},
+    {'slm_stream_youtube_special_treatment_id': 'make_strmlnk', 'slm_stream_youtube_special_treatment_name': "Make Stream Link with regular schema (i.e., https://www.youtube.com/watch?v=[VIDEO_ID])"},
+    {'slm_stream_youtube_special_treatment_id': 'make_strmlnk_schema', 'slm_stream_youtube_special_treatment_name': "Make Stream Link with app schema (i.e., youtube://play?v=[VIDEO_ID])"}
+]
 stream_link_ids_changed = []
 slm_process_active_flag = None
 slm_process_active_flag_turn_off = None
