@@ -219,26 +219,54 @@
                   <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
                 </a>
               </h5>
-              <h6>Default Feed(s)</h6>
-              <table style="margin-left: 25px; margin-top: 10px; margin-bottom: 10px;">
-                {% for html_playlist_file in html_playlist_files %}
-                  <tr>
-                    <td  style="padding-right: 15px;">
-                      {% if '.xml' in html_playlist_file.playlist_filename %}
-                        <button type="submit" name="action" value="playlist_file_add_to_xml_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>XML for Playlist</button>
-                      {% elif '.m3u' in html_playlist_file.playlist_filename %}
-                        {% if html_slm_channels_dvr_integration %}
-                          <button type="submit" name="action" value="playlist_file_add_to_channels_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2">Add to Channels DVR</button>
-                        {% else %}
-                          <button type="submit" name="action" value="playlist_file_add_to_m3u_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>m3u for Playlist</button>
-                        {% endif %}
-                      {% endif %}
-                    </td>
-                    <td style="padding-right: 15px; text-align: right;"><b>{{ html_playlist_file.playlist_label }}</b></td>
-                    <td><a href="{{ url_for('download_m3u_epg', filename=html_playlist_file.playlist_filename) }}">{{ request.url_root }}playlists/files/{{ html_playlist_file.playlist_filename }}</a></td>
-                  </tr>
-                {% endfor %}
-              </table>
+              {% if html_plm_feed_default == 'On' %}
+                <h6>Default Feed(s)</h6>
+                <table style="margin-left: 25px; margin-top: 10px; margin-bottom: 10px;">
+                  {% for html_playlist_file in html_playlist_files %}
+                    {% if 'fallback' not in html_playlist_file.playlist_filename %}
+                      <tr>
+                        <td  style="padding-right: 15px;">
+                          {% if '.xml' in html_playlist_file.playlist_filename %}
+                            <button type="submit" name="action" value="playlist_file_add_to_xml_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>XML for Playlist</button>
+                          {% elif '.m3u' in html_playlist_file.playlist_filename %}
+                            {% if html_slm_channels_dvr_integration %}
+                              <button type="submit" name="action" value="playlist_file_add_to_channels_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2">Add to Channels DVR</button>
+                            {% else %}
+                              <button type="submit" name="action" value="playlist_file_add_to_m3u_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>m3u for Playlist</button>
+                            {% endif %}
+                          {% endif %}
+                        </td>
+                        <td style="padding-right: 15px; text-align: right;"><b>{{ html_playlist_file.playlist_label }}</b></td>
+                        <td><a href="{{ url_for('download_m3u_epg', filename=html_playlist_file.playlist_filename) }}">{{ request.url_root }}playlists/files/{{ html_playlist_file.playlist_filename }}</a></td>
+                      </tr>
+                    {% endif %}
+                  {% endfor %}
+                </table>
+              {% endif %}
+              {% if html_plm_feed_fallback == 'On' %}
+                <h6>Fallback Feed(s)</h6>
+                <table style="margin-left: 25px; margin-top: 10px; margin-bottom: 10px;">
+                  {% for html_playlist_file in html_playlist_files %}
+                    {% if 'fallback' in html_playlist_file.playlist_filename %}
+                      <tr>
+                        <td  style="padding-right: 15px;">
+                          {% if '.xml' in html_playlist_file.playlist_filename %}
+                            <button type="submit" name="action" value="playlist_file_add_to_xml_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>XML for Playlist</button>
+                          {% elif '.m3u' in html_playlist_file.playlist_filename %}
+                            {% if html_slm_channels_dvr_integration %}
+                              <button type="submit" name="action" value="playlist_file_add_to_channels_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2">Add to Channels DVR</button>
+                            {% else %}
+                              <button type="submit" name="action" value="playlist_file_add_to_m3u_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>m3u for Playlist</button>
+                            {% endif %}
+                          {% endif %}
+                        </td>
+                        <td style="padding-right: 15px; text-align: right;"><b>{{ html_playlist_file.playlist_label }}</b></td>
+                        <td><a href="{{ url_for('download_m3u_epg', filename=html_playlist_file.playlist_filename) }}">{{ request.url_root }}playlists/files/{{ html_playlist_file.playlist_filename }}</a></td>
+                      </tr>
+                    {% endif %}
+                  {% endfor %}
+                </table>
+              {% endif %}
             </div>
           </div>
           <div class="common-div column-div-2">
@@ -257,10 +285,26 @@
                 <button type="submit" name="action" value="final_playlists_action_update_m3u_epg" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;">Update m3u(s) & XML EPG(s)</button>
               </div>
               <div style="margin-top: 8px;">
+                <label for="plm_feed_default"><b>Generate Default Feed(s)</b></label>
+                <div class="form-check form-switch ps-0 is-filled">
+                  <input type="checkbox" class="form-check-input" id="plm_feed_default" name="plm_feed_default" {% if html_plm_feed_default == 'On' %}checked{% endif %}>
+                </div>
+              </div>
+              <div style="margin-top: 8px;">
+                <label for="plm_feed_fallback"><b>Generate Fallback Feed(s)</b></label>
+                <div class="form-check form-switch ps-0 is-filled">
+                  <input type="checkbox" class="form-check-input" id="plm_feed_fallback" name="plm_feed_fallback" {% if html_plm_feed_fallback == 'On' %}checked{% endif %}>
+                </div>
+              </div>
+              <div style="margin-top: 8px;">
                 <label for="plm_url_tag_in_m3us"><b>Add URL tag to m3u(s)</b></label>
                 <div class="form-check form-switch ps-0 is-filled">
                   <input type="checkbox" class="form-check-input" id="plm_url_tag_in_m3us" name="plm_url_tag_in_m3us" {% if html_plm_url_tag_in_m3us == 'On' %}checked{% endif %}>
                 </div>
+              </div>
+              <div style="margin-top: 8px;">
+                <label for="plm_url_tag_in_m3us_preferred_url_root"><b>URL Root</b></label>
+                <input type="text" style="width: 100%; background-color: #d1cdcde5;" id="plm_url_tag_in_m3us_preferred_url_root" name="plm_url_tag_in_m3us_preferred_url_root" value="{{ html_plm_url_tag_in_m3us_preferred_url_root }}" readonly title="Used for 'URL Tag' and 'Fallback' playlists. Modify by going to preferred URL, toggling 'Add URL tag to m3u(s)' on, and saving. It can be turned off afterwards.">
               </div>
               <div style="margin-top: 8px;">
                 <label for="station_start_number"><b>Station Start Number</b></label>
@@ -300,6 +344,10 @@
               <div style="margin-top: 8px;">
                 <label for="plm_station_status_skip_after_fails" title="0 = Disabled"><b>Skip Playlist After Fails</b></label>
                 <input type="number" min="0" style="width: 100%;" id="plm_station_status_skip_after_fails" name="plm_station_status_skip_after_fails" value="{{ html_plm_station_status_skip_after_fails }}">
+              </div>
+              <div style="margin-top: 8px;">
+                <label for="plm_fallback_stale_seconds" title="In seconds, how long a found stream is good for until it expires as stale."><b>Fallback Cache Time</b></label>
+                <input type="number" min="1" style="width: 100%;" id="plm_fallback_stale_seconds" name="plm_fallback_stale_seconds" value="{{ html_plm_fallback_stale_seconds_global }}">
               </div>
               <hr>
               <div>

@@ -589,13 +589,26 @@
             <button type="submit" name="action" value="slm_stream_address_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel</button>
             <p><em>WARNING: It is recommended to not use 'https' as it may cause Stream Files on media player clients to fail.</em></p>
             <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+              <label for="settings_slm_stream_switch_patterns"><b>Switch URL Patterns from HLS to MPEG-TS</b></label>
+              <div>
+                <input name="settings_slm_stream_switch_patterns" id="settings_slm_stream_switch_patterns" placeholder="Add patterns, i.e., 'youtu'..." value="{{ html_settings_slm_stream_switch_patterns | join(',') }}" style="width: 98%;">
+              </div>
+              <div>
+                <p></p>
+                <em>There are two potential methods for directly streaming videos from providers, simplified as the HLS (default) and MPEG-TS approaches. Sometimes, website like YouTube change how they function, which requires switching from one to the other in order to keep receiving them as SLM Streams and watching them in media consumption tools like Channels DVR, Infuse, VLC, etcetera. In order to do so, you must put in a textual pattern that can be searched for from the URL. For instance, for YouTube, putting in ‘youtu’ is enough to capture any type of YouTube link. When SLM encounters this pattern, it will change anything that contains it to the other method.</em>
+              </div>
+            </div>
+            <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
               <label for="settings_slm_stream_youtube_special_treatment"><b>YouTube Special Treatment</b></label>
               <select class="select2" name="settings_slm_stream_youtube_special_treatment" id="settings_slm_stream_youtube_special_treatment" style="width: 100%; max-width: 100%;">
                 {% for html_slm_stream_youtube_special_treatment in html_slm_stream_youtube_special_treatments %}
                   <option value="{{ html_slm_stream_youtube_special_treatment.slm_stream_youtube_special_treatment_id }}" {% if html_slm_stream_youtube_special_treatment.slm_stream_youtube_special_treatment_id == html_settings_slm_stream_youtube_special_treatment %}selected{% endif %} style="width: 98%;">{{ html_slm_stream_youtube_special_treatment.slm_stream_youtube_special_treatment_name }}</option>
                 {% endfor %}
               </select>
-              <p><em>YouTube is very aggressive when it comes to removing ways to view their content outside of their apps and website. On these occasions (or even by desire), it may be necessary to switch from using the SLM Stream ‘Stream File’ approach to a general ‘Stream Link’ one that uses the YouTube or a YouTube compatible app (i.e., SmartTube). This setting allows you to easily switch between these options without having to modify every single YouTube SLM Stream. The schema you need will depend upon the app and streaming device you are using.</em></p>
+              <div>
+                <p></p>
+                <em>YouTube is very aggressive when it comes to removing ways to view their content outside of their apps and website. On these occasions (or even by desire), it may be necessary to switch from using the SLM Stream ‘Stream File’ approach to a general ‘Stream Link’ one that uses the YouTube or a YouTube compatible app (i.e., SmartTube). This setting allows you to easily switch between these options without having to modify every single YouTube SLM Stream. The schema you need will depend upon the app and streaming device you are using.</em></p>
+              </div>
             </div>
             <p><div id="html_slm_stream_address_message"><b>{{ html_slm_stream_address_message }}</b></div></p>
             <hr>
@@ -855,6 +868,15 @@
 
     checkNewInputsSLMLabel();
     checkExistingInputsSLMLabel(); // Ensure initial state is checked
+  });
+</script>
+<!-- Tagify | SLM Stream Pattern Swtich -->
+<script>
+  var input = document.querySelector('#settings_slm_stream_switch_patterns');
+  new Tagify(input, {
+    whitelist: {{ html_base_slm_stream_switch_patterns | tojson }},
+    enforceWhitelist: false,
+    dropdown: { enabled: 0 }
   });
 </script>
 {% endblock javascripts %}
