@@ -21,7 +21,7 @@ import unicodedata
 import gzip
 import io
 import ast
-from flask import Flask, render_template, render_template_string, request, redirect, url_for, Response, send_file, Request, make_response, stream_with_context
+from flask import Flask, render_template, render_template_string, request, redirect, url_for, Response, send_file, Request, make_response, stream_with_context, jsonify
 from jinja2 import TemplateNotFound
 import yt_dlp
 import streamlink
@@ -39,7 +39,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.07.14.1221"
+    slm_version = "v2026.07.21.1805"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -6189,13 +6189,43 @@ def webpage_manage_providers():
     # Labels
     slm_labels = read_data(csv_slm_labels)
 
-    # SLM Stream Address
+    # SLM Streams
     settings = read_data(csv_settings)
     slm_stream_address = settings[46]['settings']                               # [46] SLM: SLM Stream Address
     if slm_stream_address_prior is None or slm_stream_address_prior == '':
         slm_stream_address_prior = slm_stream_address
     settings_slm_stream_youtube_special_treatment = settings[83]['settings']    # [83] SLM: SLM Stream YouTube Special Treatment
-    slm_stream_address_message = ""    
+    settings_slm_stream_switch_patterns_raw = settings[84]['settings']          # [84] SLM: List of 'URL patterns' for SLM Streams to switch from the HLS and MPEG-TS method
+    if settings_slm_stream_switch_patterns_raw:
+        if isinstance(settings_slm_stream_switch_patterns_raw, str):
+            try:
+                settings_slm_stream_switch_patterns = ast.literal_eval(settings_slm_stream_switch_patterns_raw)
+            except (ValueError, SyntaxError):
+                print(f"{current_time()} ERROR: For 'SLM Stream URL patterns', unable to convert to a list.")
+
+    slm_stream_address_message = ""
+
+    base_slm_stream_switch_patterns = [
+        'youtu',
+        'twitch',
+        'dailymotion',
+        'archive',
+        'nbc',
+        'abc',
+        'cbs',
+        'fox',
+        'nfl',
+        'npr',
+        'pbs',
+        'tiktok',
+        'facebook',
+        'twitter',
+        'x',
+        'vimeo',
+        'vevo',
+        'yahoo'
+    ]
+    base_slm_stream_switch_patterns = sorted(set(base_slm_stream_switch_patterns))
 
     # File Name Management
     settings_slm_add_show_title = settings[73]['settings']                      # [73] SLM: Add TV Show Title to File Name On/Off
@@ -6205,6 +6235,10 @@ def webpage_manage_providers():
         settings_action = request.form['action']
         slm_stream_address_input = request.form.get('slm_stream_address')
         settings_slm_stream_youtube_special_treatment_input = request.form.get('settings_slm_stream_youtube_special_treatment')
+        try:
+            settings_slm_stream_switch_patterns_input = [tag['value'].casefold() for tag in json.loads(request.form.get('settings_slm_stream_switch_patterns', '[]')) if 'value' in tag]
+        except:
+            settings_slm_stream_switch_patterns_input = []
         streaming_services_input = request.form.get('streaming_services')
 
         for prefix, anchor_id in action_to_anchor.items():
@@ -6229,6 +6263,7 @@ def webpage_manage_providers():
                         slm_stream_address_prior = slm_stream_address_input
 
                         settings[83]['settings'] = settings_slm_stream_youtube_special_treatment_input
+                        settings[84]['settings'] = settings_slm_stream_switch_patterns_input
 
                     if settings_action == 'file_name_options_save':
                         settings[73]['settings'] = 'On' if request.form.get('settings_slm_add_show_title') in ['on', 'On', 'ON'] else 'Off'
@@ -6821,6 +6856,13 @@ def webpage_manage_providers():
         if slm_stream_address_prior is None or slm_stream_address_prior == '':
             slm_stream_address_prior = slm_stream_address
         settings_slm_stream_youtube_special_treatment = settings[83]['settings']    # [83] SLM: SLM Stream YouTube Special Treatment
+        settings_slm_stream_switch_patterns_raw = settings[84]['settings']          # [84] SLM: List of 'URL patterns' for SLM Streams to switch from the HLS and MPEG-TS method
+        if settings_slm_stream_switch_patterns_raw:
+            if isinstance(settings_slm_stream_switch_patterns_raw, str):
+                try:
+                    settings_slm_stream_switch_patterns = ast.literal_eval(settings_slm_stream_switch_patterns_raw)
+                except (ValueError, SyntaxError):
+                    print(f"{current_time()} ERROR: For 'SLM Stream URL patterns', unable to convert to a list.")
         settings_slm_add_show_title = settings[73]['settings']                      # [73] SLM: Add TV Show Title to File Name On/Off
         settings_slm_add_episode_title = settings[74]['settings']                   # [74] SLM: Add Episode Title to TV Show File Name On/Off
 
@@ -6878,7 +6920,9 @@ def webpage_manage_providers():
         html_settings_slm_add_show_title = settings_slm_add_show_title,
         html_settings_slm_add_episode_title = settings_slm_add_episode_title,
         html_slm_stream_youtube_special_treatments = slm_stream_youtube_special_treatments,
-        html_settings_slm_stream_youtube_special_treatment = settings_slm_stream_youtube_special_treatment
+        html_settings_slm_stream_youtube_special_treatment = settings_slm_stream_youtube_special_treatment,
+        html_settings_slm_stream_switch_patterns = settings_slm_stream_switch_patterns,
+        html_base_slm_stream_switch_patterns = base_slm_stream_switch_patterns
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -7004,6 +7048,7 @@ def webpage_playlists(sub_page):
     global parent_channel_id_prior
     global plm_streaming_stations
     global plm_check_child_station_status_global
+    global plm_fallback_stale_seconds_global
 
     templates = {
         'plm_main': 'main/playlists_main.html',
@@ -7027,6 +7072,9 @@ def webpage_playlists(sub_page):
     plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
     plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
     plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
+    plm_feed_default = settings[81]['settings']                                 # [81] PLM: Generate 'Default Feed' playlists and guide data
+    plm_feed_fallback = settings[82]['settings']                                # [82] PLM: Generate 'Fallback Feed' playlists and guide data
+    plm_url_tag_in_m3us_preferred_url_root = settings[43]['settings']           # [43] PLM: URL Tag in m3u(s) Preferred URL Root
     settings_message = ''
 
     playlists_anchor_id = None
@@ -7110,6 +7158,9 @@ def webpage_playlists(sub_page):
                     plm_station_status_number_attempts_input = request.form.get('plm_station_status_number_attempts')
                     plm_station_status_delay_attempts_input = request.form.get('plm_station_status_delay_attempts')
                     plm_station_status_skip_after_fails_input = request.form.get('plm_station_status_skip_after_fails')
+                    plm_feed_default_input = request.form.get('plm_feed_default')
+                    plm_feed_fallback_input = request.form.get('plm_feed_fallback')
+                    plm_fallback_stale_seconds_input = request.form.get('plm_fallback_stale_seconds')
 
                     try:
                         if ( 
@@ -7117,7 +7168,8 @@ def webpage_playlists(sub_page):
                             ( int(max_stations_input) > 0 ) and
                             ( int(plm_station_status_number_attempts_input) > 0 ) and 
                             ( int(plm_station_status_delay_attempts_input) > 0 ) and 
-                            ( int(plm_station_status_skip_after_fails_input) >= 0 )
+                            ( int(plm_station_status_skip_after_fails_input) >= 0 ) and
+                            ( int(plm_fallback_stale_seconds_input) > 0 )
                         
                         ):
                             
@@ -7129,6 +7181,10 @@ def webpage_playlists(sub_page):
                             settings[61]['settings'] = int(plm_station_status_number_attempts_input)
                             settings[62]['settings'] = int(plm_station_status_delay_attempts_input)
                             settings[63]['settings'] = int(plm_station_status_skip_after_fails_input)
+                            settings[81]['settings'] = "On" if plm_feed_default_input == 'on' else "Off"
+                            settings[82]['settings'] = "On" if plm_feed_fallback_input == 'on' else "Off"
+                            settings[85]['settings'] = int(plm_fallback_stale_seconds_input)
+                            plm_fallback_stale_seconds_global = settings[85]['settings']
 
                             if settings[42]['settings'] == "On":
                                 settings[43]['settings'] = f"{request.url_root}"
@@ -7186,6 +7242,9 @@ def webpage_playlists(sub_page):
                 plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
                 plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
                 plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
+                plm_feed_default = settings[81]['settings']                                 # [81] PLM: Generate 'Default Feed' playlists and guide data
+                plm_feed_fallback = settings[82]['settings']                                # [82] PLM: Generate 'Fallback Feed' playlists and guide data
+                plm_url_tag_in_m3us_preferred_url_root = settings[43]['settings']           # [43] PLM: URL Tag in m3u(s) Preferred URL Root
 
                 uploaded_playlist_files = get_uploaded_playlist_files()
 
@@ -8075,6 +8134,9 @@ def webpage_playlists(sub_page):
                             if 'pbs' in make_playlist_url:
                                 make_playlist_name_base = f"PBS Stations"
 
+                        if 'fallback' in make_playlist_url:
+                            make_playlist_name_base += " Fallback"
+
                         make_playlist_name = f"PLM - {make_playlist_name_base} ({make_playlist_type}) [{make_playlist_number}]"
 
                         if 'epg_' in make_playlist_url:
@@ -8245,7 +8307,11 @@ def webpage_playlists(sub_page):
         html_compare_options = compare_options,
         html_station_mapping_target_fields = station_mapping_target_fields,
         html_compare_replace_options = compare_replace_options,
-        html_station_mapping_target_parent_channel_ids = station_mapping_target_parent_channel_ids
+        html_station_mapping_target_parent_channel_ids = station_mapping_target_parent_channel_ids,
+        html_plm_feed_default = plm_feed_default,
+        html_plm_feed_fallback = plm_feed_fallback,
+        html_plm_url_tag_in_m3us_preferred_url_root = plm_url_tag_in_m3us_preferred_url_root,
+        html_plm_fallback_stale_seconds_global = plm_fallback_stale_seconds_global
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -9900,6 +9966,9 @@ def get_final_m3us_epgs():
 
     settings = read_data(csv_settings)
 
+    plm_feed_default = settings[81]['settings']                                 # [81] PLM: Generate 'Default Feed' playlists and guide data
+    plm_feed_fallback = settings[82]['settings']                                # [82] PLM: Generate 'Fallback Feed' playlists and guide data
+
     station_start_number = int(settings[11]['settings'])
     max_stations = int(settings[12]['settings'])
 
@@ -10131,22 +10200,43 @@ def get_final_m3us_epgs():
     epg_hls_final_m3us = []
     epg_mpeg_ts_final_m3us = []
     epg_strmlnk_final_m3us = []
+    gracenote_fallback_mpeg_ts_final_m3us = []
+    gracenote_fallback_strmlnk_final_m3us = []
+    epg_fallback_mpeg_ts_final_m3us = []
+    epg_fallback_strmlnk_final_m3us = []
 
     for final_m3u in final_m3us:
         if final_m3u['tvc_guide_stationid'] is not None and final_m3u['tvc_guide_stationid'] != '':
-            if final_m3u['stream_format'] == "HLS":
-                gracenote_hls_final_m3us.append(final_m3u)
-            elif final_m3u['stream_format'] == "MPEG-TS":
-                gracenote_mpeg_ts_final_m3us.append(final_m3u)
-            elif final_m3u['stream_format'] == "STRMLNK":
-                gracenote_strmlnk_final_m3us.append(final_m3u)
+
+            if plm_feed_default == 'On':
+                if final_m3u['stream_format'] == "HLS":
+                    gracenote_hls_final_m3us.append(final_m3u)
+                elif final_m3u['stream_format'] == "MPEG-TS":
+                    gracenote_mpeg_ts_final_m3us.append(final_m3u)
+                elif final_m3u['stream_format'] == "STRMLNK":
+                    gracenote_strmlnk_final_m3us.append(final_m3u)
+
+            if plm_feed_fallback == 'On':
+                if final_m3u['stream_format'] in ["MPEG-TS", "HLS"]:
+                    gracenote_fallback_mpeg_ts_final_m3us.append(final_m3u)
+                elif final_m3u['stream_format'] == "STRMLNK":
+                    gracenote_fallback_strmlnk_final_m3us.append(final_m3u)
+
         else:
-            if final_m3u['stream_format'] == "HLS":
-                epg_hls_final_m3us.append(final_m3u)
-            elif final_m3u['stream_format'] == "MPEG-TS":
-                epg_mpeg_ts_final_m3us.append(final_m3u)
-            elif final_m3u['stream_format'] == "STRMLNK":
-                epg_strmlnk_final_m3us.append(final_m3u)
+
+            if plm_feed_default == 'On':
+                if final_m3u['stream_format'] == "HLS":
+                    epg_hls_final_m3us.append(final_m3u)
+                elif final_m3u['stream_format'] == "MPEG-TS":
+                    epg_mpeg_ts_final_m3us.append(final_m3u)
+                elif final_m3u['stream_format'] == "STRMLNK":
+                    epg_strmlnk_final_m3us.append(final_m3u)
+
+            if plm_feed_fallback == 'On':
+                if final_m3u['stream_format'] in ["MPEG-TS", "HLS"]:
+                    epg_fallback_mpeg_ts_final_m3us.append(final_m3u)
+                elif final_m3u['stream_format'] == "STRMLNK":
+                    epg_fallback_strmlnk_final_m3us.append(final_m3u)
 
     extensions = ['m3u']
     all_prior_files = []
@@ -10154,12 +10244,20 @@ def get_final_m3us_epgs():
     for all_prior_file in all_prior_files:
         file_delete(program_files_dir, all_prior_file['filename'], all_prior_file['extension'])
 
-    create_chunk_files(gracenote_hls_final_m3us, "plm_gracenote_hls_m3u", "m3u", max_stations)
-    create_chunk_files(gracenote_mpeg_ts_final_m3us, "plm_gracenote_mpeg_ts_m3u", "m3u", max_stations)
-    create_chunk_files(gracenote_strmlnk_final_m3us, "plm_gracenote_strmlnk_m3u", "m3u", max_stations)
-    create_chunk_files(epg_hls_final_m3us, "plm_epg_hls_m3u", "m3u", max_stations)
-    create_chunk_files(epg_mpeg_ts_final_m3us, "plm_epg_mpeg_ts_m3u", "m3u", max_stations)
-    create_chunk_files(epg_strmlnk_final_m3us, "plm_epg_strmlnk_m3u", "m3u", max_stations)
+    if plm_feed_default == 'On':
+        create_chunk_files(gracenote_hls_final_m3us, "plm_gracenote_hls_m3u", "m3u", max_stations)
+        create_chunk_files(gracenote_mpeg_ts_final_m3us, "plm_gracenote_mpeg_ts_m3u", "m3u", max_stations)
+        create_chunk_files(gracenote_strmlnk_final_m3us, "plm_gracenote_strmlnk_m3u", "m3u", max_stations)
+        create_chunk_files(epg_hls_final_m3us, "plm_epg_hls_m3u", "m3u", max_stations)
+        create_chunk_files(epg_mpeg_ts_final_m3us, "plm_epg_mpeg_ts_m3u", "m3u", max_stations)
+        create_chunk_files(epg_strmlnk_final_m3us, "plm_epg_strmlnk_m3u", "m3u", max_stations)
+
+    if plm_feed_fallback == 'On':
+        create_chunk_files(gracenote_fallback_mpeg_ts_final_m3us, "plm_fallback_gracenote_mpeg_ts_m3u", "m3u", max_stations)
+        create_chunk_files(gracenote_fallback_strmlnk_final_m3us, "plm_fallback_gracenote_strmlnk_m3u", "m3u", max_stations)
+        create_chunk_files(epg_fallback_mpeg_ts_final_m3us, "plm_fallback_epg_mpeg_ts_m3u", "m3u", max_stations)
+        create_chunk_files(epg_fallback_strmlnk_final_m3us, "plm_fallback_epg_strmlnk_m3u", "m3u", max_stations)
+
     get_epgs_for_m3us()
 
     notification_add(f"{current_time()} Finished generation of final m3u(s) and XML EPG(s).")
@@ -10240,7 +10338,11 @@ def generate_m3u_content(data_list, base_filename, index):
         m3u_content += f' tvc-stream-vcodec="{item["tvc_stream_vcodec"]}"'
         m3u_content += f' tvc-stream-acodec="{item["tvc_stream_acodec"]}"'
         m3u_content += f',{item["title"]}\n'
-        m3u_content += f'{item["url"]}\n'
+
+        if 'fallback' in base_filename:
+            m3u_content += f'{plm_url_tag_in_m3us_preferred_url_root}playlists/streams/fallback?parent={item["channel_id"]}\n'
+        else:
+            m3u_content += f'{item["url"]}\n'
 
     m3u_content = m3u_content.replace('"None"', '""')
 
@@ -10262,6 +10364,7 @@ def get_playlist_files():
         playlist_label = None
 
         if playlist_extension == "m3u":
+
             with open(full_path(playlist_filename), 'r', encoding='utf-8') as file:
                 content = file.read()
             station_count = content.count("channel-id")
@@ -10271,29 +10374,66 @@ def get_playlist_files():
                 station_word = "Station"
 
             if 'gracenote_' in playlist_filename:
-                if 'hls' in playlist_filename:
-                    playlist_label = f"m3u Playlist - Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
-                elif 'mpeg_ts' in playlist_filename:
-                    playlist_label = f"m3u Playlist - Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
-                elif 'strmlnk' in playlist_filename:
-                    playlist_label = f"m3u Playlist - Gracenote (STRMLNK) [{playlist_number}] ({station_count} {station_word}): "
+
+                if 'fallback' in playlist_filename:
+
+                    if 'hls' in playlist_filename:
+                        playlist_label = f"m3u Fallback Playlist - Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
+                    elif 'mpeg_ts' in playlist_filename:
+                        playlist_label = f"m3u Fallback Playlist - Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
+                    elif 'strmlnk' in playlist_filename:
+                        playlist_label = f"m3u Fallback Playlist - Gracenote (STRMLNK) [{playlist_number}] ({station_count} {station_word}): "
+
+                else:
+
+                    if 'hls' in playlist_filename:
+                        playlist_label = f"m3u Playlist - Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
+                    elif 'mpeg_ts' in playlist_filename:
+                        playlist_label = f"m3u Playlist - Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
+                    elif 'strmlnk' in playlist_filename:
+                        playlist_label = f"m3u Playlist - Gracenote (STRMLNK) [{playlist_number}] ({station_count} {station_word}): "
 
             elif 'epg_' in playlist_filename:
-                if 'hls' in playlist_filename:
-                    playlist_label = f"m3u Playlist - Non-Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
-                elif 'mpeg_ts' in playlist_filename:
-                    playlist_label = f"m3u Playlist - Non-Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
-                elif 'strmlnk' in playlist_filename:
-                    playlist_label = f"m3u Playlist - Non-Gracenote (STRMLNK) [{playlist_number}] ({station_count} {station_word}): "
+
+                if 'fallback' in playlist_filename:
+
+                    if 'hls' in playlist_filename:
+                        playlist_label = f"m3u Fallback Playlist - Non-Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
+                    elif 'mpeg_ts' in playlist_filename:
+                        playlist_label = f"m3u Fallback Playlist - Non-Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
+                    elif 'strmlnk' in playlist_filename:
+                        playlist_label = f"m3u Fallback Playlist - Non-Gracenote (STRMLNK) [{playlist_number}] ({station_count} {station_word}): "
+
+                else:
+                    
+                    if 'hls' in playlist_filename:
+                        playlist_label = f"m3u Playlist - Non-Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
+                    elif 'mpeg_ts' in playlist_filename:
+                        playlist_label = f"m3u Playlist - Non-Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
+                    elif 'strmlnk' in playlist_filename:
+                        playlist_label = f"m3u Playlist - Non-Gracenote (STRMLNK) [{playlist_number}] ({station_count} {station_word}): "
 
         elif playlist_extension == "xml":
+
             if 'epg_' in playlist_filename:
-                if 'hls' in playlist_filename:
-                    playlist_label = f"XML EPG for Non-Gracenote (HLS) [{playlist_number}]: "
-                elif 'mpeg_ts' in playlist_filename:
-                    playlist_label = f"XML EPG for Non-Gracenote (MPEG-TS) [{playlist_number}]: "
-                elif 'strmlnk' in playlist_filename:
-                    playlist_label = f"XML EPG for Non-Gracenote (STRMLNK) [{playlist_number}]: "
+
+                if 'fallback' in playlist_filename:
+
+                    if 'hls' in playlist_filename:
+                        playlist_label = f"XML Fallback EPG for Non-Gracenote (HLS) [{playlist_number}]: "
+                    elif 'mpeg_ts' in playlist_filename:
+                        playlist_label = f"XML Fallback EPG for Non-Gracenote (MPEG-TS) [{playlist_number}]: "
+                    elif 'strmlnk' in playlist_filename:
+                        playlist_label = f"XML Fallback EPG for Non-Gracenote (STRMLNK) [{playlist_number}]: "
+
+                else:
+
+                    if 'hls' in playlist_filename:
+                        playlist_label = f"XML EPG for Non-Gracenote (HLS) [{playlist_number}]: "
+                    elif 'mpeg_ts' in playlist_filename:
+                        playlist_label = f"XML EPG for Non-Gracenote (MPEG-TS) [{playlist_number}]: "
+                    elif 'strmlnk' in playlist_filename:
+                        playlist_label = f"XML EPG for Non-Gracenote (STRMLNK) [{playlist_number}]: "
 
         playlist_files.append({'playlist_label': playlist_label, 'playlist_filename': playlist_filename})
         
@@ -11141,7 +11281,9 @@ def parse_online_video(url, ydl_opts, parse_type):
                         no_n_param = 0
 
                         for format in formats:
-                            print(f"{current_time()} INFO: Found format: {format}")               # Keep this for testing but not production
+                            # Only for development testing...
+                            if slm_environment_port == "PRERELEASE":
+                                print(f"{current_time()} INFO: Found format: {format}")
 
                             is_throttled = False
                             missing_n_param = False
@@ -11340,15 +11482,173 @@ def chunk_play_stream(fd):
     finally:
         fd.close()
 
-# Finds the highest priority child stream for a parent station and checks its status. If it is available, it returns that stream. If not, it continues in priorty order until a working one is found.
+# Entry point for getting fallback streams
 @app.route('/playlists/streams/fallback', methods=['GET'])
 def stream_parent_fallback():
+    parent_channel_id = None
+    plm_fallback_error_message = None
+
     try:
-        submitted_parent_channel_id = request.args.get('parent', type=str)
+        parent_channel_id = request.args.get('parent', type=str)
     except:
-        submitted_parent_channel_id = None
-    response = "A valid 'parent_channel_id' is required in the format '?parent=[parent_channel_id]'..."
-    print_response = True
+        plm_fallback_error_message = "Unable to determine 'parent_channel_id' in the URL. Please make sure it is in the required format of '?parent=[parent_channel_id]'..."
+    
+    if not parent_channel_id and not plm_fallback_error_message:
+        plm_fallback_error_message = "A valid 'parent_channel_id' is required in the format '?parent=[parent_channel_id]'..."
+        
+    if plm_fallback_error_message:
+        print(f"{current_time()} ERROR: {plm_fallback_error_message}")
+        return plm_fallback_error_message
+
+    plm_fallback_probe_result = None
+
+    # --- INTERCEPTION LAYER & CACHE CHECK ---
+    with plm_fallback_probes_lock:
+        if parent_channel_id in plm_fallback_probes_registry:
+            probe_entry = plm_fallback_probes_registry[parent_channel_id]
+            current_time_stamp = time.time()
+
+            # Scenario A: Valid, unexpired cache hit
+            if "expires_at" in probe_entry and current_time_stamp < probe_entry["expires_at"]:
+                print(f"{current_time()} INFO: Cache hit for station '{parent_channel_id}'. Serving existing stream and extending expiration time...")
+
+                probe_entry["expires_at"] = time.time() + plm_fallback_stale_seconds_global
+
+                plm_fallback_probe_result = {
+                    "url": probe_entry.get("url"),
+                    "message": probe_entry.get("message"),
+                    "stream_type": probe_entry.get("stream_type")
+                }
+            
+            # Scenario B: Stale cache or an active worker is already running
+            else:
+
+                if "expires_at" in probe_entry:
+                    print(f"{current_time()} INFO: Cache entry for station '{parent_channel_id}' is stale/expired. Purging cache data and refreshing...")
+                    # Explicitly clear out the expired data so waiting threads don't read stale records
+                    probe_entry.pop("url", None)
+                    probe_entry.pop("message", None)
+                    probe_entry.pop("expires_at", None)
+
+                else:
+                    print(f"{current_time()} INFO: Request for station '{parent_channel_id}' hit an active background worker...")
+
+                if "event" in probe_entry:
+                    completion_event = probe_entry["event"]
+                    probe_entry["waiters"] += 1
+
+                else:
+                    completion_event = threading.Event()
+                    probe_entry["event"] = completion_event
+                    probe_entry["waiters"] = 1
+                    
+                    # Spin up a single background worker thread
+                    worker_thread = threading.Thread(
+                        target=stream_parent_fallback_probe_worker,
+                        args=(parent_channel_id, completion_event)
+                    )
+                    worker_thread.daemon = True
+                    worker_thread.start()
+        
+        # Scenario C: Cold start (completely new Parent Channel ID)
+        else:
+
+            print(f"{current_time()} INFO: No registry entry found for station '{parent_channel_id}'. Initializing a cold start probe...")
+
+            completion_event = threading.Event()
+
+            plm_fallback_probes_registry[parent_channel_id] = {
+                "event": completion_event,
+                "waiters": 1
+            }
+
+            worker_thread = threading.Thread(
+                target=stream_parent_fallback_probe_worker,
+                args=(parent_channel_id, completion_event)
+            )
+
+            worker_thread.daemon = True
+            worker_thread.start()
+
+    # --- THE WAITING ROOM ---
+    if plm_fallback_probe_result is None:
+        completion_event.wait()
+
+        # --- CACHE RESOLUTION & CLEANUP ---
+        with plm_fallback_probes_lock:
+            if parent_channel_id in plm_fallback_probes_registry:
+                probe_entry = plm_fallback_probes_registry[parent_channel_id]
+                
+                plm_fallback_probe_result = {
+                    "url": probe_entry.get("url"),
+                    "message": probe_entry.get("message"),
+                    "stream_type": probe_entry.get("stream_type")
+                }
+
+                probe_entry["waiters"] -= 1
+
+                # Clean up synchronization primitives once the last waiting thread leaves
+                if probe_entry["waiters"] <= 0:
+                    probe_entry.pop("event", None)
+                    probe_entry.pop("waiters", None)
+                    
+                    # If the worker failed to find a URL, wipe the entry entirely so the next try restarts fresh
+                    if not probe_entry.get("url"):
+                        print(f"{current_time()} WARNING: Worker failed to find a valid URL for station '{parent_channel_id}'. Purging entry from registry...")
+                        plm_fallback_probes_registry.pop(parent_channel_id, None)
+
+    # --- RESPOND TO CLIENT ---
+    if plm_fallback_probe_result and plm_fallback_probe_result["url"]:
+        discovered_url = plm_fallback_probe_result["url"]
+        stream_type = plm_fallback_probe_result.get("stream_type", None)
+
+        # CASE 1: STREAM FORMAT MISMATCH (HLS -> MPEG-TS)
+        if stream_type == 'HLS':
+
+            print(f"{current_time()} INFO: For station '{parent_channel_id}', a verified {stream_type} stream was found. Converting to MPEG-TS...")
+            return Response(stream_parent_fallback_hls_to_mpegts(discovered_url), mimetype='video/mp2t')
+ 
+        # CASE 2: PASS THROUGH WITH EITHER MPEG-TS, OKAY, STRMLNK, OR NONE FROM NO TEST
+        else:
+
+            if stream_type == 'MPEG-TS':
+                print(f"{current_time()} INFO: For station '{parent_channel_id}', a valid {stream_type} stream was found. Redirecting client directly to source...")
+            elif stream_type == 'okay':
+                print(f"{current_time()} WARNING: For station '{parent_channel_id}', stream validation passed with generic success ('{stream_type}'). Still redirecting client directly to source, but this may fail...")
+            else:
+                print(f"{current_time()} WARNING: For station '{parent_channel_id}', a stream was found without a full validation check. Redirecting client directly to source without confirmation...")
+
+            return redirect(discovered_url, code=302)
+
+    # CASE 3: NO STREAMS FOUND
+    plm_fallback_error_message = plm_fallback_probe_result["message"] if plm_fallback_probe_result else "Fallback search failed."
+    print(f"{current_time()} WARNING: {plm_fallback_error_message}")
+    return f"{plm_fallback_error_message}"
+
+# Manages the fallback streams
+def stream_parent_fallback_probe_worker(submitted_parent_channel_id, completion_event):
+    try:
+        selected_stream_url, response_message, stream_type = stream_parent_fallback_target(submitted_parent_channel_id)
+        
+        with plm_fallback_probes_lock:
+            if submitted_parent_channel_id in plm_fallback_probes_registry:
+                plm_fallback_probes_registry[submitted_parent_channel_id]["url"] = selected_stream_url
+                plm_fallback_probes_registry[submitted_parent_channel_id]["message"] = response_message
+                plm_fallback_probes_registry[submitted_parent_channel_id]["stream_type"] = stream_type
+                
+                if selected_stream_url:
+                    plm_fallback_probes_registry[submitted_parent_channel_id]["expires_at"] = time.time() + plm_fallback_stale_seconds_global
+
+    except Exception as e:
+        print(f"{current_time()} ERROR: Executing PLM fallback probe for station '{submitted_parent_channel_id}' resulted in: {e}")
+    finally:
+        completion_event.set()
+
+# Finds the highest priority child stream for a parent station and checks its status. If it is available, it returns that stream. If not, it continues in priorty order until a working one is found.
+def stream_parent_fallback_target(submitted_parent_channel_id):
+    selected_stream_url = None
+    response_message = "A valid 'parent_channel_id' is required in the format '?parent=[parent_channel_id]'..."
+    station_check_response = None
 
     parents = []
     maps = []
@@ -11390,7 +11690,7 @@ def stream_parent_fallback():
     if submitted_parent_channel_id:
 
         if submitted_parent_channel_id in lookup_inactive_parent_channel_ids:
-            response = f"Parent station with the ID '{submitted_parent_channel_id}' is inactive. Please activate this parent station first!"
+            response_message = f"Parent station with the ID '{submitted_parent_channel_id}' is inactive. Please activate this parent station first!"
 
         elif submitted_parent_channel_id in lookup_active_parent_channel_ids:
 
@@ -11410,14 +11710,14 @@ def stream_parent_fallback():
                         playlist_preferences.append(playlist['m3u_id'])
                     else:
                         inactive_playlists.append(playlist['m3u_id'])
-                
+
                 if submitted_parent_preferred_playlist in inactive_playlists:
                     playlist_preferences.remove(submitted_parent_preferred_playlist)
 
                 children = []
                 for map in maps:
                     if (
-                        ( map['parent_channel_id'] == submitted_parent_channel_id ) and 
+                        ( map['parent_channel_id'] == submitted_parent_channel_id ) and
                         ( not map['child_station_check'].startswith('Disabled') ) and
                         ( re.search(r'm3u_\d{4}', map['child_m3u_id_channel_id']).group(0) in lookup_playlists_m3u_ids ) and
                         ( map['child_m3u_id_channel_id'] in lookup_station_child_m3u_id_channel_ids )
@@ -11441,7 +11741,7 @@ def stream_parent_fallback():
                         enable_child_station_check = None
                         url = None
                         station_playlist = None
-                        station_check_response = None
+                        station_check_response_message = None
                         stream_metadata = []
 
                         child_m3u_id_channel_id = child['child_m3u_id_channel_id']
@@ -11457,15 +11757,14 @@ def stream_parent_fallback():
                             ( enable_child_station_check not in ['On', 'on', 'ON'] )
                         ):
 
-                            response = redirect(url)
-                            print_response = False
+                            selected_stream_url = url
                             no_more_children = False
 
                             if enable_child_station_check not in ['On', 'on', 'ON']:
                                 print(f"{current_time()} INFO: Child Station '{station_playlist}' is set to not be checked. Attempting to play directly without verification...")
 
                             else:
-                                print(f"{current_time()} INFO: Child Station '{station_playlist}' responded '{station_check_response}'. Beginning to play...")
+                                print(f"{current_time()} INFO: Child Station '{station_playlist}' responded '{station_check_response}'. Sending to next step...")
 
                             break
 
@@ -11473,21 +11772,39 @@ def stream_parent_fallback():
                             print(f"{current_time()} WARNING: Child Station '{station_playlist}' responded '{station_check_response}'. Attempting next child station...")
 
                     if no_more_children:
-                        response = f"All children for parent station '{parent_title} (ID: {submitted_parent_channel_id})' failed."
+                        response_message = f"All children for parent station '{parent_title} (ID: {submitted_parent_channel_id})' failed."
 
                 else:
-                    response = f"Parent station with the ID '{submitted_parent_channel_id}' has no active/enabled children. Please set at least one child station to active and enabled first!"
+                    response_message = f"Parent station with the ID '{submitted_parent_channel_id}' has no active/enabled children. Please set at least one child station to active and enabled first!"
 
             else:
-                response = f"Parent station with the ID '{submitted_parent_channel_id}' has no children. Please map a child station first!"
+                response_message = f"Parent station with the ID '{submitted_parent_channel_id}' has no children. Please map a child station first!"
 
         else:
-            response = f"No parent station with the ID '{submitted_parent_channel_id}' found. Please submit a valid value!"
+            response_message = f"No parent station with the ID '{submitted_parent_channel_id}' found. Please submit a valid value!"
 
-    if print_response:
-        print(f"{current_time()} INFO: {response}")
+    return selected_stream_url, response_message, station_check_response
 
-    return response
+# Thread-safe generator using an isolated Streamlink session to convert an incoming HLS stream into a continuous MPEG-TS binary stream.
+def stream_parent_fallback_hls_to_mpegts(m3u8_url):
+    local_session = streamlink.Streamlink()
+    local_session.set_option("hls-live-edge", 2)
+    local_session.set_option("ringbuffer-size", 1024 * 1024)
+
+    try:
+        streams = local_session.streams(m3u8_url)
+        target_stream = streams.get('best') or list(streams.values())[0]
+
+        with target_stream.open() as fd:
+            while True:
+                chunk = fd.read(8192)
+                if not chunk:
+                    break
+                yield chunk
+                
+    except Exception as e:
+        print(f"{current_time()} ERROR: Streamlink conversion session exception: {e}")
+        pass
 
 # Creates the m3u(s) for Streaming Stations
 def make_streaming_stations_m3us():
@@ -15057,10 +15374,18 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
     settings = read_data(csv_settings)
     slm_stream_address = settings[46]["settings"]
     slm_stream_address_full = f"{slm_stream_address}/playlists/streams/stream?url="
+    slm_stream_mpeg_ts_address_full = f"{slm_stream_address}/playlists/streams/stream_mpegts?url="
 
     settings_slm_add_show_title = settings[73]['settings']                      # [73] SLM: Add TV Show Title to File Name On/Off
     settings_slm_add_episode_title = settings[74]['settings']                   # [74] SLM: Add Episode Title to TV Show File Name On/Off
     settings_slm_stream_youtube_special_treatment = settings[83]['settings']    # [83] SLM: SLM Stream YouTube Special Treatment
+    settings_slm_stream_switch_patterns_raw = settings[84]['settings']          # [84] SLM: List of 'URL patterns' for SLM Streams to switch from the HLS and MPEG-TS method
+    if settings_slm_stream_switch_patterns_raw:
+        if isinstance(settings_slm_stream_switch_patterns_raw, str):
+            try:
+                settings_slm_stream_switch_patterns = ast.literal_eval(settings_slm_stream_switch_patterns_raw)
+            except (ValueError, SyntaxError):
+                print(f"{current_time()} ERROR: For 'SLM Stream URL patterns', unable to convert to a list.")
 
     bookmarks_statuses = read_data(csv_bookmarks_status)
 
@@ -15161,7 +15486,12 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
                                 stream_link_url = f"youtube://play?v={youtube_video_id}"
 
                         else:
-                            stream_link_url = f"{slm_stream_address_full}{bookmark_status['stream_link_override']}"
+
+                            if any(settings_slm_stream_switch_pattern in bookmark_status['stream_link_override'] for settings_slm_stream_switch_pattern in settings_slm_stream_switch_patterns ):
+                                stream_link_url = f"{slm_stream_mpeg_ts_address_full}{bookmark_status['stream_link_override']}"
+
+                            else:
+                                stream_link_url = f"{slm_stream_address_full}{bookmark_status['stream_link_override']}"
 
                 elif bookmark_status['stream_link'] != "":
                     if special_action in ["Make STRM", "Make SLM Stream"]:
@@ -16375,7 +16705,10 @@ def webpage_settings():
         channels_dvr_integration_input = request.form.get('channels_dvr_integration')
         media_players_integration_input = request.form.get('media_players_integration')
         media_tools_manager_input = request.form.get('media_tools_manager')
-        settings_articles_input = [tag['value'].casefold() for tag in json.loads(request.form.get('settings_articles', '[]')) if 'value' in tag]
+        try:
+            settings_articles_input = [tag['value'].casefold() for tag in json.loads(request.form.get('settings_articles', '[]')) if 'value' in tag]
+        except:
+            settings_articles_input = []
 
         for prefix, anchor_id in action_to_anchor.items():
             if settings_action.startswith(prefix):
@@ -17569,6 +17902,10 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "On"}, 83, "PLM: Generate 'Default Feed' playlists and guide data")
         check_and_append(csv_file, {"settings": "Off"}, 84, "PLM: Generate 'Fallback Feed' playlists and guide data")
         check_and_append(csv_file, {"settings": "none"}, 85, "SLM: SLM Stream YouTube Special Treatment")
+        check_and_append(csv_file, {"settings": [
+                "youtu"
+            ]}, 86, "SLM: List of 'URL patterns' for SLM Streams to switch from the HLS and MPEG-TS method")
+        check_and_append(csv_file, {"settings": 20}, 87, "PLM: For 'Fallback Feed', time (in seconds) a found stream remains valid in memory before being purged")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -17671,7 +18008,11 @@ def initial_data(csv_file):
             {"settings": 0},                                                           # [80] SLM: Video Channels max number of videos by type (0 = Unlimited)
             {"settings": "On"},                                                        # [81] PLM: Generate 'Default Feed' playlists and guide data
             {"settings": "Off"},                                                       # [82] PLM: Generate 'Fallback Feed' playlists and guide data
-            {"settings": "none"}                                                       # [83] SLM: SLM Stream YouTube Special Treatment
+            {"settings": "none"},                                                      # [83] SLM: SLM Stream YouTube Special Treatment
+            {"settings": [
+                "youtu"
+            ]},                                                                        # [84] SLM: List of 'URL patterns' for SLM Streams to switch from the HLS and MPEG-TS method
+            {"settings": 20}                                                           # [85] PLM: For 'Fallback Feed', time (in seconds) a found stream remains valid in memory before being purged
         ]
 
     # Stream Link/File Manager
@@ -19300,7 +19641,7 @@ video_providers = [
     "youtube"
 ]
 youtube_player_clients = [
-    'mweb',
+    'mweb'
     # 'web_safari',
     # 'web',
     # 'ios'
@@ -19421,6 +19762,8 @@ station_status_results_prior = []
 station_status_message_prior = ''
 streaming_stations_source_test_prior = ''
 streaming_stations_url_test_prior = ''
+plm_fallback_probes_registry = {}
+plm_fallback_probes_lock = threading.Lock()
 
 ### [PLM] Settings and Automation
 plm_fields_base = [
@@ -19606,6 +19949,9 @@ if global_settings[39]['settings'] == "On":
 plm_check_child_station_status_global = None
 if global_settings[59]['settings'] == "On":
     plm_check_child_station_status_global = True
+
+plm_fallback_stale_seconds_global = None
+plm_fallback_stale_seconds_global = int(global_settings[85]['settings'])
 
 global_articles_raw = []
 global_articles = []
