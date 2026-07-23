@@ -213,61 +213,63 @@
               </div>
             </div>
             <!-- Final Playlists -->
-            <div class="file-input-wrapper2 w-100 h-15 my-2 mb-2">
-              <h5 id="final_playlists_anchor">m3u(s) and XML EPG(s)
-                <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Regular-Activity-%E2%80%90-m3u(s)-and-XML-EPG(s)" target="_blank">
-                  <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
-                </a>
-              </h5>
-              {% if html_plm_feed_default == 'On' %}
-                <h6>Default Feed(s)</h6>
-                <table style="margin-left: 25px; margin-top: 10px; margin-bottom: 10px;">
-                  {% for html_playlist_file in html_playlist_files %}
-                    {% if 'fallback' not in html_playlist_file.playlist_filename %}
-                      <tr>
-                        <td  style="padding-right: 15px;">
-                          {% if '.xml' in html_playlist_file.playlist_filename %}
-                            <button type="submit" name="action" value="playlist_file_add_to_xml_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>XML for Playlist</button>
-                          {% elif '.m3u' in html_playlist_file.playlist_filename %}
-                            {% if html_slm_channels_dvr_integration %}
-                              <button type="submit" name="action" value="playlist_file_add_to_channels_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2">Add to Channels DVR</button>
-                            {% else %}
-                              <button type="submit" name="action" value="playlist_file_add_to_m3u_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>m3u for Playlist</button>
+            {% if html_plm_feed_default == 'On' or html_plm_feed_fallback == 'On' %}
+              <div class="file-input-wrapper2 w-100 h-15 my-2 mb-2">
+                <h5 id="final_playlists_anchor">m3u(s) and XML EPG(s)
+                  <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Regular-Activity-%E2%80%90-m3u(s)-and-XML-EPG(s)" target="_blank">
+                    <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+                  </a>
+                </h5>
+                {% if html_plm_feed_default == 'On' %}
+                  <h6>Default Feed(s)</h6>
+                  <table style="margin-left: 25px; margin-top: 10px; margin-bottom: 10px;">
+                    {% for html_playlist_file in html_playlist_files %}
+                      {% if 'fallback' not in html_playlist_file.playlist_filename %}
+                        <tr>
+                          <td  style="padding-right: 15px;">
+                            {% if '.xml' in html_playlist_file.playlist_filename %}
+                              <button type="submit" name="action" value="playlist_file_add_to_xml_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>XML for Playlist</button>
+                            {% elif '.m3u' in html_playlist_file.playlist_filename %}
+                              {% if html_slm_channels_dvr_integration %}
+                                <button type="submit" name="action" value="playlist_file_add_to_channels_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2">Add to Channels DVR</button>
+                              {% else %}
+                                <button type="submit" name="action" value="playlist_file_add_to_m3u_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>m3u for Playlist</button>
+                              {% endif %}
                             {% endif %}
-                          {% endif %}
-                        </td>
-                        <td style="padding-right: 15px; text-align: right;"><b>{{ html_playlist_file.playlist_label }}</b></td>
-                        <td><a href="{{ url_for('download_m3u_epg', filename=html_playlist_file.playlist_filename) }}">{{ request.url_root }}playlists/files/{{ html_playlist_file.playlist_filename }}</a></td>
-                      </tr>
-                    {% endif %}
-                  {% endfor %}
-                </table>
-              {% endif %}
-              {% if html_plm_feed_fallback == 'On' %}
-                <h6>Fallback Feed(s)</h6>
-                <table style="margin-left: 25px; margin-top: 10px; margin-bottom: 10px;">
-                  {% for html_playlist_file in html_playlist_files %}
-                    {% if 'fallback' in html_playlist_file.playlist_filename %}
-                      <tr>
-                        <td  style="padding-right: 15px;">
-                          {% if '.xml' in html_playlist_file.playlist_filename %}
-                            <button type="submit" name="action" value="playlist_file_add_to_xml_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>XML for Playlist</button>
-                          {% elif '.m3u' in html_playlist_file.playlist_filename %}
-                            {% if html_slm_channels_dvr_integration %}
-                              <button type="submit" name="action" value="playlist_file_add_to_channels_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2">Add to Channels DVR</button>
-                            {% else %}
-                              <button type="submit" name="action" value="playlist_file_add_to_m3u_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>m3u for Playlist</button>
+                          </td>
+                          <td style="padding-right: 15px; text-align: right;"><b>{{ html_playlist_file.playlist_label }}</b></td>
+                          <td><a href="{{ url_for('download_m3u_epg', filename=html_playlist_file.playlist_filename) }}">{{ request.url_root }}playlists/files/{{ html_playlist_file.playlist_filename }}</a></td>
+                        </tr>
+                      {% endif %}
+                    {% endfor %}
+                  </table>
+                {% endif %}
+                {% if html_plm_feed_fallback == 'On' %}
+                  <h6>Fallback Feed(s)</h6>
+                  <table style="margin-left: 25px; margin-top: 10px; margin-bottom: 10px;">
+                    {% for html_playlist_file in html_playlist_files %}
+                      {% if 'fallback' in html_playlist_file.playlist_filename %}
+                        <tr>
+                          <td  style="padding-right: 15px;">
+                            {% if '.xml' in html_playlist_file.playlist_filename %}
+                              <button type="submit" name="action" value="playlist_file_add_to_xml_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>XML for Playlist</button>
+                            {% elif '.m3u' in html_playlist_file.playlist_filename %}
+                              {% if html_slm_channels_dvr_integration %}
+                                <button type="submit" name="action" value="playlist_file_add_to_channels_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2">Add to Channels DVR</button>
+                              {% else %}
+                                <button type="submit" name="action" value="playlist_file_add_to_m3u_placeholder_{{ loop.index }}" class="btn bg-gradient-primary my-1 mb-2" disabled>m3u for Playlist</button>
+                              {% endif %}
                             {% endif %}
-                          {% endif %}
-                        </td>
-                        <td style="padding-right: 15px; text-align: right;"><b>{{ html_playlist_file.playlist_label }}</b></td>
-                        <td><a href="{{ url_for('download_m3u_epg', filename=html_playlist_file.playlist_filename) }}">{{ request.url_root }}playlists/files/{{ html_playlist_file.playlist_filename }}</a></td>
-                      </tr>
-                    {% endif %}
-                  {% endfor %}
-                </table>
-              {% endif %}
-            </div>
+                          </td>
+                          <td style="padding-right: 15px; text-align: right;"><b>{{ html_playlist_file.playlist_label }}</b></td>
+                          <td><a href="{{ url_for('download_m3u_epg', filename=html_playlist_file.playlist_filename) }}">{{ request.url_root }}playlists/files/{{ html_playlist_file.playlist_filename }}</a></td>
+                        </tr>
+                      {% endif %}
+                    {% endfor %}
+                  </table>
+                {% endif %}
+              </div>
+            {% endif %}
           </div>
           <div class="common-div column-div-2">
             <div class="file-input-wrapper w-100 h-15 my-2 mb-2">

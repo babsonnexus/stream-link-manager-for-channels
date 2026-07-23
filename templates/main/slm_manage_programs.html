@@ -1397,7 +1397,7 @@
                               </div>
                             </div>
                             <div class="grid-item">
-                              <input type="number" min="1" id="program_modify_global_change_override_duration" name="program_modify_global_change_override_duration" placeholder="i.e., 3600" title="i.e., 3600" style="margin-top: -10px; width: 100%;">
+                              <input type="number" min="0" id="program_modify_global_change_override_duration" name="program_modify_global_change_override_duration" placeholder="i.e., 3600" title="i.e., 3600" style="margin-top: -10px; width: 100%;">
                             </div>
                           </div>
                         {% endif %}
@@ -2338,7 +2338,7 @@
                   ProgramModifyOverrideDurationItem.className = 'grid-item';
                   const ProgramModifyOverrideDurationInput = document.createElement('input');
                   ProgramModifyOverrideDurationInput.type = 'number';
-                  ProgramModifyOverrideDurationInput.min = '1';
+                  ProgramModifyOverrideDurationInput.min = '0';
                   ProgramModifyOverrideDurationInput.id = `field_override_duration_${adjustedIndex}`;
                   ProgramModifyOverrideDurationInput.name = `field_override_duration_${adjustedIndex}`;
                   ProgramModifyOverrideDurationInput.value = item.override_duration;
