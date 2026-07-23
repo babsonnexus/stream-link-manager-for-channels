@@ -39,7 +39,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.07.21.1805"
+    slm_version = "v2026.07.23.1736"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -9560,7 +9560,7 @@ def check_child_station_status(check_child_station_status_single, check_child_st
                 message = f"{current_time()} INFO: {not_ignore_station['station_playlist']} responded '{station_check_response}'."
                 print(f"{message}")
 
-                if station_check_response == 'fail':
+                if 'fail' in station_check_response:
                     disable_child_stations.append(check_m3u_id_channel_id)
 
                     # Increment the fail count for the playlist
@@ -9573,19 +9573,19 @@ def check_child_station_status(check_child_station_status_single, check_child_st
                     if plm_station_status_skip_after_fails != 0 and playlists_fail_count[not_ignore_station['m3u_id']] >= plm_station_status_skip_after_fails:
                         skip_playlists.append(not_ignore_station['m3u_id'])                    
 
-                elif station_check_response == 'Skipped':
+                elif 'Skipped' in station_check_response:
                     skipped_child_stations.append(check_m3u_id_channel_id)
                     
-                elif station_check_response == 'DRM':
+                elif 'DRM' in station_check_response:
                     drm_child_stations.append(check_m3u_id_channel_id)
 
-                elif station_check_response == 'auth':
+                elif 'auth' in station_check_response:
                     auth_child_stations.append(check_m3u_id_channel_id)
 
-                elif station_check_response == 'HLS':
+                elif 'HLS' in station_check_response:
                     hls_child_stations.append(check_m3u_id_channel_id)
                 
-                elif station_check_response == 'MPEG-TS':
+                elif 'MPEG-TS' in station_check_response:
                     mpegts_child_stations.append(check_m3u_id_channel_id)
 
     else:
@@ -10209,34 +10209,34 @@ def get_final_m3us_epgs():
         if final_m3u['tvc_guide_stationid'] is not None and final_m3u['tvc_guide_stationid'] != '':
 
             if plm_feed_default == 'On':
-                if final_m3u['stream_format'] == "HLS":
+                if "HLS" in final_m3u['stream_format']:
                     gracenote_hls_final_m3us.append(final_m3u)
-                elif final_m3u['stream_format'] == "MPEG-TS":
+                elif "MPEG-TS" in final_m3u['stream_format']:
                     gracenote_mpeg_ts_final_m3us.append(final_m3u)
-                elif final_m3u['stream_format'] == "STRMLNK":
+                elif "STRMLNK" in final_m3u['stream_format']:
                     gracenote_strmlnk_final_m3us.append(final_m3u)
 
             if plm_feed_fallback == 'On':
-                if final_m3u['stream_format'] in ["MPEG-TS", "HLS"]:
-                    gracenote_fallback_mpeg_ts_final_m3us.append(final_m3u)
-                elif final_m3u['stream_format'] == "STRMLNK":
+                if "STRMLNK" in final_m3u['stream_format']:
                     gracenote_fallback_strmlnk_final_m3us.append(final_m3u)
+                else:
+                    gracenote_fallback_mpeg_ts_final_m3us.append(final_m3u)
 
         else:
 
             if plm_feed_default == 'On':
-                if final_m3u['stream_format'] == "HLS":
+                if "HLS" in final_m3u['stream_format']:
                     epg_hls_final_m3us.append(final_m3u)
-                elif final_m3u['stream_format'] == "MPEG-TS":
+                elif "MPEG-TS" in final_m3u['stream_format']:
                     epg_mpeg_ts_final_m3us.append(final_m3u)
-                elif final_m3u['stream_format'] == "STRMLNK":
+                elif "STRMLNK" in final_m3u['stream_format']:
                     epg_strmlnk_final_m3us.append(final_m3u)
 
             if plm_feed_fallback == 'On':
-                if final_m3u['stream_format'] in ["MPEG-TS", "HLS"]:
-                    epg_fallback_mpeg_ts_final_m3us.append(final_m3u)
-                elif final_m3u['stream_format'] == "STRMLNK":
+                if "STRMLNK" in final_m3u['stream_format']:
                     epg_fallback_strmlnk_final_m3us.append(final_m3u)
+                else:
+                    epg_fallback_mpeg_ts_final_m3us.append(final_m3u)
 
     extensions = ['m3u']
     all_prior_files = []
@@ -11470,12 +11470,76 @@ def streams_live_mpegts():
         print(f"{current_time()} INFO: {response}")
 
     return response
+# @app.route('/playlists/streams/stream_mpegts', methods=['GET'])
+# def streams_live_mpegts():
+#     url = request.args.get('url', type=str)
+#     response = "URL is required"
+#     print_response = True
 
-# Generates a stream of chunks for a MPEG-TS stream
+#     streams = None
+#     stream = None
+#     fd = None
+
+#     if url:
+
+#         try:
+#             print(f"{current_time()} DEBUG: Request received for URL: {url}")
+#             session = streamlink.Streamlink()
+#             session.set_option("ffmpeg-ffmpeg", "ffmpeg")  # Ensure ffmpeg is used
+#             session.set_option("ffmpeg-fout", "mpegts")   # Force MPEG-TS output
+#             session.set_option("mux-subtitles", False)    # Avoid subtitle muxing issues
+#             streams = session.streams(url)
+
+#             if streams:
+#                 # Convert stream objects to strings for clean JSON serialization
+#                 formatted_streams = {k: str(v) for k, v in streams.items()}
+#                 streams_json = json.dumps(formatted_streams, indent=4)
+#                 print(f"{current_time()} DEBUG: Streams found:\n{streams_json}")
+
+#                 stream = streams.get("best") or next(iter(streams.values()))
+
+#                 stream_info = {
+#                     "selected_stream": str(stream),
+#                     "type": type(stream).__name__
+#                 }
+#                 print(f"{current_time()} DEBUG: Selected stream details:\n{json.dumps(stream_info, indent=4)}")
+#             else:
+#                 response = f"No streams found for URL {url}"
+            
+#             if stream:
+#                 print(f"{current_time()} DEBUG: Attempting stream.open()...")
+#                 fd = stream.open()
+                
+#                 fd_info = {
+#                     "file_descriptor": str(fd),
+#                     "type": type(fd).__name__
+#                 }
+#                 print(f"{current_time()} DEBUG: File descriptor details:\n{json.dumps(fd_info, indent=4)}")
+#             else:
+#                 response = f"No suitable stream found for URL {url}"
+
+#             if fd:
+#                 response = Response(stream_with_context(chunk_play_stream(fd)), content_type='video/MP4')
+#                 print_response = False
+#             else:
+#                 response = f"Failed to open stream for URL {url}"
+
+#         except Exception as e:
+#             response = f"Playing Live Stream (MPEG-TS) resulted in error: {e}"
+
+#     if print_response:
+#         print(f"{current_time()} INFO: {response}")
+
+#     return response
+
+# Generates a stream of chunks for an MPEG-TS stream
 def chunk_play_stream(fd):
+    
+    CHUNK_SIZE = 188 * 700 # 131,600 bytes = 700 TS packets of 188 bytes (~128 KB)
+
     try:
         while True:
-            chunk = fd.read(8192)
+            chunk = fd.read(CHUNK_SIZE)
             if not chunk:
                 break
             yield chunk
@@ -11517,7 +11581,8 @@ def stream_parent_fallback():
                 plm_fallback_probe_result = {
                     "url": probe_entry.get("url"),
                     "message": probe_entry.get("message"),
-                    "stream_type": probe_entry.get("stream_type")
+                    "stream_type": probe_entry.get("stream_type"),
+                    "hls_locked": probe_entry.get("hls_locked")
                 }
             
             # Scenario B: Stale cache or an active worker is already running
@@ -11582,7 +11647,8 @@ def stream_parent_fallback():
                 plm_fallback_probe_result = {
                     "url": probe_entry.get("url"),
                     "message": probe_entry.get("message"),
-                    "stream_type": probe_entry.get("stream_type")
+                    "stream_type": probe_entry.get("stream_type"),
+                    "hls_locked": probe_entry.get("hls_locked")
                 }
 
                 probe_entry["waiters"] -= 1
@@ -11601,18 +11667,26 @@ def stream_parent_fallback():
     if plm_fallback_probe_result and plm_fallback_probe_result["url"]:
         discovered_url = plm_fallback_probe_result["url"]
         stream_type = plm_fallback_probe_result.get("stream_type", None)
+        hls_locked = plm_fallback_probe_result.get("hls_locked", False)
+        pass_stream = True
 
-        # CASE 1: STREAM FORMAT MISMATCH (HLS -> MPEG-TS)
-        if stream_type == 'HLS':
+        # CASE 1: Convert HLS to MPEG-TS
+        if hls_locked:
 
-            print(f"{current_time()} INFO: For station '{parent_channel_id}', a verified {stream_type} stream was found. Converting to MPEG-TS...")
-            return Response(stream_parent_fallback_hls_to_mpegts(discovered_url), mimetype='video/mp2t')
+            if stream_type == 'HLS':
+
+                print(f"{current_time()} INFO: For station '{parent_channel_id}', a verified {stream_type} stream was found. Converting to MPEG-TS...")
+                pass_stream = False
+                return Response(stream_parent_fallback_hls_to_mpegts(discovered_url), mimetype='video/mp2t')
  
-        # CASE 2: PASS THROUGH WITH EITHER MPEG-TS, OKAY, STRMLNK, OR NONE FROM NO TEST
-        else:
+            else:
+                print(f"{current_time()} WARNING: For station '{parent_channel_id}', the child was locked to 'HLS', but it responded '{stream_type}'. As such, it is being treated as a regular stream...")
+ 
+        # CASE 2: Pass through the results
+        if pass_stream:
 
-            if stream_type == 'MPEG-TS':
-                print(f"{current_time()} INFO: For station '{parent_channel_id}', a valid {stream_type} stream was found. Redirecting client directly to source...")
+            if stream_type in ['MPEG-TS', 'HLS']:
+                print(f"{current_time()} INFO: For station '{parent_channel_id}', a valid '{stream_type}' stream was found. Redirecting client directly to source...")
             elif stream_type == 'okay':
                 print(f"{current_time()} WARNING: For station '{parent_channel_id}', stream validation passed with generic success ('{stream_type}'). Still redirecting client directly to source, but this may fail...")
             else:
@@ -11620,7 +11694,7 @@ def stream_parent_fallback():
 
             return redirect(discovered_url, code=302)
 
-    # CASE 3: NO STREAMS FOUND
+    # CASE 3: No streams found
     plm_fallback_error_message = plm_fallback_probe_result["message"] if plm_fallback_probe_result else "Fallback search failed."
     print(f"{current_time()} WARNING: {plm_fallback_error_message}")
     return f"{plm_fallback_error_message}"
@@ -11628,13 +11702,14 @@ def stream_parent_fallback():
 # Manages the fallback streams
 def stream_parent_fallback_probe_worker(submitted_parent_channel_id, completion_event):
     try:
-        selected_stream_url, response_message, stream_type = stream_parent_fallback_target(submitted_parent_channel_id)
+        selected_stream_url, response_message, stream_type, hls_locked = stream_parent_fallback_target(submitted_parent_channel_id)
         
         with plm_fallback_probes_lock:
             if submitted_parent_channel_id in plm_fallback_probes_registry:
                 plm_fallback_probes_registry[submitted_parent_channel_id]["url"] = selected_stream_url
                 plm_fallback_probes_registry[submitted_parent_channel_id]["message"] = response_message
                 plm_fallback_probes_registry[submitted_parent_channel_id]["stream_type"] = stream_type
+                plm_fallback_probes_registry[submitted_parent_channel_id]["hls_locked"] = hls_locked
                 
                 if selected_stream_url:
                     plm_fallback_probes_registry[submitted_parent_channel_id]["expires_at"] = time.time() + plm_fallback_stale_seconds_global
@@ -11649,6 +11724,7 @@ def stream_parent_fallback_target(submitted_parent_channel_id):
     selected_stream_url = None
     response_message = "A valid 'parent_channel_id' is required in the format '?parent=[parent_channel_id]'..."
     station_check_response = None
+    hls_locked = False
 
     parents = []
     maps = []
@@ -11682,6 +11758,7 @@ def stream_parent_fallback_target(submitted_parent_channel_id):
     lookup_station_urls = {f"{station['m3u_id']}_{station['channel_id']}": station['url'] for station in stations}
     lookup_station_station_playlists = {f"{station['m3u_id']}_{station['channel_id']}": station['station_playlist'] for station in stations}
     lookup_playlists_m3u_ids = {playlist['m3u_id'] for playlist in playlists}
+    lookup_playlists_hls_locks = {playlist['m3u_id'] for playlist in playlists if playlist['stream_format'] == 'HLS (Locked)'}
 
     for map in maps:
         if map['parent_channel_id'] not in lookup_mapped_parent_channel_ids:
@@ -11760,6 +11837,12 @@ def stream_parent_fallback_target(submitted_parent_channel_id):
                             selected_stream_url = url
                             no_more_children = False
 
+                            if (
+                                ( re.search(r'm3u_\d{4}', child['child_m3u_id_channel_id']).group(0) in lookup_playlists_hls_locks ) or
+                                ( child['stream_format_override'] == "HLS (Locked)" )
+                            ):
+                                hls_locked = True
+
                             if enable_child_station_check not in ['On', 'on', 'ON']:
                                 print(f"{current_time()} INFO: Child Station '{station_playlist}' is set to not be checked. Attempting to play directly without verification...")
 
@@ -11783,7 +11866,7 @@ def stream_parent_fallback_target(submitted_parent_channel_id):
         else:
             response_message = f"No parent station with the ID '{submitted_parent_channel_id}' found. Please submit a valid value!"
 
-    return selected_stream_url, response_message, station_check_response
+    return selected_stream_url, response_message, station_check_response, hls_locked
 
 # Thread-safe generator using an isolated Streamlink session to convert an incoming HLS stream into a continuous MPEG-TS binary stream.
 def stream_parent_fallback_hls_to_mpegts(m3u8_url):
@@ -18500,13 +18583,19 @@ def check_website(url, retries, delay):
 # Check if a video stream is working and determine its type (HLS or MPEG-TS)
 def test_video_stream(url):
     status = None
+    stream_metadata = []
+
+    drm_detected = False
+    manifest_drm_type = None
 
     settings = read_data(csv_settings)
     retries = int(settings[61]['settings'])  # [61] PLM/MTM: Check Child Station Status Max Number of Retry Attempts
     delay = int(settings[62]['settings'])    # [62] PLM/MTM: Check Child Station Status Retry Delay in Seconds
 
     for attempt in range(retries):
+
         try:
+
             with requests.Session() as session:
                 resp = session.get(url, headers=url_headers_extended, stream=True, timeout=10, allow_redirects=True)
 
@@ -18524,6 +18613,7 @@ def test_video_stream(url):
                             print(f"{current_time()} WARNING: After attempting referer, '{url}' responded '{resp.status_code}'.")
 
                 with session.get(resp.url, headers=url_headers_modified, stream=True, timeout=10) as response:
+
                     if response.status_code in [200, 206]:
                         first_byte = None
                         for chunk in response.iter_content(chunk_size=1):
@@ -18532,16 +18622,21 @@ def test_video_stream(url):
                                 break
 
                         content_type = response.headers.get("Content-Type", "")
+
                         if "text/html" in content_type:
                             status = "fail"
 
                         elif first_byte is not None:
-                            if first_byte == b'G' or first_byte == b'\x47':
+
+                            if first_byte in (b'G', b'\x47'):
                                 status = "MPEG-TS"
+
                             elif first_byte == b'#':
                                 status = "HLS"
+
                             else:
                                 status = "okay"
+
                         else:
                             status = "fail"
 
@@ -18551,148 +18646,151 @@ def test_video_stream(url):
                     else:
                         status = "fail"
 
-        except Exception as e:
-            print(f"{current_time()} ERROR: {url} reports {e}")
-            status = "fail"
+                    if status not in ["fail", "auth"]:
 
-        if status in ("HLS", "MPEG-TS", "okay"):
-            break
-        elif attempt < retries - 1:
-            print(f"{current_time()} INFO: '{url}' failed. Retrying in {delay} seconds...")
-            time.sleep(delay)
-        else:
-            print(f"{current_time()} INFO: '{url}' still failed after {retries} attempts.")
+                        # HTTP headers
+                        for k, v in response.headers.items():
+                            stream_metadata.append({"field": f"Header: {k}", "value": v})
 
-    stream_metadata = []
-    if status in ("HLS", "MPEG-TS", "okay"):
-        try:
-            with requests.Session() as session:
-                response = session.get(url, headers=url_headers, stream=True, timeout=10, allow_redirects=True)
-                # HTTP headers
-                for k, v in response.headers.items():
-                    stream_metadata.append({"field": f"Header: {k}", "value": v})
+                        # Content-Type
+                        if "Content-Type" in response.headers:
+                            stream_metadata.append({"field": "Content Type", "value": response.headers["Content-Type"]})
 
-                # Content-Type
-                if "Content-Type" in response.headers:
-                    stream_metadata.append({"field": "Content Type", "value": response.headers["Content-Type"]})
+                        # Content-Length
+                        if "Content-Length" in response.headers:
+                            stream_metadata.append({"field": "Content Length", "value": response.headers["Content-Length"]})
 
-                # Content-Length
-                if "Content-Length" in response.headers:
-                    stream_metadata.append({"field": "Content Length", "value": response.headers["Content-Length"]})
+                        # DRM detection (Headers)
+                        drm_headers = ["x-drm", "drm-type", "x-playready", "x-widevine", "x-fairplay", "license", "x-license-url"]
+                        for h in drm_headers:
+                            if h in response.headers:
+                                stream_metadata.append({"field": "DRM Detected", "value": True})
+                                stream_metadata.append({"field": "DRM Type", "value": response.headers[h]})
+                                drm_detected = True
+                                break
 
-                # DRM detection (headers)
-                drm_detected = False
-                drm_headers = ["x-drm", "drm-type", "x-playready", "x-widevine", "x-fairplay", "license", "x-license-url"]
-                for h in drm_headers:
-                    if h in response.headers:
-                        stream_metadata.append({"field": "DRM Detected", "value": True})
-                        stream_metadata.append({"field": "DRM Type", "value": response.headers[h]})
-                        drm_detected = True
-                        break
+                        # Manifest/playlist inspection for HLS/DASH
+                        content_type = response.headers.get("Content-Type", "")
 
-                # Manifest/playlist inspection for HLS/DASH
-                content_type = response.headers.get("Content-Type", "")
-                manifest_drm_type = None
+                        if "HLS" in status or "application/vnd.apple.mpegurl" in content_type or url.endswith(".m3u8"):
+                            manifest = response.content.decode(errors="ignore")
 
-                if status == "HLS" or "application/vnd.apple.mpegurl" in content_type or url.endswith(".m3u8"):
-                    manifest = response.content.decode(errors="ignore")
+                            if "#EXT-X-STREAM-INF" in manifest:
+                                stream_metadata.append({"field": "HLS Variant Playlist", "value": True})
 
-                    if "#EXT-X-STREAM-INF" in manifest:
-                        stream_metadata.append({"field": "HLS Variant Playlist", "value": True})
+                            codecs_found = []
+                            resolutions_found = []
 
-                    codecs_found = []
-                    resolutions_found = []
+                            for line in manifest.splitlines():
 
-                    for line in manifest.splitlines():
-                        if line.startswith("#EXT-X-STREAM-INF"):
-                            # Extract RESOLUTION
-                            res_match = re.search(r'RESOLUTION=([0-9]+x[0-9]+)', line)
-                            if res_match:
-                                resolutions_found.append(res_match.group(1))
-                            # Extract CODECS
-                            codecs_match = re.search(r'CODECS="([^"]+)"', line)
-                            if codecs_match:
-                                codecs_found.append(codecs_match.group(1))
+                                if line.startswith("#EXT-X-STREAM-INF"):
 
-                        # Check for #EXT-X-KEY tags (HLS encryption)
-                        if line.startswith("#EXT-X-KEY"):
-                            method_match = re.search(r'METHOD=([^,]+)', line)
-                            uri_match = re.search(r'URI="([^"]+)"', line)
-                            keyformat_match = re.search(r'KEYFORMAT="([^"]+)"', line, re.IGNORECASE)
-                            method = method_match.group(1) if method_match else None
-                            uri = uri_match.group(1) if uri_match else None
-                            keyformat = keyformat_match.group(1) if keyformat_match else None
+                                    # Extract RESOLUTION
+                                    res_match = re.search(r'RESOLUTION=([0-9]+x[0-9]+)', line)
+                                    if res_match:
+                                        resolutions_found.append(res_match.group(1))
 
-                            if method and method != "NONE" and uri:
+                                    # Extract CODECS
+                                    codecs_match = re.search(r'CODECS="([^"]+)"', line)
+                                    if codecs_match:
+                                        codecs_found.append(codecs_match.group(1))
+
+                                # Check for #EXT-X-KEY tags (HLS encryption)
+                                if line.startswith("#EXT-X-KEY"):
+                                    method_match = re.search(r'METHOD=([^,]+)', line)
+                                    uri_match = re.search(r'URI="([^"]+)"', line)
+                                    keyformat_match = re.search(r'KEYFORMAT="([^"]+)"', line, re.IGNORECASE)
+                                    method = method_match.group(1) if method_match else None
+                                    uri = uri_match.group(1) if uri_match else None
+                                    keyformat = keyformat_match.group(1) if keyformat_match else None
+
+                                    if method and method != "NONE" and uri:
+                                        stream_metadata.append({"field": "DRM Detected (HLS)", "value": True})
+                                        drm_detected = True
+
+                                        drm_type = None
+                                        if keyformat:
+                                            kf_lower = keyformat.lower()
+                                            if "widevine" in kf_lower or "urn:uuid" in kf_lower:
+                                                drm_type = "Widevine"
+                                            elif "fairplay" in kf_lower or "apple" in kf_lower:
+                                                drm_type = "FairPlay"
+                                            elif "playready" in kf_lower or "microsoft" in kf_lower:
+                                                drm_type = "PlayReady"
+                                            else:
+                                                drm_type = f"Unknown (KEYFORMAT={keyformat})"
+
+                                            stream_metadata.append({"field": "DRM Type (HLS)", "value": drm_type})
+                                            stream_metadata.append({"field": "DRM Keyformat (HLS)", "value": keyformat})
+
+                                        else:
+                                            stream_metadata.append({"field": "DRM Type (HLS)", "value": f"Encrypted (METHOD={method})"})
+
+                            if codecs_found:
+                                stream_metadata.append({"field": "Codecs", "value": "; ".join(codecs_found)})
+
+                            if resolutions_found:
+                                stream_metadata.append({"field": "Resolutions", "value": ", ".join(resolutions_found)})
+
+                            # DRM in manifest
+                            manifest_drm_terms = ["widevine", "playready", "fairplay"]
+                            if any(term in manifest.lower() for term in manifest_drm_terms ):
                                 stream_metadata.append({"field": "DRM Detected (HLS)", "value": True})
                                 drm_detected = True
 
-                                drm_type = None
-                                if keyformat:
-                                    kf_lower = keyformat.lower()
-                                    if "widevine" in kf_lower or "urn:uuid" in kf_lower:
-                                        drm_type = "Widevine"
-                                    elif "fairplay" in kf_lower or "apple" in kf_lower:
-                                        drm_type = "FairPlay"
-                                    elif "playready" in kf_lower or "microsoft" in kf_lower:
-                                        drm_type = "PlayReady"
-                                    else:
-                                        drm_type = f"Unknown (KEYFORMAT={keyformat})"
+                                if "widevine" in manifest.lower():
+                                    manifest_drm_type = "Widevine"
+                                elif "playready" in manifest.lower():
+                                    manifest_drm_type = "PlayReady"
+                                elif "fairplay" in manifest.lower():
+                                    manifest_drm_type = "FairPlay"
 
-                                    stream_metadata.append({"field": "DRM Type (HLS)", "value": drm_type})
-                                    stream_metadata.append({"field": "DRM Keyformat (HLS)", "value": keyformat})
+                                stream_metadata.append({"field": "DRM Type (HLS)", "value": manifest_drm_type})
 
-                                else:
-                                    stream_metadata.append({"field": "DRM Type (HLS)", "value": f"Encrypted (METHOD={method})"})
+                        # MPEG-TS advanced inspection
+                        if status == "MPEG-TS":
+                            try:
+                                ts_bytes = response.raw.read(188 * 1000)
+                                ts_info = inspect_mpeg_ts_stream(ts_bytes)
 
-                    if codecs_found:
-                        stream_metadata.append({"field": "Codecs", "value": "; ".join(codecs_found)})
+                                if ts_info.get("pids"):
+                                    stream_metadata.append({"field": "MPEG-TS PIDs", "value": str(ts_info["pids"])})
 
-                    if resolutions_found:
-                        stream_metadata.append({"field": "Resolutions", "value": ", ".join(resolutions_found)})
+                                if ts_info.get("programs"):
+                                    stream_metadata.append({"field": "MPEG-TS Programs", "value": str(ts_info["programs"])})
 
-                    # DRM in manifest
-                    manifest_drm_terms = ["widevine", "playready", "fairplay"]
-                    if any(term in manifest.lower() for term in manifest_drm_terms ):
-                        stream_metadata.append({"field": "DRM Detected (HLS)", "value": True})
-                        drm_detected = True
+                                if ts_info.get("streams"):
+                                    stream_metadata.append({"field": "MPEG-TS Streams", "value": str(ts_info["streams"])})
 
-                        if "widevine" in manifest.lower():
-                            manifest_drm_type = "Widevine"
-                        elif "playready" in manifest.lower():
-                            manifest_drm_type = "PlayReady"
-                        elif "fairplay" in manifest.lower():
-                            manifest_drm_type = "FairPlay"
+                                if ts_info.get("codec_hints"):
+                                    stream_metadata.append({"field": "MPEG-TS Codecs", "value": ", ".join(ts_info["codec_hints"])})
 
-                        stream_metadata.append({"field": "DRM Type (HLS)", "value": manifest_drm_type})
+                                # MPEG-TS DRM detection (heuristic)
+                                if ts_info.get("drm_detected"):
+                                    stream_metadata.append({"field": "DRM Detected (MPEG-TS)", "value": True})
+                                    stream_metadata.append({"field": "DRM Type (MPEG-TS)", "value": ts_info.get("drm_type", "Conditional Access/ECM/EMM/Private Data")})
+                                    drm_detected = True
 
-                # MPEG-TS advanced inspection (pure Python)
-                if status == "MPEG-TS":
-                    try:
-                        ts_bytes = response.raw.read(188 * 1000)
-                        ts_info = inspect_mpeg_ts_stream(ts_bytes)
-                        if ts_info.get("pids"):
-                            stream_metadata.append({"field": "MPEG-TS PIDs", "value": str(ts_info["pids"])})
-                        if ts_info.get("programs"):
-                            stream_metadata.append({"field": "MPEG-TS Programs", "value": str(ts_info["programs"])})
-                        if ts_info.get("streams"):
-                            stream_metadata.append({"field": "MPEG-TS Streams", "value": str(ts_info["streams"])})
-                        if ts_info.get("codec_hints"):
-                            stream_metadata.append({"field": "MPEG-TS Codecs", "value": ", ".join(ts_info["codec_hints"])})
-                        # MPEG-TS DRM detection (heuristic)
-                        if ts_info.get("drm_detected"):
-                            stream_metadata.append({"field": "DRM Detected (MPEG-TS)", "value": True})
-                            stream_metadata.append({"field": "DRM Type (MPEG-TS)", "value": ts_info.get("drm_type", "Conditional Access/ECM/EMM/Private Data")})
-                            drm_detected = True
-                    except Exception as e:
-                        stream_metadata.append({"field": "MPEG-TS Inspect Error", "value": str(e)})
+                            except Exception as e:
+                                stream_metadata.append({"field": "MPEG-TS Inspect Error", "value": str(e)})
 
-                # If DRM detected, update status
-                if drm_detected or manifest_drm_type:
-                    status = "DRM"
+                        # If DRM detected, update status
+                        if drm_detected or manifest_drm_type:
+                            status = "DRM"
 
         except Exception as e:
-            stream_metadata.append({"field": "Metadata Error", "value": str(e)})
+            print(f"{current_time()} ERROR: '{url}' reports {e}")
+            status = "fail"
+
+        if status != "fail":
+            break
+
+        elif attempt < retries - 1:
+            print(f"{current_time()} INFO: '{url}' failed. Retrying in {delay} seconds...")
+            time.sleep(delay)
+
+        else:
+            print(f"{current_time()} INFO: '{url}' still failed after {retries} attempts.")
 
     return status, stream_metadata
 
@@ -19290,6 +19388,7 @@ def put_channels_dvr_json(route, json_data):
     channels_url = settings[0]["settings"]
     full_url = f"{channels_url}{route}"
     results = None
+    response = None
 
     try:
         response = requests.put(full_url, headers=url_headers, json=json_data)
@@ -19713,6 +19812,7 @@ slm_process_active_flag_turn_off = None
 ### [PLM] General
 stream_formats = [
     "HLS",
+    "HLS (Locked)",
     "MPEG-TS",
     "STRMLNK"
 ]
