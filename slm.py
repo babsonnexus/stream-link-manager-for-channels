@@ -30,16 +30,16 @@ import tubescrape
 import curl_cffi
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.06.25.1156"
+slm_version = "v2026.07.28.1543"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.07.23.1736"
+    slm_version = "v2026.07.28.1543"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -11470,67 +11470,6 @@ def streams_live_mpegts():
         print(f"{current_time()} INFO: {response}")
 
     return response
-# @app.route('/playlists/streams/stream_mpegts', methods=['GET'])
-# def streams_live_mpegts():
-#     url = request.args.get('url', type=str)
-#     response = "URL is required"
-#     print_response = True
-
-#     streams = None
-#     stream = None
-#     fd = None
-
-#     if url:
-
-#         try:
-#             print(f"{current_time()} DEBUG: Request received for URL: {url}")
-#             session = streamlink.Streamlink()
-#             session.set_option("ffmpeg-ffmpeg", "ffmpeg")  # Ensure ffmpeg is used
-#             session.set_option("ffmpeg-fout", "mpegts")   # Force MPEG-TS output
-#             session.set_option("mux-subtitles", False)    # Avoid subtitle muxing issues
-#             streams = session.streams(url)
-
-#             if streams:
-#                 # Convert stream objects to strings for clean JSON serialization
-#                 formatted_streams = {k: str(v) for k, v in streams.items()}
-#                 streams_json = json.dumps(formatted_streams, indent=4)
-#                 print(f"{current_time()} DEBUG: Streams found:\n{streams_json}")
-
-#                 stream = streams.get("best") or next(iter(streams.values()))
-
-#                 stream_info = {
-#                     "selected_stream": str(stream),
-#                     "type": type(stream).__name__
-#                 }
-#                 print(f"{current_time()} DEBUG: Selected stream details:\n{json.dumps(stream_info, indent=4)}")
-#             else:
-#                 response = f"No streams found for URL {url}"
-            
-#             if stream:
-#                 print(f"{current_time()} DEBUG: Attempting stream.open()...")
-#                 fd = stream.open()
-                
-#                 fd_info = {
-#                     "file_descriptor": str(fd),
-#                     "type": type(fd).__name__
-#                 }
-#                 print(f"{current_time()} DEBUG: File descriptor details:\n{json.dumps(fd_info, indent=4)}")
-#             else:
-#                 response = f"No suitable stream found for URL {url}"
-
-#             if fd:
-#                 response = Response(stream_with_context(chunk_play_stream(fd)), content_type='video/MP4')
-#                 print_response = False
-#             else:
-#                 response = f"Failed to open stream for URL {url}"
-
-#         except Exception as e:
-#             response = f"Playing Live Stream (MPEG-TS) resulted in error: {e}"
-
-#     if print_response:
-#         print(f"{current_time()} INFO: {response}")
-
-#     return response
 
 # Generates a stream of chunks for an MPEG-TS stream
 def chunk_play_stream(fd):
@@ -19741,9 +19680,6 @@ video_providers = [
 ]
 youtube_player_clients = [
     'mweb'
-    # 'web_safari',
-    # 'web',
-    # 'ios'
 ]
 
 ### [SLM] Search / Add / Modify Programs
