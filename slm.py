@@ -30,7 +30,7 @@ import tubescrape
 import curl_cffi
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -39,7 +39,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.07.28.1543"
+    slm_version = "v2026.07.29.1123"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -15538,8 +15538,12 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
                                 create_directory(os.path.join(tv_path, title_full))
                             create_directory(stream_link_path)
 
+                        file_path_return = None
                         file_path_return = create_file(stream_link_path, stream_link_file_name, stream_link_url, special_action)
-                        file_path_return = normalize_path(file_path_return)
+                        if file_path_return:
+                            file_path_return = normalize_path(file_path_return)
+                        else:
+                            print(f"{current_time()} ERROR: Skipping creation of {stream_link_file_name} in {stream_link_path}. Please make sure SLM has all the necessary security permissions and write access in the host directory.")
                         bookmark_status['stream_link_file'] = file_path_return
 
                 elif ( 
@@ -15558,9 +15562,6 @@ def create_stream_link_files(base_bookmarks, remove_choice, original_release_dat
 
     write_data(csv_bookmarks_status, bookmarks_statuses)
 
-import re
-from urllib.parse import urlparse, parse_qs
-
 # Parses a YouTube URL and returns its video ID.
 def get_youtube_video_id(url):
     video_id = None
@@ -15570,7 +15571,7 @@ def get_youtube_video_id(url):
         url = url.strip()
 
         # 1. Handle standard watch URLs and shorts/embeds
-        parsed_url = urlparse(url)
+        parsed_url = urllib.parse.urlparse(url)
         
         # Extract from short domains like youtu.be
         if parsed_url.netloc in ('youtu.be', 'www.youtu.be'):
@@ -15583,7 +15584,7 @@ def get_youtube_video_id(url):
 
             # Case A: Standard video link (e.g., youtube.com/watch?v=dQw4w9WgXcQ)
             if parsed_url.path == '/watch':
-                query_params = parse_qs(parsed_url.query)
+                query_params = urllib.parse.parse_qs(parsed_url.query)
                 video_id = query_params.get('v', [None])[0]
             
             # Case B: Shorts or Embed links (e.g., youtube.com/shorts/dQw4w9WgXcQ)
@@ -17246,18 +17247,35 @@ def create_file(path, name, url, special_action):
     file_path = get_file_path(path, name, special_action)
     file_path = normalize_path(file_path)
     file_path_return = None
+    path_test = False
+    path_test_number = 3
+    path_test_path = normalize_path(path)
 
-    try:
-        with open(file_path, 'w', encoding="utf-8") as file:
-            try:
+    for attempt in range(int(path_test_number)):
+        if os.path.exists(path_test_path):
+            path_test = True
+            break
+        print(f"{current_time()} WARNING: Unable to find path '{path_test_path}' and therefore unable to create Stream Link/File file '{name}'. Retrying...")
+        time.sleep(1)
+
+    if path_test:
+        try:
+            with open(file_path, 'w', encoding="utf-8") as file:
                 file.write(url)
-                print(f"    CREATED: {file_path}")
-                file_path_return = file_path
-            except OSError as e:
-                print(f"    Error creating file {file_path}: {e}")
+            print(f"    CREATED: {file_path}")
+            file_path_return = file_path
 
-    except FileNotFoundError as fnf_error:
-        print(f"    Error with original path: {fnf_error}")
+        except FileNotFoundError as fnf_error:
+            print(f"    Error with original path '{file_path}': {fnf_error}")
+
+        except OSError as os_error:
+            print(f"    OS/Permission Error while creating '{file_path}': {os_error}")
+
+        except Exception as other_error:
+            print(f"    Error while creating '{file_path}': {other_error}")
+
+    else:
+        print(f"{current_time()} ERROR: After {path_test_number} attempts, still unable to find path '{path_test_path}' and therefore unable to create Stream Link/File file '{name}'.")
 
     return file_path_return
 
