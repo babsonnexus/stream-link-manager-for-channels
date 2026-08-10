@@ -28,6 +28,7 @@ import streamlink
 from collections import OrderedDict
 import tubescrape
 import curl_cffi
+import av
 
 # Top Controls
 slm_environment_version = "PRERELEASE"
@@ -39,7 +40,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.07.29.1123"
+    slm_version = "v2026.08.10.1258"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -7047,6 +7048,7 @@ def webpage_playlists(sub_page):
     global filter_parent_preferred_playlist
     global parent_channel_id_prior
     global plm_streaming_stations
+    global youtube_player_clients
     global plm_check_child_station_status_global
     global plm_fallback_stale_seconds_global
 
@@ -7072,6 +7074,8 @@ def webpage_playlists(sub_page):
     plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
     plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
     plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
+    settings_potokens_use = settings[86]["settings"]                            # [86] PLM/SLM: Use PO Tokens for YouTube Videos/Streams On/Off
+    settings_potokens_url = settings[87]["settings"]                            # [87] PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams
     plm_feed_default = settings[81]['settings']                                 # [81] PLM: Generate 'Default Feed' playlists and guide data
     plm_feed_fallback = settings[82]['settings']                                # [82] PLM: Generate 'Fallback Feed' playlists and guide data
     plm_url_tag_in_m3us_preferred_url_root = settings[43]['settings']           # [43] PLM: URL Tag in m3u(s) Preferred URL Root
@@ -7201,6 +7205,10 @@ def webpage_playlists(sub_page):
                     plm_streaming_stations_input = request.form.get('plm_streaming_stations')
                     plm_streaming_stations_station_start_number_input = request.form.get('plm_streaming_stations_station_start_number')
                     plm_streaming_stations_max_stations_input = request.form.get('plm_streaming_stations_max_stations')
+                    settings_potokens_use_input = request.form.get('settings_potokens_use')
+                    settings_potokens_url_input = request.form.get('settings_potokens_url')
+                    if settings_potokens_url_input in [None, '']:
+                        settings_potokens_url_input = 'http://[address_required]:[port_required]'
 
                     settings[39]["settings"] = "On" if plm_streaming_stations_input == 'on' else "Off"
                     if plm_streaming_stations_input == 'on':
@@ -7220,10 +7228,18 @@ def webpage_playlists(sub_page):
                     except ValueError:
                         settings_message = f"{current_time()} ERROR: For Streaming Stations, 'Station Start Number' and 'Max Stations per m3u' must be numbers."
 
+                    settings[86]["settings"] = "On" if settings_potokens_use_input == 'on' else "Off"
+                    if settings_potokens_use_input == 'on':
+                        youtube_player_clients = youtube_player_clients_potoken_on.copy()
+                    else:
+                        youtube_player_clients = youtube_player_clients_potoken_off.copy()
+
+                    settings[87]["settings"] = settings_potokens_url_input
+
                     # PBS Stations
                     plm_internal_pbs_stations_input = request.form.get('plm_internal_pbs_stations')
                     plm_internal_pbs_url_base_input = request.form.get('plm_internal_pbs_url_base')
-                    if plm_internal_pbs_url_base_input == '' or plm_internal_pbs_url_base_input is None:
+                    if plm_internal_pbs_url_base_input in ['', None]:
                         plm_internal_pbs_url_base_input = 'http://[address_required]:[port_required]'
 
                     settings[48]['settings'] = "On" if plm_internal_pbs_stations_input == 'on' else "Off"
@@ -7242,6 +7258,8 @@ def webpage_playlists(sub_page):
                 plm_internal_pbs_url_base = settings[49]['settings']                        # [49] PLM: VLC Bridge PBS Base URL
                 plm_streaming_stations_station_start_number = settings[40]['settings']      # [40] PLM: Streaming Stations Starting station number
                 plm_streaming_stations_max_stations = settings[41]['settings']              # [41] PLM: Streaming Stations Max number of stations per m3u
+                settings_potokens_use = settings[86]["settings"]                            # [86] PLM/SLM: Use PO Tokens for YouTube Videos/Streams On/Off
+                settings_potokens_url = settings[87]["settings"]                            # [87] PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams
                 plm_feed_default = settings[81]['settings']                                 # [81] PLM: Generate 'Default Feed' playlists and guide data
                 plm_feed_fallback = settings[82]['settings']                                # [82] PLM: Generate 'Fallback Feed' playlists and guide data
                 plm_url_tag_in_m3us_preferred_url_root = settings[43]['settings']           # [43] PLM: URL Tag in m3u(s) Preferred URL Root
@@ -8301,6 +8319,8 @@ def webpage_playlists(sub_page):
         html_plm_internal_pbs_url_base = plm_internal_pbs_url_base,
         html_plm_streaming_stations_station_start_number = plm_streaming_stations_station_start_number,
         html_plm_streaming_stations_max_stations = plm_streaming_stations_max_stations,
+        html_settings_potokens_use = settings_potokens_use,
+        html_settings_potokens_url = settings_potokens_url,
         html_station_mappings = station_mappings,
         html_station_mapping_source_m3u_ids = station_mapping_source_m3u_ids,
         html_station_mapping_source_fields = station_mapping_source_fields,
@@ -11165,13 +11185,10 @@ def streams_live():
     url = request.args.get('url', type=str)
 
     if url:
-    
         sanitized_url = sanitize_name(url)
-
         m3u8_url, m3u8_protocol, info_dict = get_online_video(url, "all")
         
         if m3u8_url:
-            
             if m3u8_protocol == 'm3u8':
                 filename = f"{sanitized_url}.m3u8"
                 playlist = f"#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1280000\n{m3u8_url}\n"
@@ -11180,6 +11197,15 @@ def streams_live():
             elif m3u8_protocol == 'm3u8_combined':
                 filename = f"{sanitized_url}_combined.m3u8"
                 response = Response(m3u8_url, content_type='application/vnd.apple.mpegurl')
+
+            elif m3u8_protocol == 'stream_remux':
+                filename = f"{sanitized_url}.ts"
+                video_url, audio_url = m3u8_url
+                http_headers = info_dict.get('http_headers', {})
+                response = Response(
+                    stream_with_context(stream_remux(video_url, audio_url, http_headers)),
+                    content_type='video/mp2t'
+                )
 
             elif m3u8_protocol == 'http':
                 filename = f"{sanitized_url}.mp4"
@@ -11199,41 +11225,180 @@ def stream_video(url):
             if chunk:
                 yield chunk
 
+# Streams and remuxes separate progressive video and audio URLs
+def stream_remux(video_url, audio_url, http_headers):
+    input_v = None
+    input_a = None
+    out_container = None
+
+    # Standardize dictionary keys to lower-case for searching
+    headers_dict = {k.lower(): v for k, v in http_headers.items()} if http_headers else {}
+
+    # Extract User-Agent specifically for libavformat's dedicated option
+    user_agent = headers_dict.pop('user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
+
+    # Build CRLF-delimited string strictly formatted for libavformat 'headers' option
+    headers_str = ""
+    for k, v in http_headers.items():
+        if k.lower() != 'user-agent':
+            headers_str += f"{k}: {v}\r\n"
+
+    # Libavformat options map
+    http_options = {
+        'user_agent': user_agent,
+        'multiple_requests': '1',
+        'reconnect': '1',
+        'reconnect_streamed': '1',
+        'reconnect_delay_max': '5'
+    }
+
+    if headers_str:
+        http_options['headers'] = headers_str
+
+    try:
+        input_v = av.open(video_url, options=http_options)
+        input_a = av.open(audio_url, options=http_options)
+
+        out_buffer = io.BytesIO()
+        out_container = av.open(out_buffer, mode="w", format="mpegts")
+
+        v_in_stream = input_v.streams.video[0]
+        a_in_stream = input_a.streams.audio[0]
+
+        # Passthrough video stream (remux)
+        v_out_stream = out_container.add_stream(v_in_stream.codec_context.name)
+        v_out_stream.time_base = v_in_stream.time_base
+        if v_in_stream.codec_context and v_in_stream.codec_context.extradata:
+            v_out_stream.codec_context.extradata = v_in_stream.codec_context.extradata
+
+        # Transcode/Resample audio stream to broadcast-standard 48kHz stereo AAC
+        a_out_stream = out_container.add_stream('aac', rate=48000)
+        a_out_stream.layout = 'stereo'
+        a_out_stream.format = 'fltp'
+
+        # Initialize PyAV resampler for audio rate normalization
+        resampler = av.AudioResampler(
+            format='fltp',
+            layout='stereo',
+            rate=48000
+        )
+
+        def flush_buffer():
+            out_buffer.seek(0)
+            data = out_buffer.read()
+            out_buffer.seek(0)
+            out_buffer.truncate(0)
+            return data
+
+        v_gen = input_v.demux(v_in_stream)
+        a_gen = input_a.demux(a_in_stream)
+
+        next_v = next(v_gen, None)
+        next_a = next(a_gen, None)
+
+        while next_v is not None or next_a is not None:
+            use_video = False
+            if next_v is not None and next_a is not None:
+                v_dts = next_v.dts if next_v.dts is not None else 0
+                a_dts = next_a.dts if next_a.dts is not None else 0
+                v_time = v_dts * float(v_in_stream.time_base)
+                a_time = a_dts * float(a_in_stream.time_base)
+                use_video = (v_time <= a_time)
+            elif next_v is not None:
+                use_video = True
+
+            if use_video:
+                if next_v.dts is not None:
+                    next_v.stream = v_out_stream
+                    out_container.mux(next_v)
+                next_v = next(v_gen, None)
+            else:
+                if next_a.dts is not None:
+                    # Decode audio packet to raw frames and resample to 48kHz stereo
+                    for frame in next_a.decode():
+                        resampled_frames = resampler.resample(frame)
+                        for r_frame in resampled_frames:
+                            for out_packet in a_out_stream.encode(r_frame):
+                                out_container.mux(out_packet)
+                next_a = next(a_gen, None)
+
+            chunk = flush_buffer()
+            if chunk:
+                yield chunk
+
+        # Flush any remaining encoded audio frames in the buffer
+        for out_packet in a_out_stream.encode():
+            out_container.mux(out_packet)
+
+        out_container.close()
+        out_container = None
+
+        final_chunk = flush_buffer()
+        if final_chunk:
+            yield final_chunk
+
+    except Exception as error:
+        print(f"{current_time()} ERROR: During stream remuxing, returned '{error}'")
+    finally:
+        if out_container:
+            try:
+                out_container.close()
+            except Exception:
+                pass
+        if input_v:
+            input_v.close()
+        if input_a:
+            input_a.close()
+
 # Gets the manifest needed for the live stream or static video
 def get_online_video(url, parse_type):
     print(f"{current_time()} INFO: Starting to retrieve manifest for {url}.")
 
+    settings = read_data(csv_settings)
+    settings_potokens_use = settings[86]["settings"]            # [86] PLM/SLM: Use PO Tokens for YouTube Videos/Streams On/Off
+    settings_potokens_url = settings[87]["settings"]            # [87] PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams
+
     m3u8_url = None
     m3u8_protocol = None
     info_dict = {}
+    
+    ydl_opts = {
+        'verbose': True,                                        # Get verbose output
+        'no_warnings': False,                                   # Show warnings
+        'format': 'all',                                        # Check all formats
+        'retries': 0,                                           # Retry up to 0 times in case of failure
+        'fragment_retries': 0,                                  # Retry up to 0 times for each fragment
+        'logger': YTDLLogger(),                                 # Pass the custom logger
+        'js_runtimes': {
+            'node': {
+                'exe': 'node'                                   # Use Node.js for solving Javascript Challenges
+            }
+        }
+    }
+
+    if 'youtu' in url.lower():
+        ydl_opts['extractor_args'] = {}                                                         # Set extractor arguments for specific website
+
+        ydl_opts['extractor_args']['youtube'] = {}
+        ydl_opts['extractor_args']['youtube']['skip'] = ['dash', 'translated_subs']             # Skip DASH manifests and translated subtitles
+
+        if settings_potokens_use in ['On', 'on', 'ON']:
+            ydl_opts['extractor_args']['youtube']['formats'] = ['duplicate']
+            ydl_opts['extractor_args']['youtubepot-bgutilhttp'] = {}
+            ydl_opts['extractor_args']['youtubepot-bgutilhttp']['base_url'] = [settings_potokens_url]
+
+        else:
+            ydl_opts['extractor_args']['youtube']['player_skip'] = ['configs', 'webpage']       # Skip player configuration, webpage
+            ydl_opts['extractor_args']['youtube']['formats'] = ['missing_pot']                  # Stop testing for PO token
 
     for youtube_player_client in youtube_player_clients:
 
-        ydl_opts = {
-            'verbose': True,                                        # Get verbose output
-            'no_warnings': False,                                   # Show warnings
-            'format': 'all',                                        # Check all formats
-            'retries': 0,                                           # Retry up to 0 times in case of failure
-            'fragment_retries': 0,                                  # Retry up to 0 times for each fragment
-            'logger': YTDLLogger(),                                 # Pass the custom logger
-            'js_runtimes': {
-                'node': {
-                    'exe': 'node'                                   # Use Node.js for solving Javascript Challenges
-                }
-            },
-            'extractor_args': {                                     # Set extractor arguments for specific websites
-                'youtube': {
-                    'player_client': [youtube_player_client],       # Force player API client to specific client(s) in order to speed up finding a compatible format
-                    'player_skip': ['configs', 'webpage'],          # Skip player configuration, webpage
-                    'formats': ['missing_pot'],                     # Stop attempting to get PO Token
-                    'skip': ['dash', 'translated_subs']             # Skip DASH manifests and translated subtitles
-                }
-            }
-        }
+        if 'youtu' in url.lower():
+            ydl_opts['extractor_args']['youtube']['player_client'] = [youtube_player_client]
 
         m3u8_url, m3u8_protocol, info_dict = parse_online_video(url, ydl_opts, parse_type)
 
-        if (m3u8_url and m3u8_protocol) or (not 'youtu' in url) or (parse_type == "metadata"):
+        if (m3u8_url and m3u8_protocol) or (not 'youtu' in url.lower()) or (parse_type == "metadata"):
             break
 
     return m3u8_url, m3u8_protocol, info_dict
@@ -11278,10 +11443,9 @@ def parse_online_video(url, ydl_opts, parse_type):
                         audio_formats = []
                         video_formats = []
                         throttled_count = 0
-                        no_n_param = 0
+                        missing_n_param_count = 0
 
                         for format in formats:
-                            # Only for development testing...
                             if slm_environment_port == "PRERELEASE":
                                 print(f"{current_time()} INFO: Found format: {format}")
 
@@ -11293,7 +11457,7 @@ def parse_online_video(url, ydl_opts, parse_type):
                                 format_url = format.get("url", "")
                                 parsed_query = urllib.parse.parse_qs(urllib.parse.urlparse(format_url).query)
                                 
-                                n_param_list = parsed_query.get('n')                                                                
+                                n_param_list = parsed_query.get('n')                                                               
                                 if n_param_list:
                                     n_param = n_param_list[0]
 
@@ -11304,11 +11468,12 @@ def parse_online_video(url, ydl_opts, parse_type):
                                         pass
 
                                 if n_param:
-                                    if len(n_param) > 15:                                           # Logic: Short is solved, Long is failed 
+                                    if len(n_param) > 15:
                                         is_throttled = True
                                         throttled_count += 1
                                 else:
-                                    missing_n_param += 1
+                                    missing_n_param = True
+                                    missing_n_param_count += 1
 
                             if format.get("has_drm") is False:
                                 acodec = format.get("acodec")
@@ -11324,65 +11489,120 @@ def parse_online_video(url, ydl_opts, parse_type):
                                 elif acodec == "none" and vcodec != "none":
                                     video_formats.append(format)
 
-                                else:
+                                elif acodec != "none" and vcodec == "none":
                                     audio_formats.append(format)
 
-                        if throttled_count > 0:
-                            if throttled_count == len(formats):
-                                print(f"{current_time()} WARNING: All {throttled_count} formats have been filtered out due to potentially malformed n-parameters.")
-                            else:
-                                print(f"{current_time()} INFO: {throttled_count} format(s) has/have been filtered out due to potentially malformed n-parameter(s).")
+                        if throttled_count > 0 or missing_n_param_count > 0:
 
-                        if missing_n_param > 0:
-                            if missing_n_param == len(formats):
-                                print(f"{current_time()} WARNING: All {missing_n_param} formats have been filtered out due to missing n-parameters.")
-                            else:
-                                print(f"{current_time()} INFO: {missing_n_param} format(s) has/have been filtered out due to missing n-parameter(s).")
+                            if throttled_count > 0:
+                                if throttled_count == len(formats):
+                                    print(f"{current_time()} WARNING: All {throttled_count} formats have been filtered out of the direct 'm3u8' approach due to potentially malformed n-parameters.")
+                                else:
+                                    print(f"{current_time()} INFO: {throttled_count} format(s) has/have been filtered out of the direct 'm3u8' approach due to potentially malformed n-parameter(s).")
 
-                        best_format = parse_online_video_formats(protocol_m3u8_formats, language_preferences)
-                        if best_format:
-                            m3u8_protocol = "m3u8"
-                            m3u8_url = best_format.get("url")
-                            print(f"{current_time()} INFO: Best format URL found using m3u8: {m3u8_url}")
+                            if missing_n_param_count > 0:
+                                if missing_n_param_count == len(formats):
+                                    print(f"{current_time()} WARNING: All {missing_n_param_count} formats have been filtered out of the direct 'm3u8' approach due to missing n-parameters.")
+                                else:
+                                    print(f"{current_time()} INFO: {missing_n_param_count} format(s) has/have been filtered out of the direct 'm3u8' approach due to missing n-parameter(s).")
 
-                        else:
-                            best_format = parse_online_video_formats(protocol_http_formats, language_preferences)
-                            if best_format:
-                                m3u8_protocol = "http"
-                                m3u8_url = best_format.get("url")
-                                print(f"{current_time()} INFO: Best format URL found using http: {m3u8_url}")
+                            if throttled_count + missing_n_param_count >= len(formats):
+                                print(f"{current_time()} INFO: No formats available for the direct 'm3u8' approach. Attempting to find a direct media file or to combine formats...")
 
-                        if not best_format and video_formats and audio_formats:
-                            print(f"{current_time()} INFO: No single-stream found. Combining audio + video tracks.")
-                            best_video = parse_online_video_formats(video_formats, language_preferences)
+                        # Determine candidate best formats across types
+                        best_m3u8 = parse_online_video_formats(protocol_m3u8_formats, language_preferences)
+                        best_http = parse_online_video_formats(protocol_http_formats, language_preferences)
+                        best_muxed = best_m3u8 or best_http
+
+                        best_separate_video = parse_online_video_formats(video_formats, language_preferences)
+
+                        # Quality comparison function (height first, fallback to total bitrate)
+                        def get_quality_score(fmt):
+                            if not fmt:
+                                return (0, 0)
+                            return (fmt.get("height") or 0, fmt.get("tbr") or 0)
+
+                        muxed_quality = get_quality_score(best_muxed)
+                        separate_quality = get_quality_score(best_separate_video)
+
+                        # Prefer track combination if separate video has higher quality and audio is present
+                        if video_formats and audio_formats and separate_quality > muxed_quality:
+                            best_video = best_separate_video
+                            
+                            # Helper function to identify HLS sub-manifests vs direct progressive formats
+                            def is_hls(fmt):
+                                fmt_proto = fmt.get("protocol", "")
+                                fmt_url = fmt.get("url", "").rsplit('?', 1)[0]
+                                return "m3u8" in fmt_proto or fmt_url.endswith(".m3u8")
+
+                            is_video_hls = is_hls(best_video)
+
+                            # Filter audio candidates to match protocol group of the selected video
+                            compatible_audio_formats = [
+                                a for a in audio_formats if is_hls(a) == is_video_hls
+                            ] or audio_formats
 
                             sorted_audio_formats = sorted(
-                                audio_formats,
+                                compatible_audio_formats,
                                 key=lambda f: (
                                     language_preferences.index((f.get("language") or "").strip().lower())
                                     if (f.get("language") or "").strip().lower() in language_preferences
-                                    else len(language_preferences)
+                                    else len(language_preferences),
+                                    -(f.get("tbr") or 0)
                                 )
                             )
+                            best_audio = sorted_audio_formats[0]
 
-                            manifest_lines = ["#EXTM3U"]
-                            manifest_lines.append(
-                                f'#EXT-X-STREAM-INF:BANDWIDTH={best_video.get("tbr", 0)},AUDIO="audio"'
-                            )
-                            manifest_lines.append(best_video.get("url"))
+                            print(f"{current_time()} INFO: Selected separate formats ->\n     Video Format ID: {best_video.get('format_id')} ({best_video.get('height')}p, vcodec={best_video.get('vcodec')}, tbr={best_video.get('tbr')})\n     Audio Format ID: {best_audio.get('format_id')} (acodec={best_audio.get('acodec')}, tbr={best_audio.get('tbr')}, lang={best_audio.get('language')})")
 
-                            for audio_format in sorted_audio_formats:
-                                audio_url = audio_format.get("url")
-                                if audio_url:
-                                    track_name = audio_format.get("format_note") or audio_format.get("language") or "Unknown"
-                                    manifest_lines.append(
-                                        f'#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",'
-                                        f'NAME="{track_name}",DEFAULT=NO,AUTOSELECT=YES,URI="{audio_url}"'
-                                    )
+                            is_audio_hls = is_hls(best_audio)
 
-                            m3u8_protocol = "m3u8_combined"
-                            m3u8_url = "\n".join(manifest_lines)
-                            print(f"{current_time()} INFO: Combined manifest created with m3u8_combined protocol.")
+                            # Branch 1: Both streams are HLS sub-manifests
+                            if is_video_hls and is_audio_hls:
+                                manifest_lines = [
+                                    "#EXTM3U",
+                                    "#EXT-X-VERSION:3"
+                                ]
+                                
+                                for idx, audio_format in enumerate(sorted_audio_formats):
+                                    audio_url = audio_format.get("url")
+                                    if audio_url:
+                                        track_name = audio_format.get("format_note") or audio_format.get("language") or f"Audio Track {idx+1}"
+                                        is_default = "YES" if idx == 0 else "NO"
+                                        manifest_lines.append(
+                                            f'#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio-group",NAME="{track_name}",'
+                                            f'DEFAULT={is_default},AUTOSELECT=YES,URI="{audio_url}"'
+                                        )
+
+                                manifest_lines.append(
+                                    f'#EXT-X-STREAM-INF:BANDWIDTH={int((best_video.get("tbr") or 5000) * 1000)},'
+                                    f'RESOLUTION={best_video.get("width", 1920)}x{best_video.get("height", 1080)},AUDIO="audio-group"'
+                                )
+                                manifest_lines.append(best_video.get("url"))
+
+                                m3u8_protocol = "m3u8_combined"
+                                m3u8_url = "\n".join(manifest_lines)
+                                print(f"{current_time()} INFO: Combined m3u8 manifests...")
+
+                            # Branch 2: Direct progressive streams routed to remuxer
+                            else:
+                                m3u8_protocol = "stream_remux"
+                                m3u8_url = (best_video.get("url"), best_audio.get("url"))
+                                print(f"{current_time()} INFO: Direct streams routed to remuxer...")
+
+                        # Fallback to single-stream formats if quality is sufficient or audio/video separation is unavailable
+                        elif best_m3u8:
+                            m3u8_protocol = "m3u8"
+                            m3u8_url = best_m3u8.get("url")
+                            print(f"{current_time()} INFO: Selected combined M3U8 Format ID: {best_m3u8.get('format_id')} ({best_m3u8.get('height')}p, tbr={best_m3u8.get('tbr')})")
+
+                        elif best_http:
+                            m3u8_protocol = "http"
+                            m3u8_url = best_http.get("url")
+                            print(f"{current_time()} INFO: Selected single HTTP Format ID: {best_http.get('format_id')} ({best_http.get('height')}p, tbr={best_http.get('tbr')})")
+
+                        else:
+                            print(f"{current_time()} WARNING: No suitable playback formats could be assembled for {url}.")
 
                     else:
                         print(f"{current_time()} WARNING: No formats available for {url}.")
@@ -17946,6 +18166,8 @@ def check_and_create_csv(csv_file):
                 "youtu"
             ]}, 86, "SLM: List of 'URL patterns' for SLM Streams to switch from the HLS and MPEG-TS method")
         check_and_append(csv_file, {"settings": 20}, 87, "PLM: For 'Fallback Feed', time (in seconds) a found stream remains valid in memory before being purged")
+        check_and_append(csv_file, {"settings": "Off"}, 88, "PLM/SLM: Use PO Tokens for YouTube Videos/Streams On/Off")
+        check_and_append(csv_file, {"settings": "http://localhost:4416"}, 89, "PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -18052,7 +18274,9 @@ def initial_data(csv_file):
             {"settings": [
                 "youtu"
             ]},                                                                        # [84] SLM: List of 'URL patterns' for SLM Streams to switch from the HLS and MPEG-TS method
-            {"settings": 20}                                                           # [85] PLM: For 'Fallback Feed', time (in seconds) a found stream remains valid in memory before being purged
+            {"settings": 20},                                                          # [85] PLM: For 'Fallback Feed', time (in seconds) a found stream remains valid in memory before being purged
+            {"settings": "Off"},                                                       # [86] PLM/SLM: Use PO Tokens for YouTube Videos/Streams On/Off
+            {"settings": "http://localhost:4416"}                                      # [87] PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams
         ]
 
     # Stream Link/File Manager
@@ -19696,8 +19920,11 @@ special_actions_default = [
 video_providers = [
     "youtube"
 ]
-youtube_player_clients = [
+youtube_player_clients_potoken_off = [
     'mweb'
+]
+youtube_player_clients_potoken_on = [
+    'visionos'
 ]
 
 ### [SLM] Search / Add / Modify Programs
@@ -20006,6 +20233,12 @@ if global_settings[59]['settings'] == "On":
 
 plm_fallback_stale_seconds_global = None
 plm_fallback_stale_seconds_global = int(global_settings[85]['settings'])
+
+youtube_player_clients = []
+if global_settings[86]['settings'] == "On":
+    youtube_player_clients = youtube_player_clients_potoken_on.copy()
+else:
+    youtube_player_clients = youtube_player_clients_potoken_off.copy()
 
 global_articles_raw = []
 global_articles = []

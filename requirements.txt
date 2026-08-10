@@ -8,3 +8,5 @@ yt_dlp
 streamlink
 tubescrape
 curl_cffi
+av
+bgutil-ytdlp-pot-provider

@@ -338,6 +338,7 @@
                 <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
               </a>
             </label>
+            <p><em>Create your own stations from places like YouTube, Twitch, news websites, and other similar sources.</em></p>
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 0px; margin-bottom: 10px;">
               <label class="form-check-label text-body mb-0" for="plm_streaming_stations_station_start_number"><b>Station Start Number:</b></label>
               <input type="number" min="1" style="width: 100%;" id="plm_streaming_stations_station_start_number" name="plm_streaming_stations_station_start_number" style="flex: 1;" value="{{ html_plm_streaming_stations_station_start_number }}">
@@ -346,7 +347,16 @@
               <label class="form-check-label text-body mb-0" for="plm_streaming_stations_max_stations"><b>Max Stations per m3u:</b></label>
               <input type="number" min="1" style="width: 100%;" id="plm_streaming_stations_max_stations" name="plm_streaming_stations_max_stations" style="flex: 1;" value="{{ html_plm_streaming_stations_max_stations }}">
             </div>
-            <p><em>Create your own stations from places like YouTube, Twitch, news websites, and other similar sources.</em></p>
+            <input type="checkbox" class="form-check-input ms-auto" id="settings_potokens_use" name="settings_potokens_use" {% if html_settings_potokens_use == "On" %}checked{% endif %}>
+            <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="settings_potokens_use"><b>Use PO Tokens for YouTube</b>
+              <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-PLM-%E2%80%90-Streaming-Stations" target="_blank">
+                <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
+              </a>
+            </label>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 0px; margin-bottom: 10px;">
+              <label class="form-check-label text-body mb-0" for="settings_potokens_url"><b>PO Tokens for YouTube Generator URL:</b></label>
+              <input type="text" id="settings_potokens_url" name="settings_potokens_url" value="{{ html_settings_potokens_url }}" style="flex: 1;" title="{{ html_settings_potokens_url }}" placeholder="i.e., http://localhost:4416">
+            </div>
           </div>
           <!-- PBS Stations -->
           <div class="settings-box" style="width: 98%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
@@ -356,11 +366,11 @@
                 <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
               </a>
             </label>
+            <p><em>Gain access to local PBS stations that are available in your market. This playlist is designed to make sure you can receive your legally available stations even when internet geolocation fails or is incorrect. A prior installation of the 'vlc-bridge-pbs' tool is required.</em></p>
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 0px; margin-bottom: 10px;">
               <label class="form-check-label text-body mb-0" for="plm_internal_pbs_url_base"><b>VLC Bridge PBS Base URL:</b></label>
               <input type="text" id="plm_internal_pbs_url_base" name="plm_internal_pbs_url_base" value="{{ html_plm_internal_pbs_url_base }}" style="flex: 1;" title="{{ html_plm_internal_pbs_url_base }}" placeholder="i.e., http://localhost:7777">
             </div>
-            <p><em>Gain access to local PBS stations that are available in your market. This playlist is designed to make sure you can receive your legally available stations even when internet geolocation fails or is incorrect. A prior installation of the 'vlc-bridge-pbs' tool is required.</em></p>
           </div>
         </div>
         <div style="display: flex; margin-top: 10px; width: 98%;">
