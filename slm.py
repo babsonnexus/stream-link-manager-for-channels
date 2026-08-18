@@ -40,7 +40,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.08.18.1155"
+    slm_version = "v2026.08.18.1358"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -10584,7 +10584,9 @@ def get_uploaded_playlist_files():
 
 # Gets the XML EPG for each m3u that needs one
 def get_epgs_for_m3us():
+    print(f"{current_time()} INFO: Gathering combined XML Guide Data from source(s)...")
     temp_content = get_combined_xml_guide()
+    print(f"{current_time()} INFO: Finished gathering combined XML Guide Data from source(s).")
 
     extensions = ['m3u']
     m3u_files = get_all_prior_files(program_files_dir, extensions)
@@ -10602,11 +10604,24 @@ def get_epgs_for_m3us():
         epg_filename = f"{filtered_file['filename']}.xml"
         epg_filename_tmp = f"{epg_filename}.tmp"
 
-        # Read the M3U file content
+        print(f"{current_time()} INFO: Analyzing '{playlist_filename}' playlist for EPG stations...")
+
+        # Read the M3U file line by line to evaluate line-level attributes
         with open(full_path(playlist_filename), "r", encoding="utf-8") as file:
-            content = file.read()
-            # Extract tvg-id values
-            tvg_ids.extend(re.findall(r'tvg-id="(.*?)"', content))
+            for line in file:
+                tvg_id_match = None
+                gracenote_id_match = None
+
+                tvg_id_match = re.search(r'tvg-id="([^"]+)"', line)
+
+                if tvg_id_match:
+                    gracenote_id_match = re.search(r'tvc-guide-stationid="([^"]+)"', line)
+
+                    if not gracenote_id_match:
+                        tvg_ids.append(tvg_id_match.group(1))
+
+        print(f"{current_time()} INFO: Finished analyzing '{playlist_filename}' playlist for EPG stations.")
+        print(f"{current_time()} INFO: Appending {len(tvg_ids)} station(s) guide data to '{epg_filename}'...")
 
         # Write the EPG data to a variable
         epg_content = [
@@ -10632,6 +10647,8 @@ def get_epgs_for_m3us():
         # Write the EPG content to the physical file
         with open(full_path(epg_filename_tmp), "w", encoding="utf-8") as epg_file:
             epg_file.write("\n".join(epg_content))
+
+        print(f"{current_time()} INFO: Finished building guide data for '{epg_filename}'.")
 
     extensions = ['xml']
     all_prior_files = get_all_prior_files(program_files_dir, extensions)
