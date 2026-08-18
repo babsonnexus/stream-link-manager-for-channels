@@ -291,6 +291,14 @@
                 <button type="submit" name="action" value="final_playlists_action_update_m3u_epg" class="btn bg-gradient-primary my-2 mb-2" style="width: 98%;">Update m3u(s) & XML EPG(s)</button>
               </div>
               <div style="margin-top: 8px;">
+                <label for="settings_playlist_behavior"><b>Playlist Behavior</b></label>
+                <select class="select2" name="settings_playlist_behavior" id="settings_playlist_behavior" style="width: 98%;">
+                  {% for html_playlist_behavior in html_playlist_behaviors %}
+                    <option value="{{ html_playlist_behavior.playlist_behavior_id }}" {% if html_playlist_behavior.playlist_behavior_id == html_settings_playlist_behavior %}selected{% endif %}>{{ html_playlist_behavior.playlist_behavior_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div style="margin-top: 8px;">
                 <label for="plm_feed_default"><b>Generate Default Feed(s)</b></label>
                 <div class="form-check form-switch ps-0 is-filled">
                   <input type="checkbox" class="form-check-input" id="plm_feed_default" name="plm_feed_default" {% if html_plm_feed_default == 'On' %}checked{% endif %}>

@@ -40,7 +40,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.08.10.1258"
+    slm_version = "v2026.08.18.1155"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -7079,6 +7079,7 @@ def webpage_playlists(sub_page):
     plm_feed_default = settings[81]['settings']                                 # [81] PLM: Generate 'Default Feed' playlists and guide data
     plm_feed_fallback = settings[82]['settings']                                # [82] PLM: Generate 'Fallback Feed' playlists and guide data
     plm_url_tag_in_m3us_preferred_url_root = settings[43]['settings']           # [43] PLM: URL Tag in m3u(s) Preferred URL Root
+    settings_playlist_behavior = settings[88]['settings']                       # [88] PLM: Gracenote/XML m3u playlist generation behavior
     settings_message = ''
 
     playlists_anchor_id = None
@@ -7121,6 +7122,12 @@ def webpage_playlists(sub_page):
     ]
     child_to_parent_mappings_default = child_to_parent_mappings_default_base_01 + child_to_parent_mappings_default_base_02
     child_to_parent_mappings = get_child_to_parent_mappings(child_to_parent_mappings_default)
+
+    playlist_behaviors = [
+        { 'playlist_behavior_id': 'gracenote_xml_default', 'playlist_behavior_name': 'Only separate Gracenote and XML Guide Data Playlist(s)' },
+        { 'playlist_behavior_id': 'gracenote_xml_combined', 'playlist_behavior_name': 'Only combined Gracenote and XML Guide Data Playlist(s)' },
+        { 'playlist_behavior_id': 'gracenote_xml_both', 'playlist_behavior_name': 'Both separate plus combined Gracenote and XML Guide Data Playlist(s)' }
+    ]
 
     unassigned_child_to_parents = []
     assigned_child_to_parents = []
@@ -7165,6 +7172,7 @@ def webpage_playlists(sub_page):
                     plm_feed_default_input = request.form.get('plm_feed_default')
                     plm_feed_fallback_input = request.form.get('plm_feed_fallback')
                     plm_fallback_stale_seconds_input = request.form.get('plm_fallback_stale_seconds')
+                    settings_playlist_behavior_input = request.form.get('settings_playlist_behavior')
 
                     try:
                         if ( 
@@ -7189,6 +7197,7 @@ def webpage_playlists(sub_page):
                             settings[82]['settings'] = "On" if plm_feed_fallback_input == 'on' else "Off"
                             settings[85]['settings'] = int(plm_fallback_stale_seconds_input)
                             plm_fallback_stale_seconds_global = settings[85]['settings']
+                            settings[88]['settings'] = settings_playlist_behavior_input
 
                             if settings[42]['settings'] == "On":
                                 settings[43]['settings'] = f"{request.url_root}"
@@ -7263,6 +7272,7 @@ def webpage_playlists(sub_page):
                 plm_feed_default = settings[81]['settings']                                 # [81] PLM: Generate 'Default Feed' playlists and guide data
                 plm_feed_fallback = settings[82]['settings']                                # [82] PLM: Generate 'Fallback Feed' playlists and guide data
                 plm_url_tag_in_m3us_preferred_url_root = settings[43]['settings']           # [43] PLM: URL Tag in m3u(s) Preferred URL Root
+                settings_playlist_behavior = settings[88]['settings']                       # [88] PLM: Gracenote/XML m3u playlist generation behavior
 
                 uploaded_playlist_files = get_uploaded_playlist_files()
 
@@ -8142,7 +8152,9 @@ def webpage_playlists(sub_page):
                         elif 'strmlnk' in make_playlist_url:
                             make_playlist_type = 'STRMLNK'
 
-                        if 'gracenote_' in make_playlist_url:
+                        if 'gracenote_epg_combined' in make_playlist_url:
+                            make_playlist_name_base = f"Gracenote and Non-Gracenote Combined"
+                        elif 'gracenote_' in make_playlist_url:
                             make_playlist_name_base = f"Gracenote"
                         elif 'epg_' in make_playlist_url:
                             make_playlist_name_base = f"Non-Gracenote"
@@ -8331,7 +8343,9 @@ def webpage_playlists(sub_page):
         html_plm_feed_default = plm_feed_default,
         html_plm_feed_fallback = plm_feed_fallback,
         html_plm_url_tag_in_m3us_preferred_url_root = plm_url_tag_in_m3us_preferred_url_root,
-        html_plm_fallback_stale_seconds_global = plm_fallback_stale_seconds_global
+        html_plm_fallback_stale_seconds_global = plm_fallback_stale_seconds_global,
+        html_playlist_behaviors = playlist_behaviors,
+        html_settings_playlist_behavior = settings_playlist_behavior
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -9988,6 +10002,7 @@ def get_final_m3us_epgs():
 
     plm_feed_default = settings[81]['settings']                                 # [81] PLM: Generate 'Default Feed' playlists and guide data
     plm_feed_fallback = settings[82]['settings']                                # [82] PLM: Generate 'Fallback Feed' playlists and guide data
+    settings_playlist_behavior = settings[88]['settings']                       # [88] PLM: Gracenote/XML m3u playlist generation behavior
 
     station_start_number = int(settings[11]['settings'])
     max_stations = int(settings[12]['settings'])
@@ -10220,10 +10235,13 @@ def get_final_m3us_epgs():
     epg_hls_final_m3us = []
     epg_mpeg_ts_final_m3us = []
     epg_strmlnk_final_m3us = []
+    gracenote_epg_combined_hls_final_m3us = []
+    gracenote_epg_combined_mpeg_ts_final_m3us = []
     gracenote_fallback_mpeg_ts_final_m3us = []
     gracenote_fallback_strmlnk_final_m3us = []
     epg_fallback_mpeg_ts_final_m3us = []
     epg_fallback_strmlnk_final_m3us = []
+    gracenote_epg_combined_fallback_mpeg_ts_final_m3us = []
 
     for final_m3u in final_m3us:
         if final_m3u['tvc_guide_stationid'] is not None and final_m3u['tvc_guide_stationid'] != '':
@@ -10258,6 +10276,21 @@ def get_final_m3us_epgs():
                 else:
                     epg_fallback_mpeg_ts_final_m3us.append(final_m3u)
 
+    if settings_playlist_behavior != 'gracenote_xml_default':
+
+        if plm_feed_default == 'On':
+
+            if gracenote_hls_final_m3us or epg_hls_final_m3us:
+                gracenote_epg_combined_hls_final_m3us = gracenote_hls_final_m3us + epg_hls_final_m3us
+
+            if gracenote_mpeg_ts_final_m3us or epg_mpeg_ts_final_m3us:
+                gracenote_epg_combined_mpeg_ts_final_m3us = gracenote_mpeg_ts_final_m3us + epg_mpeg_ts_final_m3us
+
+        if plm_feed_fallback == 'On':
+
+            if gracenote_fallback_mpeg_ts_final_m3us or epg_fallback_mpeg_ts_final_m3us:
+                gracenote_epg_combined_fallback_mpeg_ts_final_m3us = gracenote_fallback_mpeg_ts_final_m3us + epg_fallback_mpeg_ts_final_m3us
+
     extensions = ['m3u']
     all_prior_files = []
     all_prior_files = get_all_prior_files(program_files_dir, extensions)
@@ -10265,18 +10298,31 @@ def get_final_m3us_epgs():
         file_delete(program_files_dir, all_prior_file['filename'], all_prior_file['extension'])
 
     if plm_feed_default == 'On':
-        create_chunk_files(gracenote_hls_final_m3us, "plm_gracenote_hls_m3u", "m3u", max_stations)
-        create_chunk_files(gracenote_mpeg_ts_final_m3us, "plm_gracenote_mpeg_ts_m3u", "m3u", max_stations)
+
         create_chunk_files(gracenote_strmlnk_final_m3us, "plm_gracenote_strmlnk_m3u", "m3u", max_stations)
-        create_chunk_files(epg_hls_final_m3us, "plm_epg_hls_m3u", "m3u", max_stations)
-        create_chunk_files(epg_mpeg_ts_final_m3us, "plm_epg_mpeg_ts_m3u", "m3u", max_stations)
         create_chunk_files(epg_strmlnk_final_m3us, "plm_epg_strmlnk_m3u", "m3u", max_stations)
 
+        if settings_playlist_behavior != 'gracenote_xml_combined':
+            create_chunk_files(gracenote_hls_final_m3us, "plm_gracenote_hls_m3u", "m3u", max_stations)
+            create_chunk_files(gracenote_mpeg_ts_final_m3us, "plm_gracenote_mpeg_ts_m3u", "m3u", max_stations)
+            create_chunk_files(epg_hls_final_m3us, "plm_epg_hls_m3u", "m3u", max_stations)
+            create_chunk_files(epg_mpeg_ts_final_m3us, "plm_epg_mpeg_ts_m3u", "m3u", max_stations)
+
+        if settings_playlist_behavior != 'gracenote_xml_default':
+            create_chunk_files(gracenote_epg_combined_hls_final_m3us, "plm_gracenote_epg_combined_hls_m3u", "m3u", max_stations)
+            create_chunk_files(gracenote_epg_combined_mpeg_ts_final_m3us, "plm_gracenote_epg_combined_mpeg_ts_m3u", "m3u", max_stations)
+
     if plm_feed_fallback == 'On':
-        create_chunk_files(gracenote_fallback_mpeg_ts_final_m3us, "plm_fallback_gracenote_mpeg_ts_m3u", "m3u", max_stations)
+
         create_chunk_files(gracenote_fallback_strmlnk_final_m3us, "plm_fallback_gracenote_strmlnk_m3u", "m3u", max_stations)
-        create_chunk_files(epg_fallback_mpeg_ts_final_m3us, "plm_fallback_epg_mpeg_ts_m3u", "m3u", max_stations)
         create_chunk_files(epg_fallback_strmlnk_final_m3us, "plm_fallback_epg_strmlnk_m3u", "m3u", max_stations)
+
+        if settings_playlist_behavior != 'gracenote_xml_combined':
+            create_chunk_files(gracenote_fallback_mpeg_ts_final_m3us, "plm_fallback_gracenote_mpeg_ts_m3u", "m3u", max_stations)
+            create_chunk_files(epg_fallback_mpeg_ts_final_m3us, "plm_fallback_epg_mpeg_ts_m3u", "m3u", max_stations)
+
+        if settings_playlist_behavior != 'gracenote_xml_default':
+            create_chunk_files(gracenote_epg_combined_fallback_mpeg_ts_final_m3us, "plm_fallback_gracenote_epg_combined_mpeg_ts_m3u", "m3u", max_stations)
 
     get_epgs_for_m3us()
 
@@ -10393,13 +10439,25 @@ def get_playlist_files():
             else:
                 station_word = "Station"
 
-            if 'gracenote_' in playlist_filename:
+            if 'gracenote_epg_combined_' in playlist_filename:
 
                 if 'fallback' in playlist_filename:
 
+                    if 'mpeg_ts' in playlist_filename:
+                        playlist_label = f"m3u Fallback Playlist - Gracenote and Non-Gracenote Combined (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
+
+                else:
+
                     if 'hls' in playlist_filename:
-                        playlist_label = f"m3u Fallback Playlist - Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
+                        playlist_label = f"m3u Playlist - Gracenote and Non-Gracenote Combined (HLS) [{playlist_number}] ({station_count} {station_word}): "
                     elif 'mpeg_ts' in playlist_filename:
+                        playlist_label = f"m3u Playlist - Gracenote and Non-Gracenote Combined (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
+
+            elif 'gracenote_' in playlist_filename:
+
+                if 'fallback' in playlist_filename:
+
+                    if 'mpeg_ts' in playlist_filename:
                         playlist_label = f"m3u Fallback Playlist - Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
                     elif 'strmlnk' in playlist_filename:
                         playlist_label = f"m3u Fallback Playlist - Gracenote (STRMLNK) [{playlist_number}] ({station_count} {station_word}): "
@@ -10417,9 +10475,7 @@ def get_playlist_files():
 
                 if 'fallback' in playlist_filename:
 
-                    if 'hls' in playlist_filename:
-                        playlist_label = f"m3u Fallback Playlist - Non-Gracenote (HLS) [{playlist_number}] ({station_count} {station_word}): "
-                    elif 'mpeg_ts' in playlist_filename:
+                    if 'mpeg_ts' in playlist_filename:
                         playlist_label = f"m3u Fallback Playlist - Non-Gracenote (MPEG-TS) [{playlist_number}] ({station_count} {station_word}): "
                     elif 'strmlnk' in playlist_filename:
                         playlist_label = f"m3u Fallback Playlist - Non-Gracenote (STRMLNK) [{playlist_number}] ({station_count} {station_word}): "
@@ -10435,13 +10491,25 @@ def get_playlist_files():
 
         elif playlist_extension == "xml":
 
-            if 'epg_' in playlist_filename:
+            if 'gracenote_epg_combined_' in playlist_filename:
 
                 if 'fallback' in playlist_filename:
 
+                    if 'mpeg_ts' in playlist_filename:
+                        playlist_label = f"XML Fallback EPG for Gracenote and Non-Gracenote Combined (MPEG-TS) [{playlist_number}]: "
+
+                else:
+
                     if 'hls' in playlist_filename:
-                        playlist_label = f"XML Fallback EPG for Non-Gracenote (HLS) [{playlist_number}]: "
+                        playlist_label = f"XML EPG for Gracenote and Non-Gracenote Combined (HLS) [{playlist_number}]: "
                     elif 'mpeg_ts' in playlist_filename:
+                        playlist_label = f"XML EPG for Gracenote and Non-Gracenote Combined (MPEG-TS) [{playlist_number}]: "
+
+            elif 'epg_' in playlist_filename:
+
+                if 'fallback' in playlist_filename:
+
+                    if 'mpeg_ts' in playlist_filename:
                         playlist_label = f"XML Fallback EPG for Non-Gracenote (MPEG-TS) [{playlist_number}]: "
                     elif 'strmlnk' in playlist_filename:
                         playlist_label = f"XML Fallback EPG for Non-Gracenote (STRMLNK) [{playlist_number}]: "
@@ -18168,6 +18236,7 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": 20}, 87, "PLM: For 'Fallback Feed', time (in seconds) a found stream remains valid in memory before being purged")
         check_and_append(csv_file, {"settings": "Off"}, 88, "PLM/SLM: Use PO Tokens for YouTube Videos/Streams On/Off")
         check_and_append(csv_file, {"settings": "http://localhost:4416"}, 89, "PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams")
+        check_and_append(csv_file, {"settings": "gracenote_xml_default"}, 90, "PLM: Gracenote/XML m3u playlist generation behavior")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -18276,7 +18345,8 @@ def initial_data(csv_file):
             ]},                                                                        # [84] SLM: List of 'URL patterns' for SLM Streams to switch from the HLS and MPEG-TS method
             {"settings": 20},                                                          # [85] PLM: For 'Fallback Feed', time (in seconds) a found stream remains valid in memory before being purged
             {"settings": "Off"},                                                       # [86] PLM/SLM: Use PO Tokens for YouTube Videos/Streams On/Off
-            {"settings": "http://localhost:4416"}                                      # [87] PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams
+            {"settings": "http://localhost:4416"},                                     # [87] PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams
+            {"settings": "gracenote_xml_default"}                                      # [88] PLM: Gracenote/XML m3u playlist generation behavior
         ]
 
     # Stream Link/File Manager
