@@ -31,16 +31,16 @@ import curl_cffi
 import av
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.07.28.1543"
+slm_version = "v2026.08.21.1518"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.08.18.1358"
+    slm_version = "v2026.08.21.1518"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
