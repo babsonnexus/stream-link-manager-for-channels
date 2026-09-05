@@ -18,9 +18,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Explicitly allow Node to read files and spawn processes
-ENV NODE_OPTIONS="--allow-fs-read=* --allow-child-process --no-warnings"
-
 # Set the working directory in the container
 WORKDIR /app
 
@@ -42,6 +39,9 @@ RUN pip install --force-reinstall "yt-dlp[default] @ https://github.com/yt-dlp/y
 
 # Copy the rest of the application code into the container
 COPY . .
+
+# Explicitly allow Node to read files and spawn processes
+ENV NODE_OPTIONS="--permission --allow-fs-read=* --allow-child-process --no-warnings"
 
 # Make port 5000 available to the world outside this container
 EXPOSE 5000
