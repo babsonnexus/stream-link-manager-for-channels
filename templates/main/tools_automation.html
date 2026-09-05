@@ -68,7 +68,7 @@
                 </div>
                 <div>
                   <label for="gen_backup_max_backups" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Max Backups:</label>
-                  <input type="text" id="gen_backup_max_backups" name="gen_backup_max_backups" value="{{ html_gen_backup_max_backups }}" style="display: block; margin-left: 15px; width: 25%;">
+                  <input type="number" min="1" id="gen_backup_max_backups" name="gen_backup_max_backups" value="{{ html_gen_backup_max_backups }}" style="display: block; margin-left: 15px; width: 25%;">
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                   <button type="submit" name="action" value="gen_backup_process_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
@@ -189,7 +189,7 @@
                   </div>
                   <div>
                     <label for="slm_new_recent_releases_when" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Recent Hours:</label>
-                    <input type="text" id="slm_new_recent_releases_when" name="slm_new_recent_releases_when" value="{{ html_slm_new_recent_releases_when }}" style="display: block; margin-left: 15px; width: 25%;">
+                    <input type="number" min="1" id="slm_new_recent_releases_when" name="slm_new_recent_releases_when" value="{{ html_slm_new_recent_releases_when }}" style="display: block; margin-left: 15px; width: 25%;">
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                     <button type="submit" name="action" value="slm_new_recent_releases_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
@@ -423,7 +423,7 @@
                   </div>
                   <div>
                     <label for="mtm_channels_remove_old_logs_recording_days" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Number of Days:</label>
-                    <input type="text" id="mtm_channels_remove_old_logs_recording_days" name="mtm_channels_remove_old_logs_recording_days" value="{{ html_mtm_channels_remove_old_logs_recording_days }}" style="display: block; margin-left: 15px; width: 25%;">
+                    <input type="number" min="1" id="mtm_channels_remove_old_logs_recording_days" name="mtm_channels_remove_old_logs_recording_days" value="{{ html_mtm_channels_remove_old_logs_recording_days }}" style="display: block; margin-left: 15px; width: 25%;">
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                     <button type="submit" name="action" value="mtm_channels_remove_old_logs_recording_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
@@ -457,7 +457,7 @@
                   </div>
                   <div>
                     <label for="mtm_channels_remove_old_backups_days" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Number of Days:</label>
-                    <input type="text" id="mtm_channels_remove_old_backups_days" name="mtm_channels_remove_old_backups_days" value="{{ html_mtm_channels_remove_old_backups_days }}" style="display: block; margin-left: 15px; width: 25%;">
+                    <input type="number" min="1" id="mtm_channels_remove_old_backups_days" name="mtm_channels_remove_old_backups_days" value="{{ html_mtm_channels_remove_old_backups_days }}" style="display: block; margin-left: 15px; width: 25%;">
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                     <button type="submit" name="action" value="mtm_channels_remove_old_backups_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
@@ -465,6 +465,42 @@
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-top: -25px;">
                     <button type="submit" name="action" value="mtm_channels_remove_old_backups_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run</button>
+                  </div>
+                </div>
+                <div id="anchor_mtm_build_local_gracenote_maps" class="settings-box" style="width: 99%; display: inline-block; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; vertical-align: top; margin-bottom: 5px;">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" class="form-check-input ms-auto" id="mtm_build_local_gracenote_maps" name="mtm_build_local_gracenote_maps" {% if html_mtm_build_local_gracenote_maps == "On" %}checked{% endif %}>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="mtm_build_local_gracenote_maps"><b>Build Local Gracenote Map</b></label>
+                  </div>
+                  <div>
+                    <p><em>As an alternative to searching for station IDs using the default Channels-based Gracenote search, you can build a local Gracenote station map that can be filtered on any available field. Gets stations from all available U.S. and Canadian national providers as well as those received in the zip/postal codes entered below.</em></p>
+                  </div>
+                  <div>
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="mtm_build_local_gracenote_maps_time">Start at:</label>
+                    <input type="time" id="mtm_build_local_gracenote_maps_time" name="mtm_build_local_gracenote_maps_time" value="{{ html_mtm_build_local_gracenote_maps_time }}" class="ms-3">
+                  </div>
+                  <div style="margin-top: 10px;">
+                    <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0" for="mtm_build_local_gracenote_maps_frequency">And run:</label>
+                    <div style="margin-left: 15px;">
+                      <select class="select2" name="mtm_build_local_gracenote_maps_frequency" id="mtm_build_local_gracenote_maps_frequency">
+                        {% for html_gen_daily_frequency in html_gen_daily_frequencies %}
+                          <option value="{{ html_gen_daily_frequency }}" {% if html_gen_daily_frequency == html_mtm_build_local_gracenote_maps_frequency %}selected{% endif %} style="width: auto; min-width: 100%;">{{ html_gen_daily_frequency }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label for="gracenote_local_zips" style="margin-left: 15px; margin-top: 8px; margin-right: 5px;">Zip/Postal Codes:</label>
+                    <div>
+                      <input name="gracenote_local_zips" id="gracenote_local_zips" placeholder="Add Zip/Postal Codes..." value="{{ html_gracenote_local_zips | join(',') }}" style="display: block; margin-left: 15px; width: 98%;">
+                    </div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                    <button type="submit" name="action" value="mtm_build_local_gracenote_maps_save" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Save</button>
+                    <button type="submit" name="action" value="mtm_build_local_gracenote_maps_cancel" class="btn bg-gradient-primary my-2 mb-2" style="flex: 1; margin-right: 5px;">Cancel</button>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: -25px;">
+                    <button type="submit" name="action" value="mtm_build_local_gracenote_maps_run" class="btn bg-gradient-primary my-4 mb-2" style="flex: 1; margin-right: 5px;">Run</button>
                   </div>
                 </div>
               {% endif %}
@@ -547,6 +583,12 @@
               window.location = '#navbarBlur'; // Hard move to the navbarBlur element
           }, 100); // Adding a slight delay to ensure the hash has been applied
       }
+  });
+</script>
+<!-- Tagify | Zip/Postal Codes for Gracenote Maps -->
+<script>
+  var input = document.querySelector('#gracenote_local_zips');
+  new Tagify(input, {
   });
 </script>
 {% endblock javascripts %}

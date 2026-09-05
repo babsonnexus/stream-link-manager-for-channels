@@ -33,6 +33,9 @@ RUN cat requirements.txt
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install Playwright Chromium
+RUN python -m playwright install --with-deps chromium
+
 # Update yt-dlp to the bleeding edge to fix Docker issues
 RUN pip install -U pip hatchling wheel
 RUN pip install --force-reinstall "yt-dlp[default] @ https://github.com/yt-dlp/yt-dlp/archive/master.tar.gz"

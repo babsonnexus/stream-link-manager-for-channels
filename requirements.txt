@@ -10,3 +10,4 @@ tubescrape
 curl_cffi
 av
 bgutil-ytdlp-pot-provider
+playwright

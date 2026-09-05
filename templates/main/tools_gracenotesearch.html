@@ -164,14 +164,14 @@
         <!-- [1] Find Station Code -->
         <table style="width: 95%;">
           <tr>
-            <td style="width: 20%;">
-              <h4 style="margin: 0;">[1] Find Station Code
+            <td style="width: 35%;">
+              <h4 style="margin: 0;">[1] OPTIONAL: Find Station Code
                 <a href="https://github.com/babsonnexus/stream-link-manager-for-channels/wiki/Usage-%E2%80%90-MTM-%E2%80%90-Gracenote-Search" target="_blank">
                   <i class="material-icons opacity-10" style="position: relative; top: 3px;">help_outline</i>
                 </a>
               </h4>
             </td>
-            <td style="width: 75%; text-align: center;">
+            <td style="width: 65%; text-align: center;">
               <button class="btn bg-gradient-primary my-2 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#zap2itPanel" aria-expanded="true" aria-controls="zap2itPanel" style="width: 100%;">
                 Expand / Collapse
               </button>
@@ -193,14 +193,15 @@
         <table style="width: 95%;">
           <tr>
             <td style="width: 20%;">
-              <h4 style="margin: 0;">[2] Search Code</h4>
+              <h4 style="margin: 0;">[2] Search Code or Load Locally Stored Maps</h4>
             </td>
           </tr>
         </table>
         <div>
-          <input type="text" id="gracenote_search_entry" name="gracenote_search_entry" value="{{ html_gracenote_search_entry_prior }}" style="width: calc(70%); margin-left: 10px; margin-right: 10px;">
-          <button type="submit" name="action" value="gracenote_search_search" class="btn bg-gradient-primary w-10 my-2 mb-2">Search</button>
-          <button type="submit" name="action" value="gracenote_search_cancel" class="btn bg-gradient-primary w-10 my-2 mb-2">Cancel / Clear</button>
+          <input type="text" id="gracenote_search_entry" name="gracenote_search_entry" value="{{ html_gracenote_search_entry_prior }}" style="width: calc(20%); margin-left: 10px; margin-right: 10px;">
+          <button type="submit" name="action" value="gracenote_search_search" class="btn bg-gradient-primary w-25 my-2 mb-2">Search Code</button>
+          <button type="submit" name="action" value="gracenote_search_load" class="btn bg-gradient-primary w-25 my-2 mb-2">Load {{ html_gracenote_maps_number_formatted }} Locally Stored Map(s)</button>
+          <button type="submit" name="action" value="gracenote_search_cancel" class="btn bg-gradient-primary w-25 my-2 mb-2">Cancel / Clear</button>
         </div>
         <hr>
         <!-- [3] Copy Gracenote ID -->

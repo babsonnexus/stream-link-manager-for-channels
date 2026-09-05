@@ -311,6 +311,12 @@
                 </div>
               </div>
               <div style="margin-top: 8px;">
+                <label for="settings_feed_fallback_single_child"><b>Single Child No Fallback</b></label>
+                <div class="form-check form-switch ps-0 is-filled">
+                  <input type="checkbox" class="form-check-input" id="settings_feed_fallback_single_child" name="settings_feed_fallback_single_child" {% if html_settings_feed_fallback_single_child == 'On' %}checked{% endif %}>
+                </div>
+              </div>
+              <div style="margin-top: 8px;">
                 <label for="plm_url_tag_in_m3us"><b>Add URL tag to m3u(s)</b></label>
                 <div class="form-check form-switch ps-0 is-filled">
                   <input type="checkbox" class="form-check-input" id="plm_url_tag_in_m3us" name="plm_url_tag_in_m3us" {% if html_plm_url_tag_in_m3us == 'On' %}checked{% endif %}>
@@ -327,6 +333,12 @@
               <div style="margin-top: 8px;">
                 <label for="max_stations"><b>Max Stations per m3u</b></label>
                 <input type="number" min="1" style="width: 100%;" id="max_stations" name="max_stations" value="{{ html_max_stations }}">
+              </div>
+              <div style="margin-top: 8px;">
+                <label for="settings_tvc_stream_timestamps"><b>Rewrite All Stream Timestamps</b></label>
+                <div class="form-check form-switch ps-0 is-filled">
+                  <input type="checkbox" class="form-check-input" id="settings_tvc_stream_timestamps" name="settings_tvc_stream_timestamps" {% if html_settings_tvc_stream_timestamps == 'On' %}checked{% endif %}>
+                </div>
               </div>
               <hr>
               <h6>Stations & Testing</h6>

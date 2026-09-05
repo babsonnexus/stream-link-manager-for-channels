@@ -263,6 +263,15 @@
               <hr>
               <div class="grid-container">
                 <div class="grid-item">
+                  <b>Additional XML Guide Categories</b>
+                </div>
+                <div class="grid-item">
+                  <input name="more_parent_additional_xml_guide_categories" id="more_parent_additional_xml_guide_categories" placeholder="Add Additional XML Guide Categories..." value="{{ html_parent_additional_xml_guide_categories | join(',') }}" style="width: 98%;">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
                   <b>Stream Video Codec (tvc-stream-vcodec) Override</b>
                 </div>
                 <div class="grid-item">
@@ -276,6 +285,18 @@
                 </div>
                 <div class="grid-item">
                   <input type="text" id="more_parent_tvc_stream_acodec_override" name="more_parent_tvc_stream_acodec_override" value="{{ html_parent_tvc_stream_acodec_override }}" title="{{ html_parent_tvc_stream_acodec_override }}">
+                </div>
+              </div>
+              <hr>
+              <div class="grid-container">
+                <div class="grid-item">
+                  <b>Rewrite Stream Timestamps (tvc-stream-timestamps="rewrite")</b>
+                </div>
+                <div class="grid-item">
+                  <div class="form-check form-switch ps-0 is-filled">
+                    <input type="checkbox" id="more_parent_tvc_stream_timestamps_override" name="more_parent_tvc_stream_timestamps_override" class="form-check-input" 
+                          {% if html_parent_tvc_stream_timestamps_override == "On" %}checked{% else %}unchecked{% endif %}>
+                  </div>
                 </div>
               </div>
               <hr>
@@ -321,6 +342,15 @@
     document.getElementById('more_parent_preferred_playlist').addEventListener('input', checkMoreInputs);
 
     checkMoreInputs();
+  });
+</script>
+<!-- Tagify | Articles for Sorting -->
+<script>
+  var input = document.querySelector('#more_parent_additional_xml_guide_categories');
+  new Tagify(input, {
+    whitelist: {{ html_base_additional_xml_guide_categories | tojson }},
+    enforceWhitelist: false,
+    dropdown: { enabled: 0 }
   });
 </script>
 {% endblock javascripts %}

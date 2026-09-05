@@ -29,9 +29,10 @@ from collections import OrderedDict
 import tubescrape
 import curl_cffi
 import av
+from playwright.sync_api import sync_playwright
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -40,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.08.21.1518"
+    slm_version = "v2026.09.05.1858"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -5632,7 +5633,7 @@ def run_slm_bookmarking_actions(program_search_results_base_submissions):
                                     if field_object_type in ['MOVIE', 'SHOW']:
 
                                         if field_object_type == 'MOVIE':
-                                            original_release_date_raw =  get_movie_show_metadata_item(entry_id, settings_country_code_input_prior, settings_language_code_input_prior, 'originalReleaseDate')
+                                            original_release_date_raw = get_movie_show_metadata_item(entry_id, settings_country_code_input_prior, settings_language_code_input_prior, 'originalReleaseDate')
                                             if original_release_date_raw:
                                                 field_original_release_date = original_release_date_raw
 
@@ -7078,8 +7079,10 @@ def webpage_playlists(sub_page):
     settings_potokens_url = settings[87]["settings"]                            # [87] PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams
     plm_feed_default = settings[81]['settings']                                 # [81] PLM: Generate 'Default Feed' playlists and guide data
     plm_feed_fallback = settings[82]['settings']                                # [82] PLM: Generate 'Fallback Feed' playlists and guide data
+    settings_feed_fallback_single_child = settings[89]['settings']              # [89] PLM: For 'Fallback Feed', use direct URL without fallback if only one active child
     plm_url_tag_in_m3us_preferred_url_root = settings[43]['settings']           # [43] PLM: URL Tag in m3u(s) Preferred URL Root
     settings_playlist_behavior = settings[88]['settings']                       # [88] PLM: Gracenote/XML m3u playlist generation behavior
+    settings_tvc_stream_timestamps = settings[90]['settings']                   # [90] PLM: Rewrite stream timestamps in all Playlists using 'tvc-stream-timestamps' value of 'rewrite'
     settings_message = ''
 
     playlists_anchor_id = None
@@ -7171,8 +7174,10 @@ def webpage_playlists(sub_page):
                     plm_station_status_skip_after_fails_input = request.form.get('plm_station_status_skip_after_fails')
                     plm_feed_default_input = request.form.get('plm_feed_default')
                     plm_feed_fallback_input = request.form.get('plm_feed_fallback')
+                    settings_feed_fallback_single_child_input = request.form.get('settings_feed_fallback_single_child')
                     plm_fallback_stale_seconds_input = request.form.get('plm_fallback_stale_seconds')
                     settings_playlist_behavior_input = request.form.get('settings_playlist_behavior')
+                    settings_tvc_stream_timestamps_input = request.form.get('settings_tvc_stream_timestamps')
 
                     try:
                         if ( 
@@ -7195,9 +7200,11 @@ def webpage_playlists(sub_page):
                             settings[63]['settings'] = int(plm_station_status_skip_after_fails_input)
                             settings[81]['settings'] = "On" if plm_feed_default_input == 'on' else "Off"
                             settings[82]['settings'] = "On" if plm_feed_fallback_input == 'on' else "Off"
+                            settings[89]['settings'] = "On" if settings_feed_fallback_single_child_input == 'on' else "Off"
                             settings[85]['settings'] = int(plm_fallback_stale_seconds_input)
                             plm_fallback_stale_seconds_global = settings[85]['settings']
                             settings[88]['settings'] = settings_playlist_behavior_input
+                            settings[90]['settings'] = "On" if settings_tvc_stream_timestamps_input == 'on' else "Off"
 
                             if settings[42]['settings'] == "On":
                                 settings[43]['settings'] = f"{request.url_root}"
@@ -7271,8 +7278,10 @@ def webpage_playlists(sub_page):
                 settings_potokens_url = settings[87]["settings"]                            # [87] PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams
                 plm_feed_default = settings[81]['settings']                                 # [81] PLM: Generate 'Default Feed' playlists and guide data
                 plm_feed_fallback = settings[82]['settings']                                # [82] PLM: Generate 'Fallback Feed' playlists and guide data
+                settings_feed_fallback_single_child = settings[89]['settings']              # [89] PLM: For 'Fallback Feed', use direct URL without fallback if only one active child
                 plm_url_tag_in_m3us_preferred_url_root = settings[43]['settings']           # [43] PLM: URL Tag in m3u(s) Preferred URL Root
                 settings_playlist_behavior = settings[88]['settings']                       # [88] PLM: Gracenote/XML m3u playlist generation behavior
+                settings_tvc_stream_timestamps = settings[90]['settings']                   # [90] PLM: Rewrite stream timestamps in all Playlists using 'tvc-stream-timestamps' value of 'rewrite'
 
                 uploaded_playlist_files = get_uploaded_playlist_files()
 
@@ -7668,6 +7677,8 @@ def webpage_playlists(sub_page):
                         parents_parent_tvc_stream_acodec_override_input = None
                         parents_parent_tvg_description_override_input = None
                         parents_parent_group_title_override_input = None
+                        parents_parent_tvc_stream_timestamps_override_input = "Off"
+                        parents_parent_additional_xml_guide_categories_input = []
 
                         if playlists_action == "parents_action_new":
                             parents_parent_active_input = "On" if request.form.get('parents_parent_active_new') == 'on' else "Off"
@@ -7765,7 +7776,9 @@ def webpage_playlists(sub_page):
                             "parent_preferred_playlist": parents_parent_preferred_playlist_input,
                             "parent_active": parents_parent_active_input,
                             "parent_tvg_description_override": parents_parent_tvg_description_override_input,
-                            "parent_group_title_override": parents_parent_group_title_override_input
+                            "parent_group_title_override": parents_parent_group_title_override_input,
+                            "parent_tvc_stream_timestamps_override": parents_parent_tvc_stream_timestamps_override_input,
+                            "parent_additional_xml_guide_categories": parents_parent_additional_xml_guide_categories_input
                         })
 
                     if len(parents) > 1:
@@ -8057,7 +8070,9 @@ def webpage_playlists(sub_page):
                                 "parent_preferred_playlist": None,
                                 "parent_active": "On",
                                 "parent_tvg_description_override": None,
-                                "parent_group_title_override": None
+                                "parent_group_title_override": None,
+                                "parent_tvc_stream_timestamps_override": "Off",
+                                "parent_additional_xml_guide_categories": []
                             })
 
                             child_to_parents_parent_channel_id_input = save_all_parent_channel_id
@@ -8342,10 +8357,12 @@ def webpage_playlists(sub_page):
         html_station_mapping_target_parent_channel_ids = station_mapping_target_parent_channel_ids,
         html_plm_feed_default = plm_feed_default,
         html_plm_feed_fallback = plm_feed_fallback,
+        html_settings_feed_fallback_single_child = settings_feed_fallback_single_child,
         html_plm_url_tag_in_m3us_preferred_url_root = plm_url_tag_in_m3us_preferred_url_root,
         html_plm_fallback_stale_seconds_global = plm_fallback_stale_seconds_global,
         html_playlist_behaviors = playlist_behaviors,
-        html_settings_playlist_behavior = settings_playlist_behavior
+        html_settings_playlist_behavior = settings_playlist_behavior,
+        html_settings_tvc_stream_timestamps = settings_tvc_stream_timestamps
     ))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -8359,13 +8376,13 @@ def webpage_playlists(sub_page):
 # Used to download an m3u or XML EPG
 @app.route('/playlists/files/<filename>')
 def download_m3u_epg(filename):
-    return export_csv(filename)
+    return export_program_file(filename)
 
 # Used to retrieve an uploaded or generated file
 @app.route('/playlists/uploads/<filename>')
 def download_uploads(filename):
     filename = os.path.join(playlists_uploads_dir_name, filename)
-    return export_csv(filename)
+    return export_program_file(filename)
 
 # Used to dynamically create an internal file
 @app.route('/playlists/uploads/internal/<filename>')
@@ -9458,7 +9475,9 @@ def run_child_station_mapping():
                                                     "parent_preferred_playlist": None,
                                                     "parent_active": "On",
                                                     "parent_tvg_description_override": None,
-                                                    "parent_group_title_override": None
+                                                    "parent_group_title_override": None,
+                                                    "parent_tvc_stream_timestamps_override": "Off",
+                                                    "parent_additional_xml_guide_categories": []
                                                 })
 
                                         else:
@@ -9562,7 +9581,8 @@ def check_child_station_status(check_child_station_status_single, check_child_st
                     'tvc_guide_placeholders': '',
                     'tvc_stream_vcodec': '',
                     'tvc_stream_acodec': '',
-                    'url': check_child_station_status_single_url
+                    'url': check_child_station_status_single_url,
+                    'tvc_stream_timestamps': ''
                 })
             
             else:
@@ -9697,7 +9717,8 @@ def parse_m3u(m3u_id, m3u_name, response):
                     "tvc-guide-categories": "",
                     "tvc-guide-placeholders": "",
                     "tvc-stream-vcodec": "",
-                    "tvc-stream-acodec": ""
+                    "tvc-stream-acodec": "",
+                    "tvc-stream-timestamps": ""
                 }
 
                 # Extract known fields
@@ -9743,7 +9764,8 @@ def parse_m3u(m3u_id, m3u_name, response):
                     'tvc_guide_placeholders': metadata["tvc-guide-placeholders"],
                     'tvc_stream_vcodec': metadata["tvc-stream-vcodec"],
                     'tvc_stream_acodec': metadata["tvc-stream-acodec"],
-                    'url': ""
+                    'url': "",
+                    'tvc_stream_timestamps': metadata["tvc-stream-timestamps"]
                 }
         elif ( line.startswith('http') or '://' in line ) and not any(skip_line in line for skip_line in skip_lines):
             if current_record:
@@ -9999,236 +10021,15 @@ def get_final_m3us_epgs():
     notification_add(f"{current_time()} Starting generation of final m3u(s) and XML EPG(s)...")
 
     settings = read_data(csv_settings)
-
     plm_feed_default = settings[81]['settings']                                 # [81] PLM: Generate 'Default Feed' playlists and guide data
     plm_feed_fallback = settings[82]['settings']                                # [82] PLM: Generate 'Fallback Feed' playlists and guide data
     settings_playlist_behavior = settings[88]['settings']                       # [88] PLM: Gracenote/XML m3u playlist generation behavior
-
-    station_start_number = int(settings[11]['settings'])
-    max_stations = int(settings[12]['settings'])
-
-    parents = read_data(csv_playlistmanager_parents)
-    maps = read_data(csv_playlistmanager_child_to_parent)
-    combined_children = read_data(csv_playlistmanager_combined_m3us)
-    playlists = read_data(csv_playlistmanager_playlists)
-    playlists.sort(key=lambda x: int(x.get("m3u_priority", float("inf"))))
-
-    fields = [
-        "tvg_id",
-        "tvg_name",
-        "tvg_logo",
-        "tvg_description",
-        "tvc_guide_description",
-        "group_title",
-        "tvc_guide_stationid",
-        "tvc_guide_art",
-        "tvc_guide_tags",
-        "tvc_guide_genres",
-        "tvc_guide_categories",
-        "tvc_guide_placeholders",
-        "tvc_stream_vcodec",
-        "tvc_stream_acodec",
-        "url",
-        "stream_format"
-    ]
+    settings_tvc_stream_timestamps = settings[90]['settings']                   # [90] PLM: Rewrite stream timestamps in all Playlists using 'tvc-stream-timestamps' value of 'rewrite'
+    station_start_number = int(settings[11]['settings'])                        # [11] Playlist Manager: Starting station number
+    max_stations = int(settings[12]['settings'])                                # [12] Playlist Manager: Max number of stations per m3u
 
     final_m3us = []
-
-    for parent in parents:
-
-        if parent['parent_active'] == "On":
-
-            title = None
-            tvc_guide_title = None
-            channel_id = None
-            tvg_id = None
-            tvg_name = None
-            tvg_logo = None
-            tvg_chno = None
-            channel_number = None
-            tvg_description = None
-            tvc_guide_description = None
-            group_title = None
-            tvc_guide_stationid = None
-            tvc_guide_art = None
-            tvc_guide_tags = None
-            tvc_guide_genres = None
-            tvc_guide_categories = None
-            tvc_guide_placeholders = None
-            tvc_stream_vcodec = None
-            tvc_stream_acodec = None
-            url = None
-            stream_format = None
-
-            channel_id = parent['parent_channel_id']
-
-            playlist_preferences = []
-
-            if parent['parent_preferred_playlist'] is not None and parent['parent_preferred_playlist'] != '':
-                playlist_preferences.append(parent['parent_preferred_playlist'])
-
-            inactive_playlists = []
-            for playlist in playlists:
-                if playlist['m3u_active'] == "On":
-                    playlist_preferences.append(playlist['m3u_id'])
-                else:
-                    inactive_playlists.append(playlist['m3u_id'])
-            
-            if parent['parent_preferred_playlist'] in inactive_playlists:
-                playlist_preferences.remove(parent['parent_preferred_playlist'])
-
-            children = []
-            for map in maps:
-                if map['parent_channel_id'] == channel_id and not map['child_station_check'].startswith('Disabled'):
-                    children.append(map)
-
-            children = [child for child in children if re.search(r'm3u_\d{4}', child['child_m3u_id_channel_id']).group(0) in playlist_preferences]
-
-            children = sorted(
-                children,
-                key=lambda child: (
-                    playlist_preferences.index(re.match(r'm3u_\d{4}', child['child_m3u_id_channel_id']).group(0)),
-                    re.sub(r'^m3u_\d{4}_', '', child['child_m3u_id_channel_id'])
-                )
-            )
-
-            for field in fields:
-                field_value = None
-                field_value = get_m3u_field_value(field, combined_children, children)
-
-                if field == "tvg_id":
-                    if parent['parent_tvg_id_override'] is not None and parent['parent_tvg_id_override'] != '':
-                        tvg_id = parent['parent_tvg_id_override']
-                    else:
-                        tvg_id = field_value
-
-                elif field == "tvg_name":
-                    tvg_name = field_value
-
-                elif field == "tvg_logo":
-                    if parent['parent_tvg_logo_override'] is not None and parent['parent_tvg_logo_override'] != '':
-                        tvg_logo = parent['parent_tvg_logo_override']
-                    else:
-                        tvg_logo = field_value
-
-                elif field == "tvg_description":
-                    if parent['parent_tvg_description_override'] is not None and parent['parent_tvg_description_override'] != '':
-                        tvg_description = parent['parent_tvg_description_override']
-                    else:
-                        tvg_description = field_value
-                
-                elif field == "tvc_guide_description":
-                    tvc_guide_description = field_value
-
-                    if tvc_guide_description is not None and tvc_guide_description != '':
-                        tvg_description = tvc_guide_description
-                    elif tvg_description is not None and tvg_description != '':
-                        tvc_guide_description = tvg_description
-                    else:
-                        tvg_description = f"No description available..."
-                        tvc_guide_description = tvg_description
-
-                elif field == "group_title":
-                    if parent['parent_group_title_override'] is not None and parent['parent_group_title_override'] != '':
-                        group_title = parent['parent_group_title_override']
-                    else:
-                        group_title = field_value
-
-                elif field == "tvc_guide_stationid":
-                    if parent['parent_tvc_guide_stationid_override'] is not None and parent['parent_tvc_guide_stationid_override'] != '':
-                        tvc_guide_stationid = parent['parent_tvc_guide_stationid_override']
-                    else:
-                        tvc_guide_stationid = field_value
-
-                    # Check if tvc_guide_stationid (Gracenote ID) only has numeric characters
-                    if tvc_guide_stationid:
-                        if not tvc_guide_stationid.isdigit():
-                            tvc_guide_stationid = None
-
-                elif field == "tvc_guide_art":
-                    if parent['parent_tvc_guide_art_override'] is not None and parent['parent_tvc_guide_art_override'] != '':
-                        tvc_guide_art = parent['parent_tvc_guide_art_override']
-                    else:
-                        tvc_guide_art = field_value
-
-                elif field == "tvc_guide_tags":
-                    if parent['parent_tvc_guide_tags_override'] is not None and parent['parent_tvc_guide_tags_override'] != '':
-                        tvc_guide_tags = parent['parent_tvc_guide_tags_override']
-                    else:
-                        tvc_guide_tags = field_value
-
-                elif field == "tvc_guide_genres":
-                    if parent['parent_tvc_guide_genres_override'] is not None and parent['parent_tvc_guide_genres_override'] != '':
-                        tvc_guide_genres = parent['parent_tvc_guide_genres_override']
-                    else:
-                        tvc_guide_genres = field_value
-
-                elif field == "tvc_guide_categories":
-                    if parent['parent_tvc_guide_categories_override'] is not None and parent['parent_tvc_guide_categories_override'] != '':
-                        tvc_guide_categories = parent['parent_tvc_guide_categories_override']
-                    else:
-                        tvc_guide_categories = field_value
-
-                elif field == "tvc_guide_placeholders":
-                    if parent['parent_tvc_guide_placeholders_override'] is not None and parent['parent_tvc_guide_placeholders_override'] != '':
-                        tvc_guide_placeholders = parent['parent_tvc_guide_placeholders_override']
-                    else:
-                        tvc_guide_placeholders = field_value
-
-                elif field == "tvc_stream_vcodec":
-                    if parent['parent_tvc_stream_vcodec_override'] is not None and parent['parent_tvc_stream_vcodec_override'] != '':
-                        tvc_stream_vcodec = parent['parent_tvc_stream_vcodec_override']
-                    else:
-                        tvc_stream_vcodec = field_value
-
-                elif field == "tvc_stream_acodec":
-                    if parent['parent_tvc_stream_acodec_override'] is not None and parent['parent_tvc_stream_acodec_override'] != '':
-                        tvc_stream_acodec = parent['parent_tvc_stream_acodec_override']
-                    else:
-                        tvc_stream_acodec = field_value
-
-                elif field == "url":
-                    url = field_value
-
-                elif field == "stream_format":
-                    stream_format = field_value
-
-            if url:
-                title = parent['parent_title']
-                tvc_guide_title = title
-
-                if parent['parent_channel_number_override'] is not None and parent['parent_channel_number_override'] != '':
-                    tvg_chno = parent['parent_channel_number_override']
-                else:
-                    tvg_chno = int(channel_id.split('_')[-1]) + int(station_start_number)
-                
-                channel_number = tvg_chno
-
-            if title:
-                final_m3us.append({
-                    "title": title,
-                    "tvc_guide_title": tvc_guide_title,
-                    "channel_id": channel_id,
-                    "tvg_id": tvg_id,
-                    "tvg_name": tvg_name,
-                    "tvg_logo": tvg_logo,
-                    "tvg_chno": tvg_chno,
-                    "channel_number": channel_number,
-                    "tvg_description": tvg_description,
-                    "tvc_guide_description": tvc_guide_description,
-                    "group_title": group_title,
-                    "tvc_guide_stationid": tvc_guide_stationid,
-                    "tvc_guide_art": tvc_guide_art,
-                    "tvc_guide_tags": tvc_guide_tags,
-                    "tvc_guide_genres": tvc_guide_genres,
-                    "tvc_guide_categories": tvc_guide_categories,
-                    "tvc_guide_placeholders": tvc_guide_placeholders,
-                    "tvc_stream_vcodec": tvc_stream_vcodec,
-                    "tvc_stream_acodec": tvc_stream_acodec,
-                    "url": url,
-                    "stream_format": stream_format
-                })
-    
+    parent_additional_xml_guide_categories_lookup = {}
     gracenote_hls_final_m3us = []
     gracenote_mpeg_ts_final_m3us = []
     gracenote_strmlnk_final_m3us = []
@@ -10242,6 +10043,12 @@ def get_final_m3us_epgs():
     epg_fallback_mpeg_ts_final_m3us = []
     epg_fallback_strmlnk_final_m3us = []
     gracenote_epg_combined_fallback_mpeg_ts_final_m3us = []
+
+    print(f"{current_time()} INFO: Gathering combined stations for m3u(s)...")
+    final_m3us, parent_additional_xml_guide_categories_lookup = get_m3u_field_values(station_start_number, settings_tvc_stream_timestamps)
+    print(f"{current_time()} INFO: Finished gathering combined stations for m3u(s).")
+
+    print(f"{current_time()} INFO: Parsing combined stations for m3u(s)...")
 
     for final_m3u in final_m3us:
         if final_m3u['tvc_guide_stationid'] is not None and final_m3u['tvc_guide_stationid'] != '':
@@ -10291,6 +10098,10 @@ def get_final_m3us_epgs():
             if gracenote_fallback_mpeg_ts_final_m3us or epg_fallback_mpeg_ts_final_m3us:
                 gracenote_epg_combined_fallback_mpeg_ts_final_m3us = gracenote_fallback_mpeg_ts_final_m3us + epg_fallback_mpeg_ts_final_m3us
 
+    print(f"{current_time()} INFO: Finished parsing combined stations for m3u(s).")
+
+    print(f"{current_time()} INFO: Beginining creation of final m3u(s)...")
+
     extensions = ['m3u']
     all_prior_files = []
     all_prior_files = get_all_prior_files(program_files_dir, extensions)
@@ -10324,59 +10135,310 @@ def get_final_m3us_epgs():
         if settings_playlist_behavior != 'gracenote_xml_default':
             create_chunk_files(gracenote_epg_combined_fallback_mpeg_ts_final_m3us, "plm_fallback_gracenote_epg_combined_mpeg_ts_m3u", "m3u", max_stations)
 
-    get_epgs_for_m3us()
+    print(f"{current_time()} INFO: Finished creation of final m3u(s).")
+
+    get_epgs_for_m3us(parent_additional_xml_guide_categories_lookup)
 
     notification_add(f"{current_time()} Finished generation of final m3u(s) and XML EPG(s).")
 
-# Runs through all the records to find a valid value to return
-def get_m3u_field_value(field, combined_children, children):
-    field_original = None
-    field_value = None
+# Creates the combined list of stations and field values to be parsed to m3u(s)
+def get_m3u_field_values(station_start_number, settings_tvc_stream_timestamps):
+    final_m3us = []
 
-    if field == "stream_format":
-        field_original = field
-        field = "url"
+    parents = read_data(csv_playlistmanager_parents)
+    maps = read_data(csv_playlistmanager_child_to_parent)
 
-    for child in children:
-        for combined_child in combined_children:
-            check_m3u_id_channel_id = f"{combined_child['m3u_id']}_{combined_child['channel_id']}"
-            if child['child_m3u_id_channel_id'] == check_m3u_id_channel_id:
-                if combined_child[field] is None or combined_child[field] == '':
-                    pass
+    fields = [
+        "m3u_id",
+        "tvg_id",
+        "tvg_name",
+        "tvg_logo",
+        "tvg_description",
+        "tvc_guide_description",
+        "group_title",
+        "tvc_guide_stationid",
+        "tvc_guide_art",
+        "tvc_guide_tags",
+        "tvc_guide_genres",
+        "tvc_guide_categories",
+        "tvc_guide_placeholders",
+        "tvc_stream_vcodec",
+        "tvc_stream_acodec",
+        "url",
+        "tvc_stream_timestamps"
+    ]
 
+    combined_children = read_data(csv_playlistmanager_combined_m3us)
+    combined_children_lookup = {}
+    combined_children_lookup = {f"{combined_child['m3u_id']}_{combined_child['channel_id']}": {field: combined_child[field] for field in fields} for combined_child in combined_children}
+    combined_children_check_lookup = {f"{combined_child['m3u_id']}_{combined_child['channel_id']}" for combined_child in combined_children}
+
+    playlists = read_data(csv_playlistmanager_playlists)
+    playlists.sort(key=lambda x: int(x.get("m3u_priority", float("inf"))))
+    playlists_stream_format_lookup = {}
+    playlists_stream_format_lookup = {playlist['m3u_id']: playlist['stream_format'] for playlist in playlists}
+
+    parent_additional_xml_guide_categories_lookup = {}
+
+    for parent in parents:
+        
+        if parent['parent_active'] == "On":
+
+            title = None
+            tvc_guide_title = None
+            channel_id = None
+            tvg_id = None
+            tvg_name = None
+            tvg_logo = None
+            tvg_chno = None
+            channel_number = None
+            tvg_description = None
+            tvc_guide_description = None
+            group_title = None
+            tvc_guide_stationid = None
+            tvc_guide_art = None
+            tvc_guide_tags = None
+            tvc_guide_genres = None
+            tvc_guide_categories = None
+            tvc_guide_placeholders = None
+            tvc_stream_vcodec = None
+            tvc_stream_acodec = None
+            tvc_stream_timestamps = None
+            url = None
+            stream_format = None
+
+            channel_id = parent['parent_channel_id']
+
+            playlist_preferences = []
+
+            if parent['parent_preferred_playlist'] is not None and parent['parent_preferred_playlist'] != '':
+                playlist_preferences.append(parent['parent_preferred_playlist'])
+
+            inactive_playlists = []
+            for playlist in playlists:
+                if playlist['m3u_active'] == "On":
+                    playlist_preferences.append(playlist['m3u_id'])
                 else:
+                    inactive_playlists.append(playlist['m3u_id'])
+            
+            if parent['parent_preferred_playlist'] in inactive_playlists:
+                playlist_preferences.remove(parent['parent_preferred_playlist'])
 
-                    if field_original == "stream_format":
+            children = []
+            for map in maps:
+                if ( 
+                    map['parent_channel_id'] == channel_id and 
+                    not map['child_station_check'].startswith('Disabled') and
+                    map['child_m3u_id_channel_id'] in combined_children_check_lookup
+                ):
+                    children.append(map)
 
-                        if child['stream_format_override'] == "None":
+            children = [child for child in children if re.search(r'm3u_\d{4}', child['child_m3u_id_channel_id']).group(0) in playlist_preferences]
 
-                            playlists = read_data(csv_playlistmanager_playlists)
-                            for playlist in playlists:
-                                if playlist['m3u_id'] == combined_child['m3u_id']:
-                                    if child['child_station_check'] is None or child['child_station_check'] == '' or child['child_station_check'] == playlist['stream_format']:
-                                        field_value = playlist['stream_format']
-                                    else:
-                                        field_value = child['child_station_check']
-                                    break
+            children = sorted(
+                children,
+                key=lambda child: (
+                    playlist_preferences.index(re.match(r'm3u_\d{4}', child['child_m3u_id_channel_id']).group(0)),
+                    re.sub(r'^m3u_\d{4}_', '', child['child_m3u_id_channel_id'])
+                )
+            )
 
-                        else:
-                            field_value = child['stream_format_override']
+            for child in children:
 
-                    else:
-                        field_value = combined_child[field]
-
+                if (
+                    ( tvg_id not in [None, 'None', ''] ) and
+                    ( tvg_name not in [None, 'None', ''] ) and
+                    ( tvg_logo not in [None, 'None', ''] ) and
+                    ( tvg_description not in [None, 'None', ''] ) and
+                    ( tvc_guide_description not in [None, 'None', ''] ) and
+                    ( group_title not in [None, 'None', ''] ) and
+                    ( tvc_guide_stationid not in [None, 'None', ''] ) and
+                    ( tvc_guide_art not in [None, 'None', ''] ) and
+                    ( tvc_guide_tags not in [None, 'None', ''] ) and
+                    ( tvc_guide_genres not in [None, 'None', ''] ) and
+                    ( tvc_guide_categories not in [None, 'None', ''] ) and
+                    ( tvc_guide_placeholders not in [None, 'None', ''] ) and
+                    ( tvc_stream_vcodec not in [None, 'None', ''] ) and
+                    ( tvc_stream_acodec not in [None, 'None', ''] ) and
+                    ( tvc_stream_timestamps not in [None, 'None', ''] ) and
+                    ( url not in [None, 'None', ''] ) and
+                    ( stream_format not in [None, 'None', ''] )
+                ):
                     break
 
-        if field_value:
-            break
+                if tvg_id in [None, 'None', '']:
+                    if parent['parent_tvg_id_override'] is not None and parent['parent_tvg_id_override'] != '':
+                        tvg_id = parent['parent_tvg_id_override']
+                    else:
+                        tvg_id = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvg_id', None)
 
-    return field_value
+                if tvg_name in [None, 'None', '']:
+                    tvg_name = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvg_name', None)
+
+                if tvg_logo in [None, 'None', '']:
+                    if parent['parent_tvg_logo_override'] is not None and parent['parent_tvg_logo_override'] != '':
+                        tvg_logo = parent['parent_tvg_logo_override']
+                    else:
+                        tvg_logo = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvg_logo', None)
+
+                if tvg_description in [None, 'None', '']:
+                    if parent['parent_tvg_description_override'] is not None and parent['parent_tvg_description_override'] != '':
+                        tvg_description = parent['parent_tvg_description_override']
+                    else:
+                        tvg_description = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvg_description', None)
+                
+                if tvc_guide_description in [None, 'None', '']:
+                    tvc_guide_description = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvc_guide_description', None)
+
+                if group_title in [None, 'None', '']:
+                    if parent['parent_group_title_override'] is not None and parent['parent_group_title_override'] != '':
+                        group_title = parent['parent_group_title_override']
+                    else:
+                        group_title = combined_children_lookup[child['child_m3u_id_channel_id']].get('group_title', None)
+
+                if tvc_guide_stationid in [None, 'None', '']:
+                    if parent['parent_tvc_guide_stationid_override'] is not None and parent['parent_tvc_guide_stationid_override'] != '':
+                        tvc_guide_stationid = parent['parent_tvc_guide_stationid_override']
+                    else:
+                        tvc_guide_stationid = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvc_guide_stationid', None)
+
+                    # Check if tvc_guide_stationid (Gracenote ID) only has numeric characters
+                    if tvc_guide_stationid:
+                        if not tvc_guide_stationid.isdigit():
+                            tvc_guide_stationid = None
+
+                if tvc_guide_art in [None, 'None', '']:
+                    if parent['parent_tvc_guide_art_override'] is not None and parent['parent_tvc_guide_art_override'] != '':
+                        tvc_guide_art = parent['parent_tvc_guide_art_override']
+                    else:
+                        tvc_guide_art = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvc_guide_art', None)
+
+                if tvc_guide_tags in [None, 'None', '']:
+                    if parent['parent_tvc_guide_tags_override'] is not None and parent['parent_tvc_guide_tags_override'] != '':
+                        tvc_guide_tags = parent['parent_tvc_guide_tags_override']
+                    else:
+                        tvc_guide_tags = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvc_guide_tags', None)
+
+                if tvc_guide_genres in [None, 'None', '']:
+                    if parent['parent_tvc_guide_genres_override'] is not None and parent['parent_tvc_guide_genres_override'] != '':
+                        tvc_guide_genres = parent['parent_tvc_guide_genres_override']
+                    else:
+                        tvc_guide_genres = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvc_guide_genres', None)
+
+                if tvc_guide_categories in [None, 'None', '']:
+                    if parent['parent_tvc_guide_categories_override'] is not None and parent['parent_tvc_guide_categories_override'] != '':
+                        tvc_guide_categories = parent['parent_tvc_guide_categories_override']
+                    else:
+                        tvc_guide_categories = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvc_guide_categories', None)
+
+                if tvc_guide_placeholders in [None, 'None', '']:
+                    if parent['parent_tvc_guide_placeholders_override'] is not None and parent['parent_tvc_guide_placeholders_override'] != '':
+                        tvc_guide_placeholders = parent['parent_tvc_guide_placeholders_override']
+                    else:
+                        tvc_guide_placeholders = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvc_guide_placeholders', None)
+
+                if tvc_stream_vcodec in [None, 'None', '']:
+                    if parent['parent_tvc_stream_vcodec_override'] is not None and parent['parent_tvc_stream_vcodec_override'] != '':
+                        tvc_stream_vcodec = parent['parent_tvc_stream_vcodec_override']
+                    else:
+                        tvc_stream_vcodec = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvc_stream_vcodec', None)
+
+                if tvc_stream_acodec in [None, 'None', '']:
+                    if parent['parent_tvc_stream_acodec_override'] is not None and parent['parent_tvc_stream_acodec_override'] != '':
+                        tvc_stream_acodec = parent['parent_tvc_stream_acodec_override']
+                    else:
+                        tvc_stream_acodec = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvc_stream_acodec', None)
+
+                if tvc_stream_timestamps in [None, 'None', '']:
+                    if (
+                        ( settings_tvc_stream_timestamps in ['On', 'on', 'ON'] ) or
+                        ( parent['parent_tvc_stream_timestamps_override'] in ['On', 'on', 'ON'] )
+                    ):
+                        tvc_stream_timestamps = 'rewrite'
+                    else:
+                        tvc_stream_timestamps = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvc_stream_timestamps', None)
+
+                if url in [None, 'None', '']:
+                    url = combined_children_lookup[child['child_m3u_id_channel_id']].get('url', None)
+
+                if stream_format in [None, 'None', '']:
+
+                    if child['stream_format_override'] == "None":
+
+                        if child['child_station_check'] in [None, 'None', '']:
+                            m3u_id = combined_children_lookup[child['child_m3u_id_channel_id']].get('m3u_id', None)
+
+                            if m3u_id:
+                                stream_format = playlists_stream_format_lookup[m3u_id]
+
+                        else:
+                            stream_format = child['child_station_check']
+
+                    else:
+                        stream_format = child['stream_format_override']
+
+            if url:
+
+                if (
+                    ( tvg_description in [None, 'None', ''] ) or
+                    ( tvc_guide_description in [None, 'None', ''] )
+                ):
+                    if tvc_guide_description in [None, 'None', ''] and tvg_description not in [None, 'None', '']:
+                        tvc_guide_description = tvg_description
+                    elif tvg_description in [None, 'None', ''] and tvc_guide_description not in [None, 'None', '']:
+                        tvg_description = tvc_guide_description
+                    else:
+                        tvg_description = f"No description available..."
+                        tvc_guide_description = tvg_description
+
+                title = parent['parent_title']
+                tvc_guide_title = title
+
+                if parent['parent_channel_number_override'] is not None and parent['parent_channel_number_override'] != '':
+                    tvg_chno = parent['parent_channel_number_override']
+                else:
+                    tvg_chno = int(channel_id.split('_')[-1]) + int(station_start_number)
+                
+                channel_number = tvg_chno
+
+            if title:
+                final_m3us.append({
+                    "title": title,
+                    "tvc_guide_title": tvc_guide_title,
+                    "channel_id": channel_id,
+                    "tvg_id": tvg_id,
+                    "tvg_name": tvg_name,
+                    "tvg_logo": tvg_logo,
+                    "tvg_chno": tvg_chno,
+                    "channel_number": channel_number,
+                    "tvg_description": tvg_description,
+                    "tvc_guide_description": tvc_guide_description,
+                    "group_title": group_title,
+                    "tvc_guide_stationid": tvc_guide_stationid,
+                    "tvc_guide_art": tvc_guide_art,
+                    "tvc_guide_tags": tvc_guide_tags,
+                    "tvc_guide_genres": tvc_guide_genres,
+                    "tvc_guide_categories": tvc_guide_categories,
+                    "tvc_guide_placeholders": tvc_guide_placeholders,
+                    "tvc_stream_vcodec": tvc_stream_vcodec,
+                    "tvc_stream_acodec": tvc_stream_acodec,
+                    "tvc_stream_timestamps": tvc_stream_timestamps,
+                    "url": url,
+                    "stream_format": stream_format,
+                    "num_active_children": len(children)
+                })
+
+                if parent['parent_additional_xml_guide_categories'] not in ['[]', None]:
+                    parent_additional_xml_guide_categories_lookup[parent['parent_channel_id']] = parent['parent_additional_xml_guide_categories']
+
+    return final_m3us, parent_additional_xml_guide_categories_lookup
 
 # Generates m3u content from the data list
 def generate_m3u_content(data_list, base_filename, index):
     settings = read_data(csv_settings)
     plm_url_tag_in_m3us = settings[42]['settings']                              # [42] PLM: URL Tag in m3u(s) On/Off
     plm_url_tag_in_m3us_preferred_url_root = settings[43]['settings']           # [43] PLM: URL Tag in m3u(s) Preferred URL Root
+    settings_feed_fallback_single_child = settings[89]['settings']              # [89] PLM: For 'Fallback Feed', use direct URL without fallback if only one active child
     xml_guide = f"{plm_url_tag_in_m3us_preferred_url_root}playlists/files/{base_filename}_{index+1:02d}.xml"
 
     if plm_url_tag_in_m3us == "On" and base_filename.startswith("plm_epg"):
@@ -10403,10 +10465,22 @@ def generate_m3u_content(data_list, base_filename, index):
         m3u_content += f' tvc-guide-placeholders="{item["tvc_guide_placeholders"]}"'
         m3u_content += f' tvc-stream-vcodec="{item["tvc_stream_vcodec"]}"'
         m3u_content += f' tvc-stream-acodec="{item["tvc_stream_acodec"]}"'
+        if item["tvc_stream_timestamps"] == "rewrite":
+            m3u_content += f' tvc-stream-timestamps="{item["tvc_stream_timestamps"]}"'
         m3u_content += f',{item["title"]}\n'
 
-        if 'fallback' in base_filename:
+        if (
+            ( 'fallback' in base_filename ) and
+            (
+                ( settings_feed_fallback_single_child not in ['On', 'on', 'ON'] ) or
+                (
+                    ( settings_feed_fallback_single_child in ['On', 'on', 'ON'] ) and
+                    ( int(item["num_active_children"]) > 1 )
+                )
+            )
+        ):
             m3u_content += f'{plm_url_tag_in_m3us_preferred_url_root}playlists/streams/fallback?parent={item["channel_id"]}\n'
+
         else:
             m3u_content += f'{item["url"]}\n'
 
@@ -10583,7 +10657,7 @@ def get_uploaded_playlist_files():
     return playlist_files
 
 # Gets the XML EPG for each m3u that needs one
-def get_epgs_for_m3us():
+def get_epgs_for_m3us(parent_additional_xml_guide_categories_lookup):
     print(f"{current_time()} INFO: Gathering combined XML Guide Data from source(s)...")
     temp_content = get_combined_xml_guide()
     print(f"{current_time()} INFO: Finished gathering combined XML Guide Data from source(s).")
@@ -10595,10 +10669,9 @@ def get_epgs_for_m3us():
     filtered_files = [filtered_file for filtered_file in m3u_files if '_epg_' in filtered_file['filename']]
 
     for filtered_file in filtered_files:
-        tvg_ids = []  # Reset the list for each playlist
-        channel_patterns = []
-        programme_patterns = []
-        all_patterns = []
+        tvg_ids = []
+        tvg_id_categories_lookup = {}
+        
         playlist_extension = filtered_file['extension']
         playlist_filename = f"{filtered_file['filename']}.{playlist_extension}"
         epg_filename = f"{filtered_file['filename']}.xml"
@@ -10618,7 +10691,26 @@ def get_epgs_for_m3us():
                     gracenote_id_match = re.search(r'tvc-guide-stationid="([^"]+)"', line)
 
                     if not gracenote_id_match:
-                        tvg_ids.append(tvg_id_match.group(1))
+                        tvg_id = tvg_id_match.group(1)
+                        tvg_ids.append(tvg_id)
+
+                        channel_id_match = re.search(r'channel-id="([^"]+)"', line)
+                        if channel_id_match:
+                            channel_id = channel_id_match.group(1)
+
+                            if channel_id in parent_additional_xml_guide_categories_lookup:
+                                item_additional_xml_guide_categories_raw = []
+                                item_additional_xml_guide_categories = []
+                                item_additional_xml_guide_categories_raw = parent_additional_xml_guide_categories_lookup[channel_id]
+                                if item_additional_xml_guide_categories_raw:
+                                    if isinstance(item_additional_xml_guide_categories_raw, str):
+                                        try:
+                                            item_additional_xml_guide_categories = ast.literal_eval(item_additional_xml_guide_categories_raw)
+                                        except (ValueError, SyntaxError):
+                                            print(f"{current_time()} ERROR: While setting 'tvg_id_categories_lookup', with 'Additional XML Guide Categories' for  '{channel_id}', unable to convert to a list.")
+
+                                if item_additional_xml_guide_categories:
+                                    tvg_id_categories_lookup[tvg_id] = item_additional_xml_guide_categories
 
         print(f"{current_time()} INFO: Finished analyzing '{playlist_filename}' playlist for EPG stations.")
         print(f"{current_time()} INFO: Appending {len(tvg_ids)} station(s) guide data to '{epg_filename}'...")
@@ -10630,16 +10722,41 @@ def get_epgs_for_m3us():
             "<tv generator-info-name=\"SLM\" generated-ts=\"\">"
         ]
 
-        # Extract relevant sections from temp_content
-        for tvg_id in tvg_ids:
-            channel_patterns.append(re.compile(rf'<channel\b[^>]*\bid="{tvg_id}"[^>]*>.*?</channel>', re.DOTALL))
-            programme_patterns.append(re.compile(rf'<programme\b[^>]*\bchannel="{tvg_id}"[^>]*>.*?</programme>', re.DOTALL))
-        all_patterns = channel_patterns + programme_patterns
+        channel_matches = {}
+        programme_matches = {}
 
-        for all_pattern in all_patterns:
-            for match in all_pattern.finditer(temp_content):
-                epg_content.append("  " + match.group(0))  # 2 spaces for indentation
-            time.sleep(0.2)  # Small delay between processing each pattern to release system resources
+        element_pattern = re.compile(
+            r'<(?P<element>channel|programme)\b[^>]*>.*?</(?P=element)>',
+            re.DOTALL
+        )
+
+        for match in element_pattern.finditer(temp_content):
+            element_type = match.group('element')
+            element_text = match.group(0)
+
+            if element_type == 'channel':
+                id_match = re.search(r'\bid="([^"]+)"', element_text)
+                if id_match:
+                    channel_matches.setdefault(id_match.group(1), []).append(element_text)
+
+            else:
+                channel_match = re.search(r'\bchannel="([^"]+)"', element_text)
+                if channel_match:
+                    programme_matches.setdefault(channel_match.group(1), []).append(element_text)
+
+        for tvg_id in tvg_ids:
+            for channel_match in channel_matches.get(tvg_id, []):
+                epg_content.append("  " + channel_match)
+
+        for tvg_id in tvg_ids:
+            for programme_match in programme_matches.get(tvg_id, []):
+
+                if tvg_id in tvg_id_categories_lookup:
+                    additional_categories = tvg_id_categories_lookup[tvg_id]
+                    additional_category_tags = "".join([f'<category lang="en">{additional_category}</category>' for additional_category in additional_categories])
+                    programme_match = re.sub(r'(</programme>)', f'{additional_category_tags}\\1', programme_match)
+
+                epg_content.append("  " + programme_match)
 
         # Write the closing tag
         epg_content.append("</tv>")
@@ -10692,6 +10809,28 @@ def webpage_playlists_parent_stations_more():
     preferred_playlists = get_preferred_playlists(preferred_playlists_default)
 
     parents = read_data(csv_playlistmanager_parents)
+
+    base_additional_xml_guide_categories = []
+    for parent in parents:
+        item_additional_xml_guide_categories_raw = []
+        item_additional_xml_guide_categories = []
+        item_additional_xml_guide_categories_raw = parent['parent_additional_xml_guide_categories']
+        if item_additional_xml_guide_categories_raw:
+            if isinstance(item_additional_xml_guide_categories_raw, str):
+                try:
+                    item_additional_xml_guide_categories = ast.literal_eval(item_additional_xml_guide_categories_raw)
+                except (ValueError, SyntaxError):
+                    print(f"{current_time()} ERROR: While setting 'base_additional_xml_guide_categories', with 'Additional XML Guide Categories' for parent '{parent['parent_title']}', unable to convert to a list.")
+
+        if item_additional_xml_guide_categories:
+            for item_additional_xml_guide_category in item_additional_xml_guide_categories:
+                if item_additional_xml_guide_category not in base_additional_xml_guide_categories:
+                    base_additional_xml_guide_categories.append(item_additional_xml_guide_category)
+
+    if base_additional_xml_guide_categories:
+        if len(base_additional_xml_guide_categories) > 1:
+            base_additional_xml_guide_categories = sorted(set(base_additional_xml_guide_categories))
+
     parent_title = ''
     parent_tvg_id_override = ''
     parent_tvg_logo_override = ''
@@ -10707,7 +10846,10 @@ def webpage_playlists_parent_stations_more():
     parent_preferred_playlist = ''
     parent_active = ''
     parent_tvg_description_override = ''
-    parent_group_title_override = ''
+    parent_group_title_override = '',
+    parent_tvc_stream_timestamps_override = 'Off'
+    parent_additional_xml_guide_categories_raw = []
+    parent_additional_xml_guide_categories = []
 
     if parent_channel_id_prior:
         for parent in parents:
@@ -10728,6 +10870,14 @@ def webpage_playlists_parent_stations_more():
                 parent_active = parent['parent_active']
                 parent_tvg_description_override = parent['parent_tvg_description_override']
                 parent_group_title_override = parent['parent_group_title_override']
+                parent_tvc_stream_timestamps_override = parent['parent_tvc_stream_timestamps_override']
+                parent_additional_xml_guide_categories_raw = parent['parent_additional_xml_guide_categories']
+                if parent_additional_xml_guide_categories_raw:
+                    if isinstance(parent_additional_xml_guide_categories_raw, str):
+                        try:
+                            parent_additional_xml_guide_categories = ast.literal_eval(parent_additional_xml_guide_categories_raw)
+                        except (ValueError, SyntaxError):
+                            print(f"{current_time()} ERROR: While getting 'parent_channel_id_prior', with 'Additional XML Guide Categories' for parent '{parent['parent_title']}', unable to convert to a list.")
                 break
 
     if request.method == 'POST':
@@ -10751,6 +10901,8 @@ def webpage_playlists_parent_stations_more():
             parent_active = ''
             parent_tvg_description_override = ''
             parent_group_title_override = ''
+            parent_tvc_stream_timestamps_override = 'Off'
+            parent_additional_xml_guide_categories = []
 
         elif action.endswith('_save') or action.endswith('_edit'):
             parent_channel_id_input = request.form.get('more_parent_channel_id')
@@ -10776,6 +10928,14 @@ def webpage_playlists_parent_stations_more():
                         parent_active = parent['parent_active']
                         parent_tvg_description_override = parent['parent_tvg_description_override']
                         parent_group_title_override = parent['parent_group_title_override']
+                        parent_tvc_stream_timestamps_override = parent['parent_tvc_stream_timestamps_override']
+                        parent_additional_xml_guide_categories_raw = parent['parent_additional_xml_guide_categories']
+                        if parent_additional_xml_guide_categories_raw:
+                            if isinstance(parent_additional_xml_guide_categories_raw, str):
+                                try:
+                                    parent_additional_xml_guide_categories = ast.literal_eval(parent_additional_xml_guide_categories_raw)
+                                except (ValueError, SyntaxError):
+                                    print(f"{current_time()} ERROR: While getting 'parent_channel_id_prior', with 'Additional XML Guide Categories' for parent '{parent['parent_title']}', unable to convert to a list.")
                         break
 
             elif action.endswith('_save'):
@@ -10798,6 +10958,11 @@ def webpage_playlists_parent_stations_more():
                 parent_active_input = "On" if request.form.get('more_parent_active') == 'on' else "Off"
                 parent_tvg_description_override_input = request.form.get('more_parent_tvg_description_override')
                 parent_group_title_override_input = request.form.get('more_parent_group_title_override')
+                parent_tvc_stream_timestamps_override_input = "On" if request.form.get('more_parent_tvc_stream_timestamps_override') == 'on' else "Off"
+                try:
+                    parent_additional_xml_guide_categories_input = [tag['value'] for tag in json.loads(request.form.get('more_parent_additional_xml_guide_categories', '[]')) if 'value' in tag]
+                except:
+                    parent_additional_xml_guide_categories_input = []
 
                 for parent in parents:
                     if parent['parent_channel_id'] == parent_channel_id_prior:
@@ -10817,6 +10982,8 @@ def webpage_playlists_parent_stations_more():
                         parent['parent_active'] = parent_active_input
                         parent['parent_tvg_description_override'] = parent_tvg_description_override_input
                         parent['parent_group_title_override'] = parent_group_title_override_input
+                        parent['parent_tvc_stream_timestamps_override'] = parent_tvc_stream_timestamps_override_input
+                        parent['parent_additional_xml_guide_categories'] = parent_additional_xml_guide_categories_input
                         break
 
                 parents = sorted(parents, key=lambda x: sort_key(x["parent_title"].casefold()))
@@ -10841,6 +11008,14 @@ def webpage_playlists_parent_stations_more():
                         parent_active = parent['parent_active']
                         parent_tvg_description_override = parent['parent_tvg_description_override']
                         parent_group_title_override = parent['parent_group_title_override']
+                        parent_tvc_stream_timestamps_override = parent['parent_tvc_stream_timestamps_override']
+                        parent_additional_xml_guide_categories_raw = parent['parent_additional_xml_guide_categories']
+                        if parent_additional_xml_guide_categories_raw:
+                            if isinstance(parent_additional_xml_guide_categories_raw, str):
+                                try:
+                                    parent_additional_xml_guide_categories = ast.literal_eval(parent_additional_xml_guide_categories_raw)
+                                except (ValueError, SyntaxError):
+                                    print(f"{current_time()} ERROR: While getting 'parent_channel_id_prior', with 'Additional XML Guide Categories' for parent '{parent['parent_title']}', unable to convert to a list.")
                         break                
 
     return render_template(
@@ -10873,7 +11048,10 @@ def webpage_playlists_parent_stations_more():
         html_parent_active = parent_active,
         html_parent_tvg_description_override = parent_tvg_description_override,
         html_parent_group_title_override = parent_group_title_override,
-        html_preferred_playlists = preferred_playlists
+        html_preferred_playlists = preferred_playlists,
+        html_parent_tvc_stream_timestamps_override = parent_tvc_stream_timestamps_override,
+        html_parent_additional_xml_guide_categories = parent_additional_xml_guide_categories,
+        html_base_additional_xml_guide_categories = base_additional_xml_guide_categories
     )
 
 # Add streaming stations from particular sources
@@ -13343,6 +13521,8 @@ def webpage_tools_gracenotesearch():
     global gracenote_search_entry_prior
 
     settings = read_data(csv_settings)
+    gracenotes_maps_raw = read_data(csv_mtm_gracenote_maps)
+ 
     channels_url = settings[0]["settings"]
     gracenote_search_web = '/tms/stations/'
     gracenote_search_url = f"{channels_url}{gracenote_search_web}"
@@ -13351,55 +13531,81 @@ def webpage_tools_gracenotesearch():
     gracenote_search_results_base_json = None
     gracenote_search_results_library = []
 
+    gracenote_maps_number = len(gracenotes_maps_raw)
+    gracenote_maps_number_formatted = f"{gracenote_maps_number:,}"
+
     if request.method == 'POST':
         action = request.form['action']
 
-        if action == 'gracenote_search_search':
-            channels_url_okay = check_channels_url(None)
+        if action in ['gracenote_search_search', 'gracenote_search_load']:
 
-            if channels_url_okay:
-                gracenote_search_entry_input = request.form.get('gracenote_search_entry')
-                gracenote_search_entry_prior = gracenote_search_entry_input
-                gracenote_search_url_entry = f"{gracenote_search_url}{gracenote_search_entry_input}"
-                gracenote_search_results = None
+            if action == 'gracenote_search_search':
+                channels_url_okay = check_channels_url(None)
 
-                try:
-                    gracenote_search_results_base = requests.get(gracenote_search_url_entry, headers=url_headers)
-                except requests.RequestException as e:
-                    gracenote_search_message = f"{current_time()} ERROR: During search, received {e}. Please try again."
+                if channels_url_okay:
+                    gracenote_search_entry_input = request.form.get('gracenote_search_entry')
+                    gracenote_search_entry_prior = gracenote_search_entry_input
+                    gracenote_search_url_entry = f"{gracenote_search_url}{gracenote_search_entry_input}"
+                    gracenote_search_results = None
 
-            else:
-                gracenote_search_message = f"{current_time()} ERROR: Channels URL is incorrect. Please update in the 'Settings' area."
+                    try:
+                        gracenote_search_results_base = requests.get(gracenote_search_url_entry, headers=url_headers)
+                    except requests.RequestException as e:
+                        gracenote_search_message = f"{current_time()} ERROR: During Gracenote search, received {e}. Please try again."
 
-            if gracenote_search_message is not None and gracenote_search_message != '':
+                else:
+                    gracenote_search_message = f"{current_time()} ERROR: Channels URL is incorrect. Please update in the 'Settings' area."
+
+                if gracenote_search_results_base:
+                    gracenote_search_results_base_json = gracenote_search_results_base.json()
+
+                    for result in gracenote_search_results_base_json:
+                        gracenote_search_result_gracenote_id = result.get("stationId", '')
+                        gracenote_search_result_logo = result.get("preferredImage", {}).get("uri", '')
+                        if gracenote_search_result_logo is None or gracenote_search_result_logo == '':
+                            gracenote_search_result_logo = 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Missing_barnstar.jpg'
+                        gracenote_search_result_name = result.get("name", '')
+                        gracenote_search_result_affiliate_call_sign = result.get("affiliateCallSign", '')
+                        gracenote_search_result_type = result.get("type", '')
+                        gracenote_search_result_video_type = result.get("videoQuality", {}).get("videoType", '')
+                        gracenote_search_result_language_main = result.get("bcastLangs", [''])[0]
+                        gracenote_search_result_call_sign = result.get("callSign", '')
+
+                        gracenote_search_results_library.append({
+                            "Gracenote ID": gracenote_search_result_gracenote_id,
+                            "Logo": gracenote_search_result_logo,
+                            "Name": gracenote_search_result_name,
+                            "Affiliate": gracenote_search_result_affiliate_call_sign,
+                            "Type": gracenote_search_result_type,
+                            "Video": gracenote_search_result_video_type,
+                            "Primary Language": gracenote_search_result_language_main,
+                            "Call Sign": gracenote_search_result_call_sign
+                        })
+
+            elif action == 'gracenote_search_load':
+
+                if int(gracenote_maps_number) > 0:
+                    
+                    for gracenotes_map_raw in gracenotes_maps_raw:
+                        gracenote_search_results_library.append({
+                            "Gracenote ID": gracenotes_map_raw['station_gracenote_id'],
+                            "Logo": gracenotes_map_raw['station_logo'],
+                            "Name": gracenotes_map_raw['station_name'],
+                            "OTA Channel Number": gracenotes_map_raw['station_ota_channel_number'],
+                            "Example Program": gracenotes_map_raw['show_name'],
+                            "Example Program ID": gracenotes_map_raw['show_gracenote_id'],
+                            "Source Provider": gracenotes_map_raw['station_source_provider'],
+                            "Call Sign": gracenotes_map_raw['station_call_sign']
+                        })
+
+                else:
+                    gracenote_search_results = None
+                    gracenote_search_message = f"{current_time()} WARNING: There are no locally stored Gracenote maps. Please run the appropriate automation to get records!"
+
+            if gracenote_search_message not in [None, '']:
                 print(f"{gracenote_search_message}")
 
-            if gracenote_search_results_base:
-                gracenote_search_results_base_json = gracenote_search_results_base.json()
-
-                for result in gracenote_search_results_base_json:
-                    gracenote_search_result_gracenote_id = result.get("stationId", '')
-                    gracenote_search_result_logo = result.get("preferredImage", {}).get("uri", '')
-                    if gracenote_search_result_logo is None or gracenote_search_result_logo == '':
-                        gracenote_search_result_logo = 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Missing_barnstar.jpg'
-                    gracenote_search_result_name = result.get("name", '')
-                    gracenote_search_result_affiliate_call_sign = result.get("affiliateCallSign", '')
-                    gracenote_search_result_type = result.get("type", '')
-                    gracenote_search_result_video_type = result.get("videoQuality", {}).get("videoType", '')
-                    gracenote_search_result_language_main = result.get("bcastLangs", [''])[0]
-                    gracenote_search_result_call_sign = result.get("callSign", '')
-
-                    gracenote_search_results_library.append({
-                        "Gracenote ID": gracenote_search_result_gracenote_id,
-                        "Logo": gracenote_search_result_logo,
-                        "Name": gracenote_search_result_name,
-                        "Affiliate": gracenote_search_result_affiliate_call_sign,
-                        "Type": gracenote_search_result_type,
-                        "Video": gracenote_search_result_video_type,
-                        "Primary Language": gracenote_search_result_language_main,
-                        "Call Sign": gracenote_search_result_call_sign
-                    })
-
+            if gracenote_search_results_library:
                 gracenote_search_results = view_csv(gracenote_search_results_library, "library", True)
 
         elif action == 'gracenote_search_cancel':
@@ -13420,8 +13626,505 @@ def webpage_tools_gracenotesearch():
         html_plm_check_child_station_status_global = plm_check_child_station_status_global,
         html_gracenote_search_results = gracenote_search_results,
         html_gracenote_search_entry_prior = gracenote_search_entry_prior,
-        html_gracenote_search_message = gracenote_search_message
+        html_gracenote_search_message = gracenote_search_message,
+        html_gracenote_maps_number_formatted = gracenote_maps_number_formatted
     )
+
+# Import data that can be used for Gracenote matching
+def get_gracenote_maps():
+    print(f"{current_time()} INFO: Beginning process to get Gracenote maps...")
+    start_time = time.time()
+
+    settings = read_data(csv_settings)
+    
+    gracenote_local_zips = []
+    gracenote_local_zips_raw = settings[91]['settings']                     # [91] MTM: List of Zip/Postal codes to be searched as part of building local Gracenote maps
+    if gracenote_local_zips_raw:
+        if isinstance(gracenote_local_zips_raw, str):
+            try:
+                gracenote_local_zips = ast.literal_eval(gracenote_local_zips_raw)
+            except (ValueError, SyntaxError):
+                print(f"{current_time()} ERROR: For 'List of Zip/Postal codes to be searched as part of building local Gracenote maps', unable to convert to a list.")
+
+    gracenote_source_url_start = 'https://www.tvtv.'
+    gracenote_source_url_base_usa = f"{gracenote_source_url_start}us"
+    gracenote_source_url_base_can = f"{gracenote_source_url_start}ca"
+    gracenote_source_url_national_usa = f"{gracenote_source_url_base_usa}/xx/x/00501"
+    gracenote_source_url_national_can = f"{gracenote_source_url_base_can}/xx/x/k1a0a6"
+    gracenote_source_url_lineups_prefix = '/us/lineups/'
+    gracenote_source_url_lineups_suffix = '/faves'
+    gracenote_ota_provider_prefix_usa = "luUSA-OTA"
+    gracenote_ota_provider_prefix_can = "luCAN-OTA"
+    
+    gracenote_providers = []
+    gracenote_local_zips_valid_count = 0
+    gracenote_national_providers = []
+    gracenote_national_countries = [
+        'usa',
+        'can'
+    ]
+
+    if gracenote_local_zips:
+        for gracenote_local_zip in gracenote_local_zips:
+
+            if (
+                ( re.fullmatch(r"\d{5}", gracenote_local_zip) ) or
+                ( re.fullmatch(r"[A-Za-z]\d[A-Za-z]\d[A-Za-z]\d", gracenote_local_zip) )
+            ):
+
+                if re.fullmatch(r"\d{5}", gracenote_local_zip):
+                    gracenote_ota_provider = f"{gracenote_ota_provider_prefix_usa}{gracenote_local_zip}"
+
+                elif re.fullmatch(r"[A-Za-z]\d[A-Za-z]\d[A-Za-z]\d", gracenote_local_zip):
+                    gracenote_ota_provider = f"{gracenote_ota_provider_prefix_can}{gracenote_local_zip}"
+
+                gracenote_providers.append(gracenote_ota_provider)
+                gracenote_local_zips_valid_count += 1
+
+            else:
+                print(f"{current_time()} WARNING: Zip/Postal code '{gracenote_local_zip}' is not a valid format for the United States or Canada and has been ignored.")
+
+    for gracenote_national_country in gracenote_national_countries:
+
+        gracenote_national_message = f"{current_time()} INFO: For Gracenote maps, gathering "
+        if gracenote_national_country == 'usa':
+            gracenote_national_message += f"U.S."
+        elif gracenote_national_country == 'can':
+            gracenote_national_message += f"Canadian"
+        gracenote_national_message += f" national provider list..."
+        print(f"{gracenote_national_message}")
+
+        try:
+            if gracenote_national_country == 'usa':
+                response = requests.get(gracenote_source_url_national_usa, headers=url_headers_extended, timeout=15)
+            elif gracenote_national_country == 'can':
+                response = requests.get(gracenote_source_url_national_can, headers=url_headers_extended, timeout=15)
+            
+            if response.status_code == 200:
+                gracenote_national_providers_matches = re.findall(r'<a\s+[^>]*href=["\'][^"\']*/([^"\'/]+)["\'][^>]*>(.*?)</a>', response.text, re.IGNORECASE | re.DOTALL)
+
+                for gracenote_national_providers_id, gracenote_national_providers_inner_html in gracenote_national_providers_matches:
+                    gracenote_national_providers_div_match = re.search(r'<div\s+[^>]*>\s*national\s*</div>', gracenote_national_providers_inner_html, re.IGNORECASE)
+                    if gracenote_national_providers_div_match:
+                        gracenote_national_providers.append(gracenote_national_providers_id)
+
+        except Exception as e:
+            print(f"{current_time()} ERROR: Failed to retrieve national providers, website responded: {e}")
+
+    if gracenote_national_providers:
+        print(f"{current_time()} INFO: For Gracenote maps, found {len(gracenote_national_providers):,} U.S. and Canadian national provider(s) and combined them with the {gracenote_local_zips_valid_count:,} local provider(s).")
+        gracenote_providers.extend(gracenote_national_providers)
+        
+        gracenote_maps = []
+        gracenote_maps_station_gracenote_id_lookup = set()
+
+        for gracenote_provider in gracenote_providers:
+            print(f"{current_time()} INFO: For Gracenote maps, checking provider '{gracenote_provider}' for stations...")
+
+            gracenote_source_url_guide = f"{gracenote_source_url_base_usa}{gracenote_source_url_lineups_prefix}{gracenote_provider}"
+            gracenote_source_url = f"{gracenote_source_url_guide}{gracenote_source_url_lineups_suffix}"
+            gracenote_maps_provider = []
+            gracenote_maps_provider_show = []
+
+            try:
+                response = requests.get(gracenote_source_url, headers=url_headers_extended, timeout=15)
+
+                if response.status_code == 200:
+                    with sync_playwright() as sync_playwright_session:
+                        browser, page = open_webpage_for_scrape(
+                            sync_playwright_session,
+                            gracenote_source_url,
+                            dismiss_selectors=(
+                                "text=Continue without supporting us",
+                                "button:has-text('DISABLE')",
+                                "button:has-text('Go back')"
+                            ),
+                            delay_ms=2000
+                        )
+
+                        seen_station_ids = set()
+                        seen_cb_indexes = set()
+                        processed_cb_indexes = set()
+                        max_cb_index_seen = -1
+                        last_station_count = 0
+                        stable_cycles = 0
+
+                        provider_missing = 0
+                        provider_other_skips = 0
+
+                        while True:
+                            page.evaluate("window.scrollBy(0, 600)")
+                            page.wait_for_timeout(1200)
+
+                            visible_cb_indexes = page.locator("#channels [data-cb-index]").evaluate_all("""
+                                (nodes) => nodes
+                                    .map(node => Number(node.getAttribute("data-cb-index")))
+                                    .filter(value => !Number.isNaN(value))
+                            """)
+
+                            if not visible_cb_indexes:
+                                break
+
+                            current_max_cb_index = max(visible_cb_indexes)
+                            max_cb_index_seen = max(max_cb_index_seen, current_max_cb_index)
+
+                            new_cb_indexes = sorted(set(visible_cb_indexes) - seen_cb_indexes)
+                            if new_cb_indexes:
+                                seen_cb_indexes.update(new_cb_indexes)
+
+                            for cb_index in sorted(set(visible_cb_indexes)):
+                                if cb_index in processed_cb_indexes:
+                                    continue
+
+                                cb_holder = page.locator(f"#channels [data-cb-index='{cb_index}']").first
+                                child_stations = cb_holder.locator("[data-id]")
+                                child_count = child_stations.count()
+
+                                if child_count == 0:
+                                    continue
+
+                                new_ids_this_pass = 0
+                                index_added_any_station = False
+
+                                for station in child_stations.all():
+                                    station_gracenote_id = None
+                                    station_call_sign = None
+                                    station_name = None
+                                    station_ota_channel_number = None
+                                    station_logo = None
+
+                                    station_gracenote_id = station.get_attribute("data-id")
+                                    if not station_gracenote_id:
+                                        provider_missing += 1
+                                        continue
+
+                                    if station_gracenote_id in seen_station_ids:
+                                        if cb_index in processed_cb_indexes:
+                                            continue
+                                        provider_other_skips += 1
+                                        continue
+
+                                    seen_station_ids.add(station_gracenote_id)
+                                    index_added_any_station = True
+
+                                    station_ch = station.get_attribute("data-ch") or ""
+                                    if gracenote_provider.startswith(gracenote_ota_provider_prefix_usa):
+                                        station_ota_channel_number = station_ch
+
+                                    img = station.locator("img").first
+                                    if img.count():
+                                        station_call_sign = img.get_attribute("title") or ""
+                                        station_logo_src = img.get_attribute("src") or ""
+                                        if station_logo_src:
+                                            if station_logo_src.startswith("http"):
+                                                station_logo = station_logo_src
+                                            else:
+                                                station_logo = f"{gracenote_source_url_base_usa}{station_logo_src}"
+
+                                    name_div = station.locator("div[class*='-YmP8wCI']").first
+                                    if name_div.count():
+                                        station_name = name_div.inner_text().strip()
+                                    else:
+                                        station_name = station.locator("div").last.inner_text().strip()
+
+                                    gracenote_maps_provider.append({
+                                        "station_gracenote_id": station_gracenote_id,
+                                        "station_call_sign": station_call_sign,
+                                        "station_name": station_name,
+                                        "station_ota_channel_number": station_ota_channel_number,
+                                        "station_logo": station_logo,
+                                        "station_source_provider": gracenote_provider
+                                    })
+                                    
+                                    new_ids_this_pass += 1
+
+                                if index_added_any_station:
+                                    processed_cb_indexes.add(cb_index)
+                                    
+                                if int(new_ids_this_pass) > 0:
+                                    print(f"{current_time()} INFO: In provider '{gracenote_provider}' added {new_ids_this_pass} new records. So far have found {len(gracenote_maps_provider):,} Gracenote IDs, with {provider_missing:,} skipped due to missing Gracenote IDs and {provider_other_skips:,} skipped due to a previous entry.")
+
+                            current_station_count = len(seen_station_ids)
+
+                            if current_station_count == last_station_count:
+                                stable_cycles += 1
+                            else:
+                                stable_cycles = 0
+                                last_station_count = current_station_count
+
+                            if stable_cycles >= 4:
+                                break
+
+                        print(f"{current_time()} INFO: For Gracenote maps, provider '{gracenote_provider}' returned {len(gracenote_maps_provider):,} stations, with {provider_missing:,} skipped due to missing Gracenote IDs and {provider_other_skips:,} skipped due to a previous entry.")
+                        print(f"{current_time()} INFO: For Gracenote maps, checking provider '{gracenote_provider}' for shows...")
+
+                        browser.close()
+
+                        browser, page = open_webpage_for_scrape(
+                            sync_playwright_session,
+                            gracenote_source_url_guide,
+                            dismiss_selectors=(
+                                "text=Continue without supporting us",
+                                "button:has-text('DISABLE')",
+                                "button:has-text('Go back')"
+                            ),
+                            wait_for_function="""
+                            () => document.querySelector(
+                                '#grid [data-source] [data-id]'
+                            ) !== null
+                        """,
+                            wait_timeout=120000
+                        )
+
+                        seen_show_station_ids = set()
+                        seen_grid_block_ids = set()
+                        processed_grid_block_ids = set()
+                        show_stable_cycles = 0
+                        show_no_progress_cycles = 0
+                        show_provider_missing = 0
+                        show_provider_other_skips = 0
+                        expected_show_station_ids = {
+                            gracenote_map_provider["station_gracenote_id"]
+                            for gracenote_map_provider in gracenote_maps_provider
+                        }
+
+                        while True:
+                            page.evaluate("window.scrollBy(0, 600)")
+                            page.wait_for_timeout(1200)
+
+                            show_station_count_before_pass = len(seen_show_station_ids)
+                            new_shows_this_pass = 0
+
+                            visible_grid_block_ids = page.locator("#grid > grid-block").evaluate_all("""
+                                (nodes) => nodes
+                                    .map(node => node.id)
+                                    .filter(value => value)
+                            """)
+
+                            if not visible_grid_block_ids:
+                                break
+
+                            first_grid_block_id = visible_grid_block_ids[0]
+                            first_grid_block_group = first_grid_block_id.split("-", 1)[0]
+                            active_grid_block_ids = [grid_block_id for grid_block_id in visible_grid_block_ids if grid_block_id.split("-", 1)[0] == first_grid_block_group]
+
+                            new_grid_block_ids = sorted(set(active_grid_block_ids) - seen_grid_block_ids)
+                            if new_grid_block_ids:
+                                seen_grid_block_ids.update(new_grid_block_ids)
+
+                            unprocessed_grid_block_ids = [grid_block_id for grid_block_id in sorted(set(active_grid_block_ids)) if grid_block_id not in processed_grid_block_ids]
+
+                            if not unprocessed_grid_block_ids:
+                                show_no_progress_cycles += 1
+
+                                if expected_show_station_ids.issubset(seen_show_station_ids):
+                                    break
+
+                                if show_no_progress_cycles >= 20:
+                                    print(f"{current_time()} WARNING: In provider '{gracenote_provider}' show lookup stopped after no progress. Found {len(seen_show_station_ids):,} of {len(expected_show_station_ids):,} expected station shows.")
+                                    break
+
+                                continue
+
+                            grid_block_id = unprocessed_grid_block_ids[0]
+                            grid_block = page.locator(f"#grid > grid-block[id='{grid_block_id}']").first
+                            grid_rows = grid_block.locator(".grid-row[data-source]")
+                            grid_row_count = grid_rows.count()
+
+                            for row in grid_rows.all():
+                                station_gracenote_id = row.get_attribute("data-source")
+                                show = row.locator("[data-id]").first
+
+                                if station_gracenote_id in seen_show_station_ids:
+                                    show_provider_other_skips += 1
+                                    continue
+
+                                if not show.count():
+                                    show_provider_missing += 1
+                                    continue
+
+                                show_gracenote_id = show.get_attribute("data-id")
+                                show_name_div = show.locator("div").first
+                                show_name = show_name_div.inner_text().strip() if show_name_div.count() else show.inner_text().strip()
+
+                                if not show_gracenote_id or not show_name:
+                                    continue
+
+                                seen_show_station_ids.add(station_gracenote_id)
+                                gracenote_maps_provider_show.append({
+                                    "station_gracenote_id": station_gracenote_id,
+                                    "show_gracenote_id": show_gracenote_id,
+                                    "show_name": show_name
+                                })
+                                new_shows_this_pass += 1
+
+                            if grid_row_count > 0:
+                                processed_grid_block_ids.add(grid_block_id)
+                            show_no_progress_cycles = 0
+
+                            if new_shows_this_pass > 0:
+                                print(f"{current_time()} INFO: In provider '{gracenote_provider}' added {new_shows_this_pass} new shows. So far have found {len(gracenote_maps_provider_show):,} shows, with {show_provider_missing:,} skipped due to missing Gracenote IDs and {show_provider_other_skips:,} skipped due to a previous entry.")
+
+                            current_show_station_count = len(seen_show_station_ids)
+
+                            if current_show_station_count == show_station_count_before_pass:
+                                show_stable_cycles += 1
+                                show_no_progress_cycles += 1
+
+                            else:
+                                show_stable_cycles = 0
+                                show_no_progress_cycles = 0
+
+                            if expected_show_station_ids.issubset(seen_show_station_ids):
+                                break
+
+                            if show_no_progress_cycles >= 20:
+                                print(f"{current_time()} WARNING: In provider '{gracenote_provider}' show lookup stopped after no progress. Found {len(seen_show_station_ids):,} of {len(expected_show_station_ids):,} expected station shows.")
+                                break
+
+                        print(f"{current_time()} INFO: For Gracenote maps, provider '{gracenote_provider}' returned {len(gracenote_maps_provider_show):,} shows, with {show_provider_missing:,} skipped due to missing Gracenote IDs and {show_provider_other_skips:,} skipped due to a previous entry. Merging show data into station records...")
+
+                        gracenote_maps_provider_show_lookup = {gracenote_map_provider_show["station_gracenote_id"]: gracenote_map_provider_show for gracenote_map_provider_show in gracenote_maps_provider_show}
+
+                        for gracenote_map_provider in gracenote_maps_provider:
+                            gracenote_map_provider_show = gracenote_maps_provider_show_lookup.get(gracenote_map_provider["station_gracenote_id"])
+                            gracenote_map_provider["show_gracenote_id"] = gracenote_map_provider_show["show_gracenote_id"] if gracenote_map_provider_show else None
+                            gracenote_map_provider["show_name"] = gracenote_map_provider_show["show_name"] if gracenote_map_provider_show else None
+
+                        browser.close()
+
+                    if gracenote_maps_provider:
+
+                        print(f"{current_time()} INFO: For Gracenote maps, with provider '{gracenote_provider}', attempting to add {len(gracenote_maps_provider):,} entries...")
+
+                        provider_unique_added = 0
+                        for gracenote_map_provider in gracenote_maps_provider:
+                            if gracenote_map_provider['station_gracenote_id'] not in gracenote_maps_station_gracenote_id_lookup:
+                                gracenote_maps.append(gracenote_map_provider)
+                                gracenote_maps_station_gracenote_id_lookup.add(gracenote_map_provider['station_gracenote_id'])
+                                provider_unique_added += 1
+
+                        print(f"{current_time()} INFO: With provider '{gracenote_provider}', added {provider_unique_added:,} unique Gracenote IDs added to final map.")
+                        
+            except Exception as e:
+                print(f"{current_time()} ERROR: Failed to process provider '{gracenote_provider}' using station URL '{gracenote_source_url}' and guide URL '{gracenote_source_url_guide}', responded: {e}")
+
+        if gracenote_maps:
+            print(f"{current_time()} INFO: For Gracenote maps, found {len(gracenote_maps):,} unique stations across all providers.")
+
+            if len(gracenote_maps) > 1:
+                gracenote_maps = sorted(gracenote_maps, key=lambda x: sort_key(x["station_name"].casefold()))
+
+            print(f"{current_time()} INFO: For Gracenote maps, adding station logos to cache...")
+            station_logo_route_replacement_base = f"/program_files/{image_cache_dir_name}/{image_cache_gracenote_dir_name}/"
+
+            for gracenote_map in gracenote_maps:
+                station_logo_url = gracenote_map.get('station_logo')
+                station_gracenote_id = gracenote_map.get('station_gracenote_id')
+
+                if not station_logo_url:
+                    continue
+
+                try:
+                    logo_filename = os.path.basename(urllib.parse.urlparse(station_logo_url).path)
+                    logo_file_path = os.path.join(image_cache_gracenote_dir, logo_filename)
+
+                    if not os.path.exists(logo_file_path):
+                        logo_response = requests.get(station_logo_url, headers=url_headers_extended, timeout=30)
+                        logo_response.raise_for_status()
+
+                        with open(logo_file_path, 'wb') as logo_file:
+                            logo_file.write(logo_response.content)
+
+                    gracenote_map['station_logo'] = f"{station_logo_route_replacement_base}{logo_filename}"
+
+                except requests.RequestException as error:
+                    print(f"{current_time()} ERROR: Unable to cache Gracenote logo '{station_logo_url}' due to '{error}'.")
+
+                except OSError as error:
+                    print(f"{current_time()} ERROR: Unable to save Gracenote logo for station '{station_gracenote_id}' due to '{error}'.")
+
+            write_data(csv_mtm_gracenote_maps, gracenote_maps)
+            
+        else:
+            print(f"{current_time()} WARNING: For Gracenote maps, no data was found. As such, prior maps are being maintained.")
+        
+    else:
+        print(f"{current_time()} WARNING: For Gracenote maps, unable to find any U.S. national provider(s). Process aborted.")
+
+    end_time = time.time()
+
+    elapsed_seconds = end_time - start_time
+
+    hours, remainder = divmod(elapsed_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    print(f"{current_time()} INFO: Finished process to get Gracenote maps in {int(hours):,} hours | {int(minutes):,} minutes | {int(seconds):,} seconds.")
+
+# Open a browser page with configurable scraping setup and readiness handling.
+def open_webpage_for_scrape(
+    playwright,
+    url,
+    browser_args=None,
+    viewport=None,
+    user_agent=None,
+    init_script=None,
+    dismiss_selectors=None,
+    wait_until="load",
+    navigation_timeout=120000,
+    wait_for_function=None,
+    wait_timeout=120000,
+    delay_ms=0
+):
+
+    if browser_args is None:
+        browser_args = [
+            "--disable-blink-features=AutomationControlled",
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+            "--window-size=1600,1200"
+        ]
+
+    if viewport is None:
+        viewport = {"width": 1600, "height": 1200}
+
+    if user_agent is None:
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+
+    if init_script is None:
+        init_script = """
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+        """
+
+    browser = playwright.chromium.launch(
+        headless=True,
+        args=browser_args
+    )
+
+    context = browser.new_context(viewport=viewport, user_agent=user_agent)
+
+    page = context.new_page()
+
+    if init_script:
+        page.add_init_script(init_script)
+
+    page.goto(url, wait_until=wait_until, timeout=navigation_timeout)
+
+    for locator in dismiss_selectors or ():
+        try:
+            page.locator(locator).first.click(timeout=5000)
+        except Exception:
+            pass
+
+    if wait_for_function:
+        page.wait_for_function(wait_for_function, timeout=wait_timeout)
+
+    if delay_ms:
+        page.wait_for_timeout(delay_ms)
+
+    return browser, page
 
 # Webpage - Tools - CSV Explorer
 @app.route('/tools_csvexplorer', methods=['GET', 'POST'])
@@ -13694,6 +14397,17 @@ def webpage_tools_automation():
     plm_interal_playlist_pbs_scrape = settings[75]["settings"]                      # [75] PLM: Run 'Internal Playlist - PBS Scrape' Functionality On/Off
     plm_interal_playlist_pbs_scrape_time = settings[76]["settings"]                 # [76] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Start Time
     plm_interal_playlist_pbs_scrape_frequency = settings[77]["settings"]            # [77] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Frequency
+    gracenote_local_zips = []
+    gracenote_local_zips_raw = settings[91]['settings']                             # [91] MTM: List of Zip/Postal codes to be searched as part of building local Gracenote maps
+    if gracenote_local_zips_raw:
+        if isinstance(gracenote_local_zips_raw, str):
+            try:
+                gracenote_local_zips = ast.literal_eval(gracenote_local_zips_raw)
+            except (ValueError, SyntaxError):
+                print(f"{current_time()} ERROR: For 'List of Zip/Postal codes to be searched as part of building local Gracenote maps', unable to convert to a list.")
+    mtm_build_local_gracenote_maps = settings[92]["settings"]                       # [92] MTM: Run MTM 'Build Local Gracenote Map' Functionality On/Off
+    mtm_build_local_gracenote_maps_time = settings[93]["settings"]                  # [93] MTM: Run MTM 'Build Local Gracenote Map' Functionality Start Time
+    mtm_build_local_gracenote_maps_frequency = settings[94]["settings"]             # [94] MTM: Run MTM 'Build Local Gracenote Map' Functionality Frequency
 
     automation_message = ''
     action_friendly_name = ''
@@ -13732,6 +14446,9 @@ def webpage_tools_automation():
     gen_upgrade_frequencies = [
         "Every 1 hour",
         "Every 12 hours",
+        "Every 24 hours"
+    ]
+    gen_daily_frequencies = [
         "Every 24 hours"
     ]
 
@@ -13838,6 +14555,10 @@ def webpage_tools_automation():
                 elif action.startswith('plm_interal_playlist_pbs_scrape'):
                     action_friendly_name = 'Internal Playlist: PBS - Scrape'
                     get_pbs_stream_data(True, False)
+
+                elif action.startswith('mtm_build_local_gracenote_maps'):
+                    action_friendly_name = 'Build Local Gracenote Map'
+                    get_gracenote_maps()
 
                 automation_message = f"{current_time()} INFO: '{action_friendly_name}' completed. See 'Logs' for more details."
                 print(f"{automation_message}")
@@ -13991,6 +14712,20 @@ def webpage_tools_automation():
                     settings[76]["settings"] = plm_interal_playlist_pbs_scrape_time_input
                     settings[77]["settings"] = plm_interal_playlist_pbs_scrape_frequency_input
 
+                elif action.startswith('mtm_build_local_gracenote_maps'):
+                    try:
+                        gracenote_local_zips_input = [tag['value'] for tag in json.loads(request.form.get('gracenote_local_zips', '[]')) if 'value' in tag]
+                    except:
+                        gracenote_local_zips_input = []
+                    mtm_build_local_gracenote_maps_input = request.form.get('mtm_build_local_gracenote_maps')
+                    mtm_build_local_gracenote_maps_time_input = request.form.get('mtm_build_local_gracenote_maps_time')
+                    mtm_build_local_gracenote_maps_frequency_input = request.form.get('mtm_build_local_gracenote_maps_frequency')
+
+                    settings[91]["settings"] = gracenote_local_zips_input
+                    settings[92]["settings"] = "On" if mtm_build_local_gracenote_maps_input == 'on' else "Off"
+                    settings[93]["settings"] = mtm_build_local_gracenote_maps_time_input
+                    settings[94]["settings"] = mtm_build_local_gracenote_maps_frequency_input
+
                 csv_to_write = csv_settings
                 data_to_write = settings
                 write_data(csv_to_write, data_to_write)
@@ -14042,6 +14777,17 @@ def webpage_tools_automation():
             plm_interal_playlist_pbs_scrape = settings[75]["settings"]                      # [75] PLM: Run 'Internal Playlist - PBS Scrape' Functionality On/Off
             plm_interal_playlist_pbs_scrape_time = settings[76]["settings"]                 # [76] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Start Time
             plm_interal_playlist_pbs_scrape_frequency = settings[77]["settings"]            # [77] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Frequency
+            gracenote_local_zips = []
+            gracenote_local_zips_raw = settings[91]['settings']                             # [91] MTM: List of Zip/Postal codes to be searched as part of building local Gracenote maps
+            if gracenote_local_zips_raw:
+                if isinstance(gracenote_local_zips_raw, str):
+                    try:
+                        gracenote_local_zips = ast.literal_eval(gracenote_local_zips_raw)
+                    except (ValueError, SyntaxError):
+                        print(f"{current_time()} ERROR: For 'List of Zip/Postal codes to be searched as part of building local Gracenote maps', unable to convert to a list.")
+            mtm_build_local_gracenote_maps = settings[92]["settings"]                       # [92] MTM: Run MTM 'Build Local Gracenote Map' Functionality On/Off
+            mtm_build_local_gracenote_maps_time = settings[93]["settings"]                  # [93] MTM: Run MTM 'Build Local Gracenote Map' Functionality Start Time
+            mtm_build_local_gracenote_maps_frequency = settings[94]["settings"]             # [94] MTM: Run MTM 'Build Local Gracenote Map' Functionality Frequency
 
     return render_template(
         'main/tools_automation.html',
@@ -14104,7 +14850,12 @@ def webpage_tools_automation():
         html_plm_internal_pbs_stations = plm_internal_pbs_stations,
         html_plm_interal_playlist_pbs_scrape = plm_interal_playlist_pbs_scrape,
         html_plm_interal_playlist_pbs_scrape_time = plm_interal_playlist_pbs_scrape_time,
-        html_plm_interal_playlist_pbs_scrape_frequency = plm_interal_playlist_pbs_scrape_frequency
+        html_plm_interal_playlist_pbs_scrape_frequency = plm_interal_playlist_pbs_scrape_frequency,
+        html_gen_daily_frequencies = gen_daily_frequencies,
+        html_gracenote_local_zips = gracenote_local_zips,
+        html_mtm_build_local_gracenote_maps = mtm_build_local_gracenote_maps,
+        html_mtm_build_local_gracenote_maps_time = mtm_build_local_gracenote_maps_time,
+        html_mtm_build_local_gracenote_maps_frequency = mtm_build_local_gracenote_maps_frequency
     )
 
 # Create a continous stream of the log file
@@ -14182,6 +14933,10 @@ def check_schedule():
         plm_interal_playlist_pbs_scrape_time = settings[76]["settings"]                 # [76] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Start Time
         plm_interal_playlist_pbs_scrape_frequency = settings[77]["settings"]            # [77] PLM: Run 'Internal Playlist - PBS Scrape' Functionality Frequency
         plm_interal_playlist_pbs_scrape_frequency_parsed = int(re.search(r'\d+', plm_interal_playlist_pbs_scrape_frequency).group())
+        mtm_build_local_gracenote_maps = settings[92]["settings"]                       # [92] MTM: Run MTM 'Build Local Gracenote Map' Functionality On/Off
+        mtm_build_local_gracenote_maps_time = settings[93]["settings"]                  # [93] MTM: Run MTM 'Build Local Gracenote Map' Functionality Start Time
+        mtm_build_local_gracenote_maps_frequency = settings[94]["settings"]             # [94] MTM: Run MTM 'Build Local Gracenote Map' Functionality Frequency
+        mtm_build_local_gracenote_maps_frequency_parsed = int(re.search(r'\d+', mtm_build_local_gracenote_maps_frequency).group())
 
         if gen_backup_schedule == 'On' and gen_backup_schedule_time:
             gen_backup_schedule_hour, gen_backup_schedule_minute = map(int, gen_backup_schedule_time.split(':'))
@@ -14265,6 +15020,13 @@ def check_schedule():
 
             if current_minute == plm_interal_playlist_pbs_scrape_minute and (current_hour - plm_interal_playlist_pbs_scrape_hour) % plm_interal_playlist_pbs_scrape_frequency_parsed == 0:
                 threading.Thread(target=get_pbs_stream_data, args=(True, False,)).start()
+                wait_trigger = True
+
+        if mtm_build_local_gracenote_maps == 'On' and mtm_build_local_gracenote_maps_time:
+            mtm_build_local_gracenote_maps_hour, mtm_build_local_gracenote_maps_minute = map(int, mtm_build_local_gracenote_maps_time.split(':'))
+
+            if current_minute == mtm_build_local_gracenote_maps_minute and (current_hour - mtm_build_local_gracenote_maps_hour) % mtm_build_local_gracenote_maps_frequency_parsed == 0:
+                threading.Thread(target=get_gracenote_maps).start()
                 wait_trigger = True
 
         if wait_trigger:
@@ -16452,7 +17214,7 @@ def get_original_release_date_list():
                             if bookmarks_status['original_release_date'] is None or bookmarks_status['original_release_date'] == '':
 
                                 if auto_bookmark['object_type'] in ["MOVIE", "SHOW"]:
-                                    original_release_date_raw =  get_movie_show_metadata_item(node_id, country_code, language_code, 'originalReleaseDate')
+                                    original_release_date_raw = get_movie_show_metadata_item(node_id, country_code, language_code, 'originalReleaseDate')
 
                                 elif auto_bookmark['object_type'] == "VIDEO" and bookmarks_status['special_action'] == 'Make SLM Stream' and not bookmarks_status['stream_link_override'] in [None, '']:
                                     original_release_date_raw, throwaway_override_episode_title, throwaway_override_summary, throwaway_override_image, throwaway_override_duration = get_video_metadata(bookmarks_status['stream_link_override'])
@@ -16810,7 +17572,7 @@ def webpage_files():
         if action == 'view_file':
             table_html = view_csv(select_file_input_csv, "csv", None)
         elif action == 'export_file':
-            return export_csv(select_file_input_csv)
+            return export_program_file(select_file_input_csv)
         elif action == 'replace_file':
             replace_message = replace_csv(select_file_input_csv, 'file_file')
 
@@ -16831,6 +17593,16 @@ def webpage_files():
         html_file_lists = file_lists,
         html_select_file_prior = select_file_prior
     )
+
+# Used to retrieve a file from the program_files directory
+@app.route('/program_files/<path:filename>')
+def webpage_export_program_file(filename):
+    file_path = full_path(filename)
+
+    if not os.path.isfile(file_path):
+        return f"File not found: '{filename}'"
+
+    return send_file(file_path, as_attachment=False)
 
 # Makes CSV file able to be viewable in HTML
 def view_csv(csv_file, type, image_flag):
@@ -16874,14 +17646,17 @@ def is_image_url(url):
                   ".raw", ".arw", ".cr2", ".nef", ".orf", ".dng", ".hdr", ".jxr", ".pcd", ".eps")
     
     if isinstance(url, str) and url:
-        if url.startswith(('http://', 'https://')) and any(ext in url.lower() for ext in extensions):
+        if (
+            (url.startswith(('http://', 'https://')) or url.startswith('/program_files/'))
+            and any(ext in url.lower() for ext in extensions)
+        ):
             response = True
 
     return response
 
-# Exports a CSV file to the user's local disk
-def export_csv(csv_file):
-    return send_file(full_path(csv_file), as_attachment=True)
+# Exports a program file to the user's local disk
+def export_program_file(program_file):
+    return send_file(full_path(program_file), as_attachment=True)
 
 # Exports data that only exists internally to the program
 def export_internal_data(data, name, mimetype):
@@ -18120,6 +18895,8 @@ def check_and_create_csv(csv_file):
         check_and_add_column(csv_file, 'parent_active', 'On')
         check_and_add_column(csv_file, 'parent_tvg_description_override', '')
         check_and_add_column(csv_file, 'parent_group_title_override', '')
+        check_and_add_column(csv_file, 'parent_tvc_stream_timestamps_override', '')
+        check_and_add_column(csv_file, 'parent_additional_xml_guide_categories', [])
 
     if csv_file == csv_playlistmanager_child_to_parent:
         check_and_add_column(csv_file, 'stream_format_override', 'None')
@@ -18150,6 +18927,9 @@ def check_and_create_csv(csv_file):
 
     if csv_file == csv_slm_feed_rules:
         check_and_add_column(csv_file, 'override_max_videos_number', '')
+
+    if csv_file == csv_playlistmanager_combined_m3us:
+        check_and_add_column(csv_file, 'tvc_stream_timestamps', '')
 
     # Append/Remove rows to data that may update
     if csv_file == csv_streaming_services:
@@ -18254,6 +19034,12 @@ def check_and_create_csv(csv_file):
         check_and_append(csv_file, {"settings": "Off"}, 88, "PLM/SLM: Use PO Tokens for YouTube Videos/Streams On/Off")
         check_and_append(csv_file, {"settings": "http://localhost:4416"}, 89, "PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams")
         check_and_append(csv_file, {"settings": "gracenote_xml_default"}, 90, "PLM: Gracenote/XML m3u playlist generation behavior")
+        check_and_append(csv_file, {"settings": "Off"}, 91, "PLM: For 'Fallback Feed', use direct URL without fallback if only one active child")
+        check_and_append(csv_file, {"settings": "Off"}, 92, "PLM: Rewrite stream timestamps in all Playlists using 'tvc-stream-timestamps' value of 'rewrite'")
+        check_and_append(csv_file, {"settings": []}, 93, "MTM: List of Zip/Postal codes to be searched as part of building local Gracenote maps")
+        check_and_append(csv_file, {"settings": "Off"}, 94, "MTM: Run MTM 'Build Local Gracenote Map' Functionality On/Off")
+        check_and_append(csv_file, {"settings": datetime.datetime.now().strftime('%H:%M')}, 95, "MTM: Run MTM 'Build Local Gracenote Map' Functionality Start Time")
+        check_and_append(csv_file, {"settings": "Every 24 hours"}, 96, "MTM: Run MTM 'Build Local Gracenote Map' Functionality Frequency")
 
 # Data records for initialization files
 def initial_data(csv_file):
@@ -18363,7 +19149,13 @@ def initial_data(csv_file):
             {"settings": 20},                                                          # [85] PLM: For 'Fallback Feed', time (in seconds) a found stream remains valid in memory before being purged
             {"settings": "Off"},                                                       # [86] PLM/SLM: Use PO Tokens for YouTube Videos/Streams On/Off
             {"settings": "http://localhost:4416"},                                     # [87] PLM/SLM: URL for PO Tokens for YouTube Videoes/Streams
-            {"settings": "gracenote_xml_default"}                                      # [88] PLM: Gracenote/XML m3u playlist generation behavior
+            {"settings": "gracenote_xml_default"},                                     # [88] PLM: Gracenote/XML m3u playlist generation behavior
+            {"settings": "Off"},                                                       # [89] PLM: For 'Fallback Feed', use direct URL without fallback if only one active child
+            {"settings": "Off"},                                                       # [90] PLM: Rewrite stream timestamps in all Playlists using 'tvc-stream-timestamps' value of 'rewrite'
+            {"settings": []},                                                          # [91] MTM: List of Zip/Postal codes to be searched as part of building local Gracenote maps
+            {"settings": "Off"},                                                       # [92] MTM: Run MTM 'Build Local Gracenote Map' Functionality On/Off
+            {"settings": datetime.datetime.now().strftime('%H:%M')},                   # [93] MTM: Run MTM 'Build Local Gracenote Map' Functionality Start Time
+            {"settings": "Every 24 hours"}                                             # [94] MTM: Run MTM 'Build Local Gracenote Map' Functionality Frequency
         ]
 
     # Stream Link/File Manager
@@ -18567,7 +19359,9 @@ def initial_data(csv_file):
             "parent_preferred_playlist": None,
             "parent_active": None,
             "parent_tvg_description_override": None,
-            "parent_group_title_override": None
+            "parent_group_title_override": None,
+            "parent_tvc_stream_timestamps_override": "Off",
+            "parent_additional_xml_guide_categories": []
         }]
 
     elif csv_file == csv_playlistmanager_child_to_parent:
@@ -18602,7 +19396,8 @@ def initial_data(csv_file):
             "tvc_guide_placeholders": None,
             "tvc_stream_vcodec": None,
             "tvc_stream_acodec": None,
-            "url": None
+            "url": None,
+            "tvc_stream_timestamps": None
         }]
 
     elif csv_file == csv_playlistmanager_streaming_stations:
@@ -18816,6 +19611,19 @@ def initial_data(csv_file):
             'pbs_substation_kids_main_short_name': None,
             'pbs_substation_kids_main_full_name': None,
             'pbs_substation_kids_main_timezone': None
+        }]
+
+    # Media Tools Manager
+    elif csv_file == csv_mtm_gracenote_maps:
+        data = [{
+            'station_gracenote_id': None,
+            'station_call_sign': None,
+            'station_name': None,
+            'station_ota_channel_number': None,
+            'station_logo': None,
+            'station_source_provider': None,
+            'show_gracenote_id': None,
+            'show_name': None
         }]
 
     return data
@@ -19709,6 +20517,10 @@ program_files_dir = os.path.join(script_dir, "program_files")
 backup_dir = os.path.join(program_files_dir, "backups")
 playlists_uploads_dir_name = "playlists_uploads"
 playlists_uploads_dir = os.path.join(program_files_dir, playlists_uploads_dir_name)
+image_cache_dir_name = "image_cache"
+image_cache_dir = os.path.join(program_files_dir, image_cache_dir_name)
+image_cache_gracenote_dir_name = "gracenote_image_cache"
+image_cache_gracenote_dir = os.path.join(image_cache_dir, image_cache_gracenote_dir_name)
 csv_settings = "StreamLinkManager_Settings.csv"
 csv_streaming_services = "StreamLinkManager_StreamingServices.csv"
 csv_slm_subscribed_video_channels = "StreamLinkManager_SubscribedVideoChannels.csv"
@@ -19728,6 +20540,7 @@ csv_playlistmanager_child_to_parent = "PlaylistManager_ChildToParent.csv"
 csv_playlistmanager_streaming_stations = "PlaylistManager_StreamingStations.csv"
 csv_playlistmanager_station_mappings = "PlaylistManager_StationMappings.csv"
 csv_playlistmanager_playlist_internal_pbs = "PlaylistManager_PlaylistInternalPBS.csv"
+csv_mtm_gracenote_maps = "MediaToolsManager_GracenoteMaps.csv"
 csv_files = [
     csv_settings,
     csv_streaming_services,
@@ -19747,7 +20560,8 @@ csv_files = [
     csv_playlistmanager_child_to_parent,
     csv_playlistmanager_streaming_stations,
     csv_playlistmanager_station_mappings,
-    csv_playlistmanager_playlist_internal_pbs
+    csv_playlistmanager_playlist_internal_pbs,
+    csv_mtm_gracenote_maps
 ]
 program_files = csv_files + [log_filename]
 gen_upgrade_flag = None
@@ -20172,7 +20986,9 @@ local_channels_client_selected = None
 program_directories = [
     program_files_dir,
     backup_dir,
-    playlists_uploads_dir
+    playlists_uploads_dir,
+    image_cache_dir,
+    image_cache_gracenote_dir
 ]
 for program_directory in program_directories:
     create_directory(program_directory)
