@@ -41,7 +41,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.09.05.1858"
+    slm_version = "v2026.09.07.1620"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -20506,6 +20506,48 @@ async def put_channels_dvr_json_async(session, route, json_data):
 def calc_percentage(count, total):
     return f"{round((count / total) * 100, 1)}%" if total > 0 else "0.0%"
 
+# Checks the condition of launching Playwright Chromium
+def check_playwright():
+    print(f"{current_time()} INFO: Checking for Playwright Chromium...")
+
+    playwright_status = False
+    playwright_status_loop = 0
+
+    while True:
+
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                browser.close()
+            playwright_status =  True
+
+        except Exception:
+
+            if int(playwright_status_loop) == 0:
+
+                print(f"{current_time()} WARNING: Default Playwright path failed. Attempting fallback to global user cache...")       
+
+                if sys.platform == "win32":
+                    local_app_data = os.environ.get("LOCALAPPDATA", os.path.expanduser("~\\AppData\\Local"))
+                    user_browsers = os.path.join(local_app_data, "ms-playwright")
+
+                else:
+                    user_browsers = os.path.expanduser("~/.cache/ms-playwright")
+
+                os.environ["PLAYWRIGHT_BROWSERS_PATH"] = user_browsers
+
+        if playwright_status or int(playwright_status_loop) > 0:
+
+            if playwright_status:
+                print(f"{current_time()} SUCCESS: Playwright Chromium detected and working.")
+
+            else:
+                print(f"{current_time()} ERROR: Could not launch Playwright Chromium using any method. Please follow the installation directions on the Wiki.")    
+
+            break
+
+        playwright_status_loop += 1
+
 # Global Variables
 
 ### [GEN] System
@@ -21159,6 +21201,7 @@ if slm_stream_link_file_manager:
 if slm_channels_dvr_integration:
     check_channels_url(None)
 
+check_playwright()
 check_upgrade()
 
 ### Start the background thread
