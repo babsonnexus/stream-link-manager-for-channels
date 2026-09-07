@@ -41,7 +41,7 @@ RUN pip install --force-reinstall "yt-dlp[default] @ https://github.com/yt-dlp/y
 COPY . .
 
 # Explicitly allow Node to read files and spawn processes
-ENV NODE_OPTIONS="--permission --allow-fs-read=* --allow-child-process --no-warnings"
+ENV NODE_OPTIONS="--allow-fs-read=* --allow-child-process --no-warnings"
 
 # Make port 5000 available to the world outside this container
 EXPOSE 5000
