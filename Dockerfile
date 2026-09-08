@@ -22,16 +22,25 @@ RUN cat requirements.txt
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright Chromium
+# Install Playwright Chromium and its system dependencies
 RUN python -m playwright install --with-deps chromium
 
-# Install Node.js (LTS) and npm, locked to a specific version, and lock it from being upgraded by apt-get
+# Remove any Node.js package installed by Playwright's system dependencies
+RUN apt-get update \
+    && apt-get purge -y nodejs npm \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js (LTS) and npm at the required version
 RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get update \
     && apt-get install -y --allow-downgrades nodejs=24.13.0-1nodesource1 \
-    && apt-mark hold nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Explicitly allow Node to read files and spawn processes
+ENV NODE_OPTIONS="--allow-fs-read=* --allow-child-process --no-warnings"
 
 # Update yt-dlp to the bleeding edge to fix Docker issues
 RUN pip install -U pip hatchling wheel
@@ -39,9 +48,6 @@ RUN pip install --force-reinstall "yt-dlp[default] @ https://github.com/yt-dlp/y
 
 # Copy the rest of the application code into the container
 COPY . .
-
-# Explicitly allow Node to read files and spawn processes
-ENV NODE_OPTIONS="--allow-fs-read=* --allow-child-process --no-warnings"
 
 # Make port 5000 available to the world outside this container
 EXPOSE 5000
