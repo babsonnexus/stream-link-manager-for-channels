@@ -1,4 +1,3 @@
-# Use an official Python runtime as a parent image
 FROM python:3.12-slim
 
 # Install system dependencies
@@ -8,14 +7,6 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     python3-dev \
     curl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Node.js (LTS) and npm, locked to a specific version, and lock it from being upgraded by apt-get
-RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get update \
-    && apt-get install -y nodejs=24.13.0-1nodesource1 \
-    && apt-mark hold nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -33,6 +24,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright Chromium
 RUN python -m playwright install --with-deps chromium
+
+# Install Node.js (LTS) and npm, locked to a specific version, and lock it from being upgraded by apt-get
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get update \
+    && apt-get install -y --allow-downgrades nodejs=24.13.0-1nodesource1 \
+    && apt-mark hold nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Update yt-dlp to the bleeding edge to fix Docker issues
 RUN pip install -U pip hatchling wheel
