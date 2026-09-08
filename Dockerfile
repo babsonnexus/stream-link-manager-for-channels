@@ -39,6 +39,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Force Playwright to use system Node.js instead of bundled one
+ENV PLAYWRIGHT_NODEJS_PATH="/usr/bin/node"
+
 # Explicitly allow Node to read files and spawn processes
 ENV NODE_OPTIONS="--allow-fs-read=* --allow-child-process --no-warnings"
 

@@ -21,6 +21,7 @@ import unicodedata
 import gzip
 import io
 import ast
+from contextlib import contextmanager
 from flask import Flask, render_template, render_template_string, request, redirect, url_for, Response, send_file, Request, make_response, stream_with_context, jsonify
 from jinja2 import TemplateNotFound
 import yt_dlp
@@ -41,7 +42,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.09.07.1620"
+    slm_version = "v2026.09.08.1538"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -13719,6 +13720,10 @@ def get_gracenote_maps():
         gracenote_maps_station_gracenote_id_lookup = set()
 
         for gracenote_provider in gracenote_providers:
+            ##### FOR UNIT TESTING PURPOSES
+            # if "OTA" not in gracenote_provider:
+            #     continue
+
             print(f"{current_time()} INFO: For Gracenote maps, checking provider '{gracenote_provider}' for stations...")
 
             gracenote_source_url_guide = f"{gracenote_source_url_base_usa}{gracenote_source_url_lineups_prefix}{gracenote_provider}"
@@ -13730,7 +13735,7 @@ def get_gracenote_maps():
                 response = requests.get(gracenote_source_url, headers=url_headers_extended, timeout=15)
 
                 if response.status_code == 200:
-                    with sync_playwright() as sync_playwright_session:
+                    with set_playwright_environment(), sync_playwright() as sync_playwright_session:
                         browser, page = open_webpage_for_scrape(
                             sync_playwright_session,
                             gracenote_source_url,
@@ -13945,7 +13950,20 @@ def get_gracenote_maps():
 
                                 show_gracenote_id = show.get_attribute("data-id")
                                 show_name_div = show.locator("div").first
-                                show_name = show_name_div.inner_text().strip() if show_name_div.count() else show.inner_text().strip()
+                                if show_name_div.count():
+                                    show_name = show_name_div.evaluate(
+                                        "node => Array.from(node.childNodes)"
+                                        ".filter(child => child.nodeType === Node.TEXT_NODE)"
+                                        ".map(child => child.textContent)"
+                                        ".join('').trim()"
+                                    )
+                                    show_subtitle_locator = show_name_div.locator("span.gridSubtitle")
+                                    if show_subtitle_locator.count():
+                                        show_subtitle = show_subtitle_locator.first.inner_text().strip()
+                                        if show_subtitle:
+                                            show_name = f"{show_name}\n{show_subtitle}"
+                                else:
+                                    show_name = show.inner_text().strip()
 
                                 if not show_gracenote_id or not show_name:
                                     continue
@@ -17632,7 +17650,8 @@ def view_csv(csv_file, type, image_flag):
             if is_image_url(value) and image_flag:
                 table_html += f'<td><img src="{value}" class="image-cell" alt="Image"></td>'
             else:
-                table_html += f'<td>{value}</td>'
+                value_html = str(value).replace('\r\n', '<br>').replace('\r', '<br>').replace('\n', '<br>')
+                table_html += f'<td>{value_html}</td>'
         table_html += '</tr>'
 
     table_html += '</tbody>'
@@ -20516,8 +20535,8 @@ def check_playwright():
     while True:
 
         try:
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
+            with set_playwright_environment(), sync_playwright() as playwright_session:
+                browser = playwright_session.chromium.launch(headless=True)
                 browser.close()
             playwright_status =  True
 
@@ -20542,11 +20561,29 @@ def check_playwright():
                 print(f"{current_time()} SUCCESS: Playwright Chromium detected and working.")
 
             else:
-                print(f"{current_time()} ERROR: Could not launch Playwright Chromium using any method. Please follow the installation directions on the Wiki.")    
+                print(f"{current_time()} ERROR: Could not launch Playwright Chromium using any method. Please follow the installation directions on the Wiki.")
 
             break
 
         playwright_status_loop += 1
+
+# Temporarily removes "NODE_OPTIONS" for Playwright and then restores them after the function exits
+@contextmanager
+def set_playwright_environment():
+    node_options = os.environ.pop("NODE_OPTIONS", None)
+
+    if node_options:
+        print(f"{current_time()} INFO: Base 'NODE_OPTIONS' are set to '{node_options}'. They will be temporarily disabled for Playwright...")
+    else:
+        print(f"{current_time()} INFO: There are no base 'NODE_OPTIONS'; therefore, they will not be temporarily disabled for Playwright.")
+
+    try:
+        yield
+
+    finally:
+        if node_options is not None:
+            os.environ["NODE_OPTIONS"] = node_options
+            print(f"{current_time()} INFO: Base 'NODE_OPTIONS' of '{node_options}' restored after Playwright temporarily disabled them.")
 
 # Global Variables
 
