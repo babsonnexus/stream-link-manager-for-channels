@@ -33,16 +33,16 @@ import av
 from playwright.sync_api import sync_playwright
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.08.21.1518"
+slm_version = "v2026.09.12.1244"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.09.08.1538"
+    slm_version = "v2026.09.12.1244"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -17575,6 +17575,9 @@ def webpage_files():
 
     if plm_internal_pbs_stations in ['On', 'on']:
         file_lists.append({'file_name': 'PLM - Internal Playlist - PBS', 'file': csv_playlistmanager_playlist_internal_pbs})
+
+    if slm_channels_dvr_integration and slm_media_tools_manager:
+        file_lists.append({'file_name': 'MTM - Local Gracenote Maps', 'file': csv_mtm_gracenote_maps})
 
     if request.method == 'POST':
         action = request.form['action']
