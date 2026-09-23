@@ -18920,6 +18920,13 @@ def check_and_create_csv(csv_file):
         check_and_add_column(csv_file, 'parent_tvc_stream_timestamps_override', '')
         check_and_add_column(csv_file, 'parent_additional_xml_guide_categories', [])
 
+        # Fix in case a blank record was created during a new install
+        parents = read_data(csv_file)
+        if any(parent['parent_channel_id'] in [None, ''] for parent in parents):
+            parents = [create_temp_record(parent.keys()) if parent['parent_channel_id'] in [None, ''] else parent for parent in parents]
+            write_data(csv_file, parents)
+            remove_empty_row(csv_file)
+
     if csv_file == csv_playlistmanager_child_to_parent:
         check_and_add_column(csv_file, 'stream_format_override', 'None')
         check_and_add_column(csv_file, 'child_station_check', '')
@@ -19382,8 +19389,8 @@ def initial_data(csv_file):
             "parent_active": None,
             "parent_tvg_description_override": None,
             "parent_group_title_override": None,
-            "parent_tvc_stream_timestamps_override": "Off",
-            "parent_additional_xml_guide_categories": []
+            "parent_tvc_stream_timestamps_override": None,
+            "parent_additional_xml_guide_categories": None
         }]
 
     elif csv_file == csv_playlistmanager_child_to_parent:
