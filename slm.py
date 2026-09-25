@@ -33,7 +33,7 @@ import av
 from playwright.sync_api import sync_playwright
 
 # Top Controls
-slm_environment_version = None
+slm_environment_version = "PRERELEASE"
 slm_environment_port = None
 
 # Current Stable Release
@@ -42,7 +42,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.09.12.1244"
+    slm_version = "v2026.09.25.1742"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -3655,7 +3655,10 @@ def format_duration_to_string(duration_seconds):
     return " ".join(parts)
 
 # Checks a video name (season_episode) to see if it is unique within the Video Group
-def check_video_name_unique(bookmarks_statuses, entry_id, video_name):
+def check_video_name_unique(bookmarks_statuses, entry_id, video_name_base):
+    # Clean anything additional in the field the name that is not wanted
+    video_name = re.sub(r" \| Published.*?\)", ")", video_name_base)
+
     season_episode_exists = False
     new_video_name = video_name
     new_video_name_appendage = ' - SLM Duplicate '
@@ -7680,6 +7683,7 @@ def webpage_playlists(sub_page):
                         parents_parent_group_title_override_input = None
                         parents_parent_tvc_stream_timestamps_override_input = "Off"
                         parents_parent_additional_xml_guide_categories_input = []
+                        parents_parent_tvg_shift_override_input = None
 
                         if playlists_action == "parents_action_new":
                             parents_parent_active_input = "On" if request.form.get('parents_parent_active_new') == 'on' else "Off"
@@ -7779,7 +7783,8 @@ def webpage_playlists(sub_page):
                             "parent_tvg_description_override": parents_parent_tvg_description_override_input,
                             "parent_group_title_override": parents_parent_group_title_override_input,
                             "parent_tvc_stream_timestamps_override": parents_parent_tvc_stream_timestamps_override_input,
-                            "parent_additional_xml_guide_categories": parents_parent_additional_xml_guide_categories_input
+                            "parent_additional_xml_guide_categories": parents_parent_additional_xml_guide_categories_input,
+                            "parent_tvg_shift_override": parents_parent_tvg_shift_override_input
                         })
 
                     if len(parents) > 1:
@@ -8073,7 +8078,8 @@ def webpage_playlists(sub_page):
                                 "parent_tvg_description_override": None,
                                 "parent_group_title_override": None,
                                 "parent_tvc_stream_timestamps_override": "Off",
-                                "parent_additional_xml_guide_categories": []
+                                "parent_additional_xml_guide_categories": [],
+                                "parent_tvg_shift_override": None
                             })
 
                             child_to_parents_parent_channel_id_input = save_all_parent_channel_id
@@ -9478,7 +9484,8 @@ def run_child_station_mapping():
                                                     "parent_tvg_description_override": None,
                                                     "parent_group_title_override": None,
                                                     "parent_tvc_stream_timestamps_override": "Off",
-                                                    "parent_additional_xml_guide_categories": []
+                                                    "parent_additional_xml_guide_categories": [],
+                                                    "parent_tvg_shift_override": None
                                                 })
 
                                         else:
@@ -9583,7 +9590,8 @@ def check_child_station_status(check_child_station_status_single, check_child_st
                     'tvc_stream_vcodec': '',
                     'tvc_stream_acodec': '',
                     'url': check_child_station_status_single_url,
-                    'tvc_stream_timestamps': ''
+                    'tvc_stream_timestamps': '',
+                    'tvg_shift': ''
                 })
             
             else:
@@ -9766,7 +9774,8 @@ def parse_m3u(m3u_id, m3u_name, response):
                     'tvc_stream_vcodec': metadata["tvc-stream-vcodec"],
                     'tvc_stream_acodec': metadata["tvc-stream-acodec"],
                     'url': "",
-                    'tvc_stream_timestamps': metadata["tvc-stream-timestamps"]
+                    'tvc_stream_timestamps': metadata["tvc-stream-timestamps"],
+                    'tvg_shift': metadata["tvg-shift"]
                 }
         elif ( line.startswith('http') or '://' in line ) and not any(skip_line in line for skip_line in skip_lines):
             if current_record:
@@ -10166,7 +10175,8 @@ def get_m3u_field_values(station_start_number, settings_tvc_stream_timestamps):
         "tvc_stream_vcodec",
         "tvc_stream_acodec",
         "url",
-        "tvc_stream_timestamps"
+        "tvc_stream_timestamps",
+        "tvg_shift"
     ]
 
     combined_children = read_data(csv_playlistmanager_combined_m3us)
@@ -10205,6 +10215,7 @@ def get_m3u_field_values(station_start_number, settings_tvc_stream_timestamps):
             tvc_stream_vcodec = None
             tvc_stream_acodec = None
             tvc_stream_timestamps = None
+            tvg_shift = None
             url = None
             stream_format = None
 
@@ -10262,6 +10273,7 @@ def get_m3u_field_values(station_start_number, settings_tvc_stream_timestamps):
                     ( tvc_stream_vcodec not in [None, 'None', ''] ) and
                     ( tvc_stream_acodec not in [None, 'None', ''] ) and
                     ( tvc_stream_timestamps not in [None, 'None', ''] ) and
+                    ( tvg_shift not in [None, 'None', ''] ) and
                     ( url not in [None, 'None', ''] ) and
                     ( stream_format not in [None, 'None', ''] )
                 ):
@@ -10359,6 +10371,12 @@ def get_m3u_field_values(station_start_number, settings_tvc_stream_timestamps):
                     else:
                         tvc_stream_timestamps = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvc_stream_timestamps', None)
 
+                if tvg_shift in [None, 'None', '']:
+                    if parent['parent_tvg_shift_override'] is not None and parent['parent_tvg_shift_override'] != '':
+                        tvg_shift = parent['parent_tvg_shift_override']
+                    else:
+                        tvg_shift = combined_children_lookup[child['child_m3u_id_channel_id']].get('tvg_shift', None)
+
                 if url in [None, 'None', '']:
                     url = combined_children_lookup[child['child_m3u_id_channel_id']].get('url', None)
 
@@ -10424,6 +10442,7 @@ def get_m3u_field_values(station_start_number, settings_tvc_stream_timestamps):
                     "tvc_stream_vcodec": tvc_stream_vcodec,
                     "tvc_stream_acodec": tvc_stream_acodec,
                     "tvc_stream_timestamps": tvc_stream_timestamps,
+                    "tvg_shift": tvg_shift,
                     "url": url,
                     "stream_format": stream_format,
                     "num_active_children": len(children)
@@ -10459,11 +10478,13 @@ def generate_m3u_content(data_list, base_filename, index):
         m3u_content += f' tvc-guide-description="{item["tvc_guide_description"]}"'
         m3u_content += f' group-title="{item["group_title"]}"'
         m3u_content += f' tvc-guide-stationid="{item["tvc_guide_stationid"]}"'
+        if item["tvg_shift"] not in [None, '', 0, '0']:
+            m3u_content += f' tvg-shift="{item["tvg_shift"]}"'
+        m3u_content += f' tvc-guide-placeholders="{item["tvc_guide_placeholders"]}"'
         m3u_content += f' tvc-guide-art="{item["tvc_guide_art"]}"'
         m3u_content += f' tvc-guide-tags="{item["tvc_guide_tags"]}"'
         m3u_content += f' tvc-guide-genres="{item["tvc_guide_genres"]}"'
         m3u_content += f' tvc-guide-categories="{item["tvc_guide_categories"]}"'
-        m3u_content += f' tvc-guide-placeholders="{item["tvc_guide_placeholders"]}"'
         m3u_content += f' tvc-stream-vcodec="{item["tvc_stream_vcodec"]}"'
         m3u_content += f' tvc-stream-acodec="{item["tvc_stream_acodec"]}"'
         if item["tvc_stream_timestamps"] == "rewrite":
@@ -10849,6 +10870,7 @@ def webpage_playlists_parent_stations_more():
     parent_tvg_description_override = ''
     parent_group_title_override = '',
     parent_tvc_stream_timestamps_override = 'Off'
+    parent_tvg_shift_override = ''
     parent_additional_xml_guide_categories_raw = []
     parent_additional_xml_guide_categories = []
 
@@ -10873,6 +10895,7 @@ def webpage_playlists_parent_stations_more():
                 parent_group_title_override = parent['parent_group_title_override']
                 parent_tvc_stream_timestamps_override = parent['parent_tvc_stream_timestamps_override']
                 parent_additional_xml_guide_categories_raw = parent['parent_additional_xml_guide_categories']
+                parent_tvg_shift_override = parent['parent_tvg_shift_override']
                 if parent_additional_xml_guide_categories_raw:
                     if isinstance(parent_additional_xml_guide_categories_raw, str):
                         try:
@@ -10903,6 +10926,7 @@ def webpage_playlists_parent_stations_more():
             parent_tvg_description_override = ''
             parent_group_title_override = ''
             parent_tvc_stream_timestamps_override = 'Off'
+            parent_tvg_shift_override = ''
             parent_additional_xml_guide_categories = []
 
         elif action.endswith('_save') or action.endswith('_edit'):
@@ -10931,6 +10955,7 @@ def webpage_playlists_parent_stations_more():
                         parent_group_title_override = parent['parent_group_title_override']
                         parent_tvc_stream_timestamps_override = parent['parent_tvc_stream_timestamps_override']
                         parent_additional_xml_guide_categories_raw = parent['parent_additional_xml_guide_categories']
+                        parent_tvg_shift_override = parent['parent_tvg_shift_override']
                         if parent_additional_xml_guide_categories_raw:
                             if isinstance(parent_additional_xml_guide_categories_raw, str):
                                 try:
@@ -10964,6 +10989,7 @@ def webpage_playlists_parent_stations_more():
                     parent_additional_xml_guide_categories_input = [tag['value'] for tag in json.loads(request.form.get('more_parent_additional_xml_guide_categories', '[]')) if 'value' in tag]
                 except:
                     parent_additional_xml_guide_categories_input = []
+                parent_tvg_shift_override_input = request.form.get('more_parent_tvg_shift_override')
 
                 for parent in parents:
                     if parent['parent_channel_id'] == parent_channel_id_prior:
@@ -10985,6 +11011,7 @@ def webpage_playlists_parent_stations_more():
                         parent['parent_group_title_override'] = parent_group_title_override_input
                         parent['parent_tvc_stream_timestamps_override'] = parent_tvc_stream_timestamps_override_input
                         parent['parent_additional_xml_guide_categories'] = parent_additional_xml_guide_categories_input
+                        parent['parent_tvg_shift_override'] = parent_tvg_shift_override_input
                         break
 
                 parents = sorted(parents, key=lambda x: sort_key(x["parent_title"].casefold()))
@@ -11011,6 +11038,7 @@ def webpage_playlists_parent_stations_more():
                         parent_group_title_override = parent['parent_group_title_override']
                         parent_tvc_stream_timestamps_override = parent['parent_tvc_stream_timestamps_override']
                         parent_additional_xml_guide_categories_raw = parent['parent_additional_xml_guide_categories']
+                        parent_tvg_shift_override = parent['parent_tvg_shift_override']
                         if parent_additional_xml_guide_categories_raw:
                             if isinstance(parent_additional_xml_guide_categories_raw, str):
                                 try:
@@ -11052,7 +11080,8 @@ def webpage_playlists_parent_stations_more():
         html_preferred_playlists = preferred_playlists,
         html_parent_tvc_stream_timestamps_override = parent_tvc_stream_timestamps_override,
         html_parent_additional_xml_guide_categories = parent_additional_xml_guide_categories,
-        html_base_additional_xml_guide_categories = base_additional_xml_guide_categories
+        html_base_additional_xml_guide_categories = base_additional_xml_guide_categories,
+        html_parent_tvg_shift_override = parent_tvg_shift_override
     )
 
 # Add streaming stations from particular sources
@@ -18737,11 +18766,24 @@ def extract_modified_rows(csv_file, data, id_field):
     for row in data:
         if row[id_field] in existing_data_dict:
             existing_row = existing_data_dict[row[id_field]]
+
             if any(row[key] != existing_row[key] for key in row.keys() if key != id_field):
                 modified_rows.append(row)
-                # Check for ?X-Plex-Token= difference 
+
+                # Ignore certain modifications for notification
                 differing_keys = [key for key in row.keys() if key != id_field and row[key] != existing_row[key]]
-                if all('X-Plex-Token' in key or row[key].startswith(existing_row[key].split('?X-Plex-Token=')[0]) for key in differing_keys):
+
+                if (
+                    (
+                        ( csv_file == csv_playlistmanager_combined_m3us ) and
+                        (
+                            # Plex token on 'url'
+                            ( all('X-Plex-Token' in key or row[key].startswith(existing_row[key].split('?X-Plex-Token=')[0]) for key in differing_keys) ) or
+                            # The field is 'tvg_logo', 'tvg_chno', or 'channel_number'
+                            ( all(key in {'tvg_logo', 'tvg_chno', 'channel_number'} for key in differing_keys) )
+                        )
+                    )
+                ):
                     no_notify_rows.append(row)
 
     return modified_rows, no_notify_rows
@@ -18794,6 +18836,45 @@ def remove_data(csv_file, old_rows, id_field):
 
     # Write the new rows back to the CSV file
     write_data(csv_file, new_rows)
+
+# Keeps only rows from a CSV file that match a certain pattern definition, removing the rest
+def keep_only_pattern_row_csv(csv_file, base_records, field_to_check, compare_id, pattern_to_check):
+    modified_records = []
+
+    if base_records:
+        temp_record = create_temp_record(base_records[0].keys())
+    else:
+        temp_record = initial_data(csv_file)[0]
+    run_empty_rows = False
+
+    for base_record in base_records:
+
+        if ( 
+                ( compare_id == 'equal' and base_record[field_to_check] == pattern_to_check ) or 
+                ( compare_id == 'equal_not' and base_record[field_to_check] != pattern_to_check ) or
+                ( compare_id == 'contain' and pattern_to_check in base_record[field_to_check] ) or
+                ( compare_id == 'contain_not' and pattern_to_check not in base_record[field_to_check] ) or
+                ( compare_id == 'begin' and base_record[field_to_check].startswith(pattern_to_check) ) or
+                ( compare_id == 'begin_not' and not base_record[field_to_check].startswith(pattern_to_check) ) or
+                ( compare_id == 'end' and base_record[field_to_check].endswith(pattern_to_check) ) or
+                ( compare_id == 'end_not' and not base_record[field_to_check].endswith(pattern_to_check) ) or
+                ( compare_id == 'regex' and re.search(pattern_to_check, base_record[field_to_check]) ) or
+                ( compare_id == 'regex_not' and not re.search(pattern_to_check, base_record[field_to_check]) ) or
+                ( compare_id == 'greater' and int(base_record[field_to_check]) > int(pattern_to_check) ) or 
+                ( compare_id == 'greater_equal' and int(base_record[field_to_check]) >= int(pattern_to_check) ) or
+                ( compare_id == 'less' and int(base_record[field_to_check]) < int(pattern_to_check) ) or 
+                ( compare_id == 'less_equal' and int(base_record[field_to_check]) <= int(pattern_to_check) )
+        ):
+
+            modified_records.append(base_record)
+
+    if not modified_records:
+        modified_records.append(temp_record)
+        run_empty_rows = True
+
+    write_data(csv_file, modified_records)
+    if run_empty_rows:
+        remove_empty_row(csv_file)
 
 # Removes duplicate rows from the CSV file
 def remove_duplicate_rows(csv_file):
@@ -18917,8 +18998,9 @@ def check_and_create_csv(csv_file):
         check_and_add_column(csv_file, 'parent_active', 'On')
         check_and_add_column(csv_file, 'parent_tvg_description_override', '')
         check_and_add_column(csv_file, 'parent_group_title_override', '')
-        check_and_add_column(csv_file, 'parent_tvc_stream_timestamps_override', '')
+        check_and_add_column(csv_file, 'parent_tvc_stream_timestamps_override', 'Off')
         check_and_add_column(csv_file, 'parent_additional_xml_guide_categories', [])
+        check_and_add_column(csv_file, 'parent_tvg_shift_override', '')
 
     if csv_file == csv_playlistmanager_child_to_parent:
         check_and_add_column(csv_file, 'stream_format_override', 'None')
@@ -18952,6 +19034,7 @@ def check_and_create_csv(csv_file):
 
     if csv_file == csv_playlistmanager_combined_m3us:
         check_and_add_column(csv_file, 'tvc_stream_timestamps', '')
+        check_and_add_column(csv_file, 'tvg_shift', '')
 
     # Append/Remove rows to data that may update
     if csv_file == csv_streaming_services:
@@ -18959,6 +19042,19 @@ def check_and_create_csv(csv_file):
         if settings[23]['settings'] == "On":
             id_field = "streaming_service_name"
             update_rows(csv_file, data, id_field, None)
+
+    # Clean rows in CSV files that may be in error or no longer needed
+    if csv_file in [
+        csv_playlistmanager_parents
+    ]:
+        base_records = read_data(csv_file)
+
+        if csv_file == csv_playlistmanager_parents:
+            field_to_check = 'parent_channel_id'
+            compare_id = 'equal_not'
+            pattern_to_check = ''
+
+        keep_only_pattern_row_csv(csv_file, base_records, field_to_check, compare_id, pattern_to_check)
 
     # Add rows for new functionality
     if csv_file == csv_settings:
@@ -19382,8 +19478,9 @@ def initial_data(csv_file):
             "parent_active": None,
             "parent_tvg_description_override": None,
             "parent_group_title_override": None,
-            "parent_tvc_stream_timestamps_override": "Off",
-            "parent_additional_xml_guide_categories": []
+            "parent_tvc_stream_timestamps_override": None,
+            "parent_additional_xml_guide_categories": None,
+            "parent_tvg_shift_override": None
         }]
 
     elif csv_file == csv_playlistmanager_child_to_parent:
@@ -19419,7 +19516,8 @@ def initial_data(csv_file):
             "tvc_stream_vcodec": None,
             "tvc_stream_acodec": None,
             "url": None,
-            "tvc_stream_timestamps": None
+            "tvc_stream_timestamps": None,
+            "tvg_shift": None
         }]
 
     elif csv_file == csv_playlistmanager_streaming_stations:
