@@ -42,7 +42,7 @@ slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.09.25.1742"
+    slm_version = "v2026.09.26.1339"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -5239,11 +5239,13 @@ def run_slm_feed_maps(feed_maps, search_results_base):
                     if object_type == 'VIDEO' and source_provider.startswith('slmchn_'):
                         video_channel_name = f"Channel: {subscribed_video_channels_lookup[source_provider]}"
 
+                    check_release_year = str(item['release_year']).split(" | Published")[0]
+
                     if (
                         ( object_type == 'MOVIE' and 'movie' in source_provider ) or
                         ( object_type == 'SHOW' and 'show' in source_provider ) or
                         ( object_type == 'VIDEO' and 'video' in source_provider ) or
-                        ( object_type == 'VIDEO' and item['release_year'] == video_channel_name )
+                        ( object_type == 'VIDEO' and check_release_year == video_channel_name )
                     ):
 
                         source_field = feed_map['source_field']
@@ -5333,7 +5335,7 @@ def run_slm_feed_maps(feed_maps, search_results_base):
                                     'program_search_results_action_input': target_action
                                 })
 
-                                print(f"{current_time()} INFO: Bookmarked '{item['title']} ({item['release_year']}) | {item['object_type']}' using Feed Map '{feed_map_name}'.")
+                                print(f"{current_time()} INFO: Bookmarked '{item['title']} ({check_release_year}) | {item['object_type']}' using Feed Map '{feed_map_name}'.")
 
                                 break
 
@@ -9727,7 +9729,8 @@ def parse_m3u(m3u_id, m3u_name, response):
                     "tvc-guide-placeholders": "",
                     "tvc-stream-vcodec": "",
                     "tvc-stream-acodec": "",
-                    "tvc-stream-timestamps": ""
+                    "tvc-stream-timestamps": "",
+                    "tvg-shift": ""
                 }
 
                 # Extract known fields
