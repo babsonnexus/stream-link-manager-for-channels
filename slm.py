@@ -33,16 +33,16 @@ import av
 from playwright.sync_api import sync_playwright
 
 # Top Controls
-slm_environment_version = "PRERELEASE"
+slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.09.12.1244"
+slm_version = "v2026.09.28.1044"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.09.26.1339"
+    slm_version = "v2026.09.28.1044"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
