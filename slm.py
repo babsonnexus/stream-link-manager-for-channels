@@ -37,12 +37,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.09.28.1044"
+slm_version = "v2026.10.11.1257"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.09.28.1044"
+    slm_version = "v2026.10.11.1257"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -12375,6 +12375,8 @@ def make_streaming_stations_m3us():
         tvc_guide_placeholders = None
         tvc_stream_vcodec = None
         tvc_stream_acodec = None
+        tvc_stream_timestamps = None
+        tvg_shift = None
         url = None
         stream_format = None
 
@@ -12430,6 +12432,8 @@ def make_streaming_stations_m3us():
             "tvc_guide_placeholders": tvc_guide_placeholders,
             "tvc_stream_vcodec": tvc_stream_vcodec,
             "tvc_stream_acodec": tvc_stream_acodec,
+            "tvc_stream_timestamps": tvc_stream_timestamps,
+            "tvg_shift": tvg_shift,
             "url": url,
             "stream_format": stream_format
         })
