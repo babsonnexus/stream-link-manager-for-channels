@@ -37,12 +37,12 @@ slm_environment_version = None
 slm_environment_port = None
 
 # Current Stable Release
-slm_version = "v2026.10.11.1257"
+slm_version = "v2026.10.21.1113"
 slm_port = os.environ.get("SLM_PORT")
 
 # Current Development State
 if slm_environment_version == "PRERELEASE":
-    slm_version = "v2026.10.11.1257"
+    slm_version = "v2026.10.21.1113"
 if slm_environment_port == "PRERELEASE":
     slm_port = 5003
 
@@ -16130,6 +16130,13 @@ def find_stream_links(base_bookmarks, original_release_date_list):
                                     stream_link_offers = extract_offer_info(stream_link_details)
                                     stream_link_dirty = get_stream_link(stream_link_offers, special_action)
 
+                                    if slm_environment_port == "PRERELEASE":
+                                        print(f"{current_time()} DEBUG: stream_link_details ==")
+                                        print(json.dumps(stream_link_details, indent=2, ensure_ascii=False))
+                                        print(f"{current_time()} DEBUG: stream_link_offers ==")
+                                        for stream_link_offer in stream_link_offers:
+                                            print(f"    {stream_link_offer}")
+
                                     if stream_link_dirty is None or stream_link_dirty == '':
                                         stream_link_reason = "None due to not found on your selected streaming services"
 
@@ -16351,13 +16358,14 @@ def extract_offer_info(offers_json):
         for field, offers in offers_json.items():
             if isinstance(offers, list):
                 for offer in offers:
-                    name = offer.get('package', {}).get('clearName')
-                    url = urllib.parse.unquote(offer.get('standardWebURL'))  # Decode the URL
-                    offer_raw_icon = offer.get('package', {}).get('icon')
-                    offer_raw_icon = f"{engine_image_url}{offer_raw_icon}"
-                    offer_raw_icon = offer_raw_icon.replace('{profile}', engine_image_profile_icon)
-                    offer_raw_icon = offer_raw_icon.replace('{format}', 'png')
-                    result.append({"name": name, "url": url, "icon": offer_raw_icon})
+                    if offer.get('standardWebURL', None) not in [None, 'None', 'null', 'null', '']:
+                        name = offer.get('package', {}).get('clearName')
+                        url = urllib.parse.unquote(offer.get('standardWebURL'))  # Decode the URL
+                        offer_raw_icon = offer.get('package', {}).get('icon')
+                        offer_raw_icon = f"{engine_image_url}{offer_raw_icon}"
+                        offer_raw_icon = offer_raw_icon.replace('{profile}', engine_image_profile_icon)
+                        offer_raw_icon = offer_raw_icon.replace('{format}', 'png')
+                        result.append({"name": name, "url": url, "icon": offer_raw_icon})
 
     return result
 
@@ -20154,6 +20162,9 @@ def get_justwatch_graphql_data(json_data, retry):
             response = requests.post(_GRAPHQL_API_URL, headers=url_headers_justwatch, json=json_data)
 
             if response.status_code == 200:
+                if slm_environment_port == "PRERELEASE":
+                    print(f"{current_time()} DEBUG: get_justwatch_graphql_data | response.json() ==")
+                    print(json.dumps(response.json(), indent=2, ensure_ascii=False))
                 return response
 
             elif response.status_code == 403:
